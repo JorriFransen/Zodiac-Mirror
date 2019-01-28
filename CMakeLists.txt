@@ -1,0 +1,33 @@
+cmake_minimum_required(VERSION 3.4.3)
+
+# find_package(LLVM REQUIRED CONFIG)
+# message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+# message(STATUS "Using LLVMConfig.cmake.in: ${LLVM_DIR}")
+# include_directories(${LLVM_INCLUDE_DIRS})
+# add_definitions(${LLVM_DEFINITIONS})
+
+# if (WIN32)
+#   llvm_map_components_to_libnames(llvm_libs
+#     support core irreader linker native target)
+# else()
+#   llvm_map_components_to_libnames(llvm_libs support core irreader linker native target)
+# endif()
+project(zodiac)
+
+
+set (ZODIAC_COMPILER_SOURCE
+    source/zodiac_compiler.cpp
+
+    source/common.cpp
+    source/ir.cpp
+)
+
+# add_executable(zodiac source/main.cpp ${ZODIAC_SOURCE})
+# target_link_libraries(zodiac ${llvm_libs})
+# if (WIN32)
+# target_link_libraries(zodiac shlwapi)
+# endif()
+# target_include_directories(zodiac PRIVATE include/zodiac)
+
+add_executable(zodiac source/compiler_main.cpp ${ZODIAC_COMPILER_SOURCE})
+target_include_directories(zodiac PRIVATE include/zodiac)

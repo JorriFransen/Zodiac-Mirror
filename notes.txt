@@ -1,0 +1,15 @@
+
+#IR
+
+add :: (x: s32, y: s32)
+{
+    result := x + y;
+    return result;
+}
+->
+
+(ALLOCL, result, s32, t0);
+(LOADL, x, t1);
+(LOADL, y, t2);
+(ADD_S32, t1, t2, t3);
+(STOREL, t3, t0);
