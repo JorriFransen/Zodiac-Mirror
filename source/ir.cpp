@@ -1,128 +1,9 @@
 #include "ir.h"
 
+#include "ir_builder.h"
+
 namespace Zodiac
 {
-    void ir_builder_init(IR_Builder* ir_builder, Arena* arena)
-    {
-        assert(ir_builder);
-        assert(arena);
-
-        ir_builder->arena = arena;
-    }
-
-    IR_Value* ir_builder_emit(IR_Builder* builder, IR_Instruction_Kind iri_kind,
-                         IR_Value* arg_0, IR_Value* arg_1)
-    {
-        assert(builder);
-        assert(iri_kind != IRI_INVALID);
-        assert(iri_kind < IRI_COUNT);
-
-        IR_Instruction instruction = {};
-        IR_Value* result_value = nullptr;
-
-        switch (iri_kind)
-        {
-            case IRI_ALLOCL:
-            {
-                assert(arg_0);
-                assert(arg_1);
-                assert(arg_0->kind == IRV_LITERAL || arg_0->kind == IRV_VALUE);
-                assert(arg_1->kind == IRV_TYPE);
-
-                assert(arg_1->name);
-                result_value = ir_allocl(builder, arg_1, arg_1->name);
-                break;
-            }
-
-            case IRI_ADD_S32:
-            {
-                assert(arg_0);
-                assert(arg_1);
-                assert(arg_0->kind == IRV_LITERAL || arg_0->kind == IRV_VALUE);
-                assert(arg_1->kind == IRV_LITERAL || arg_1->kind == IRV_VALUE);
-
-                IR_Value* type_value = nullptr;
-
-                if (arg_0->kind == IRV_LITERAL)
-                {
-                    assert(arg_0->literal.type);
-                    assert(arg_1->literal.type);
-                    assert(arg_0->literal.type == arg_1->literal.type);
-                    type_value = arg_0->literal.type;
-                }
-                else if (arg_0->kind == IRV_VALUE)
-                {
-                    assert(arg_0->value.type);
-                    assert(arg_1->value.type);
-                    assert(arg_0->value.type == arg_1->value.type);
-                    type_value = arg_0->value.type;
-                }
-                else assert(false);
-
-                assert(type_value);
-
-                result_value = ir_value(builder, type_value, nullptr);
-                break;
-            }
-
-            case IRI_STOREL:
-            {
-                assert(arg_0);
-                assert(arg_1);
-                assert(arg_0->kind == IRV_LITERAL || arg_0->kind == IRV_VALUE);
-                assert(arg_1->kind == IRV_ALLOCL);
-                assert(arg_1->allocl.type);
-
-                IR_Value* source_type = nullptr;
-                if (arg_0->kind == IRV_LITERAL)
-                {
-                    source_type = arg_0->literal.type;
-                }
-                else if (arg_0->kind == IRV_VALUE)
-                {
-                    source_type = arg_0->value.type;
-                }
-                else assert(false);
-
-                assert(source_type);
-                assert(source_type == arg_1->allocl.type);
-
-                result_value = nullptr;
-                break;
-            }
-
-            case IRI_LOADL:
-            {
-                assert(arg_0);
-                assert(arg_1 == nullptr);
-                assert(arg_0->kind == IRV_ALLOCL);
-
-                result_value = ir_value(builder, arg_0->allocl.type, nullptr);
-                break;
-            }
-
-            case IRI_PRINT:
-            {
-                assert(arg_0);
-                assert(arg_1 == nullptr);
-                assert(arg_0->kind == IRV_VALUE);
-
-                result_value = nullptr;
-                break;
-            }
-
-            default: assert(false);
-        }
-
-        instruction.kind = iri_kind;
-        instruction.arg_0 = arg_0;
-        instruction.arg_1 = arg_1;
-        instruction.result_value = result_value;
-
-        BUF_PUSH(builder->instructions, instruction);
-
-        return result_value;
-    }
 
     IR_Value* ir_type(IR_Builder* builder, uint64_t size, bool sign, const char* name)
     {
@@ -178,10 +59,35 @@ namespace Zodiac
         assert(builder);
         assert(type_value);
         assert(type_value->kind == IRV_TYPE);
-        assert(name);
+        // assert(name);
 
         IR_Value* result = ir_value_make(builder, IRV_ALLOCL, name);
         result->allocl.type = type_value;
+        return result;
+    }
+
+    IR_Value* ir_function(IR_Builder* builder, uint64_t index, IR_Value* return_type, IR_Value* name_lit)
+    {
+        assert(builder);
+        assert(return_type);
+        assert(return_type->kind == IRV_TYPE);
+        assert(name_lit);
+        assert(name_lit->kind == IRV_LITERAL);
+
+        IR_Value* result = ir_value_make(builder, IRV_FUNCTION, name_lit->literal.str);
+        result->name = name_lit->literal.str;
+        result->function.index = index;
+        result->function.return_type = return_type;
+        return result;
+    }
+
+    IR_Value* ir_label(IR_Builder* builder, const char* name)
+    {
+        assert(builder);
+        assert(name);
+
+        IR_Value* result = ir_value_make(builder, IRV_LABEL, name);
+        result->label.emitted = false;
         return result;
     }
 

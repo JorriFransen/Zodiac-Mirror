@@ -20,6 +20,8 @@ set (ZODIAC_COMPILER_SOURCE
 
     source/common.cpp
     source/ir.cpp
+    source/ir_builder.cpp
+    source/ir_runner.cpp
 )
 
 # add_executable(zodiac source/main.cpp ${ZODIAC_SOURCE})

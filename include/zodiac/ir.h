@@ -6,6 +6,8 @@
 
 namespace Zodiac
 {
+    struct IR_Builder;
+
     enum IR_Instruction_Kind
     {
         IRI_INVALID,
@@ -14,6 +16,15 @@ namespace Zodiac
         IRI_LOADL,
         IRI_STOREL,
         IRI_ADD_S32,
+
+        IRI_LABEL,
+        IRI_JMP_LABEL,
+
+        IRI_FUNC_DEFN,
+        IRI_PUSH_CALL_ARG,
+        IRI_POP_FUNC_ARG,
+        IRI_CALL,
+        IRI_RET,
 
         IRI_PRINT,
 
@@ -28,6 +39,8 @@ namespace Zodiac
         IRV_LITERAL,
         IRV_VALUE,
         IRV_ALLOCL,
+        IRV_FUNCTION,
+        IRV_LABEL,
 
         IRV_COUNT
     };
@@ -70,12 +83,28 @@ namespace Zodiac
             struct
             {
                 IR_Value* type;
+                union
+                {
+                    int32_t s32;
+                } val;
             } value;
 
             struct
             {
                 IR_Value* type;
             } allocl;
+
+            struct
+            {
+                uint64_t index;
+                IR_Value* return_type;
+            } function;
+
+            struct
+            {
+                uint64_t index;
+                bool emitted;
+            } label;
         };
     };
 
@@ -89,23 +118,19 @@ namespace Zodiac
         IR_Value* result_value;
     };
 
-    struct IR_Builder
+    struct IR_Instructions
     {
-        Arena* arena = nullptr;
-
-        BUF(IR_Instruction) instructions = nullptr;
+        IR_Instruction* data = nullptr;
+        uint64_t count = 0;
     };
-
-    void ir_builder_init(IR_Builder* ir_builder, Arena* arena);
-
-    IR_Value* ir_builder_emit(IR_Builder* builder, IR_Instruction_Kind iri_kind,
-                         IR_Value* arg_0, IR_Value* arg_1);
 
     IR_Value* ir_type(IR_Builder* builder, uint64_t size, bool sign, const char* name);
     IR_Value* ir_literal(IR_Builder* builder, const char* str);
     IR_Value* ir_literal(IR_Builder* builder, int32_t s32, IR_Value* type_value);
     IR_Value* ir_value(IR_Builder* builder, IR_Value* type_value, const char* name);
     IR_Value* ir_allocl(IR_Builder* builder, IR_Value* type_value, const char* name);
+    IR_Value* ir_function(IR_Builder* builder, uint64_t index, IR_Value* return_type, IR_Value* name_lit);
+    IR_Value* ir_label(IR_Builder* builder, const char* name);
     IR_Value* ir_value_make(IR_Builder* builder, IR_Value_Kind irv_kind,
                             const char* name = nullptr);
 }
