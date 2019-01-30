@@ -39,7 +39,7 @@ namespace Zodiac
 
         IR_Value* result = ir_value_make(builder, IRV_LITERAL);
         result->literal.kind = IR_LIT_STRING;
-        result->literal.str = str;
+        result->literal.val.str = str;
         return result;
     }
 
@@ -52,7 +52,7 @@ namespace Zodiac
 
         IR_Value* result = ir_value_make(builder, IRV_LITERAL);
         result->literal.kind = IR_LIT_INT;
-        result->literal.s32 = s32;
+        result->literal.val.s32 = s32;
         result->literal.type = type_value;
         return result;
     }
@@ -90,8 +90,8 @@ namespace Zodiac
         assert(name_lit);
         assert(name_lit->kind == IRV_LITERAL);
 
-        IR_Value* result = ir_value_make(builder, IRV_FUNCTION, name_lit->literal.str);
-        result->name = name_lit->literal.str;
+        IR_Value* result = ir_value_make(builder, IRV_FUNCTION, name_lit->literal.val.str);
+        result->name = name_lit->literal.val.str;
         result->function.index = index;
         result->function.return_type = return_type;
         return result;

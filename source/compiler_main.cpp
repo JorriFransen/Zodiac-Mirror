@@ -48,6 +48,8 @@ int main(int argc, char** argv)
     ir_builder_emit(&ir_builder, IRI_PUSH_CALL_ARG, ir_literal(&ir_builder, 8, s32), nullptr);
     auto add_result = ir_builder_emit(&ir_builder, IRI_CALL, add, ir_literal(&ir_builder, 2, s32));
 
+    ir_builder_emit(&ir_builder, IRI_PRINT, add_result, nullptr);
+
 
     IR_Runner ir_runner;
     IR_Instructions instructions = ir_builder_export(&ir_builder);

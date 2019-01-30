@@ -71,23 +71,14 @@ namespace Zodiac
 
             struct
             {
+                IR_Value* type;
                 IR_Literal_Kind kind = IR_LIT_INVALID;
-                IR_Value* type = nullptr;
                 union
                 {
                     const char* str;
                     int32_t s32;
-                };
-            } literal;
-
-            struct
-            {
-                IR_Value* type;
-                union
-                {
-                    int32_t s32;
                 } val;
-            } value;
+            } value, literal;
 
             struct
             {

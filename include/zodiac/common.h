@@ -121,6 +121,18 @@ void stack_init(Stack<T>* stack, uint64_t capacity)
 }
 
 template <typename T>
+void stack_free(Stack<T>* stack)
+{
+    assert(stack);
+    assert(stack->data);
+    assert(stack->capacity);
+
+    mem_free(stack->data);
+    stack->sp = 0;
+    stack->capacity = 0;
+}
+
+template <typename T>
 void stack_clear(Stack<T>& stack)
 {
     assert(stack.data);
