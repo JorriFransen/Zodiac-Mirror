@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Common macros
 #define KB(n) ((n) * 1024)
@@ -95,6 +96,91 @@ void* _arena_alloc_from_block(Arena_Block* block, size_t size);
 
 #define arena_alloc(arena, type) ((type*)_arena_alloc((arena), sizeof(type)))
 #define arena_alloc_array(arena, type, length) ((type*)_arena_alloc((arena), sizeof(type) * length))
+
+// Stack
+template <typename T>
+struct Stack
+{
+    T* data = nullptr;
+    uint64_t sp = 0;
+    uint64_t capacity = 0;
+};
+
+template <typename T>
+void stack_init(Stack<T>* stack, uint64_t capacity)
+{
+    assert(stack);
+    assert(capacity > 0);
+
+    assert(stack->data == nullptr);
+    assert(stack->sp == 0);
+    assert(stack->capacity == 0);
+
+    stack->data = (T*)mem_alloc(capacity * sizeof(T));
+    stack->capacity = capacity;
+}
+
+template <typename T>
+void stack_clear(Stack<T>& stack)
+{
+    assert(stack.data);
+    assert(stack.capacity > 0);
+    assert(stack.sp <= stack.capacity);
+
+    stack.sp = 0;
+}
+
+template <typename T>
+void stack_push(Stack<T>& stack, T elem)
+{
+    if (stack.sp >= stack.capacity)
+    {
+        // Grow
+        assert(false);
+    }
+
+    stack.data[stack.sp] = elem;
+    stack.sp++;
+}
+
+template <typename T>
+T stack_pop(Stack<T>& stack)
+{
+    assert(stack.data);
+    assert(stack.sp);
+    assert(stack.sp <= stack.capacity);
+
+    stack.sp--;
+    return stack.data[stack.sp];
+}
+
+template <typename T>
+T stack_top(Stack<T>& stack)
+{
+    assert(stack.data);
+    assert(stack.sp);
+    assert(stack.sp <= stack.capacity);
+
+    return stack.data[stack.sp - 1];
+}
+
+template <typename T>
+void stack_copy(Stack<T>& dest, Stack<T>& source)
+{
+    assert(dest.data == nullptr);
+    assert(dest.sp == 0);
+    assert(dest.capacity == 0);
+
+    assert(source.data != nullptr);
+    assert(source.sp > 0);
+    assert(source.capacity >= source.sp);
+
+    auto size_in_bytes = source.capacity * sizeof(T);
+    dest.data = (T*)mem_alloc(size_in_bytes);
+    memcpy(dest.data, source.data, size_in_bytes);
+    dest.capacity = source.capacity;
+    dest.sp = source.sp;
+}
 
 // File IO
 bool file_exists(const char* file_path);

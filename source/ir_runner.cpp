@@ -7,6 +7,8 @@ namespace Zodiac
         assert(runner);
 
         runner->ip = 0;
+        stack_init(&runner->arg_stack, 8);
+        stack_init(&runner->call_stack, 64);
 
         while (runner->ip < instructions.count)
         {
@@ -25,6 +27,12 @@ namespace Zodiac
             {
                 assert(false);
                 runner->ip++;
+                break;
+            }
+
+            case IRI_LOADL:
+            {
+                assert(false);
                 break;
             }
 
@@ -71,34 +79,45 @@ namespace Zodiac
             case IRI_FUNC_DEFN:
             {
                 // Don't need to do anything for now?
+                // TODO: Check if we have the correct amount of arguments pushed?
                 runner->ip++;
                 break;
             }
 
             case IRI_PUSH_CALL_ARG:
             {
-                assert(false);
+                stack_push(runner->arg_stack, iri.arg_0);
                 runner->ip++;
                 break;
             }
 
             case IRI_POP_FUNC_ARG:
             {
-                assert(false);
+                IR_Value* arg_value = runner_pop_function_argument(runner);
+                IR_Value* arg_value_type = get_value_or_literal_type(arg_value);
+
+                assert(arg_value_type == iri.result_value->allocl.type);
+                iri.result_value->allocl.value = arg_value;
                 runner->ip++;
                 break;
             }
 
             case IRI_CALL:
             {
-                assert(false);
-                runner->ip++;
+                // Function handle is the first argument
+                IR_Value* func = iri.arg_0;
+                assert(func->kind == IRV_FUNCTION);
+
+                runner_push_stack_frame(runner);
+
+                runner->ip = func->function.index;
                 break;
             }
 
             case IRI_RET:
             {
                 assert(false);
+                runner_pop_stack_frame(runner);
                 runner->ip++;
                 break;
             }
@@ -125,5 +144,35 @@ namespace Zodiac
         }
 
         return false;
+    }
+
+    static void runner_push_stack_frame(IR_Runner* runner)
+    {
+        assert(runner);
+
+        //TODO: Stack allocator
+        IR_Call_Stack_Frame* stack_frame = (IR_Call_Stack_Frame*)mem_alloc(sizeof(IR_Call_Stack_Frame));
+        stack_frame->args = {};
+        stack_copy(stack_frame->args, runner->arg_stack);
+        stack_clear(runner->arg_stack);
+
+        stack_push(runner->call_stack, stack_frame);
+    }
+
+    static void runner_pop_stack_frame(IR_Runner* runner)
+    {
+        assert(runner);
+        assert(false);
+    }
+
+    static IR_Value* runner_pop_function_argument(IR_Runner* runner)
+    {
+        assert(runner);
+
+        IR_Call_Stack_Frame* stack_frame = stack_top(runner->call_stack);
+        IR_Value* func_arg = stack_pop(stack_frame->args);
+        assert(func_arg->kind == IRV_VALUE ||
+               func_arg->kind == IRV_LITERAL);
+        return func_arg;
     }
 }
