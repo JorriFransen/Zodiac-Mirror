@@ -36,7 +36,7 @@ int main(int argc, char** argv)
         auto t2 = ir_builder_emit(&ir_builder, IRI_LOADL, t0, nullptr);
         auto t3 = ir_builder_emit(&ir_builder, IRI_LOADL, t1, nullptr);
 
-        // Add them together
+        // Add them together and store the result
         auto t4 = ir_builder_emit(&ir_builder, IRI_ADD_S32, t3, t2);
         ir_builder_emit(&ir_builder, IRI_STOREL, result, t4);
 

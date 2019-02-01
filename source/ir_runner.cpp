@@ -57,25 +57,13 @@ namespace Zodiac
 
             case IRI_ADD_S32:
             {
-                int32_t lhs, rhs;
-                if (iri.arg_0->kind == IRV_LITERAL)
-                {
-                    lhs = iri.arg_0->literal.val.s32;
-                }
-                else if (iri.arg_0->kind == IRV_VALUE)
-                {
-                    lhs = iri.arg_0->value.val.s32;
-                }
-                else assert(false);
-                if (iri.arg_1->kind == IRV_LITERAL)
-                {
-                    rhs = iri.arg_1->literal.val.s32;
-                }
-                else if (iri.arg_1->kind == IRV_VALUE)
-                {
-                    rhs = iri.arg_1->value.val.s32;
-                }
-                else assert(false);
+                assert(iri.arg_0->kind == IRV_VALUE ||
+                       iri.arg_0->kind == IRV_LITERAL);
+                assert(iri.arg_1->kind == IRV_VALUE ||
+                       iri.arg_1->kind == IRV_LITERAL);
+
+                int32_t lhs = iri.arg_0->value.val.s32;
+                int32_t rhs = iri.arg_1->value.val.s32;
 
                 iri.result_value->value.val.s32 = lhs + rhs;
                 runner->ip++;
@@ -115,7 +103,7 @@ namespace Zodiac
                 IR_Value* arg_value = runner_pop_function_argument(runner);
                 assert(arg_value->kind == IRV_VALUE ||
                        arg_value->kind == IRV_LITERAL);
-                IR_Value* arg_value_type = get_value_or_literal_type(arg_value);
+                IR_Value* arg_value_type = arg_value->value.type;
 
                 assert(arg_value_type == iri.result_value->allocl.type);
                 iri.result_value->allocl.value = arg_value;

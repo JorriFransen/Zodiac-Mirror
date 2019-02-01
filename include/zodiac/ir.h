@@ -116,8 +116,6 @@ namespace Zodiac
         uint64_t count = 0;
     };
 
-    IR_Value* get_value_or_literal_type(IR_Value* value_or_literal);
-
     IR_Value* ir_type(IR_Builder* builder, uint64_t size, bool sign, const char* name);
     IR_Value* ir_literal(IR_Builder* builder, const char* str);
     IR_Value* ir_literal(IR_Builder* builder, int32_t s32, IR_Value* type_value);

@@ -4,22 +4,6 @@
 
 namespace Zodiac
 {
-    IR_Value* get_value_or_literal_type(IR_Value* value_or_literal)
-    {
-        assert(value_or_literal);
-
-        if (value_or_literal->kind == IRV_VALUE)
-        {
-            return value_or_literal->value.type;
-        }
-        else if (value_or_literal->kind == IRV_LITERAL)
-        {
-            return value_or_literal->literal.type;
-        }
-        else assert(false);
-        assert(false);
-    }
-
     IR_Value* ir_type(IR_Builder* builder, uint64_t size, bool sign, const char* name)
     {
         assert(builder);
