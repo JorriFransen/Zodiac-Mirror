@@ -25,12 +25,10 @@ namespace Zodiac
             case IRI_ALLOCL:
             {
                 assert(arg_0);
-                assert(arg_1);
-                assert(arg_0->kind == IRV_LITERAL || arg_0->kind == IRV_VALUE);
-                assert(arg_1->kind == IRV_TYPE);
+                assert(arg_0->kind == IRV_TYPE);
 
-                assert(arg_1->name);
-                result_value = ir_allocl(builder, arg_1, arg_1->name);
+                assert(arg_0->name);
+                result_value = ir_allocl(builder, arg_0, arg_0->name);
                 break;
             }
 
@@ -69,23 +67,23 @@ namespace Zodiac
             {
                 assert(arg_0);
                 assert(arg_1);
-                assert(arg_0->kind == IRV_LITERAL || arg_0->kind == IRV_VALUE);
-                assert(arg_1->kind == IRV_ALLOCL);
-                assert(arg_1->allocl.type);
+                assert(arg_0->kind == IRV_ALLOCL);
+                assert(arg_0->allocl.type);
+                assert(arg_1->kind == IRV_LITERAL || arg_1->kind == IRV_VALUE);
 
                 IR_Value* source_type = nullptr;
-                if (arg_0->kind == IRV_LITERAL)
+                if (arg_1->kind == IRV_LITERAL)
                 {
-                    source_type = arg_0->literal.type;
+                    source_type = arg_1->literal.type;
                 }
-                else if (arg_0->kind == IRV_VALUE)
+                else if (arg_1->kind == IRV_VALUE)
                 {
-                    source_type = arg_0->value.type;
+                    source_type = arg_1->value.type;
                 }
                 else assert(false);
 
                 assert(source_type);
-                assert(source_type == arg_1->allocl.type);
+                assert(source_type == arg_0->allocl.type);
 
                 result_value = nullptr;
                 break;

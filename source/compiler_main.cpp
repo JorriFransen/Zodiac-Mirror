@@ -27,10 +27,10 @@ int main(int argc, char** argv)
     auto add = ir_builder_emit(&ir_builder, IRI_FUNC_DEFN, s32, ir_literal(&ir_builder, "add"));
     assert(add);
     {
-
         // These will be allocl's
         auto t0 = ir_builder_emit(&ir_builder, IRI_POP_FUNC_ARG, s32, nullptr); // y
         auto t1 = ir_builder_emit(&ir_builder, IRI_POP_FUNC_ARG, s32, nullptr); // x
+        auto result = ir_builder_emit(&ir_builder, IRI_ALLOCL, s32, nullptr);   // result
 
         // Load the arguments
         auto t2 = ir_builder_emit(&ir_builder, IRI_LOADL, t0, nullptr);
@@ -38,9 +38,14 @@ int main(int argc, char** argv)
 
         // Add them together
         auto t4 = ir_builder_emit(&ir_builder, IRI_ADD_S32, t3, t2);
+        ir_builder_emit(&ir_builder, IRI_STOREL, result, t4);
 
-        // Return the result directly
-        ir_builder_emit(&ir_builder, IRI_RET, t4, nullptr);
+        // // Return the result directly
+        // ir_builder_emit(&ir_builder, IRI_RET, t4, nullptr);
+
+        // Load the result and return it
+        auto result_value = ir_builder_emit(&ir_builder, IRI_LOADL, result, nullptr);
+        ir_builder_emit(&ir_builder, IRI_RET, result_value, nullptr);
     }
 
     ir_builder_emit(&ir_builder, IRI_LABEL, entry_label, nullptr);

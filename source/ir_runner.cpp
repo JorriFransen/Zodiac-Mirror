@@ -25,7 +25,8 @@ namespace Zodiac
         {
             case IRI_ALLOCL:
             {
-                assert(false);
+                assert(iri.result_value->allocl.value);
+                assert(iri.result_value->allocl.type);
                 runner->ip++;
                 break;
             }
@@ -36,6 +37,20 @@ namespace Zodiac
                 assert(iri.arg_0->kind == IRV_ALLOCL);
                 assert(iri.result_value->value.type == iri.arg_0->allocl.type);
                 iri.result_value->value.val = iri.arg_0->allocl.value->value.val;
+                runner->ip++;
+                break;
+            }
+
+            case IRI_STOREL:
+            {
+                assert(iri.arg_0);
+                assert(iri.arg_1);
+                assert(iri.arg_0->kind == IRV_ALLOCL);
+                assert(iri.arg_1->kind == IRV_LITERAL ||
+                       iri.arg_1->kind == IRV_VALUE);
+
+                assert(iri.arg_0->allocl.type == iri.arg_1->value.type);
+                iri.arg_0->allocl.value->value.val = iri.arg_1->value.val;
                 runner->ip++;
                 break;
             }
