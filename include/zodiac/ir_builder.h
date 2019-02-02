@@ -9,6 +9,7 @@ namespace Zodiac
         Arena* arena = nullptr;
 
         BUF(IR_Instruction) instructions = nullptr;
+        BUF(IR_Value*) types = nullptr;
     };
 
     void ir_builder_init(IR_Builder* ir_builder, Arena* arena);

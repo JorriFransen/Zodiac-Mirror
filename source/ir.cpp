@@ -8,11 +8,24 @@ namespace Zodiac
     {
         assert(builder);
         assert(name);
-        //TODO: Assert size is 0, 1, 2, 4, 8, 16, etc...
+        //TODO: Assert size is 0, 1, 2, 4, 8, 16, etc... (for integers)
+
+        for (uint64_t i = 0; i < BUF_LENGTH(builder->types); i++)
+        {
+            auto existing_type = builder->types[i];
+            auto et = &existing_type->type;
+            if (size == et->size &&
+                sign == et->sign &&
+                strcmp(name, existing_type->name) == 0)
+            {
+                return existing_type;
+            }
+        }
 
         IR_Value* result = ir_value_make(builder, IRV_TYPE, name);
         result->type.size = size;
         result->type.sign = sign;
+        BUF_PUSH(builder->types, result);
         return result;
     }
 

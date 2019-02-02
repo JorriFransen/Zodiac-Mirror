@@ -48,12 +48,51 @@ int main(int argc, char** argv)
         ir_builder_emit(&ir_builder, IRI_RET, result_value, nullptr);
     }
 
+    // Create fib function
+    auto fib_recursive = ir_builder_emit(&ir_builder, IRI_FUNC_DEFN, s32, ir_literal(&ir_builder, "fib_recursive"));
+    assert(fib_recursive);
+    {
+        auto t0 = ir_builder_emit(&ir_builder, IRI_POP_FUNC_ARG, s32, nullptr);
+        auto x = ir_builder_emit(&ir_builder, IRI_LOADL, t0, nullptr);
+
+        auto recurse_label = ir_label(&ir_builder, "recurse");
+
+        auto if_cond = ir_builder_emit(&ir_builder, IRI_LT_S32, x, ir_literal(&ir_builder, 2, s32));
+        if_cond = ir_builder_emit(&ir_builder, IRI_NOT_BOOL, if_cond, nullptr);
+        ir_builder_emit(&ir_builder, IRI_JMP_LABEL_COND, recurse_label, if_cond);
+        // (x < 2)
+        {
+            ir_builder_emit(&ir_builder, IRI_RET, x, nullptr);
+        }
+        // else
+        {
+            ir_builder_emit(&ir_builder, IRI_LABEL, recurse_label, nullptr);
+
+            auto x1 = ir_builder_emit(&ir_builder, IRI_SUB_S32, x, ir_literal(&ir_builder, 1, s32));
+            auto x2 = ir_builder_emit(&ir_builder, IRI_SUB_S32, x, ir_literal(&ir_builder, 2, s32));
+
+            ir_builder_emit(&ir_builder, IRI_PUSH_CALL_ARG, x1, nullptr);
+            auto f1 = ir_builder_emit(&ir_builder, IRI_CALL, fib_recursive, ir_literal(&ir_builder, 1, s32));
+
+            ir_builder_emit(&ir_builder, IRI_PUSH_CALL_ARG, x2, nullptr);
+            auto f2 = ir_builder_emit(&ir_builder, IRI_CALL, fib_recursive, ir_literal(&ir_builder, 1, s32));
+
+            auto result = ir_builder_emit(&ir_builder, IRI_ADD_S32, f1, f2);
+            ir_builder_emit(&ir_builder, IRI_RET, result, nullptr);
+        }
+
+    }
+
     ir_builder_emit(&ir_builder, IRI_LABEL, entry_label, nullptr);
+
     ir_builder_emit(&ir_builder, IRI_PUSH_CALL_ARG, ir_literal(&ir_builder, 6, s32), nullptr);
     ir_builder_emit(&ir_builder, IRI_PUSH_CALL_ARG, ir_literal(&ir_builder, 8, s32), nullptr);
     auto add_result = ir_builder_emit(&ir_builder, IRI_CALL, add, ir_literal(&ir_builder, 2, s32));
-
     ir_builder_emit(&ir_builder, IRI_PRINT, add_result, nullptr);
+
+    ir_builder_emit(&ir_builder, IRI_PUSH_CALL_ARG, ir_literal(&ir_builder, 3, s32), nullptr);
+    auto fib_result = ir_builder_emit(&ir_builder, IRI_CALL, fib_recursive, ir_literal(&ir_builder, 1, s32));
+    ir_builder_emit(&ir_builder, IRI_PRINT, fib_result, nullptr);
 
 
     IR_Runner ir_runner;

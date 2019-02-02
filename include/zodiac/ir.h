@@ -16,9 +16,14 @@ namespace Zodiac
         IRI_LOADL,
         IRI_STOREL,
         IRI_ADD_S32,
+        IRI_SUB_S32,
 
         IRI_LABEL,
         IRI_JMP_LABEL,
+        IRI_JMP_LABEL_COND,
+
+        IRI_LT_S32,
+        IRI_NOT_BOOL,
 
         IRI_FUNC_DEFN,
         IRI_PUSH_CALL_ARG,
@@ -77,6 +82,7 @@ namespace Zodiac
                 {
                     const char* str;
                     int32_t s32;
+                    bool b8;
                 } val;
             } value, literal;
 

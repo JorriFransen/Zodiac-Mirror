@@ -70,6 +70,20 @@ namespace Zodiac
                 break;
             }
 
+            case IRI_SUB_S32:
+            {
+                assert(iri.arg_0->kind == IRV_VALUE ||
+                    iri.arg_0->kind == IRV_LITERAL);
+                assert(iri.arg_1->kind == IRV_VALUE ||
+                    iri.arg_1->kind == IRV_LITERAL);
+
+                int32_t lhs = iri.arg_0->value.val.s32;
+                int32_t rhs = iri.arg_1->value.val.s32;
+
+                iri.result_value->value.val.s32 = lhs - rhs;
+                runner->ip++;
+                break;
+            }
             case IRI_LABEL:
             {
                 runner->ip++;
@@ -80,6 +94,50 @@ namespace Zodiac
             {
                 assert(iri.arg_0->label.emitted);
                 runner->ip = iri.arg_0->label.index;
+                break;
+            }
+
+            case IRI_JMP_LABEL_COND:
+            {
+                assert(iri.arg_0->kind == IRV_LABEL);
+                assert(iri.arg_0->label.emitted);
+                assert(iri.arg_1->kind == IRV_VALUE ||
+                       iri.arg_1->kind == IRV_LITERAL);
+
+                if (iri.arg_1->value.val.b8)
+                {
+                    runner->ip = iri.arg_0->label.index;
+                }
+                else
+                {
+                    runner->ip++;
+                }
+                break;
+            }
+
+            case IRI_LT_S32:
+            {
+                assert(iri.arg_0->kind == IRV_VALUE ||
+                       iri.arg_0->kind == IRV_LITERAL);
+                assert(iri.arg_1->kind == IRV_VALUE ||
+                       iri.arg_1->kind == IRV_LITERAL);
+
+                int32_t lhs = iri.arg_0->value.val.s32;
+                int32_t rhs = iri.arg_1->value.val.s32;
+
+                iri.result_value->value.val.b8 = lhs < rhs;
+                runner->ip++;
+                break;
+            }
+
+            case IRI_NOT_BOOL:
+            {
+                assert(iri.arg_0->kind == IRV_VALUE ||
+                       iri.arg_0->kind == IRV_LITERAL);
+
+                bool b8 = iri.arg_0->value.val.b8;
+                iri.result_value->value.val.b8 = !b8;
+                runner->ip++;
                 break;
             }
 

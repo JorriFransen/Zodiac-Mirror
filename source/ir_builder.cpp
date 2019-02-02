@@ -39,6 +39,41 @@ namespace Zodiac
                 assert(arg_0->kind == IRV_LITERAL || arg_0->kind == IRV_VALUE);
                 assert(arg_1->kind == IRV_LITERAL || arg_1->kind == IRV_VALUE);
 
+                // TODO: proper type checking
+
+                IR_Value* type_value = nullptr;
+
+                if (arg_0->kind == IRV_LITERAL)
+                {
+                    assert(arg_0->literal.type);
+                    assert(arg_1->literal.type);
+                    assert(arg_0->literal.type == arg_1->literal.type);
+                    type_value = arg_0->literal.type;
+                }
+                else if (arg_0->kind == IRV_VALUE)
+                {
+                    assert(arg_0->value.type);
+                    assert(arg_1->value.type);
+                    assert(arg_0->value.type == arg_1->value.type);
+                    type_value = arg_0->value.type;
+                }
+                else assert(false);
+
+                assert(type_value);
+
+                result_value = ir_value(builder, type_value, nullptr);
+                break;
+            }
+
+            case IRI_SUB_S32:
+            {
+                assert(arg_0);
+                assert(arg_1);
+                assert(arg_0->kind == IRV_LITERAL || arg_0->kind == IRV_VALUE);
+                assert(arg_1->kind == IRV_LITERAL || arg_1->kind == IRV_VALUE);
+
+                // TODO: proper type checking
+
                 IR_Value* type_value = nullptr;
 
                 if (arg_0->kind == IRV_LITERAL)
@@ -129,6 +164,51 @@ namespace Zodiac
                 assert(arg_0->kind == IRV_LABEL);
 
                 result_value = nullptr;
+                break;
+            }
+
+            case IRI_JMP_LABEL_COND:
+            {
+                assert(arg_0);
+                assert(arg_1);
+                assert(arg_0->kind == IRV_LABEL);
+                assert(arg_1->kind == IRV_VALUE ||
+                       arg_1->kind == IRV_LITERAL);
+
+                auto bool_type = ir_type(builder, 8, false, "bool");
+                assert(bool_type == arg_1->value.type);
+
+                result_value = nullptr;
+                break;
+            }
+
+            case IRI_LT_S32:
+            {
+                assert(arg_0);
+                assert(arg_1);
+                assert(arg_0->kind == IRV_VALUE || arg_0->kind == IRV_LITERAL);
+                assert(arg_1->kind == IRV_VALUE || arg_1->kind == IRV_LITERAL);
+
+                // TODO: proper type checking
+                int32_t lhs = arg_0->value.val.s32;
+                int32_t rhs = arg_1->value.val.s32;
+
+                IR_Value* bool_type = ir_type(builder, 8, false, "bool");
+                result_value = ir_value(builder, bool_type, nullptr);
+                break;
+            }
+
+            case IRI_NOT_BOOL:
+            {
+                assert(arg_0);
+                assert(arg_0->kind == IRV_VALUE ||
+                       arg_0->kind == IRV_LITERAL);
+                assert(arg_1 == nullptr);
+
+                IR_Value* bool_type = ir_type(builder, 8, false, "bool");
+                assert(arg_0->value.type == bool_type);
+
+                result_value = ir_value(builder, bool_type, nullptr);
                 break;
             }
 
