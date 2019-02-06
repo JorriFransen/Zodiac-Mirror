@@ -1,0 +1,25 @@
+
+main :: () -> int
+{
+    return 2 + 4;
+}
+
+
+
+// Should result in the following tokens:
+//   IDENT "main"
+//   COLON ":"
+//   COLON ":"
+//   LPAREN "("
+//   RPAREN ")"
+//   RARROW "->"
+//   IDENT "int"
+//   LBRACE "{"
+//   RBRACE "}"
+//   IDENT "return"
+//   INTEGER "2"
+//   PLUS "+"
+//   INTEGER "4";
+//   RBRACE "}"
+
+

@@ -143,12 +143,24 @@ void stack_clear(Stack<T>& stack)
 }
 
 template <typename T>
+void stack_grow(Stack<T>& stack, uint64_t new_capacity)
+{
+    assert(new_capacity > stack.capacity);
+
+    T* new_data = (T*)mem_alloc(new_capacity * sizeof(T));
+    memcpy(new_data, stack.data, stack.capacity);
+    mem_free(stack.data);
+    stack.data = new_data;
+    stack.capacity = new_capacity;
+
+}
+
+template <typename T>
 void stack_push(Stack<T>& stack, T elem)
 {
     if (stack.sp >= stack.capacity)
     {
-        // Grow
-        assert(false);
+        stack_grow(stack, stack.capacity * 2);
     }
 
     stack.data[stack.sp] = elem;
@@ -192,6 +204,12 @@ void stack_copy(Stack<T>& dest, Stack<T>& source)
     memcpy(dest.data, source.data, size_in_bytes);
     dest.capacity = source.capacity;
     dest.sp = source.sp;
+}
+
+template <typename T>
+uint64_t stack_count(Stack<T>& stack)
+{
+    return stack.sp;
 }
 
 // File IO

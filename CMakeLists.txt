@@ -16,12 +16,12 @@ project(zodiac)
 
 
 set (ZODIAC_COMPILER_SOURCE
-    source/zodiac_compiler.cpp
-
     source/common.cpp
-    source/ir.cpp
-    source/ir_builder.cpp
-    source/ir_runner.cpp
+
+    source/zodiac.cpp
+
+    source/lexer.cpp
+    source/token.cpp
 )
 
 # add_executable(zodiac source/main.cpp ${ZODIAC_SOURCE})
@@ -31,5 +31,5 @@ set (ZODIAC_COMPILER_SOURCE
 # endif()
 # target_include_directories(zodiac PRIVATE include/zodiac)
 
-add_executable(zodiac source/compiler_main.cpp ${ZODIAC_COMPILER_SOURCE})
+add_executable(zodiac source/main.cpp ${ZODIAC_COMPILER_SOURCE})
 target_include_directories(zodiac PRIVATE include/zodiac)

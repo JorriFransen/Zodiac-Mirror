@@ -1,2 +1,2 @@
-* IR 
-** Allocl's should have a call stack, to deal with recursion and pointers
+* Lexer [0/1]
+  - [ ] Atoms
