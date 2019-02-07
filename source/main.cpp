@@ -49,7 +49,6 @@ int main(int argc, char** argv)
         return -1;
     }
 
-
     mem_free(file_string);
 
     for (uint64_t i = 0; i < BUF_LENGTH(lex_result.tokens); i++)

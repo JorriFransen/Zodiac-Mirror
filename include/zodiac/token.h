@@ -12,9 +12,11 @@ namespace Zodiac
         TOK_PLUS,       // +
         TOK_MINUS,      // -
         TOK_DIV,        // /
+        TOK_EQ,         // =
 
         TOK_COLON,      // :
         TOK_SEMICOLON,  // ;
+        TOK_COMMA,      // ,
 
         TOK_LPAREN,     // (
         TOK_RPAREN,     // )
