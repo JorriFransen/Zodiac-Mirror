@@ -215,17 +215,20 @@ namespace Zodiac
         return EOF;
     }
 
-    static void lexer_push_token(Lexer* lexer, Token_Kind token_kind, File_Pos file_pos, uint64_t token_length)
+    static void lexer_push_token(Lexer* lexer, Token_Kind token_kind, File_Pos file_pos,
+                                 uint64_t token_length)
     {
         assert(lexer);
         assert(token_kind > TOK_INVALID && token_kind < TOK_COUNT);
         assert(token_length > 0);
 
+        auto context = lexer->context;
+
         Token result = {};
         result.kind = token_kind;
         result.file_pos = file_pos;
-        result.string = &lexer->file_data[file_pos.char_pos];
-        result.string_len = token_length;
+        result.atom = atom_get(context->atom_table, &lexer->file_data[file_pos.char_pos],
+                               token_length);
 
         BUF_PUSH(lexer->result.tokens, result);
     }

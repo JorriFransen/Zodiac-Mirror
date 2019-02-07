@@ -43,7 +43,8 @@ namespace Zodiac
     static void lexer_consume_whitespace(Lexer* lexer);
     static char current_char(Lexer* lexer);
 
-    static void lexer_push_token(Lexer* lexer, Token_Kind token_kind, File_Pos file_pos, uint64_t token_length);
+    static void lexer_push_token(Lexer* lexer, Token_Kind token_kind, File_Pos file_pos,
+                                 uint64_t token_length);
 
     static bool char_is_first_ident(char c);
     static bool char_is_ident(char c);

@@ -20,6 +20,7 @@ set (ZODIAC_COMPILER_SOURCE
 
     source/zodiac.cpp
 
+    source/atom.cpp
     source/lexer.cpp
     source/token.cpp
 )

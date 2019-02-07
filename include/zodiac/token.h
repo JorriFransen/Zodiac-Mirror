@@ -1,5 +1,6 @@
 #pragma once
 
+#include "atom.h"
 #include "file_pos.h"
 
 namespace Zodiac
@@ -31,8 +32,7 @@ namespace Zodiac
     {
         Token_Kind kind = TOK_INVALID;
         File_Pos file_pos = {};
-        const char* string = nullptr;
-        uint64_t string_len = 0;
+        Atom atom = {};
     };
 
     void print_token(const Token& token);

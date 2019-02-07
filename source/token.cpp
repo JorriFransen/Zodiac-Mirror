@@ -31,9 +31,9 @@ namespace Zodiac
 
     void print_token(const Token& token)
     {
-        printf("%lu: %s:\t'%.*s'\n",
+        printf("%lu: %-14s: '%s'\n",
                token.file_pos.line,
                _token_kind_strings[token.kind],
-               (int)token.string_len, token.string);
+               token.atom.data);
     }
 }
