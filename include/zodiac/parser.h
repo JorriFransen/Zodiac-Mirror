@@ -8,7 +8,8 @@ namespace Zodiac
 {
     struct Parse_Error
     {
-        
+        File_Pos file_pos = {};
+        const char* message = nullptr;
     };
 
     struct Parse_Result
@@ -39,6 +40,7 @@ namespace Zodiac
                                                       AST_Type_Spec* type_spec);
 
     static AST_Function_Proto* parse_function_prototype(Parser* parser, AST_Identifier* identifier);
+    static AST_Declaration* parse_function_prototype_argument(Parser* parser);
 
     static AST_Statement* parse_block_statement(Parser* parser);
 
@@ -50,5 +52,6 @@ namespace Zodiac
     static bool match_token(Parser* parser, Token_Kind token_kind);
     static bool is_token(Parser* parser, Token_Kind token_kind);
 
+    void parser_report_error(Parser* parser, File_Pos file_pos, const char* format, ...);
     void parser_report_errors(Parser* parser);
 }

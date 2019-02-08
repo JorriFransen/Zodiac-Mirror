@@ -38,7 +38,9 @@ namespace Zodiac
 
     struct AST_Function_Proto
     {
-        
+        File_Pos file_pos {};
+        BUF(AST_Declaration*) args = nullptr;
+        AST_Type_Spec* return_type_spec = nullptr;
     };
 
     struct AST_Function_Declaration
@@ -49,6 +51,7 @@ namespace Zodiac
 
     struct AST_Declaration
     {
+        File_Pos file_pos = {};
         union
         {
             AST_Function_Declaration function;
@@ -68,6 +71,9 @@ namespace Zodiac
     AST_Module* ast_module_new(Context* context, const char* module_name);
     AST_Identifier* ast_identifier_new(Context* context, Atom atom, File_Pos file_pos);
 
-    AST_Declaration* ast_function_declaration_new(Context* context, AST_Function_Proto* proto,
-                                                  AST_Statement* body_block);
+    AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
+                                                  AST_Function_Proto* proto, AST_Statement* body_block);
+    AST_Function_Proto* ast_function_prototype_new(Context* context, File_Pos file_pos,
+                                                   BUF(AST_Declaration*) args,
+                                                   AST_Type_Spec* return_type_spec);
 }

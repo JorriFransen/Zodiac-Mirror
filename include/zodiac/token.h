@@ -30,6 +30,7 @@ namespace Zodiac
 
         TOK_COUNT,
     };
+
     struct Token
     {
         Token_Kind kind = TOK_INVALID;
@@ -37,5 +38,6 @@ namespace Zodiac
         Atom atom = {};
     };
 
+    const char* token_kind_string(Token_Kind token_kind);
     void print_token(const Token& token);
 }
