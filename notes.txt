@@ -1,15 +1,36 @@
 
-#IR
+Declaration = Ident ':' Type_Spec? (Constant_Declaration | Mutable_Declaration)
 
-add :: (x: s32, y: s32)
-{
-    result := x + y;
-    return result;
-}
-->
+Constant_Declaration = ':' (Function_Prototype (Block_Statement | ';'))
 
-(ALLOCL, result, s32, t0);
-(LOADL, x, t1);
-(LOADL, y, t2);
-(ADD_S32, t1, t2, t3);
-(STOREL, t3, t0);
+Function_Prototype = '(' Func_Proto_Args? ')' ('->' Type_Spec)? 
+
+Mutable_Declaration = ('=' Expression)?  ';'
+
+Statement = Block_Statement |
+            Declaration_Statement |
+            Return_Statement;
+
+Block_Statement = '{' (Statement*)? '}'
+Declaration_Statement = Declaration
+Return_Statement = 'return' Expression? ';'
+
+Expression = Ternary_Expression
+
+Identifier_Expression = Ident
+
+Ternary_Expression = Or_Or_Expression
+Or_Or_Expression = And_And_Expression
+And_And_Expression = Or_Expression
+Or_Expression = Cmp_Expression
+Cmp_Expression = Add_Expression
+Add_Expression = Mul_Expression (ADD_OP Mul_Expression)?
+Mul_Expression = Unary_Expression (MUL_OP Unary_Expression)?
+Unary_Expression = (UNARY_OP Unary_Expression) | Ident_Or_Call_Expression
+Ident_Or_Call_Expression = Ident ( '(' Call_Arguments? ')' )? 
+Call_Arguments = Expression (',' Expression)*
+
+ADD_OP = '+' | '-'
+MUL_OP = '*' | '/'
+
+Type_Spec = Ident

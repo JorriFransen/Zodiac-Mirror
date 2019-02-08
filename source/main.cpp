@@ -4,6 +4,7 @@
 
 #include "zodiac.h"
 #include "lexer.h"
+#include "parser.h"
 
 using namespace Zodiac;
 
@@ -51,11 +52,25 @@ int main(int argc, char** argv)
 
     mem_free(file_string);
 
-    for (uint64_t i = 0; i < BUF_LENGTH(lex_result.tokens); i++)
+    // for (uint64_t i = 0; i < BUF_LENGTH(lex_result.tokens); i++)
+    // {
+    //     Token t = lex_result.tokens[i];
+    //     print_token(t);
+    // }
+
+    Parser parser;
+    parser_init(&parser, context);
+
+    Parse_Result parse_result = parse_module(&parser, lex_result.tokens, "auto_main");
+    if (BUF_LENGTH(parse_result.errors) != 0)
     {
-        Token t = lex_result.tokens[i];
-        print_token(t);
+        parser_report_errors(&parser);
+
+        // Again, do we want to continue here?
+        return -1;
     }
+
+    printf("Parsed file: %s\n", file_name);
 
     return 0;
 }
