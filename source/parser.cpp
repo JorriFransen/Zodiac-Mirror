@@ -25,7 +25,7 @@ namespace Zodiac
         while (parser->ti < BUF_LENGTH(parser->tokens) &&
                BUF_LENGTH(parser->result.errors) == 0)
         {
-            AST_Declaration* global_decl = parse_declaration(parser);
+            AST_Declaration* global_decl = parse_declaration(parser, ast_module->module_scope);
             assert(global_decl);
             BUF_PUSH(ast_module->global_declarations, global_decl);
         }
@@ -47,9 +47,10 @@ namespace Zodiac
         return nullptr;
     }
 
-    static AST_Declaration* parse_declaration(Parser* parser)
+    static AST_Declaration* parse_declaration(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
+        assert(scope);
 
         AST_Declaration* result = nullptr;
 
@@ -70,7 +71,7 @@ namespace Zodiac
 
         if (is_token(parser, TOK_COLON))
         {
-            result = parse_constant_declaration(parser, identifier, type_spec);
+            result = parse_constant_declaration(parser, identifier, type_spec, scope);
         }
         else
         {
@@ -86,10 +87,11 @@ namespace Zodiac
     }
 
     static AST_Declaration* parse_constant_declaration(Parser* parser, AST_Identifier* identifier,
-                                                       AST_Type_Spec* type_spec)
+                                                       AST_Type_Spec* type_spec, AST_Scope* scope)
     {
         assert(parser);
         assert(identifier);
+        assert(scope);
 
         auto fp = current_token(parser).file_pos;
         expect_token(parser, TOK_COLON);
@@ -105,7 +107,7 @@ namespace Zodiac
                 expect_token(parser, TOK_COMMA);
             }
 
-            AST_Declaration* decl = parse_declaration(parser);
+            AST_Declaration* decl = parse_declaration(parser, scope);
             if (!decl)
             {
                 return nullptr;
@@ -120,10 +122,11 @@ namespace Zodiac
         }
 
         AST_Statement* body_block = nullptr;
+        AST_Scope* argument_scope = ast_scope_new(parser->context, parser->result.ast_module->module_scope);
 
         if (is_token(parser, TOK_LBRACE))
         {
-            body_block = parse_block_statement(parser);
+            body_block = parse_block_statement(parser, argument_scope);
         }
         else
         {
@@ -131,7 +134,8 @@ namespace Zodiac
         }
 
         AST_Declaration* result = ast_function_declaration_new(parser->context, fp, identifier,
-                                                               arg_decls, return_type_spec, body_block);
+                                                               arg_decls, return_type_spec, body_block,
+                                                               argument_scope);
         return result;
     }
 
@@ -164,9 +168,11 @@ namespace Zodiac
         assert(false);
     }
 
-    static AST_Statement* parse_statement(Parser* parser)
+    static AST_Statement* parse_statement(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
+        assert(scope);
+        assert(scope->parent);
 
         auto ft = current_token(parser);
 
@@ -175,7 +181,7 @@ namespace Zodiac
             return parse_return_statement(parser);
         }
 
-        AST_Declaration* decl = parse_declaration(parser);
+        AST_Declaration* decl = parse_declaration(parser, scope);
         if (!decl)
         {
             return  nullptr;
@@ -184,18 +190,21 @@ namespace Zodiac
         return ast_declaration_statement_new(parser->context, ft.file_pos, decl);
     }
 
-    static AST_Statement* parse_block_statement(Parser* parser)
+    static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
+        assert(scope);
 
         auto ft = current_token(parser);
         expect_token(parser, TOK_LBRACE);
 
         BUF(AST_Statement*) block_statements = nullptr;
 
+        AST_Scope* block_scope = ast_scope_new(parser->context, scope);
+
         while (!match_token(parser, TOK_RBRACE))
         {
-            AST_Statement* block_statement = parse_statement(parser);
+            AST_Statement* block_statement = parse_statement(parser, block_scope);
             if (!block_statement)
             {
                 return nullptr;
@@ -203,7 +212,7 @@ namespace Zodiac
             BUF_PUSH(block_statements, block_statement);
         }
 
-        return ast_block_statement_new(parser->context, ft.file_pos, block_statements);
+        return ast_block_statement_new(parser->context, ft.file_pos, block_statements, block_scope);
     }
 
     static AST_Statement* parse_return_statement(Parser* parser)

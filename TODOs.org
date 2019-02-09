@@ -4,3 +4,5 @@
   - [ ] Store the array of atoms in the table 
   - [ ] Hash strings
 
+* Resolver [0/1]
+  - [ ] Check type of return expression agains function decl

@@ -9,6 +9,7 @@ namespace Zodiac
 
         AST_Module* result = arena_alloc(context->arena, AST_Module);
         result->module_name = module_name;
+        result->module_scope = ast_scope_new(context, nullptr);
 
         return result;
     }
@@ -24,6 +25,18 @@ namespace Zodiac
         return result;
     }
 
+    AST_Expression* ast_expression_new(Context* context, File_Pos file_pos, AST_Expression_Kind kind)
+    {
+        assert(context);
+
+        AST_Expression* result = arena_alloc(context->arena, AST_Expression);
+        result->file_pos = file_pos;
+        result->kind = kind;
+        result->type = nullptr;
+
+        return result;
+    }
+
     AST_Expression* ast_binary_expression_new(Context* context, File_Pos file_pos,
                                               AST_Expression* lhs, AST_Binop_Kind op, AST_Expression* rhs)
     {
@@ -31,9 +44,7 @@ namespace Zodiac
         assert(lhs);
         assert(rhs);
 
-        AST_Expression* result = arena_alloc(context->arena, AST_Expression);
-        result->kind = AST_EXPR_BINARY;
-        result->file_pos = file_pos;
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_BINARY);
 
         result->binary.op = op;
         result->binary.lhs = lhs;
@@ -48,9 +59,7 @@ namespace Zodiac
         assert(context);
         assert(operand);
 
-        AST_Expression* result = arena_alloc(context->arena, AST_Expression);
-        result->kind = AST_EXPR_UNARY;
-        result->file_pos = file_pos;
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_UNARY);
 
         result->unary.op = op;
         result->unary.operand = operand;
@@ -63,9 +72,7 @@ namespace Zodiac
         assert(context);
         assert(identifier);
 
-        AST_Expression* result = arena_alloc(context->arena, AST_Expression);
-        result->kind = AST_EXPR_IDENTIFIER;
-        result->file_pos = file_pos;
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_IDENTIFIER);
 
         result->identifier = identifier;
 
@@ -78,9 +85,7 @@ namespace Zodiac
         assert(context);
         assert(identifier);
 
-        AST_Expression* result = arena_alloc(context->arena, AST_Expression);
-        result->kind = AST_EXPR_CALL;
-        result->file_pos = file_pos;
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_CALL);
 
         result->call.identifier = identifier;
         result->call.arg_expressions = arg_exprs;
@@ -92,9 +97,7 @@ namespace Zodiac
     {
         assert(context);
 
-        AST_Expression* result = arena_alloc(context->arena, AST_Expression);
-        result->kind = AST_EXPR_LITERAL;
-        result->file_pos = file_pos;
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_LITERAL);
 
         result->literal.u64 = value;
 
@@ -105,10 +108,12 @@ namespace Zodiac
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
                                                   AST_Type_Spec* return_type_spec,
-                                                  AST_Statement* body_block)
+                                                  AST_Statement* body_block,
+                                                  AST_Scope* argument_scope)
     {
         assert(context);
         assert(identifier);
+        assert(argument_scope);
 
         AST_Declaration* result = arena_alloc(context->arena, AST_Declaration);
         result->kind = AST_DECL_FUNC;
@@ -118,6 +123,14 @@ namespace Zodiac
         result->function.args = args;
         result->function.return_type_spec = return_type_spec;
         result->function.body_block = body_block;
+
+        result->function.argument_scope = argument_scope;
+        if (body_block)
+        {
+            assert(body_block->kind == AST_STMT_BLOCK);
+            assert(body_block->block.scope);
+            assert(body_block->block.scope->parent == argument_scope);
+        }
 
         return result;
     }
@@ -140,6 +153,23 @@ namespace Zodiac
         return result;
     }
 
+    AST_Declaration* ast_type_declaration_new(Context* context, File_Pos file_pos, AST_Type* type,
+                                              AST_Identifier* identifier)
+    {
+        assert(context);
+        assert(type);
+        assert(identifier);
+
+        AST_Declaration* result = arena_alloc(context->arena, AST_Declaration);
+        result->kind = AST_DECL_TYPE;
+        result->file_pos = file_pos;
+        result->identifier = identifier;
+
+        result->type.type = type;
+
+        return result;
+    }
+
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos, AST_Declaration* declaration)
     {
         assert(context);
@@ -151,14 +181,19 @@ namespace Zodiac
         return result;
     }
 
-    AST_Statement* ast_block_statement_new(Context* context, File_Pos file_pos, BUF(AST_Statement*) block_statements)
+    AST_Statement* ast_block_statement_new(Context* context, File_Pos file_pos, BUF(AST_Statement*) block_statements,
+                                           AST_Scope* block_scope)
     {
         assert(context);
+        assert(block_scope);
+        assert(block_scope->parent);
 
         AST_Statement* result = arena_alloc(context->arena, AST_Statement);
         result->kind = AST_STMT_BLOCK;
         result->file_pos = file_pos;
-        result->block_statements = block_statements;
+
+        result->block.statements = block_statements;
+        result->block.scope = block_scope;
 
         return result;
     }
@@ -176,6 +211,18 @@ namespace Zodiac
         return result;
     }
 
+    AST_Type* ast_type_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size)
+    {
+        assert(context);
+        assert(bit_size > 0);
+        assert(bit_size % 8 == 0);
+
+        AST_Type* result = arena_alloc(context->arena, AST_Type);
+        result->flags = type_flags;
+        result->bit_size = bit_size;
+
+        return result;
+    }
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Identifier* identifier)
     {
         assert(context);
@@ -184,6 +231,17 @@ namespace Zodiac
         AST_Type_Spec* result = arena_alloc(context->arena, AST_Type_Spec);
         result->file_pos = file_pos;
         result->identifier = identifier;
+
+        return result;
+    }
+
+    AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope)
+    {
+        assert(context);
+
+        AST_Scope* result = arena_alloc(context->arena, AST_Scope);
+        result->parent = parent_scope;
+        result->declarations = nullptr;
 
         return result;
     }

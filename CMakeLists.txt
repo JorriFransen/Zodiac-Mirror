@@ -22,9 +22,12 @@ set (ZODIAC_COMPILER_SOURCE
 
     source/ast.cpp
     source/atom.cpp
+    source/builtin.cpp
     source/lexer.cpp
     source/parser.cpp
+    source/resolver.cpp
     source/token.cpp
+    source/types.cpp
 )
 
 # add_executable(zodiac source/main.cpp ${ZODIAC_SOURCE})

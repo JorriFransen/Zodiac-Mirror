@@ -1,5 +1,7 @@
 #include "zodiac.h"
 
+#include "builtin.h"
+
 namespace Zodiac
 {
     void context_init(Context* context, Arena* arena)
@@ -14,6 +16,8 @@ namespace Zodiac
 
         context->keywords =  nullptr;
         context_init_keywords(context);
+
+        init_builtin_types(context);
     }
 
 #define DEFINE_KW(string, kw_kind) \

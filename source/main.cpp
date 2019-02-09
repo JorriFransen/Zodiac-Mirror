@@ -5,6 +5,7 @@
 #include "zodiac.h"
 #include "lexer.h"
 #include "parser.h"
+#include "resolver.h"
 
 using namespace Zodiac;
 
@@ -76,9 +77,27 @@ int main(int argc, char** argv)
         return -1;
     }
 
-     
-
     // printf("Parsed file: %s\n", file_name);
+
+    Resolver resolver;
+    resolver_init(&resolver, context, parse_result.ast_module);
+
+    while (!resolver.done)
+    {
+        resolver_do_cycle(&resolver);
+        if (!resolver.progressed_on_last_cycle)
+        {
+            resolver_report_errors(&resolver);
+            break;
+        }
+    }
+
+    if (!resolver.done)
+    {
+        return -1;
+    }
+
+    fprintf(stderr, "Resolved file: %s\n", file_name);
 
     return 0;
 }
