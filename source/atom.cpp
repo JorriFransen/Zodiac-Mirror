@@ -10,6 +10,7 @@ namespace Zodiac
         assert(atom_table);
 
         atom_table->atoms = nullptr;
+        atom_table->string_arena = arena_create(MB(1));
     }
 
     const Atom& atom_get(Atom_Table* atom_table, const char* string, uint64_t string_length)
@@ -29,7 +30,7 @@ namespace Zodiac
         }
 
         Atom result = {};
-        result.data = (char*)mem_alloc(string_length + 1);
+        result.data = arena_alloc_array(&atom_table->string_arena, char, string_length + 1);
         memcpy((void*)result.data, string, string_length);
         result.data[result.length - 1] = '\0';
         result.length = string_length;

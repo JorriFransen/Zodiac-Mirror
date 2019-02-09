@@ -12,6 +12,7 @@ namespace Zodiac
 
     struct Atom_Table
     {
+        Arena string_arena;
         BUF(Atom) atoms = nullptr;
     };
 

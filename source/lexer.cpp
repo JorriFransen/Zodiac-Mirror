@@ -13,12 +13,21 @@ namespace Zodiac
         lexer->context = context;
     }
 
+    void free_lex_result(Lex_Result* lex_result)
+    {
+        assert(lex_result);
+        if (lex_result->errors)
+            BUF_FREE(lex_result->errors);
+
+        if (lex_result->tokens)
+            BUF_FREE(lex_result->tokens);
+    }
+
     Lex_Result lex_file(Lexer* lexer, const char* file_data, const char* file_name)
     {
         assert(lexer);
         assert(file_data);
         assert(file_name);
-        fprintf(stderr, "lexing file: %s\n", file_name);
 
         lexer->file_data = file_data;
         lexer->file_name = file_name;

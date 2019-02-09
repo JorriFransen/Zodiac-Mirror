@@ -31,6 +31,7 @@ namespace Zodiac
     };
 
     void init_lexer(Lexer* lexer, Context* context);
+    void free_lex_result(Lex_Result* lex_result);
 
     Lex_Result lex_file(Lexer* lexer, const char* file_data, const char* file_name);
     void lex_token(Lexer* lexer);

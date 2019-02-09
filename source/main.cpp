@@ -76,7 +76,9 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    printf("Parsed file: %s\n", file_name);
+     
+
+    // printf("Parsed file: %s\n", file_name);
 
     return 0;
 }

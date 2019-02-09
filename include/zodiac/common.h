@@ -95,7 +95,7 @@ void* _arena_alloc_from_block(Arena_Block* block, size_t size);
 #define ARENA_DEFAULT_BLOCK_SIZE (MB(1))
 
 #define arena_alloc(arena, type) ((type*)_arena_alloc((arena), sizeof(type)))
-#define arena_alloc_array(arena, type, length) ((type*)_arena_alloc((arena), sizeof(type) * length))
+#define arena_alloc_array(arena, type, length) ((type*)_arena_alloc((arena), sizeof(type) * (length)))
 
 // Stack
 template <typename T>
