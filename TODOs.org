@@ -1,2 +1,5 @@
-* Lexer [0/1]
-  - [ ] Atoms
+
+* Atoms [0/2]
+  - [ ] Store strings in the table(/arena)
+  - [ ] Hash strings
+

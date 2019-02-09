@@ -29,9 +29,15 @@ int main(int argc, char** argv)
 
     const char* file_name = argv[1];
 
+    if (!path_exists(file_name))
+    {
+        fprintf(stderr, "File does not exist: %s\n", file_name);
+        return -1;
+    }
+
     if (!file_exists(file_name))
     {
-        fprintf(stderr, "Error reading file: %s\n", file_name);
+        fprintf(stderr, "Path is not a file: %s\n", file_name);
         return -1;
     }
 

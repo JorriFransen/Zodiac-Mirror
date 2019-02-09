@@ -113,27 +113,36 @@ void* _arena_alloc_from_block(Arena_Block* block, size_t size)
 
     return result;
 }
-
-bool file_exists(const char* file_path)
+bool path_exists(const char* path)
 {
-#ifdef WIN32
-       
-    auto result = GetFileAttributesA(file_path);
-    if (result == INVALID_FILE_ATTRIBUTES)
-    {
-        return false;
-    }
-    
-    return !(result & FILE_ATTRIBUTE_DIRECTORY);
-#else
-
     auto _access = access;
-    if (_access(file_path, F_OK) != -1)
+    if (_access(path, F_OK) != -1)
     {
         return true;
     }
 
     return false;
+}
+
+bool file_exists(const char* file_path)
+{
+#ifdef WIN32
+
+    auto result = GetFileAttributesA(file_path);
+    if (result == INVALID_FILE_ATTRIBUTES)
+    {
+        return false;
+    }
+
+    return !(result & FILE_ATTRIBUTE_DIRECTORY);
+#else
+
+    struct stat statbuf;
+    if (stat(file_path, &statbuf) != 0)
+    {
+        return false;
+    }
+    return S_ISREG(statbuf.st_mode);
 
 #endif
 

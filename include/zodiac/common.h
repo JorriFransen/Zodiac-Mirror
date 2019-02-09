@@ -213,6 +213,7 @@ uint64_t stack_count(Stack<T>& stack)
 }
 
 // File IO
+bool path_exists(const char* path);
 bool file_exists(const char* file_path);
 bool dir_exists(const char* dir_path);
 bool file_is_child_of_directory(const char* file_name, const char* dir_name);
