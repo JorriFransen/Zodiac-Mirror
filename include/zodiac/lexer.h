@@ -43,6 +43,8 @@ namespace Zodiac
     static void lexer_consume_whitespace(Lexer* lexer);
     static char current_char(Lexer* lexer);
 
+    static Token lexer_maybe_convert_token_to_keyword(Lexer* lexer, Token token);
+
     static void lexer_push_token(Lexer* lexer, Token_Kind token_kind, File_Pos file_pos,
                                  uint64_t token_length);
 

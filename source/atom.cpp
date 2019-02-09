@@ -22,7 +22,7 @@ namespace Zodiac
         {
             const Atom& atom = atom_table->atoms[i];
             if (string_length == atom.length &&
-                strcmp(string, atom.data) == 0)
+                strncmp(string, atom.data, string_length) == 0)
             {
                 return atom;
             }
@@ -42,5 +42,25 @@ namespace Zodiac
     const Atom& atom_get(Atom_Table* atom_table, const char* string)
     {
         return atom_get(atom_table, string, strlen(string));
+    }
+
+    uint64_t atom_to_u64(const Atom& atom)
+    {
+        uint64_t base = 10;
+        uint64_t result = 0;
+
+        for (uint64_t i = 0; i < atom.length; i++)
+        {
+            result *= base;
+            uint64_t digit_value = atom.data[i] - '0';
+            result += digit_value;
+        }
+
+        return result;
+    }
+
+    bool operator==(const Atom& lhs, const Atom& rhs)
+    {
+        return lhs.length == rhs.length && lhs.data == rhs.data;
     }
 }

@@ -11,6 +11,7 @@ namespace Zodiac
 
         TOK_PLUS,       // +
         TOK_MINUS,      // -
+        TOK_MUL,        // *
         TOK_DIV,        // /
         TOK_EQ,         // =
 
@@ -27,6 +28,8 @@ namespace Zodiac
 
         TOK_IDENTIFIER,
         TOK_INTEGER,
+
+        TOK_KW_RETURN,
 
         TOK_COUNT,
     };

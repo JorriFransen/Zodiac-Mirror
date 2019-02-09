@@ -26,9 +26,11 @@ Or_Expression = Cmp_Expression
 Cmp_Expression = Add_Expression
 Add_Expression = Mul_Expression (ADD_OP Mul_Expression)?
 Mul_Expression = Unary_Expression (MUL_OP Unary_Expression)?
-Unary_Expression = (UNARY_OP Unary_Expression) | Ident_Or_Call_Expression
-Ident_Or_Call_Expression = Ident ( '(' Call_Arguments? ')' )? 
+Unary_Expression = (UNARY_OP Unary_Expression) | Base_Expression
+Base_Expression = Ident | Call_Expression | Literal_Expression
+Call_Expression = Ident ( '(' Call_Arguments? ')' )?
 Call_Arguments = Expression (',' Expression)*
+Literal_Expression = [0-9]([0-9]*)?
 
 ADD_OP = '+' | '-'
 MUL_OP = '*' | '/'

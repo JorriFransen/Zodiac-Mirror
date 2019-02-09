@@ -60,6 +60,7 @@ namespace Zodiac
 
 
             _SINGLE_CHAR_TOKEN_CASE('+', TOK_PLUS);
+            _SINGLE_CHAR_TOKEN_CASE('*', TOK_MUL);
             _SINGLE_CHAR_TOKEN_CASE('=', TOK_EQ);
             _SINGLE_CHAR_TOKEN_CASE(':', TOK_COLON);
             _SINGLE_CHAR_TOKEN_CASE(';', TOK_SEMICOLON);
@@ -217,6 +218,23 @@ namespace Zodiac
         return EOF;
     }
 
+    static Token lexer_maybe_convert_token_to_keyword(Lexer* lexer, Token token)
+    {
+        assert(lexer);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(lexer->context->keywords); i++)
+        {
+            Registered_Keyword rkw = lexer->context->keywords[i];
+            if (rkw.atom == token.atom)
+            {
+                token.kind = rkw.token_kind;
+                return token;
+            }
+        }
+
+        return token;
+    }
+
     static void lexer_push_token(Lexer* lexer, Token_Kind token_kind, File_Pos file_pos,
                                  uint64_t token_length)
     {
@@ -231,6 +249,11 @@ namespace Zodiac
         result.file_pos = file_pos;
         result.atom = atom_get(context->atom_table, &lexer->file_data[file_pos.char_pos],
                                token_length);
+
+        if (result.kind == TOK_IDENTIFIER)
+        {
+            result = lexer_maybe_convert_token_to_keyword(lexer, result);
+        }
 
         BUF_PUSH(lexer->result.tokens, result);
     }
