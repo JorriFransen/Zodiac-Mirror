@@ -1,5 +1,6 @@
 
-* Atoms [0/2]
-  - [ ] Store strings in the table(/arena)
+* Atoms [1/3]
+  - [X] Store strings in the table(/arena)
+  - [ ] Store the array of atoms in the table 
   - [ ] Hash strings
 
