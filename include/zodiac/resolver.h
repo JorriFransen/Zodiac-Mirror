@@ -7,7 +7,8 @@ namespace Zodiac
 {
     struct Resolve_Error
     {
-        
+        char* message = nullptr;
+        File_Pos file_pos = {};
     };
 
     struct Resolver
@@ -17,10 +18,16 @@ namespace Zodiac
 
         bool done = false;
         bool progressed_on_last_cycle = false;
+
         uint64_t unresolved_decl_count = 0;
         uint64_t unresolved_decl_count_last_cycle = UINT64_MAX;
 
+        uint64_t undeclared_decl_count = 0;
+        uint64_t undeclared_decl_count_last_cycle = UINT64_MAX;
+
         BUF(Resolve_Error) errors;
+
+        AST_Declaration* current_func_decl = nullptr;
     };
 
     void resolver_init(Resolver* resolver, Context* context, AST_Module* module);
@@ -52,5 +59,7 @@ namespace Zodiac
 
     AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier);
 
+    static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos, AST_Identifier* identifier);
+    static void resolver_report_error(Resolver* resolver, File_Pos file_pos, const char* format, ...);
     void resolver_report_errors(Resolver* resolver);
 }

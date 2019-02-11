@@ -87,13 +87,13 @@ int main(int argc, char** argv)
         resolver_do_cycle(&resolver);
         if (!resolver.progressed_on_last_cycle)
         {
-            resolver_report_errors(&resolver);
             break;
         }
     }
 
     if (!resolver.done)
     {
+        resolver_report_errors(&resolver);
         return -1;
     }
 

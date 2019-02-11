@@ -122,6 +122,8 @@ namespace Zodiac
 
         result->function.args = args;
         result->function.return_type_spec = return_type_spec;
+        result->function.return_type = nullptr;
+        result->function.inferred_return_type = nullptr;
         result->function.body_block = body_block;
 
         result->function.argument_scope = argument_scope;

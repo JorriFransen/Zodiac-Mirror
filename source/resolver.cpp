@@ -3,6 +3,9 @@
 #include "builtin.h"
 #include "types.h"
 
+#include <string.h>
+#include <stdarg.h>
+
 namespace Zodiac
 {
     void resolver_init(Resolver* resolver, Context* context, AST_Module* module)
@@ -18,6 +21,12 @@ namespace Zodiac
         resolver->progressed_on_last_cycle = true;
         resolver->unresolved_decl_count = 0;
         resolver->unresolved_decl_count_last_cycle = UINT64_MAX;
+        resolver->undeclared_decl_count = 0;
+        resolver->undeclared_decl_count_last_cycle = UINT64_MAX;
+
+        resolver->errors = nullptr;
+
+        resolver->current_func_decl = nullptr;
     }
 
     void resolver_do_cycle(Resolver* resolver)
@@ -26,6 +35,13 @@ namespace Zodiac
         assert(resolver->progressed_on_last_cycle);
 
         resolver->unresolved_decl_count = 0;
+        resolver->undeclared_decl_count = 0;
+
+        if (resolver->errors)
+        {
+            auto err_hdr = _BUF_HDR(resolver->errors);
+            err_hdr->length = 0;
+        }
 
         for (uint64_t i = 0; i < BUF_LENGTH(resolver->module->global_declarations); i++)
         {
@@ -37,8 +53,18 @@ namespace Zodiac
         }
 
         resolver->progressed_on_last_cycle = (resolver->unresolved_decl_count <
-                                              resolver->unresolved_decl_count_last_cycle);
+                                              resolver->unresolved_decl_count_last_cycle) &&
+                                             (resolver->undeclared_decl_count <
+                                              resolver->undeclared_decl_count_last_cycle);
+
         resolver->unresolved_decl_count_last_cycle = resolver->unresolved_decl_count;
+        resolver->undeclared_decl_count_last_cycle = resolver->undeclared_decl_count;
+
+        if (resolver->unresolved_decl_count == 0 &&
+            resolver->undeclared_decl_count == 0)
+        {
+            resolver->done = true;
+        }
     }
 
     static bool try_resolve_declaration(Resolver* resolver, AST_Declaration* declaration,
@@ -70,15 +96,16 @@ namespace Zodiac
                     assert(false);
                     break;
             }
-        }
 
-        if (!result)
-        {
-            resolver->unresolved_decl_count++;
-        }
-        else
-        {
-            declaration->flags |= AST_DECL_FLAG_RESOLVED;
+            if (!result)
+            {
+                resolver->unresolved_decl_count++;
+            }
+            else
+            {
+                declaration->flags |= AST_DECL_FLAG_RESOLVED;
+                BUF_PUSH(scope->declarations, declaration);
+            }
         }
 
         return result;
@@ -92,12 +119,17 @@ namespace Zodiac
         assert(declaration->kind == AST_DECL_FUNC);
         assert(scope);
 
+        assert(!resolver->current_func_decl);
+        resolver->current_func_decl = declaration;
+
         bool result = true;
+        AST_Scope* arg_scope  = declaration->function.argument_scope;
+        assert(arg_scope->parent == scope);
 
         for (uint64_t i = 0; i < BUF_LENGTH(declaration->function.args); i++)
         {
             AST_Declaration* arg_decl = declaration->function.args[i];
-            result &= try_resolve_declaration(resolver, arg_decl, scope);
+            result &= try_resolve_declaration(resolver, arg_decl, arg_scope);
         }
 
         if (!declaration->function.return_type && declaration->function.return_type_spec)
@@ -108,9 +140,19 @@ namespace Zodiac
 
         if (declaration->function.body_block)
         {
+            assert(declaration->function.body_block->block.scope->parent == arg_scope);
             result &= try_resolve_statement(resolver, declaration->function.body_block,
                                             declaration->function.body_block->block.scope);
+
+            if (!declaration->function.return_type_spec &&
+                !declaration->function.return_type &&
+                declaration->function.inferred_return_type)
+            {
+                declaration->function.return_type = declaration->function.inferred_return_type;
+            }
         }
+
+        resolver->current_func_decl = nullptr;
 
         return result;
     }
@@ -195,14 +237,30 @@ namespace Zodiac
         assert(statement->kind == AST_STMT_RETURN);
         assert(scope);
 
+        assert(resolver->current_func_decl);
+        AST_Declaration* func_decl = resolver->current_func_decl;
+
         bool result = true;
 
-        if (statement->return_expression)
+        AST_Expression* return_expression = statement->return_expression;
+        if (return_expression)
         {
-            result &= try_resolve_expression(resolver, statement->return_expression, scope);
+            result &= try_resolve_expression(resolver, return_expression, scope);
+
+            if (result) assert(return_expression->type);
+
+            if (func_decl->function.inferred_return_type)
+            {
+                assert(func_decl->function.inferred_return_type ==
+                       return_expression->type);
+            }
+            else
+            {
+                func_decl->function.inferred_return_type = return_expression->type;
+            }
         }
 
-        return scope;
+        return result;
     }
 
     static bool try_resolve_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope)
@@ -290,6 +348,12 @@ namespace Zodiac
             result &= try_resolve_expression(resolver, arg_expr, scope);
         }
 
+        if (result && !expression->type)
+        {
+            assert(func_decl->function.return_type);
+            expression->type = func_decl->function.return_type;
+        }
+
         return result;
     }
 
@@ -317,6 +381,8 @@ namespace Zodiac
         AST_Declaration* decl = find_declaration(scope, expression->identifier);
         if (!decl)
         {
+            report_undeclared_identifier(resolver, expression->file_pos,
+                                         expression->identifier);
             return false;
         }
 
@@ -403,10 +469,48 @@ namespace Zodiac
         return nullptr;
     }
 
+    static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos, AST_Identifier* identifier)
+    {
+        assert(resolver);
+        assert(identifier);
+
+        resolver->undeclared_decl_count++;
+
+        resolver_report_error(resolver, file_pos, "Reference to undeclared identifier: %s",
+                              identifier->atom.data);
+    }
+
+    static void resolver_report_error(Resolver* resolver, File_Pos file_pos, const char* format, ...)
+    {
+        assert(resolver);
+        assert(format);
+
+        const size_t print_buf_size = 2048;
+        static char print_buf[print_buf_size];
+
+        va_list args;
+        va_start(args, format);
+        vsprintf(print_buf, format, args);
+        va_end(args);
+
+        auto message_length = strlen(print_buf);
+        char* message = (char*)mem_alloc(message_length + 1);
+        memcpy(message, print_buf, message_length);
+        message[message_length] = '\0';
+
+        Resolve_Error error = { message, file_pos };
+        BUF_PUSH(resolver->errors, error);
+    }
+
     void resolver_report_errors(Resolver* resolver)
     {
         assert(resolver);
 
-        assert(false);
+        for (uint64_t i = 0; i < BUF_LENGTH(resolver->errors); i++)
+        {
+            auto error = resolver->errors[i];
+            fprintf(stderr, "Error:%s:%lu: %s\n", error.file_pos.file_name,
+                    error.file_pos.line, error.message);
+        }
     }
 }

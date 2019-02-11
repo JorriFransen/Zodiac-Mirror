@@ -123,6 +123,7 @@ namespace Zodiac
         BUF(AST_Declaration*) args = nullptr;
         AST_Type_Spec* return_type_spec = nullptr;
         AST_Type* return_type = nullptr;
+        AST_Type* inferred_return_type = nullptr;
         AST_Statement* body_block = nullptr;
 
         // The body block will have it's own scope, this will be it's parent
