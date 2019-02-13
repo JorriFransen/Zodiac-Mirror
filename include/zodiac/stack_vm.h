@@ -34,6 +34,7 @@ namespace Zodiac
         SVMI_NOT_BOOL,
 
         SVMI_DUP_64,
+        SVMI_SWP_64,
 
         SVMI_HALT,
         SVMI_PRINT_S64,

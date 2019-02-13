@@ -81,7 +81,6 @@ namespace Zodiac
     void stack_vm_execute(Stack_VM* vm, Stack_VM_Instruction instruction)
     {
         assert(vm);
-        assert(instruction);
 
         switch (instruction)
         {
@@ -94,7 +93,7 @@ namespace Zodiac
 
             case SVMI_POP_S64:
             {
-                assert(false);
+                stack_vm_pop(vm);
                 break;
             }
 
@@ -123,7 +122,8 @@ namespace Zodiac
                 stack_vm_push(vm, result);
                 break;
             }
-case SVMI_MUL_S64: {
+
+            case SVMI_MUL_S64: {
                 int64_t rhs = stack_vm_pop(vm);
                 int64_t lhs = stack_vm_pop(vm);
                 int64_t result = lhs * rhs;
@@ -188,7 +188,10 @@ case SVMI_MUL_S64: {
 
             case SVMI_LT_S64:
             {
-                assert(false);
+                uint64_t rhs = stack_vm_pop(vm);
+                uint64_t lhs = stack_vm_pop(vm);
+                bool result = lhs < rhs;
+                stack_vm_push(vm, result);
                 break;
             }
 
@@ -212,7 +215,10 @@ case SVMI_MUL_S64: {
 
             case SVMI_NOT_BOOL:
             {
-                assert(false);
+                uint64_t u64_value = stack_vm_pop(vm);
+                bool bool_value = (bool)u64_value;
+                bool result = !bool_value;
+                stack_vm_push(vm, result);
                 break;
             }
 
@@ -221,6 +227,15 @@ case SVMI_MUL_S64: {
                 auto value = stack_vm_pop(vm);
                 stack_vm_push(vm, value);
                 stack_vm_push(vm, value);
+                break;
+            }
+
+            case SVMI_SWP_64:
+            {
+                auto a = stack_vm_pop(vm);
+                auto b = stack_vm_pop(vm);
+                stack_vm_push(vm, a);
+                stack_vm_push(vm, b);
                 break;
             }
 
