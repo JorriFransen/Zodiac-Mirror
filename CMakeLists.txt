@@ -26,6 +26,7 @@ set (ZODIAC_COMPILER_SOURCE
     source/lexer.cpp
     source/parser.cpp
     source/resolver.cpp
+    source/stack_vm.cpp
     source/token.cpp
     source/types.cpp
 )
@@ -39,3 +40,7 @@ set (ZODIAC_COMPILER_SOURCE
 
 add_executable(zodiac source/main.cpp ${ZODIAC_COMPILER_SOURCE})
 target_include_directories(zodiac PRIVATE include/zodiac)
+
+add_executable(vm_test source/vm_test.cpp ${ZODIAC_COMPILER_SOURCE})
+target_include_directories(vm_test PRIVATE include/zodiac)
+
