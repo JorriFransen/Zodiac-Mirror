@@ -13,6 +13,8 @@ namespace Zodiac
         SVMI_PUSH_S64,
         SVMI_POP_S64,
 
+        SVMI_LOADL_S64,
+
         SVMI_ADD_S64,
         SVMI_SUB_S64,
         SVMI_MUL_S64,
@@ -43,6 +45,7 @@ namespace Zodiac
     {
         uint64_t ip = 0;
         uint64_t sp = 0;
+        uint64_t fp = 0;
 
         uint64_t* instructions = nullptr;
         uint64_t instruction_count = 0;
@@ -58,6 +61,7 @@ namespace Zodiac
 
     Stack_VM_Instruction stack_vm_fetch_instruction(Stack_VM* vm);
     int64_t stack_vm_fetch_s64(Stack_VM* vm);
+    uint64_t stack_vm_fetch_u64(Stack_VM* vm);
     void stack_vm_execute(Stack_VM* vm, Stack_VM_Instruction instruction);
 
     void stack_vm_push(Stack_VM* vm, uint64_t value);
