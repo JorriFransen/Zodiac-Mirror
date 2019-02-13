@@ -32,6 +32,9 @@ namespace Zodiac
         assert(context);
 
         DEFINE_KW("return", TOK_KW_RETURN);
+        DEFINE_KW("if", TOK_KW_IF);
+        DEFINE_KW("else", TOK_KW_ELSE);
+
     }
 
 #undef DEFINE_KW

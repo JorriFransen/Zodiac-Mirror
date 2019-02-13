@@ -14,6 +14,7 @@ namespace Zodiac
         TOK_MUL,        // *
         TOK_DIV,        // /
         TOK_EQ,         // =
+        TOK_LT,         // <
 
         TOK_COLON,      // :
         TOK_SEMICOLON,  // ;
@@ -30,6 +31,8 @@ namespace Zodiac
         TOK_INTEGER,
 
         TOK_KW_RETURN,
+        TOK_KW_IF,
+        TOK_KW_ELSE,
 
         TOK_COUNT,
     };

@@ -176,9 +176,21 @@ namespace Zodiac
 
         auto ft = current_token(parser);
 
-        if (is_token(parser, TOK_KW_RETURN))
+        switch (ft.kind)
         {
-            return parse_return_statement(parser);
+            case TOK_KW_RETURN:
+                return parse_return_statement(parser);
+                break;
+
+            case TOK_KW_IF:
+                return parse_if_statement(parser, scope);
+                break;
+
+            case TOK_LBRACE:
+                return parse_block_statement(parser, scope);
+                break;
+
+            default: break;
         }
 
         AST_Declaration* decl = parse_declaration(parser, scope);
@@ -235,6 +247,31 @@ namespace Zodiac
         }
 
         return ast_return_statement_new(parser->context, ret_tok.file_pos, return_expr);
+    }
+
+    static AST_Statement* parse_if_statement(Parser* parser, AST_Scope* scope)
+    {
+        assert(parser);
+        assert(scope);
+
+        auto if_tok = current_token(parser);
+        expect_token(parser, TOK_KW_IF);
+        expect_token(parser, TOK_LPAREN);
+
+        AST_Expression* cond_expr = parse_expression(parser);
+
+        expect_token(parser, TOK_RPAREN);
+
+        AST_Statement* then_stmt = parse_statement(parser, scope);
+        AST_Statement* else_stmt = nullptr;
+
+        if (match_token(parser, TOK_KW_ELSE))
+        {
+            else_stmt = parse_statement(parser, scope);
+        }
+
+        return ast_if_statement_new(parser->context, if_tok.file_pos, cond_expr,
+                                    then_stmt, else_stmt);
     }
 
     static AST_Expression* parse_expression(Parser* parser)
@@ -305,12 +342,13 @@ namespace Zodiac
 
         AST_Expression* lhs = parse_add_expression(parser);
 
-        // while (is_cmp_token(parser))
-        // {
-        //     auto op = parse_cmp_token(parser);
-        //     AST_Expression* rhs = parse_add_expression(parser);
-        //     lhs = ast_new_binary_expression(parser->context, lhs, op, rhs);
-        // }
+        while (is_cmp_op(parser))
+        {
+            auto op_tok = current_token(parser);
+            auto op = parse_cmp_op(parser);
+            AST_Expression* rhs = parse_add_expression(parser);
+            lhs = ast_binary_expression_new(parser->context, op_tok.file_pos, lhs, op, rhs);
+        }
 
         return lhs;
     }
@@ -450,6 +488,15 @@ namespace Zodiac
         return ct.kind == TOK_MUL || ct.kind == TOK_DIV;
     }
 
+    static bool is_cmp_op(Parser* parser)
+    {
+        assert(parser);
+
+        auto ct = current_token(parser);
+
+        return ct.kind == TOK_LT;
+    }
+
     static bool is_unary_op(Parser* parser)
     {
         assert(parser);
@@ -489,6 +536,26 @@ namespace Zodiac
     {
         assert(parser);
         assert(false);
+    }
+
+    static AST_Binop_Kind parse_cmp_op(Parser* parser)
+    {
+        assert(parser);
+
+        auto ct = current_token(parser);
+        AST_Binop_Kind result;
+
+        switch (ct.kind)
+        {
+            case TOK_LT:
+                result = AST_BINOP_LT;
+                break;
+
+            default: assert(false);
+        }
+
+        consume_token(parser);
+        return result;
     }
 
     static AST_Unop_Kind parse_unary_op(Parser* parser)

@@ -42,6 +42,8 @@ namespace Zodiac
         AST_BINOP_SUB,
         AST_BINOP_MUL,
         AST_BINOP_DIV,
+
+        AST_BINOP_LT,
     };
 
     enum AST_Unop_Kind
@@ -91,6 +93,7 @@ namespace Zodiac
         AST_STMT_DECLARATION,
         AST_STMT_RETURN,
         AST_STMT_BLOCK,
+        AST_STMT_IF,
     };
 
     struct AST_Statement
@@ -108,6 +111,13 @@ namespace Zodiac
                 BUF(AST_Statement*) statements;
                 AST_Scope* scope;
             } block;
+
+            struct
+            {
+                AST_Expression* if_expression;
+                AST_Statement* then_statement;
+                AST_Statement* else_statement;
+            } if_stmt;
         };
     };
 
@@ -218,6 +228,8 @@ namespace Zodiac
     AST_Statement* ast_block_statement_new(Context* context, File_Pos file_pos, BUF(AST_Statement*) block_statements,
                                            AST_Scope* block_scope);
     AST_Statement* ast_return_statement_new(Context* context, File_Pos file_pos, AST_Expression* return_expr);
+    AST_Statement* ast_if_statement_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
+                                        AST_Statement* then_stmt, AST_Statement* else_stmt);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size);
 

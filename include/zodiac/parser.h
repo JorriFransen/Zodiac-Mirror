@@ -44,6 +44,7 @@ namespace Zodiac
     static AST_Statement* parse_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_return_statement(Parser* parser);
+    static AST_Statement* parse_if_statement(Parser* parser, AST_Scope* scope);
 
     static AST_Expression* parse_expression(Parser* parser);
     static AST_Expression* parse_ternary_expression(Parser* parser);
@@ -61,9 +62,11 @@ namespace Zodiac
 
     static bool is_add_op(Parser* parser);
     static bool is_mul_op(Parser* parser);
+    static bool is_cmp_op(Parser* parser);
     static bool is_unary_op(Parser* parser);
     static AST_Binop_Kind parse_add_op(Parser* parser);
     static AST_Binop_Kind parse_mul_op(Parser* parser);
+    static AST_Binop_Kind parse_cmp_op(Parser* parser);
     static AST_Unop_Kind parse_unary_op(Parser* parser);
 
     static Token current_token(Parser* parser);

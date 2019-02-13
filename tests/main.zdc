@@ -16,6 +16,18 @@ sub :: (a: int, b: int)
     return a - b;
 }
 
+fib_recursive :: (x: int)
+{
+    if (x < 2)
+    {
+        return x;
+    }
+    else
+    {
+        return fib_recursive(x - 1) + fib_recursive(x - 2);
+    }
+}
+
 // Should result in the following tokens:
 //   IDENT "main"
 //   COLON ":"
