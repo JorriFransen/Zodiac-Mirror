@@ -182,7 +182,12 @@ namespace Zodiac
 
             case SVMI_JMP_COND:
             {
-                assert(false);
+                uint64_t target_addr = stack_vm_fetch_u64(vm);
+                bool cond_value = (bool)stack_vm_pop(vm);
+                if (cond_value)
+                {
+                    vm->ip = target_addr;
+                }
                 break;
             }
 

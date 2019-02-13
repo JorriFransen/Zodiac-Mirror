@@ -41,7 +41,7 @@ int main(int argc, char** argv)
         stack_vm_execute_program(&vm, instructions, instruction_count);
     }
 
-    printf("\n\n");
+    printf("\n");
 
     {
 
@@ -85,14 +85,15 @@ int main(int argc, char** argv)
         stack_vm_execute_program(&vm, instructions, instruction_count);
     }
 
+    printf("\n");
+
     {
         uint64_t instructions[] =
         {
             SVMI_JMP_IMM, 31,
 
-
-            SVMI_PUSH_S64, 2,                             // constant 2
             SVMI_LOADL_S64, (uint64_t)-2,                 // Load x
+            SVMI_PUSH_S64, 2,                             // constant 2
             SVMI_LT_S64,                                  // if x < 2
             SVMI_NOT_BOOL,
             SVMI_JMP_COND, 13,                            // Jump to else
@@ -102,18 +103,19 @@ int main(int argc, char** argv)
             SVMI_RETURN,                                  // return x
 
             // else
-            SVMI_PUSH_S64, 1,
             SVMI_LOADL_S64, (uint64_t)-2,                 // Load x
+            SVMI_DUP_64,
+            SVMI_PUSH_S64, 1,
             SVMI_SUB_S64,
             SVMI_CALL_IMM, 2, 1,
-            SVMI_PUSH_S64, 2,
             SVMI_SWP_64,
-            SVMI_ADD_S64,
+            SVMI_PUSH_S64, 2,
+            SVMI_SUB_S64,
             SVMI_CALL_IMM, 2, 1,
             SVMI_ADD_S64,
             SVMI_RETURN,
 
-            SVMI_PUSH_S64, 0,
+            SVMI_PUSH_S64, 30,
             SVMI_CALL_IMM, 2, 1,
             SVMI_PRINT_S64,
         };
