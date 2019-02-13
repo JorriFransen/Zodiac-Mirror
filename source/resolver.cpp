@@ -220,6 +220,12 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_IF:
+            {
+                result &= try_resolve_if_statement(resolver, statement, scope);
+                break;
+            }
+
             default:
                 assert(false);
                 result = false;
@@ -249,7 +255,8 @@ namespace Zodiac
 
             if (result) assert(return_expression->type);
 
-            if (func_decl->function.inferred_return_type)
+            if (func_decl->function.inferred_return_type &&
+                return_expression->type)
             {
                 assert(func_decl->function.inferred_return_type ==
                        return_expression->type);
@@ -258,6 +265,27 @@ namespace Zodiac
             {
                 func_decl->function.inferred_return_type = return_expression->type;
             }
+        }
+
+        return result;
+    }
+
+    static bool try_resolve_if_statement(Resolver* resolver, AST_Statement* statement,
+                                         AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(statement);
+        assert(statement->kind == AST_STMT_IF);
+        assert(scope);
+
+        bool result = true;
+
+        result &= try_resolve_expression(resolver, statement->if_stmt.if_expression, scope);
+        result &= try_resolve_statement(resolver, statement->if_stmt.then_statement, scope);
+
+        if (statement->if_stmt.else_statement)
+        {
+            result &= try_resolve_statement(resolver, statement->if_stmt.else_statement, scope);
         }
 
         return result;
@@ -329,17 +357,27 @@ namespace Zodiac
         bool result = true;
 
         AST_Declaration* func_decl = find_declaration(scope, expression->call.identifier);
-        if (!func_decl)
+        if (!func_decl &&
+            (expression->call.identifier->atom == resolver->current_func_decl->identifier->atom))
         {
-            result = false;
-        }
-        else if (func_decl->flags & AST_DECL_FLAG_RESOLVED)
-        {
-            assert(func_decl->kind == AST_DECL_FUNC);
+            func_decl = resolver->current_func_decl;
         }
         else
         {
-            result = false;
+            if (!func_decl)
+            {
+                report_undeclared_identifier(resolver, expression->call.identifier->file_pos,
+                                             expression->call.identifier);
+                result = false;
+            }
+            else if (func_decl->flags & AST_DECL_FLAG_RESOLVED)
+            {
+                assert(func_decl->kind == AST_DECL_FUNC);
+            }
+            else
+            {
+                result = false;
+            }
         }
 
         for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
@@ -348,10 +386,16 @@ namespace Zodiac
             result &= try_resolve_expression(resolver, arg_expr, scope);
         }
 
-        if (result && !expression->type)
+        if (result && !expression->type && func_decl->function.return_type)
         {
-            assert(func_decl->function.return_type);
             expression->type = func_decl->function.return_type;
+        }
+
+        if (!expression->type)
+        {
+            resolver_report_error(resolver,expression->file_pos,
+                                  "Circular dependency when trying to infer return type");
+            result = false;
         }
 
         return result;
@@ -509,8 +553,9 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(resolver->errors); i++)
         {
             auto error = resolver->errors[i];
-            fprintf(stderr, "Error:%s:%lu: %s\n", error.file_pos.file_name,
-                    error.file_pos.line, error.message);
+            fprintf(stderr, "Error:%s:%lu:%lu: %s\n", error.file_pos.file_name,
+                    error.file_pos.line, error.file_pos.line_relative_char_pos,
+                    error.message);
         }
     }
 }

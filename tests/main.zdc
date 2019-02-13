@@ -16,7 +16,7 @@ sub :: (a: int, b: int)
     return a - b;
 }
 
-fib_recursive :: (x: int)
+fib_recursive :: (x: int) -> int
 {
     if (x < 2)
     {
