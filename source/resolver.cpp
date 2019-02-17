@@ -404,7 +404,8 @@ namespace Zodiac
         if (!expression->type)
         {
             resolver_report_error(resolver,expression->file_pos,
-                                  "Circular dependency when trying to infer return type");
+                                  "Circular dependency when trying to infer return type of function '%s'",
+                                  expression->call.identifier->atom.data);
             result = false;
         }
 
