@@ -122,6 +122,7 @@ int main(int argc, char** argv)
 
         auto program_size = sizeof(instructions);
         auto instruction_count = program_size / sizeof(instructions[0]);
+        stack_vm_print_program(instructions, instruction_count);
         stack_vm_execute_program(&vm, instructions, instruction_count);
     }
     return 0;

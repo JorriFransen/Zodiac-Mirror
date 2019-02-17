@@ -60,6 +60,8 @@ namespace Zodiac
     void stack_vm_init(Stack_VM* vm, uint64_t stack_byte_size);
     void stack_vm_execute_program(Stack_VM* vm, uint64_t* instructions, uint64_t instruction_count);
 
+    void stack_vm_print_program(uint64_t* instructions, uint64_t instruction_count);
+
     Stack_VM_Instruction stack_vm_fetch_instruction(Stack_VM* vm);
     int64_t stack_vm_fetch_s64(Stack_VM* vm);
     uint64_t stack_vm_fetch_u64(Stack_VM* vm);

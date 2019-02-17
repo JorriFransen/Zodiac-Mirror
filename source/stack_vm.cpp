@@ -45,6 +45,169 @@ namespace Zodiac
         }
     }
 
+    void stack_vm_print_program(uint64_t* instructions, uint64_t instruction_count)
+    {
+        assert(instructions);
+        assert(instruction_count > 0);
+
+        uint64_t ip = 0;
+        while (ip < instruction_count)
+        {
+            Stack_VM_Instruction instruction = (Stack_VM_Instruction)instructions[ip];
+            printf("%lu: ", ip);
+            ip++;
+            switch (instruction)
+            {
+                case SVMI_INVALID:
+                {
+                    printf("SVMI_INVALID\n");
+                    break;
+                }
+
+                case SVMI_NOP:
+                {
+                    printf("SVMI_NOP_S64\n");
+                    break;
+                }
+
+                case SVMI_PUSH_S64:
+                {
+                    int64_t value = (int64_t)instructions[ip++];
+                    printf("SVMI_PUSH_S64 %ld\n", value);
+                    break;
+                }
+
+                case SVMI_POP_S64:
+                {
+                    printf("SVMI_POP_S64\n");
+                    break;
+                }
+
+                case SVMI_LOADL_S64:
+                {
+                    int64_t offset = instructions[ip++];
+                    printf("SVMI_LOADL %ld\n", offset);
+                    break;
+                }
+
+                case SVMI_ADD_S64:
+                {
+                    printf("SVMI_ADD_S64\n");
+                    break;
+                }
+
+                case SVMI_SUB_S64:
+                {
+                    printf("SVMI_SUB_S64\n");
+                    break;
+                }
+
+                case SVMI_MUL_S64:
+                {
+                    printf("SVMI_MUL_S64\n");
+                    break;
+                }
+
+                case SVMI_DIV_S64:
+                {
+                    printf("SVMI_DIV_S64\n");
+                    break;
+                }
+
+                case SVMI_CALL_IMM:
+                {
+                    uint64_t addr = instructions[ip++];
+                    uint64_t num_args = instructions[ip++];
+                    printf("SVMI_CALL_IMM %lu, %lu\n", addr, num_args);
+                    break;
+                }
+
+                case SVMI_RETURN:
+                {
+                    printf("SVMI_RETURN\n");
+                    break;
+                }
+
+                case SVMI_JMP_IMM:
+                {
+                    uint64_t addr = instructions[ip++];
+                    printf("SVMI_JMP_IMM %lu\n", addr);
+                    break;
+                }
+
+                case SVMI_JMP_COND:
+                {
+                    uint64_t addr = instructions[ip++];
+                    printf("SVMI_JMP_COND %lu\n", addr);
+                    break;
+                }
+
+                case SVMI_LT_S64:
+                {
+                    printf("SVMI_LT_S64\n");
+                    break;
+                }
+
+                case SVMI_GT_S64:
+                {
+                    printf("SVMI_GT_S64\n");
+                    break;
+                }
+
+                case SVMI_EQ_S64:
+                {
+                    printf("SVMI_EQ_S64\n");
+                    break;
+                }
+
+                case SVMI_NEQ_S64:
+                {
+                    printf("SVMI_NEQ_S64\n");
+                    break;
+                }
+
+                case SVMI_NOT_BOOL:
+                {
+                    printf("SVMI_NOT_BOOL\n");
+                    break;
+                }
+
+                case SVMI_DUP_64:
+                {
+                    printf("SVMI_DUP_S64\n");
+                    break;
+                }
+
+                case SVMI_SWP_64:
+                {
+                    printf("SVMI_SWP_S64\n");
+                    break;
+                }
+
+                case SVMI_HALT:
+                {
+                    printf("SVMI_HALT\n");
+                    break;
+                }
+
+                case SVMI_PRINT_S64:
+                {
+                    printf("SVMI_PRINT_S64\n");
+                    break;
+                }
+
+                case SVMI_COUNT:
+                {
+                    printf("SVMI_COUNT %lu", (uint64_t)SVMI_COUNT);
+                    break;
+                }
+
+            }
+        }
+
+        printf("\n");
+    }
+
     Stack_VM_Instruction stack_vm_fetch_instruction(Stack_VM* vm)
     {
         assert(vm);
