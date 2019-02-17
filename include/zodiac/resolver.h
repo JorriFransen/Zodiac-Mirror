@@ -57,7 +57,8 @@ namespace Zodiac
     static bool try_resolve_binary_expression(Resolver* resolver, AST_Expression* expression,
                                               AST_Scope* scope);
 
-    static bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec, AST_Type** type_dest);
+    static bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec, AST_Type** type_dest,
+                                      AST_Scope* scope);
 
     AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier);
 

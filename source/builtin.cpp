@@ -23,7 +23,7 @@ namespace Zodiac
         AST_Declaration* type_decl = ast_type_declaration_new(context, file_pos, type, identifier);
         type_decl->flags |= AST_DECL_FLAG_RESOLVED;
 
-        BUF_PUSH(context->global_type_table, type_decl);
+        BUF_PUSH(context->builtin_decls, type_decl);
 
         return type;
     }

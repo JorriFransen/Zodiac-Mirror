@@ -27,6 +27,16 @@ namespace Zodiac
         resolver->errors = nullptr;
 
         resolver->current_func_decl = nullptr;
+
+        assert(module->module_scope);
+        AST_Scope* module_scope = module->module_scope;
+        assert(module_scope->declarations == nullptr);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(context->builtin_decls); i++)
+        {
+            AST_Declaration* builtin_decl = context->builtin_decls[i];
+            BUF_PUSH(module_scope->declarations, builtin_decl);
+        }
     }
 
     void resolver_do_cycle(Resolver* resolver)
@@ -135,7 +145,7 @@ namespace Zodiac
         if (!declaration->function.return_type && declaration->function.return_type_spec)
         {
             result &= try_resolve_type_spec(resolver, declaration->function.return_type_spec,
-                                            &declaration->function.return_type);
+                                            &declaration->function.return_type, scope);
         }
 
         if (declaration->function.body_block)
@@ -171,7 +181,7 @@ namespace Zodiac
             declaration->mutable_decl.type_spec)
         {
             result &= try_resolve_type_spec(resolver, declaration->mutable_decl.type_spec,
-                                            &declaration->mutable_decl.type);
+                                            &declaration->mutable_decl.type, scope);
         }
 
         if (declaration->mutable_decl.init_expression)
@@ -471,16 +481,27 @@ namespace Zodiac
         return result;
     }
 
-    static bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec, AST_Type** type_dest)
+    static bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec, AST_Type** type_dest,
+                                      AST_Scope* scope)
     {
         assert(resolver);
         assert(type_spec);
         assert(type_dest);
         assert(*type_dest == nullptr);
+        assert(scope);
 
         assert(type_spec->identifier);
+        AST_Identifier* identifier = type_spec->identifier;
 
-        AST_Type* type = find_type(resolver->context, resolver->module, type_spec->identifier);
+        AST_Declaration* type_decl = find_declaration(scope, type_spec->identifier);
+        if (!type_decl)
+        {
+            report_undeclared_identifier(resolver, identifier->file_pos, identifier);
+            return false;
+        }
+
+        assert(type_decl->kind == AST_DECL_TYPE);
+        AST_Type* type = type_decl->type.type;
         if (type)
         {
             *type_dest = type;

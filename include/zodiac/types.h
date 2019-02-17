@@ -5,5 +5,4 @@
 
 namespace Zodiac
 {
-    AST_Type* find_type(Context* context, AST_Module* module, AST_Identifier* identifier);
 }

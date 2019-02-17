@@ -14,14 +14,14 @@ namespace Zodiac
 
     struct AST_Type;
     struct AST_Declaration;
+
     struct Context
     {
         Arena* arena = nullptr;
         Atom_Table* atom_table;
 
-        BUF(AST_Declaration*) global_type_table = nullptr;
-
         BUF(Registered_Keyword) keywords = nullptr;
+        BUF(AST_Declaration*) builtin_decls = nullptr;
     };
 
     void context_init(Context* context, Arena* arena);

@@ -4,6 +4,6 @@
   - [ ] Store the array of atoms in the table 
   - [ ] Hash strings
 
-* Resolver [1/2]
+* Resolver [2/2]
   - [X] Check type of return expression agains function decl
-  - [ ] Probably move (builtin) type declarations to global/module scope
+  - [X] Probably move (builtin) type declarations to global/module scope
