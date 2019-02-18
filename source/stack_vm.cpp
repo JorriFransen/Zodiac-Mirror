@@ -43,6 +43,12 @@ namespace Zodiac
             auto instruction = stack_vm_fetch_instruction(vm);
             stack_vm_execute(vm, instruction);
         }
+
+        if (vm->sp > 0)
+        {
+            int64_t value = stack_vm_pop(vm);
+            printf("entry point returned: %ld\n", value);
+        }
     }
 
     void stack_vm_print_program(uint64_t* instructions, uint64_t instruction_count)

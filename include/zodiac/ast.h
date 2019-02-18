@@ -18,6 +18,7 @@ namespace Zodiac
     {
         BUF(AST_Declaration*) global_declarations = nullptr;
         AST_Scope* module_scope = nullptr;
+        AST_Declaration* entry_point = nullptr;
         const char* module_name = nullptr;
     };
 
@@ -25,6 +26,8 @@ namespace Zodiac
     {
         File_Pos file_pos = {};
         Atom atom = {};
+
+        AST_Declaration* declaration = nullptr;
     };
 
     enum AST_Expression_Kind
@@ -51,9 +54,17 @@ namespace Zodiac
         AST_UNOP_MINUS,
     };
 
+    typedef uint64_t _AST_EXPR_FLAGS_;
+    enum AST_Expression_Flag : _AST_EXPR_FLAGS_
+    {
+        AST_EXPR_FLAG_NONE      = 0x00,
+        AST_EXPR_FLAG_GENERATED = 0x01,
+    };
+
     struct AST_Expression
     {
         AST_Expression_Kind kind;
+        _AST_EXPR_FLAGS_ flags = AST_EXPR_FLAG_NONE;
         File_Pos file_pos;
 
         AST_Type* type = nullptr;
@@ -96,9 +107,17 @@ namespace Zodiac
         AST_STMT_IF,
     };
 
+    typedef uint64_t _AST_STMT_FLAGS_;
+    enum AST_Statement_Flag
+    {
+        AST_STMT_FLAG_NONE      = 0x00,
+        AST_STMT_FLAG_GENERATED = 0x01,
+    };
+
     struct AST_Statement
     {
         AST_Statement_Kind kind;
+        _AST_STMT_FLAGS_ flags = AST_STMT_FLAG_NONE;
         File_Pos file_pos = {};
 
         union
@@ -145,18 +164,31 @@ namespace Zodiac
         AST_Type_Spec* type_spec = nullptr;
         AST_Type* type = nullptr;
         AST_Expression* init_expression = nullptr;
+
+        // Only applies if this is an argument
+        int64_t argument_index = 0;
     };
 
     typedef uint64_t _AST_DECL_FLAG_TYPE_;
     enum AST_Declaration_Flags : _AST_DECL_FLAG_TYPE_
     {
-        AST_DECL_FLAG_NONE     = 0x00,
-        AST_DECL_FLAG_RESOLVED = 0x01,
+        AST_DECL_FLAG_NONE      = 0x00,
+        AST_DECL_FLAG_RESOLVED  = 0x01,
+        AST_DECL_FLAG_GENERATED = 0x02,
+    };
+
+    enum AST_Declaration_Location
+    {
+        AST_DECL_LOC_INVALID,
+        AST_DECL_LOC_GLOBAL,
+        AST_DECL_LOC_LOCAL,
+        AST_DECL_LOC_ARGUMENT,
     };
 
     struct AST_Declaration
     {
         AST_Declaration_Kind kind;
+        AST_Declaration_Location location = AST_DECL_LOC_INVALID;
         _AST_DECL_FLAG_TYPE_ flags = AST_DECL_FLAG_NONE;
         File_Pos file_pos = {};
 
@@ -172,6 +204,8 @@ namespace Zodiac
                 AST_Type* type;
             } type;
         };
+
+        void* gen_data = nullptr;
     };
 
     typedef uint64_t AST_Type_Flags;
@@ -220,7 +254,8 @@ namespace Zodiac
                                                   AST_Statement* body_block,
                                                   AST_Scope* argument_scope);
     AST_Declaration* ast_mutable_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
-                                                 AST_Type_Spec* type_spec, AST_Expression* init_expr);
+                                                 AST_Type_Spec* type_spec, AST_Expression* init_expr,
+                                                 AST_Declaration_Location location);
     AST_Declaration* ast_type_declaration_new(Context* context, File_Pos file_pos, AST_Type* type,
                                               AST_Identifier* identifier);
 

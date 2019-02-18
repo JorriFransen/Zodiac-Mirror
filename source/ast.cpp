@@ -119,6 +119,7 @@ namespace Zodiac
         result->kind = AST_DECL_FUNC;
         result->file_pos = file_pos;
         result->identifier = identifier;
+        result->gen_data = nullptr;
 
         result->function.args = args;
         result->function.return_type_spec = return_type_spec;
@@ -138,16 +139,20 @@ namespace Zodiac
     }
 
     AST_Declaration* ast_mutable_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
-                                                 AST_Type_Spec* type_spec, AST_Expression* init_expr)
+                                                 AST_Type_Spec* type_spec, AST_Expression* init_expr,
+                                                 AST_Declaration_Location location)
     {
         assert(context);
         assert(identifier);
         assert(type_spec || init_expr);
+        assert(location != AST_DECL_LOC_INVALID);
 
         AST_Declaration* result = arena_alloc(context->arena, AST_Declaration);
         result->kind = AST_DECL_MUTABLE;
         result->file_pos = file_pos;
         result->identifier = identifier;
+        result->location = location;
+        result->gen_data = nullptr;
 
         result->mutable_decl.type_spec = type_spec;
         result->mutable_decl.init_expression = init_expr;
@@ -166,6 +171,7 @@ namespace Zodiac
         result->kind = AST_DECL_TYPE;
         result->file_pos = file_pos;
         result->identifier = identifier;
+        result->gen_data = nullptr;
 
         result->type.type = type;
 

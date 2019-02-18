@@ -7,6 +7,9 @@
 #include "parser.h"
 #include "resolver.h"
 
+#include "stack_vm.h"
+#include "stack_vm_generator.h"
+
 using namespace Zodiac;
 
 void usage(const char* exe_name)
@@ -82,13 +85,20 @@ int main(int argc, char** argv)
     Resolver resolver;
     resolver_init(&resolver, context, parse_result.ast_module);
 
-    while (!resolver.done)
+    Stack_VM_Generator generator;
+    stack_vm_generator_init(&generator, context, parse_result.ast_module);
+
+    while (!resolver.done || !generator.done)
     {
         resolver_do_cycle(&resolver);
-        if (!resolver.progressed_on_last_cycle)
+        stack_vm_generator_do_cycle(&generator);
+
+        if (!resolver.progressed_on_last_cycle &&
+            !generator.progressed_on_last_cycle)
         {
             break;
         }
+
     }
 
     if (!resolver.done)
@@ -98,6 +108,22 @@ int main(int argc, char** argv)
     }
 
     fprintf(stderr, "Resolved file: %s\n", file_name);
+
+    if (!generator.done)
+    {
+        fprintf(stderr, "Generator quitted with errors\n");
+        return -1;
+    }
+
+    fprintf(stderr, "Generated file: %s\n", file_name);
+
+    stack_vm_print_program(generator.result.instructions,
+                           BUF_LENGTH(generator.result.instructions));
+
+    Stack_VM vm;
+    stack_vm_init(&vm, MB(8));
+    stack_vm_execute_program(&vm, generator.result.instructions,
+                             BUF_LENGTH(generator.result.instructions));
 
     return 0;
 }

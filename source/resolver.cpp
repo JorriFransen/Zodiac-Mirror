@@ -132,6 +132,13 @@ namespace Zodiac
         assert(!resolver->current_func_decl);
         resolver->current_func_decl = declaration;
 
+        auto main_atom = atom_get(resolver->context->atom_table, "main");
+        if (main_atom == declaration->identifier->atom)
+        {
+            assert(!resolver->module->entry_point);
+            resolver->module->entry_point = declaration;
+        }
+
         bool result = true;
         AST_Scope* arg_scope  = declaration->function.argument_scope;
         assert(arg_scope->parent == scope);
@@ -194,6 +201,10 @@ namespace Zodiac
             }
         }
 
+        if (result)
+        {
+            assert(declaration->location != AST_DECL_LOC_INVALID);
+        }
         return result;
     }
 
@@ -447,6 +458,7 @@ namespace Zodiac
         }
 
         assert(decl->kind == AST_DECL_MUTABLE);
+        expression->identifier->declaration = decl;
 
         if (!decl->mutable_decl.type)
         {

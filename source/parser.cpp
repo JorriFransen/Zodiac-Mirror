@@ -25,7 +25,8 @@ namespace Zodiac
         while (parser->ti < BUF_LENGTH(parser->tokens) &&
                BUF_LENGTH(parser->result.errors) == 0)
         {
-            AST_Declaration* global_decl = parse_declaration(parser, ast_module->module_scope);
+            AST_Declaration* global_decl = parse_declaration(parser, ast_module->module_scope,
+                                                             true);
             assert(global_decl);
             BUF_PUSH(ast_module->global_declarations, global_decl);
         }
@@ -47,7 +48,8 @@ namespace Zodiac
         return nullptr;
     }
 
-    static AST_Declaration* parse_declaration(Parser* parser, AST_Scope* scope)
+    static AST_Declaration* parse_declaration(Parser* parser, AST_Scope* scope, bool global,
+                                              AST_Declaration_Location location/*= AST_DECL_LOC_INVALID*/)
     {
         assert(parser);
         assert(scope);
@@ -75,7 +77,12 @@ namespace Zodiac
         }
         else
         {
-            result = parse_mutable_declaration(parser, identifier, type_spec);
+            auto loc = global ? AST_DECL_LOC_GLOBAL : AST_DECL_LOC_LOCAL;
+            if (location != AST_DECL_LOC_INVALID)
+            {
+                loc = location;
+            }
+            result = parse_mutable_declaration(parser, identifier, type_spec, loc);
             if (!result)
             {
                 return nullptr;
@@ -107,7 +114,7 @@ namespace Zodiac
                 expect_token(parser, TOK_COMMA);
             }
 
-            AST_Declaration* decl = parse_declaration(parser, scope);
+            AST_Declaration* decl = parse_declaration(parser, scope, false, AST_DECL_LOC_ARGUMENT);
             if (!decl)
             {
                 return nullptr;
@@ -140,10 +147,11 @@ namespace Zodiac
     }
 
     static AST_Declaration* parse_mutable_declaration(Parser* parser, AST_Identifier* identifier,
-                                                      AST_Type_Spec* type_spec)
+                                                      AST_Type_Spec* type_spec, AST_Declaration_Location location)
     {
         assert(parser);
         assert(identifier);
+        assert(location != AST_DECL_LOC_INVALID);
 
         AST_Expression* init_expression = nullptr;
         if (match_token(parser, TOK_EQ))
@@ -158,14 +166,7 @@ namespace Zodiac
         assert(type_spec || init_expression);
 
         return ast_mutable_declaration_new(parser->context, identifier->file_pos, identifier,
-                                           type_spec, init_expression);
-    }
-
-    static AST_Declaration* parse_function_prototype_argument(Parser* parser)
-    {
-        assert(parser);
-
-        assert(false);
+                                           type_spec, init_expression, location);
     }
 
     static AST_Statement* parse_statement(Parser* parser, AST_Scope* scope)
@@ -193,7 +194,7 @@ namespace Zodiac
             default: break;
         }
 
-        AST_Declaration* decl = parse_declaration(parser, scope);
+        AST_Declaration* decl = parse_declaration(parser, scope, false);
         if (!decl)
         {
             return  nullptr;
