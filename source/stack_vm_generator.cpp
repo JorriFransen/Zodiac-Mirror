@@ -18,6 +18,8 @@ namespace Zodiac
         generator->entry_addr_pos_set = false;
         generator->replacements_done = false;
 
+        generator->current_func_decl = nullptr;
+
         generator->result = {};
 
         emit_instruction(generator, SVMI_CALL_IMM);
@@ -124,6 +126,9 @@ namespace Zodiac
         assert(decl->flags & AST_DECL_FLAG_RESOLVED);
         assert(!(decl->flags & AST_DECL_FLAG_GENERATED));
 
+        assert(!generator->current_func_decl);
+        generator->current_func_decl = decl;
+
         uint64_t entry_addr = BUF_LENGTH(generator->result.instructions);
         assert(!decl->gen_data);
         auto gen_data = get_gen_data(generator, decl);
@@ -131,6 +136,8 @@ namespace Zodiac
 
         assert(decl->function.body_block);
         emit_statement(generator, decl->function.body_block);
+
+        generator->current_func_decl = nullptr;
     }
 
     static void emit_statement(Stack_VM_Generator* generator, AST_Statement* stmt)
@@ -191,6 +198,12 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_CALL:
+            {
+                emit_call_expression(generator, expr);
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -216,6 +229,13 @@ namespace Zodiac
                 emit_instruction(generator, SVMI_ADD_S64);
                 break;
             }
+
+            case AST_BINOP_SUB:
+            {
+                emit_instruction(generator, SVMI_SUB_S64);
+                break;
+            }
+
             default: assert(false);
         }
     }
@@ -275,6 +295,31 @@ namespace Zodiac
         emit_s64(generator, expr->literal.u64);
     }
 
+    static void emit_call_expression(Stack_VM_Generator* generator, AST_Expression* expr)
+    {
+        assert(generator);
+        assert(expr);
+        assert(expr->kind == AST_EXPR_CALL);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(expr->call.arg_expressions); i++)
+        {
+            AST_Expression* arg_expr = expr->call.arg_expressions[i];
+            emit_expression(generator, arg_expr);
+        }
+
+        AST_Declaration* func_decl = expr->call.callee_declaration;
+        assert(func_decl);
+        assert(func_decl->kind == AST_DECL_FUNC);
+        assert(func_decl->flags & AST_DECL_FLAG_GENERATED);
+
+        assert(func_decl->gen_data);
+        auto gen_data = get_gen_data(generator, func_decl);
+
+        emit_instruction(generator, SVMI_CALL_IMM);
+        emit_address(generator, gen_data->func.address);
+        emit_u64(generator, BUF_LENGTH(expr->call.arg_expressions));
+    }
+
     static void emit_argument_load(Stack_VM_Generator* generator, AST_Declaration* arg_decl)
     {
         assert(generator);
@@ -284,7 +329,9 @@ namespace Zodiac
         assert(arg_decl->mutable_decl.type);
         assert(arg_decl->mutable_decl.type == Builtin::type_int);
 
-        int64_t offset = -2 - arg_decl->mutable_decl.argument_index;
+        int64_t arg_offset = get_argument_offset(generator, generator->current_func_decl, arg_decl);
+        int64_t num_args = BUF_LENGTH(generator->current_func_decl->function.args);
+        int64_t offset = -2 - (num_args - 1) + arg_offset;
         emit_instruction(generator, SVMI_LOADL_S64);
         emit_s64(generator, offset);
     }
@@ -341,5 +388,26 @@ namespace Zodiac
             declaration->gen_data = result;
             return result;
         }
+    }
+
+    static int64_t get_argument_offset(Stack_VM_Generator* generator, AST_Declaration* func_decl,
+                                  AST_Declaration* arg_decl)
+    {
+        assert(generator);
+        assert(func_decl);
+        assert(func_decl->kind == AST_DECL_FUNC);
+        assert(arg_decl);
+        assert(arg_decl->kind == AST_DECL_MUTABLE);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(func_decl->function.args); i++)
+        {
+            AST_Declaration* func_arg_decl = func_decl->function.args[i];
+            if (func_arg_decl == arg_decl)
+            {
+                return i;
+            }
+        }
+
+        assert(false);
     }
 }

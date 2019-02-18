@@ -132,13 +132,6 @@ namespace Zodiac
         assert(!resolver->current_func_decl);
         resolver->current_func_decl = declaration;
 
-        auto main_atom = atom_get(resolver->context->atom_table, "main");
-        if (main_atom == declaration->identifier->atom)
-        {
-            assert(!resolver->module->entry_point);
-            resolver->module->entry_point = declaration;
-        }
-
         bool result = true;
         AST_Scope* arg_scope  = declaration->function.argument_scope;
         assert(arg_scope->parent == scope);
@@ -166,6 +159,16 @@ namespace Zodiac
                 declaration->function.inferred_return_type)
             {
                 declaration->function.return_type = declaration->function.inferred_return_type;
+            }
+        }
+
+        if (result)
+        {
+            auto main_atom = atom_get(resolver->context->atom_table, "main");
+            if (main_atom == declaration->identifier->atom)
+            {
+                assert(!resolver->module->entry_point);
+                resolver->module->entry_point = declaration;
             }
         }
 
@@ -418,6 +421,11 @@ namespace Zodiac
                                   "Circular dependency when trying to infer return type of function '%s'",
                                   expression->call.identifier->atom.data);
             result = false;
+        }
+
+        if (result && func_decl)
+        {
+            expression->call.callee_declaration = func_decl;
         }
 
         return result;

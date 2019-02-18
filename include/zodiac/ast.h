@@ -89,6 +89,7 @@ namespace Zodiac
             struct
             {
                 AST_Identifier* identifier;
+                AST_Declaration* callee_declaration;
                 BUF(AST_Expression*) arg_expressions;
             } call;
 
@@ -164,9 +165,6 @@ namespace Zodiac
         AST_Type_Spec* type_spec = nullptr;
         AST_Type* type = nullptr;
         AST_Expression* init_expression = nullptr;
-
-        // Only applies if this is an argument
-        int64_t argument_index = 0;
     };
 
     typedef uint64_t _AST_DECL_FLAG_TYPE_;

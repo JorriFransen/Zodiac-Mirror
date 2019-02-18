@@ -24,6 +24,8 @@ namespace Zodiac
 
         bool replacements_done = false;
 
+        AST_Declaration* current_func_decl = nullptr;
+
         Stack_VM_Generator_Result result = {};
     };
 
@@ -65,6 +67,7 @@ namespace Zodiac
     static void emit_binary_expression(Stack_VM_Generator* generator, AST_Expression* expr);
     static void emit_identifier_expression(Stack_VM_Generator* generator, AST_Expression* expr);
     static void emit_literal_expression(Stack_VM_Generator* generator, AST_Expression* expr);
+    static void emit_call_expression(Stack_VM_Generator* generator, AST_Expression* expr);
 
     static void emit_argument_load(Stack_VM_Generator* generator, AST_Declaration* arg_decl);
 
@@ -74,4 +77,6 @@ namespace Zodiac
     static void emit_u64(Stack_VM_Generator* generator, uint64_t u64);
 
     static Stack_VM_Gen_Data* get_gen_data(Stack_VM_Generator* generator, AST_Declaration* declaration);
+    static int64_t get_argument_offset(Stack_VM_Generator* generator, AST_Declaration* func_decl,
+                                  AST_Declaration* arg_decl);
 }
