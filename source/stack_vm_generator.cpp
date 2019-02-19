@@ -134,6 +134,13 @@ namespace Zodiac
         auto gen_data = get_gen_data(generator, decl);
         gen_data->func.address = entry_addr;
 
+        uint64_t local_count = BUF_LENGTH(decl->function.locals);
+        if (local_count)
+        {
+            emit_instruction(generator, SVMI_ALLOCL);
+            emit_u64(generator, local_count);
+        }
+
         assert(decl->function.body_block);
         emit_statement(generator, decl->function.body_block);
 
@@ -163,6 +170,21 @@ namespace Zodiac
                 assert(stmt->return_expression);
                 emit_expression(generator, stmt->return_expression);
                 emit_instruction(generator, SVMI_RETURN);
+                break;
+            }
+
+            case AST_STMT_DECLARATION:
+            {
+                AST_Declaration* decl = stmt->declaration;
+                assert(decl->kind == AST_DECL_MUTABLE);
+
+                if (decl->mutable_decl.init_expression)
+                {
+                    emit_expression(generator, decl->mutable_decl.init_expression);
+                    int64_t offset = 2 + get_local_offset(generator, stmt->declaration);
+                    emit_instruction(generator, SVMI_STOREL_S64);
+                    emit_s64(generator, offset);
+                }
                 break;
             }
 
@@ -268,7 +290,7 @@ namespace Zodiac
 
             case AST_DECL_LOC_LOCAL:
             {
-                assert(false);
+                emit_local_load(generator, decl);
                 break;
             }
 
@@ -336,6 +358,21 @@ namespace Zodiac
         emit_s64(generator, offset);
     }
 
+    static void emit_local_load(Stack_VM_Generator* generator, AST_Declaration* local_decl)
+    {
+        assert(generator);
+        assert(local_decl);
+        assert(local_decl->location == AST_DECL_LOC_LOCAL);
+
+        assert(local_decl->mutable_decl.type);
+        assert(local_decl->mutable_decl.type == Builtin::type_int);
+
+        int64_t local_offset = get_local_offset(generator, local_decl);
+        int64_t offset = 2 + local_offset;
+        emit_instruction(generator, SVMI_LOADL_S64);
+        emit_s64(generator, offset);
+    }
+
     static void emit_instruction(Stack_VM_Generator* generator, Stack_VM_Instruction instruction)
     {
         assert(generator);
@@ -398,11 +435,31 @@ namespace Zodiac
         assert(func_decl->kind == AST_DECL_FUNC);
         assert(arg_decl);
         assert(arg_decl->kind == AST_DECL_MUTABLE);
+        assert(arg_decl->location == AST_DECL_LOC_ARGUMENT);
 
         for (uint64_t i = 0; i < BUF_LENGTH(func_decl->function.args); i++)
         {
             AST_Declaration* func_arg_decl = func_decl->function.args[i];
             if (func_arg_decl == arg_decl)
+            {
+                return i;
+            }
+        }
+
+        assert(false);
+    }
+
+    static int64_t get_local_offset(Stack_VM_Generator* generator, AST_Declaration* local_decl)
+    {
+        assert(generator);
+        assert(local_decl);
+        assert(local_decl->kind == AST_DECL_MUTABLE);
+        assert(local_decl->location == AST_DECL_LOC_LOCAL);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(generator->current_func_decl->function.locals); i++)
+        {
+            AST_Declaration* func_local_decl = generator->current_func_decl->function.locals[i];
+            if (func_local_decl == local_decl)
             {
                 return i;
             }

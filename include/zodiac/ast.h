@@ -151,6 +151,7 @@ namespace Zodiac
     struct AST_Function_Declaration
     {
         BUF(AST_Declaration*) args = nullptr;
+        BUF(AST_Declaration*) locals = nullptr;
         AST_Type_Spec* return_type_spec = nullptr;
         AST_Type* return_type = nullptr;
         AST_Type* inferred_return_type = nullptr;

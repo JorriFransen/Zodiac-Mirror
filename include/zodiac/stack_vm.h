@@ -13,7 +13,10 @@ namespace Zodiac
         SVMI_PUSH_S64,
         SVMI_POP_S64,
 
+        SVMI_ALLOCL,
+
         SVMI_LOADL_S64,
+        SVMI_STOREL_S64,
 
         SVMI_ADD_S64,
         SVMI_SUB_S64,

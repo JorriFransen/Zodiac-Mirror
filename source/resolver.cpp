@@ -115,6 +115,13 @@ namespace Zodiac
             {
                 declaration->flags |= AST_DECL_FLAG_RESOLVED;
                 BUF_PUSH(scope->declarations, declaration);
+
+                if (resolver->current_func_decl &&
+                    declaration->location == AST_DECL_LOC_LOCAL)
+                {
+                    BUF_PUSH(resolver->current_func_decl->function.locals,
+                             declaration);
+                }
             }
         }
 

@@ -60,7 +60,7 @@ namespace Zodiac
         while (ip < instruction_count)
         {
             Stack_VM_Instruction instruction = (Stack_VM_Instruction)instructions[ip];
-            printf("%lu: ", ip);
+            printf("%03lu: ", ip);
             ip++;
             switch (instruction)
             {
@@ -89,10 +89,24 @@ namespace Zodiac
                     break;
                 }
 
+                case SVMI_ALLOCL:
+                {
+                    int64_t int_count = instructions[ip++];
+                    printf("SVMI_ALLOCL %lu\n", int_count);
+                    break;
+                }
+
                 case SVMI_LOADL_S64:
                 {
                     int64_t offset = instructions[ip++];
-                    printf("SVMI_LOADL %ld\n", offset);
+                    printf("SVMI_LOADL_S64 %ld\n", offset);
+                    break;
+                }
+
+                case SVMI_STOREL_S64:
+                {
+                    int64_t offset = instructions[ip++];
+                    printf("SVMI_STOREL_S64 %ld\n", offset);
                     break;
                 }
 
@@ -266,11 +280,29 @@ namespace Zodiac
                 break;
             }
 
+            case SVMI_ALLOCL:
+            {
+                uint64_t local_int_count = stack_vm_fetch_s64(vm);
+                for (uint64_t i = 0; i < local_int_count; i++)
+                {
+                    stack_vm_push(vm, 0);
+                }
+                break;
+            };
+
             case SVMI_LOADL_S64:
             {
                 int64_t local_offset = stack_vm_fetch_s64(vm) * sizeof(uint64_t);
                 uint64_t value = vm->stack[vm->fp + local_offset];
                 stack_vm_push(vm, value);
+                break;
+            }
+
+            case SVMI_STOREL_S64:
+            {
+                int64_t local_offset = stack_vm_fetch_s64(vm) * sizeof(uint64_t);
+                uint64_t value = stack_vm_pop(vm);
+                *(uint64_t*)&vm->stack[vm->fp + local_offset] = value;
                 break;
             }
 
@@ -315,8 +347,9 @@ namespace Zodiac
                 uint64_t num_args = stack_vm_fetch_u64(vm);
 
                 stack_vm_push(vm, num_args);
-                vm->fp = vm->sp;
+                auto new_fp = vm->sp;
                 stack_vm_push(vm, vm->fp);
+                vm->fp = new_fp;
                 uint64_t return_address = vm->ip;
                 vm->ip = target_address;
                 stack_vm_push(vm, return_address);
@@ -326,9 +359,14 @@ namespace Zodiac
             case SVMI_RETURN:
             {
                 uint64_t return_value = stack_vm_pop(vm);
-                uint64_t return_address = stack_vm_pop(vm);
-                uint64_t previous_fp = stack_vm_pop(vm);
-                uint64_t num_args = stack_vm_pop(vm);
+                uint64_t return_address = *(vm->stack + vm->fp + (1*sizeof(uint64_t)));
+                uint64_t previous_fp = *(uint64_t*)(vm->stack + vm->fp);
+                uint64_t num_args = *(vm->stack + vm->fp - (1*sizeof(uint64_t)));
+                // uint64_t return_address = stack_vm_pop(vm);
+                // uint64_t previous_fp = stack_vm_pop(vm);
+                // uint64_t num_args = stack_vm_pop(vm);
+
+                vm->sp = vm->fp - (1*sizeof(uint64_t));
 
                 for (uint64_t i = 0; i < num_args; i++)
                 {

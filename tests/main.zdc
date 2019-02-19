@@ -6,9 +6,9 @@ add :: (a: int, b: int) -> int
 
 main :: () -> int
 {
-    // x : int = add(4, 5);
-    // y := sub(x, 3);
-    return sub(5, 7);
+    x : int = add(4, 5);
+    y := sub(x, 3);
+    return y;
 }
 
 sub :: (a: int, b: int)

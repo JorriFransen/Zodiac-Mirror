@@ -122,6 +122,7 @@ namespace Zodiac
         result->gen_data = nullptr;
 
         result->function.args = args;
+        result->function.locals = nullptr;
         result->function.return_type_spec = return_type_spec;
         result->function.return_type = nullptr;
         result->function.inferred_return_type = nullptr;
