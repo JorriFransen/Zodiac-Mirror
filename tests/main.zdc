@@ -1,32 +1,34 @@
 
-add :: (a: int, b: int) -> int
-{
-    return a + b;
-}
+// add :: (a: int, b: int) -> int
+// {
+//     return a + b;
+// }
 
 main :: () -> int
 {
-    x : int = add(4, 5);
-    y := sub(x, 3);
-    return y;
+    // x : int = add(4, 5);
+    // y := sub(x, 3);
+    // return y;
+
+    return fib_recursive(30);
 }
 
-sub :: (a: int, b: int)
-{
-    return a - b;
-}
-
-// fib_recursive :: (x: int) -> int
+// sub :: (a: int, b: int)
 // {
-//     if (x < 2)
-//     {
-//         return x;
-//     }
-//     else
-//     {
-//         return fib_recursive(x - 1) + fib_recursive(x - 2);
-//     }
+//     return a - b;
 // }
+
+fib_recursive :: (x: int) -> int
+{
+    if (x < 2)
+    {
+        return x;
+    }
+    else
+    {
+        return fib_recursive(x - 1) + fib_recursive(x - 2);
+    }
+}
 
 // Should result in the following tokens:
 //   IDENT "main"

@@ -222,6 +222,8 @@ namespace Zodiac
                     break;
                 }
 
+                default: assert(false);
+
             }
         }
 

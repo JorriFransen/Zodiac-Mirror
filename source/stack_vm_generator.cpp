@@ -144,6 +144,11 @@ namespace Zodiac
         assert(decl->function.body_block);
         emit_statement(generator, decl->function.body_block);
 
+        //TODO: void return
+        emit_instruction(generator, SVMI_PUSH_S64);
+        emit_s64(generator, 0);
+        emit_instruction(generator, SVMI_RETURN);
+
         generator->current_func_decl = nullptr;
     }
 
@@ -188,10 +193,56 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_IF:
+            {
+                emit_if_statement(generator, stmt);
+                break;
+            }
+
             default: assert(false);
         }
 
         stmt->flags |= AST_STMT_FLAG_GENERATED;
+    }
+
+    static void emit_if_statement(Stack_VM_Generator* generator, AST_Statement* stmt)
+    {
+        assert(generator);
+        assert(stmt);
+        assert(stmt->kind == AST_STMT_IF);
+
+        emit_expression(generator, stmt->if_stmt.if_expression);
+        emit_instruction(generator, SVMI_NOT_BOOL);
+
+        emit_instruction(generator, SVMI_JMP_COND);
+        uint64_t cond_jump_target_pos = BUF_LENGTH(generator->result.instructions);
+        emit_address(generator, 0); // Will be replaced with the address of the else block
+
+        emit_statement(generator, stmt->if_stmt.then_statement);
+        bool then_terminated = last_emitted_was_terminator(generator);
+        uint64_t then_exit_jump_target_pos;
+        if (then_terminated)
+        {
+            emit_instruction(generator, SVMI_JMP_IMM);
+            then_exit_jump_target_pos = BUF_LENGTH(generator->result.instructions);
+            emit_address(generator, 0); // Will be replaced with address of the first thing after the if
+        }
+
+        uint64_t else_block_addr = BUF_LENGTH(generator->result.instructions);
+
+        if (stmt->if_stmt.else_statement)
+        {
+            emit_statement(generator, stmt->if_stmt.else_statement);
+        }
+
+        uint64_t post_if_addr = BUF_LENGTH(generator->result.instructions);
+
+        if (then_terminated)
+        {
+            generator->result.instructions[cond_jump_target_pos] = else_block_addr;
+        }
+
+        generator->result.instructions[then_exit_jump_target_pos] = post_if_addr;
     }
 
     static void emit_expression(Stack_VM_Generator* generator, AST_Expression* expr)
@@ -255,6 +306,12 @@ namespace Zodiac
             case AST_BINOP_SUB:
             {
                 emit_instruction(generator, SVMI_SUB_S64);
+                break;
+            }
+
+            case AST_BINOP_LT:
+            {
+                emit_instruction(generator, SVMI_LT_S64);
                 break;
             }
 
@@ -332,7 +389,8 @@ namespace Zodiac
         AST_Declaration* func_decl = expr->call.callee_declaration;
         assert(func_decl);
         assert(func_decl->kind == AST_DECL_FUNC);
-        assert(func_decl->flags & AST_DECL_FLAG_GENERATED);
+        assert(func_decl->flags & AST_DECL_FLAG_GENERATED ||
+               func_decl == generator->current_func_decl);
 
         assert(func_decl->gen_data);
         auto gen_data = get_gen_data(generator, func_decl);
@@ -466,5 +524,21 @@ namespace Zodiac
         }
 
         assert(false);
+    }
+
+    static bool last_emitted_was_terminator(Stack_VM_Generator* generator)
+    {
+        assert(generator);
+
+        auto gen_count = BUF_LENGTH(generator->result.instructions);
+
+        if (gen_count)
+        {
+            auto instruction = (Stack_VM_Instruction)generator->result.instructions[gen_count - 1];
+
+            return instruction == SVMI_RETURN;
+        }
+
+        return false;
     }
 }

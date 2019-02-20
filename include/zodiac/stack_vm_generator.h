@@ -62,6 +62,7 @@ namespace Zodiac
     static void emit_function_declaration(Stack_VM_Generator* generator, AST_Declaration* decl);
 
     static void emit_statement(Stack_VM_Generator* generator, AST_Statement* stmt);
+    static void emit_if_statement(Stack_VM_Generator* generator, AST_Statement* stmt);
 
     static void emit_expression(Stack_VM_Generator* generator, AST_Expression* expr);
     static void emit_binary_expression(Stack_VM_Generator* generator, AST_Expression* expr);
@@ -81,4 +82,6 @@ namespace Zodiac
     static int64_t get_argument_offset(Stack_VM_Generator* generator, AST_Declaration* func_decl,
                                   AST_Declaration* arg_decl);
     static int64_t get_local_offset(Stack_VM_Generator* generator, AST_Declaration* local_decl);
+
+    static bool last_emitted_was_terminator(Stack_VM_Generator* generator);
 }
