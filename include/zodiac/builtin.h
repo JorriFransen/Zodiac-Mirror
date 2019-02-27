@@ -10,6 +10,7 @@ namespace Zodiac
 
     struct Builtin
     {
+        static AST_Type* type_void;
         static AST_Type* type_int;
     };
 }

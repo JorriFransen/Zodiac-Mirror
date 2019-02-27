@@ -23,6 +23,7 @@ set (ZODIAC_COMPILER_SOURCE
     source/ast.cpp
     source/atom.cpp
     source/builtin.cpp
+    source/ir.cpp
     source/lexer.cpp
     source/parser.cpp
     source/resolver.cpp
@@ -45,3 +46,5 @@ target_include_directories(zodiac PRIVATE include/zodiac)
 add_executable(vm_test source/vm_test.cpp ${ZODIAC_COMPILER_SOURCE})
 target_include_directories(vm_test PRIVATE include/zodiac)
 
+add_executable(ir_test source/ir_test.cpp ${ZODIAC_COMPILER_SOURCE})
+target_include_directories(ir_test PRIVATE include/zodiac)

@@ -212,6 +212,7 @@ namespace Zodiac
     {
         AST_TYPE_FLAG_INT    = 0x01,
         AST_TYPE_FLAG_SIGNED = 0x02,
+        AST_TYPE_FLAG_VOID   = 0x04,
     };
 
     struct AST_Type

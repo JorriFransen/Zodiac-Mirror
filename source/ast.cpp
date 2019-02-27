@@ -241,7 +241,7 @@ namespace Zodiac
     AST_Type* ast_type_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size)
     {
         assert(context);
-        assert(bit_size > 0);
+        // assert(bit_size > 0);
         assert(bit_size % 8 == 0);
 
         AST_Type* result = arena_alloc(context->arena, AST_Type);

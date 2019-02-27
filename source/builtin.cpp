@@ -6,6 +6,8 @@ namespace Zodiac
     {
         assert(context);
 
+        Builtin::type_void = register_builtin_type(context, AST_TYPE_FLAG_VOID, 0, "void");
+
         AST_Type_Flags signed_int_flags = AST_TYPE_FLAG_INT | AST_TYPE_FLAG_SIGNED;
         Builtin::type_int = register_builtin_type(context, signed_int_flags, 64, "int");
     }
@@ -28,5 +30,6 @@ namespace Zodiac
         return type;
     }
 
+    AST_Type* Builtin::type_void = nullptr;
     AST_Type* Builtin::type_int = nullptr;
 }
