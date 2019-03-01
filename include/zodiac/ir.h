@@ -5,12 +5,15 @@
 namespace Zodiac
 {
     struct IR_Block;
+    struct IR_Function;
 
     struct IR_Builder
     {
         Arena arena = {};
 
+        BUF(IR_Function*) functions = nullptr;
 
+        uint64_t next_temp_index = 0;
     };
 
     enum IR_Value_Kind
@@ -33,6 +36,11 @@ namespace Zodiac
                 uint64_t index;
                 const char* name;
             } argument;
+
+            struct
+            {
+                uint64_t index;
+            } temp;
 
             struct
             {
@@ -102,4 +110,9 @@ namespace Zodiac
     IR_Value* ir_builder_get_literal(IR_Builder* ir_builder, AST_Type* ir_type, int64_t s64);
 
     void ir_builder_print(IR_Builder* ir_builder);
+    void ir_builder_print_function(IR_Builder* ir_builder, IR_Function* func);
+    void ir_builder_print_block(IR_Builder* ir_builder, IR_Block* block);
+    void ir_builder_print_instruction(IR_Builder* ir_builder, IR_Instruction iri);
+    void ir_builder_print_value(IR_Builder* ir_builder, IR_Value* value);
+    void ir_builder_print_type(IR_Builder* ir_builder, AST_Type* ast_type);
 }

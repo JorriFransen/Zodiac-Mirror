@@ -10,6 +10,8 @@ namespace Zodiac
         assert(ir_builder);
 
         ir_builder->arena = arena_create(MB(1));
+        ir_builder->functions = nullptr;
+        ir_builder->next_temp_index = 0;
     }
 
     IR_Function* ir_builder_create_function(IR_Builder* ir_builder, const char* name,
@@ -24,6 +26,8 @@ namespace Zodiac
         result->return_type = return_type;
         result->arguments = nullptr;
         result->blocks = nullptr;
+
+        BUF_PUSH(ir_builder->functions, result);
 
         return result;
     }
@@ -147,6 +151,7 @@ namespace Zodiac
         IR_Value* result = arena_alloc(&ir_builder->arena, IR_Value);
         result->kind = IRV_TEMPORARY;
         result->type = type;
+        result->temp.index = ir_builder->next_temp_index++;
 
         return result;
     }
@@ -190,6 +195,170 @@ namespace Zodiac
     {
         assert(ir_builder);
 
-        assert(false);
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->functions); i++)
+        {
+            IR_Function* func = ir_builder->functions[i];
+            ir_builder_print_function(ir_builder, func);
+        }
+    }
+
+    void ir_builder_print_function(IR_Builder* ir_builder, IR_Function* func)
+    {
+        assert(ir_builder);
+        assert(func);
+
+        printf("%s(", func->name);
+
+        for (uint64_t ai = 0; ai < BUF_LENGTH(func->arguments); ai++)
+        {
+            if (ai > 0)
+            {
+                printf(", ");
+            }
+            IR_Value* arg_val = func->arguments[ai];
+            printf("%s: ", arg_val->argument.name);
+            ir_builder_print_type(ir_builder, arg_val->type);
+        }
+
+        printf(") -> ");
+        ir_builder_print_type(ir_builder, func->return_type);
+        printf("\n");
+
+        if (func->blocks)
+        {
+            printf("{\n");
+
+            for (uint64_t bi = 0; bi < BUF_LENGTH(func->blocks); bi++)
+            {
+                IR_Block* block = func->blocks[bi];
+                ir_builder_print_block(ir_builder, block);
+            }
+
+            printf("}\n");
+        }
+
+        printf("\n");
+    }
+
+    void ir_builder_print_block(IR_Builder* ir_builder, IR_Block* block)
+    {
+        assert(ir_builder);
+        assert(block);
+
+        printf("%s:\n", block->name);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(block->instructions); i++)
+        {
+            IR_Instruction iri = block->instructions[i];
+            ir_builder_print_instruction(ir_builder, iri);
+        }
+    }
+
+    void ir_builder_print_instruction(IR_Builder* ir_builder, IR_Instruction iri)
+    {
+        assert(ir_builder);
+
+        printf("\t");
+
+        if (iri.result)
+        {
+            ir_builder_print_value(ir_builder, iri.result);
+            printf(" = ");
+        }
+
+        switch (iri.kind)
+        {
+            case IRI_ADD:
+                printf("IRI_ADD");
+                break;
+
+            case IRI_RETURN:
+                printf("IRI_RETURN");
+                break;
+
+            case IRI_CALL:
+                printf("IRI_CALL");
+                break;
+
+            case IRI_PUSH_ARG:
+                printf("IRI_PUSH_ARG");
+                break;
+
+            default: assert(false);
+        }
+
+        if (iri.lhs)
+        {
+            printf("  ");
+
+            ir_builder_print_value(ir_builder, iri.lhs);
+        }
+
+        if (iri.rhs)
+        {
+            printf(", ");
+            ir_builder_print_value(ir_builder, iri.rhs);
+        }
+
+        printf("\n");
+    }
+
+    void ir_builder_print_value(IR_Builder* ir_builder, IR_Value* value)
+    {
+        assert(ir_builder);
+        assert(value);
+
+        switch (value->kind)
+        {
+            case IRV_ARGUMENT:
+            {
+                printf("arg(%s)", value->argument.name);
+                break;
+            }
+
+            case IRV_TEMPORARY:
+            {
+                printf("temp(%lu)", value->temp.index);
+                break;
+            }
+
+            case IRV_LITERAL:
+            {
+                printf("lit(%ld)", value->literal.s64);
+                break;
+            }
+
+            default: assert(false);
+        }
+    }
+
+    void ir_builder_print_type(IR_Builder* ir_builder, AST_Type* ast_type)
+    {
+        assert(ir_builder);
+        assert(ast_type);
+
+        auto flags = ast_type->flags;
+
+        if (flags & AST_TYPE_FLAG_VOID)
+        {
+            printf("void");
+        }
+        else if (flags & AST_TYPE_FLAG_INT)
+        {
+            if (flags & AST_TYPE_FLAG_SIGNED)
+            {
+                printf("s");
+            }
+            else
+            {
+                printf("u");
+            }
+
+            printf("%lu", ast_type->bit_size);
+        }
+        else
+        {
+            assert(false);
+        }
     }
 }
