@@ -21,6 +21,7 @@ namespace Zodiac
         IRV_ARGUMENT,
         IRV_TEMPORARY,
         IRV_LITERAL,
+        IRV_FUNC,
     };
 
     struct IR_Value
@@ -46,6 +47,8 @@ namespace Zodiac
             {
                 int64_t s64;
             } literal;
+
+            IR_Function* ir_function;
         };
     };
 
@@ -103,6 +106,7 @@ namespace Zodiac
     IR_Value* ir_value_argument(IR_Builder* ir_builder, uint64_t arg_index,
                                 const char* arg_name, AST_Type* arg_type);
     IR_Value* ir_value_temporary(IR_Builder* ir_builder, AST_Type* type);
+    IR_Value* ir_value_function(IR_Builder* ir_builder, IR_Function* ir_func);
 
     void ir_builder_insert_return(IR_Builder* ir_builder, IR_Block* block, IR_Value* result_value);
     void ir_builder_insert_return(IR_Builder* ir_builder, IR_Block* block);

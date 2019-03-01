@@ -110,7 +110,8 @@ namespace Zodiac
         IR_Value* num_args_lit = ir_builder_get_literal(ir_builder, Builtin::type_int,
                                                         num_args);
         IR_Value* return_value = ir_value_temporary(ir_builder, func->return_type);
-        IR_Instruction iri = { IRI_CALL, num_args_lit, nullptr, return_value };
+        IR_Value* func_value = ir_value_function(ir_builder, func);
+        IR_Instruction iri = { IRI_CALL, num_args_lit, func_value, return_value };
         BUF_PUSH(block->instructions, iri);
 
         return return_value;
@@ -152,6 +153,18 @@ namespace Zodiac
         result->kind = IRV_TEMPORARY;
         result->type = type;
         result->temp.index = ir_builder->next_temp_index++;
+
+        return result;
+    }
+
+    IR_Value* ir_value_function(IR_Builder* ir_builder, IR_Function* ir_func)
+    {
+        assert(ir_builder);
+        assert(ir_func);
+
+        IR_Value* result = arena_alloc(&ir_builder->arena, IR_Value);
+        result->kind = IRV_FUNC;
+        result->ir_function = ir_func;
 
         return result;
     }
@@ -325,6 +338,12 @@ namespace Zodiac
             case IRV_LITERAL:
             {
                 printf("lit(%ld)", value->literal.s64);
+                break;
+            }
+
+            case IRV_FUNC:
+            {
+                printf("func(%s)", value->ir_function->name);
                 break;
             }
 
