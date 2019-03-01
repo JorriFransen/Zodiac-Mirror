@@ -22,6 +22,7 @@ namespace Zodiac
         IRV_TEMPORARY,
         IRV_LITERAL,
         IRV_FUNC,
+        IRV_BLOCK,
     };
 
     struct IR_Value
@@ -49,6 +50,7 @@ namespace Zodiac
             } literal;
 
             IR_Function* ir_function;
+            IR_Block* ir_block;
         };
     };
 
@@ -64,9 +66,14 @@ namespace Zodiac
     enum IR_Instruction_Kind
     {
         IRI_ADD,
+        IRI_SUB,
+        IRI_NOT_BOOL,
         IRI_RETURN,
         IRI_CALL,
         IRI_PUSH_ARG,
+        IRI_LT,
+        IRI_JMP,
+        IRI_COND_JMP,
     };
 
     struct IR_Instruction
@@ -97,16 +104,25 @@ namespace Zodiac
 
     IR_Value* ir_builder_insert_add(IR_Builder* ir_builder, IR_Block* block,
                                     IR_Value* lhs, IR_Value* rhs);
+    IR_Value* ir_builder_insert_sub(IR_Builder* ir_builder, IR_Block* block,
+                                    IR_Value* lhs, IR_Value* rhs);
+    IR_Value* ir_builder_insert_bool_not(IR_Builder* ir_builder, IR_Block* block,
+                                         IR_Value* bool_value);
     IR_Value* ir_builder_insert_call(IR_Builder* ir_builder, IR_Block* block,
                                      IR_Function* func,
                                      IR_Value** args, uint64_t num_args);
     void ir_builder_insert_arg_push(IR_Builder* ir_builder, IR_Block* block,
                                     IR_Value* argument_value);
+    IR_Value* ir_builder_insert_lt(IR_Builder* ir_builder, IR_Block* block,
+                                   IR_Value* lhs, IR_Value* rhs);
+    void ir_builder_insert_cond_jump(IR_Builder* ir_builder, IR_Block* block, IR_Value* cond_value,
+                                          IR_Block* then_block, IR_Block* else_block);
 
     IR_Value* ir_value_argument(IR_Builder* ir_builder, uint64_t arg_index,
                                 const char* arg_name, AST_Type* arg_type);
     IR_Value* ir_value_temporary(IR_Builder* ir_builder, AST_Type* type);
     IR_Value* ir_value_function(IR_Builder* ir_builder, IR_Function* ir_func);
+    IR_Value* ir_value_block(IR_Builder* ir_builder, IR_Block* ir_block);
 
     void ir_builder_insert_return(IR_Builder* ir_builder, IR_Block* block, IR_Value* result_value);
     void ir_builder_insert_return(IR_Builder* ir_builder, IR_Block* block);
