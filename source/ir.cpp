@@ -12,6 +12,7 @@ namespace Zodiac
         ir_builder->functions = nullptr;
         ir_builder->current_function = nullptr;
         ir_builder->insert_block = nullptr;
+        ir_builder->expect_arg_or_call = false;
     }
 
     IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, const char* name, AST_Type* return_type)
@@ -114,6 +115,22 @@ namespace Zodiac
         assert(ir_builder->insert_block);
 
         assert(iri->next == nullptr);
+
+        if (ir_builder->expect_arg_or_call)
+        {
+            assert(iri->op == IR_OP_PUSH_CALL_ARG ||
+                   iri->op == IR_OP_CALL);
+
+            if (iri->op == IR_OP_CALL)
+            {
+                ir_builder->expect_arg_or_call = false;
+            }
+        }
+
+        if (iri->op == IR_OP_PUSH_CALL_ARG)
+        {
+            ir_builder->expect_arg_or_call = true;
+        }
 
         auto block = ir_builder->insert_block;
         if (block->first_instruction)
