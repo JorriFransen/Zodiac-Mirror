@@ -105,6 +105,8 @@ namespace Zodiac
         IR_Function* current_function = nullptr;
 
         IR_Block* insert_block = nullptr;
+
+        bool expect_arg_or_call = false;
     };
 
     void ir_builder_init(IR_Builder* ir_builder);
