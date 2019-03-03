@@ -264,6 +264,10 @@ namespace Zodiac
         expect_token(parser, TOK_RPAREN);
 
         AST_Statement* then_stmt = parse_statement(parser, scope);
+        if (!then_stmt)
+        {
+            return nullptr;
+        }
         AST_Statement* else_stmt = nullptr;
 
         if (match_token(parser, TOK_KW_ELSE))
@@ -446,6 +450,14 @@ namespace Zodiac
         }
         else
         {
+            // Paren expr
+            if (match_token(parser, TOK_LPAREN))
+            {
+                AST_Expression* result = parse_expression(parser);
+                expect_token(parser, TOK_RPAREN);
+                return result;
+            }
+
             // Literal
             return parse_literal_expression(parser);
         }
@@ -495,7 +507,8 @@ namespace Zodiac
 
         auto ct = current_token(parser);
 
-        return ct.kind == TOK_LT;
+        return ct.kind == TOK_LT ||
+               ct.kind == TOK_LTEQ;
     }
 
     static bool is_unary_op(Parser* parser)
@@ -568,6 +581,10 @@ namespace Zodiac
         {
             case TOK_LT:
                 result = AST_BINOP_LT;
+                break;
+
+            case TOK_LTEQ:
+                result = AST_BINOP_LTEQ;
                 break;
 
             default: assert(false);
@@ -667,8 +684,9 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(parser->result.errors); i++)
         {
             auto error = parser->result.errors[i];
-            fprintf(stderr, "Error:%s:%lu: %s\n",
+            fprintf(stderr, "Error:%s:%lu:%lu: %s\n",
                     error.file_pos.file_name, error.file_pos.line,
+                    error.file_pos.line_relative_char_pos,
                     error.message);
         }
     }

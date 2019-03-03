@@ -9,7 +9,7 @@ main :: () -> int
     x : int = add(4, 5);
     y := sub(x, 3);
 
-    return fib_recursive(30) / y;
+    return fib_recursive(30) / (fact_recursive(y - 2) - 20);
 }
 
 sub :: (a: int, b: int)
@@ -26,6 +26,18 @@ fib_recursive :: (x: int) -> int
     else
     {
         return fib_recursive(x - 1) + fib_recursive(x - 2);
+    }
+}
+
+fact_recursive :: (n: int) -> int
+{
+    if (n <= 1)
+    {
+        return 1;
+    }
+    else
+    {
+        return n * fact_recursive(n - 1);
     }
 }
 

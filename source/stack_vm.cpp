@@ -168,6 +168,12 @@ namespace Zodiac
                     break;
                 }
 
+                case SVMI_LTEQ_S64:
+                {
+                    printf("SVMI_LTEQ_S64\n");
+                    break;
+                }
+
                 case SVMI_GT_S64:
                 {
                     printf("SVMI_GT_S64\n");
@@ -405,6 +411,15 @@ namespace Zodiac
                 uint64_t rhs = stack_vm_pop(vm);
                 uint64_t lhs = stack_vm_pop(vm);
                 bool result = lhs < rhs;
+                stack_vm_push(vm, result);
+                break;
+            }
+
+            case SVMI_LTEQ_S64:
+            {
+                uint64_t rhs = stack_vm_pop(vm);
+                uint64_t lhs = stack_vm_pop(vm);
+                bool result = lhs <= rhs;
                 stack_vm_push(vm, result);
                 break;
             }

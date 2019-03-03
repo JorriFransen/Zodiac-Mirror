@@ -57,6 +57,21 @@ namespace Zodiac
     break; }                                                              \
 
 
+#define _DOUBLE_CHAR_TOKEN_CASE(c1, k1, c2, k2)\
+    case c1: { \
+        File_Pos file_pos = lexer->current_file_pos; \
+        uint64_t token_length = 1; \
+        Token_Kind token_kind = k1; \
+        lexer_consume_character(lexer); \
+        if (current_char(lexer) == c2) { \
+            token_length++; \
+            token_kind = k2; \
+            lexer_consume_character(lexer); \
+        } \
+        lexer_push_token(lexer, token_kind, file_pos, token_length); \
+        break; }
+
+
     void lex_token(Lexer* lexer)
     {
         assert(lexer);
@@ -71,7 +86,6 @@ namespace Zodiac
             _SINGLE_CHAR_TOKEN_CASE('+', TOK_PLUS);
             _SINGLE_CHAR_TOKEN_CASE('*', TOK_MUL);
             _SINGLE_CHAR_TOKEN_CASE('=', TOK_EQ);
-            _SINGLE_CHAR_TOKEN_CASE('<', TOK_LT);
             _SINGLE_CHAR_TOKEN_CASE(':', TOK_COLON);
             _SINGLE_CHAR_TOKEN_CASE(';', TOK_SEMICOLON);
             _SINGLE_CHAR_TOKEN_CASE(',', TOK_COMMA);
@@ -79,6 +93,8 @@ namespace Zodiac
             _SINGLE_CHAR_TOKEN_CASE(')', TOK_RPAREN);
             _SINGLE_CHAR_TOKEN_CASE('{', TOK_LBRACE);
             _SINGLE_CHAR_TOKEN_CASE('}', TOK_RBRACE);
+
+            _DOUBLE_CHAR_TOKEN_CASE('<', TOK_LT, '=', TOK_LTEQ);
 
             case '-':
             {

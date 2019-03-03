@@ -47,6 +47,7 @@ namespace Zodiac
         AST_BINOP_DIV,
 
         AST_BINOP_LT,
+        AST_BINOP_LTEQ,
     };
 
     enum AST_Unop_Kind

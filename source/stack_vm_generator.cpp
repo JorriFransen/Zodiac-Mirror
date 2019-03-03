@@ -315,6 +315,12 @@ namespace Zodiac
                 break;
             }
 
+            case AST_BINOP_LTEQ:
+            {
+                emit_instruction(generator, SVMI_LTEQ_S64);
+                break;
+            }
+
             case AST_BINOP_MUL:
             {
                 emit_instruction(generator, SVMI_MUL_S64);

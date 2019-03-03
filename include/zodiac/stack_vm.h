@@ -30,6 +30,7 @@ namespace Zodiac
         SVMI_JMP_COND,
 
         SVMI_LT_S64,
+        SVMI_LTEQ_S64,
         SVMI_GT_S64,
         SVMI_EQ_S64,
         SVMI_NEQ_S64,

@@ -15,6 +15,7 @@ namespace Zodiac
         TOK_DIV,        // /
         TOK_EQ,         // =
         TOK_LT,         // <
+        TOK_LTEQ,       // <=
 
         TOK_COLON,      // :
         TOK_SEMICOLON,  // ;
