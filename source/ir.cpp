@@ -142,6 +142,7 @@ namespace Zodiac
         IR_Value* arg_value = ir_value_new(ir_builder, IRV_ARGUMENT, type);
         arg_value->argument.name = name;
         arg_value->argument.index = BUF_LENGTH(ir_builder->current_function->arguments);
+        arg_value->assigned = true;
 
         BUF_PUSH(ir_builder->current_function->arguments, arg_value);
         return arg_value;
@@ -224,6 +225,7 @@ namespace Zodiac
 
         IR_Value* result = ir_value_new(ir_builder, IRV_LITERAL, Builtin::type_int);
         result->literal.s64 = s64;
+        result->assigned = true;
 
         return result;
     }
@@ -252,6 +254,7 @@ namespace Zodiac
         IR_Value* result = arena_alloc(&ir_builder->arena, IR_Value);
         result->kind = kind;
         result->type = type;
+        result->assigned = false;
 
         if (kind == IRV_TEMPORARY)
         {
@@ -269,6 +272,7 @@ namespace Zodiac
 
         IR_Value* result = ir_value_new(ir_builder, IRV_FUNCTION, nullptr);
         result->function = function;
+        result->assigned = true;
 
         return result;
     }
@@ -280,6 +284,7 @@ namespace Zodiac
 
         IR_Value* result = ir_value_new(ir_builder, IRV_BLOCK, nullptr);
         result->block = block;
+        result->assigned = true;
 
         return result;
     }
@@ -288,6 +293,22 @@ namespace Zodiac
                                        IR_Value* arg1, IR_Value* arg2, IR_Value* result_value)
     {
         assert(ir_builder);
+
+        if (arg1)
+        {
+            assert(arg1->assigned);
+        }
+
+        if (arg2)
+        {
+            assert(arg2->assigned);
+        }
+
+        if (result_value)
+        {
+            assert(!result_value->assigned);
+            result_value->assigned = true;
+        }
 
         IR_Instruction* result = arena_alloc(&ir_builder->arena, IR_Instruction);
         result->op = op;

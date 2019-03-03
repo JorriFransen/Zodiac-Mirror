@@ -22,6 +22,8 @@ namespace Zodiac
         IR_Value_Kind kind;
         AST_Type* type = nullptr;
 
+        bool assigned = false;
+
         union
         {
             struct
