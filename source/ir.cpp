@@ -180,6 +180,54 @@ namespace Zodiac
         return result;
     }
 
+    IR_Value* ir_builder_emit_mul(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        assert(lhs->type == rhs->type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, lhs->type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_MUL, lhs, rhs, result);
+
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result;
+    }
+
+    IR_Value* ir_builder_emit_lt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        assert(lhs->type == rhs->type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LT, lhs, rhs, result);
+
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result;
+    }
+
+    IR_Value* ir_builder_emit_lteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        assert(lhs->type == rhs->type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LTEQ, lhs, rhs, result);
+
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result;
+    }
+
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val)
     {
         assert(ir_builder);
@@ -216,6 +264,31 @@ namespace Zodiac
                                                  nullptr, result_value);
         ir_builder_emit_instruction(ir_builder, iri);
         return result_value;
+    }
+
+    void ir_builder_emit_jmp(IR_Builder* ir_builder, IR_Value* block_value)
+    {
+        assert(ir_builder);
+        assert(block_value);
+        assert(block_value->kind == IRV_BLOCK);
+
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_JMP, block_value,
+                                                 nullptr, nullptr);
+        ir_builder_emit_instruction(ir_builder, iri);
+    }
+
+    void ir_builder_emit_jmp_if(IR_Builder* ir_builder, IR_Value* cond_value, IR_Value* block_value)
+    {
+        assert(ir_builder);
+        assert(cond_value);
+        assert(block_value);
+        assert(block_value->kind == IRV_BLOCK);
+
+        assert(cond_value->type == Builtin::type_bool);
+
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_JMP_IF, cond_value,
+                                                 block_value, nullptr);
+        ir_builder_emit_instruction(ir_builder, iri);
     }
 
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64)
@@ -409,6 +482,30 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_MUL:
+            {
+                ir_print_value(instruction->arg1);
+                printf(" * ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_LT:
+            {
+                ir_print_value(instruction->arg1);
+                printf(" < ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_LTEQ:
+            {
+                ir_print_value(instruction->arg1);
+                printf(" <= ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
             case IR_OP_RETURN:
             {
                 printf("RETURN ");
@@ -427,6 +524,22 @@ namespace Zodiac
             {
                 printf("CALL ");
                 ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_JMP:
+            {
+                printf("JMP ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_JMP_IF:
+            {
+                printf("IF ");
+                ir_print_value(instruction->arg1);
+                printf(" JMP ");
+                ir_print_value(instruction->arg2);
                 break;
             }
 
@@ -469,7 +582,7 @@ namespace Zodiac
 
             case IRV_BLOCK:
             {
-                assert(false);
+                printf("block(%s)", value->block->name);
                 break;
             }
 

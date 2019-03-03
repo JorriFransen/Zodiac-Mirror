@@ -53,11 +53,16 @@ namespace Zodiac
 
         IR_OP_ADD,
         IR_OP_SUB,
-
-        IR_OP_RETURN,
+        IR_OP_MUL,
+        IR_OP_LT,
+        IR_OP_LTEQ,
 
         IR_OP_PUSH_CALL_ARG,
         IR_OP_CALL,
+        IR_OP_RETURN,
+
+        IR_OP_JMP,
+        IR_OP_JMP_IF,
     };
 
     struct IR_Instruction
@@ -117,9 +122,14 @@ namespace Zodiac
     IR_Value* ir_builder_emit_function_arg(IR_Builder* ir_builder, const char* name, AST_Type* type);
     IR_Value* ir_builder_emit_add(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_sub(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
+    IR_Value* ir_builder_emit_mul(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
+    IR_Value* ir_builder_emit_lt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
+    IR_Value* ir_builder_emit_lteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val);
     void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value);
     IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value);
+    void ir_builder_emit_jmp(IR_Builder* ir_builder, IR_Value* block_value);
+    void ir_builder_emit_jmp_if(IR_Builder* ir_builder, IR_Value* cond_value, IR_Value* block_value);
 
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64);
 
