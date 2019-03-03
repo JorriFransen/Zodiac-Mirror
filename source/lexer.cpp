@@ -95,23 +95,7 @@ namespace Zodiac
             _SINGLE_CHAR_TOKEN_CASE('}', TOK_RBRACE);
 
             _DOUBLE_CHAR_TOKEN_CASE('<', TOK_LT, '=', TOK_LTEQ);
-
-            case '-':
-            {
-                File_Pos file_pos = lexer->current_file_pos;
-                uint64_t token_length = 1;
-                Token_Kind token_kind = TOK_MINUS;
-                lexer_consume_character(lexer);
-                if (current_char(lexer) == '>')
-                {
-                    token_length++;
-                    token_kind = TOK_RARROW;
-                    lexer_consume_character(lexer);
-                }
-
-                lexer_push_token(lexer, token_kind, file_pos, token_length);
-                break;
-            }
+            _DOUBLE_CHAR_TOKEN_CASE('-', TOK_MINUS, '>', TOK_RARROW);
 
             case '/':
             {
