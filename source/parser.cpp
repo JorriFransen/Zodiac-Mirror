@@ -536,7 +536,25 @@ namespace Zodiac
     static AST_Binop_Kind parse_mul_op(Parser* parser)
     {
         assert(parser);
-        assert(false);
+
+        auto ct = current_token(parser);
+        AST_Binop_Kind result;
+
+        switch (ct.kind)
+        {
+            case TOK_MUL:
+                result = AST_BINOP_MUL;
+                break;
+
+            case TOK_DIV:
+                result = AST_BINOP_DIV;
+                break;
+
+            default: assert(false);
+        }
+
+        consume_token(parser);
+        return result;
     }
 
     static AST_Binop_Kind parse_cmp_op(Parser* parser)

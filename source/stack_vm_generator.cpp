@@ -315,6 +315,18 @@ namespace Zodiac
                 break;
             }
 
+            case AST_BINOP_MUL:
+            {
+                emit_instruction(generator, SVMI_MUL_S64);
+                break;
+            }
+
+            case AST_BINOP_DIV:
+            {
+                emit_instruction(generator, SVMI_DIV_S64);
+                break;
+            }
+
             default: assert(false);
         }
     }
