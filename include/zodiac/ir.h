@@ -109,6 +109,11 @@ namespace Zodiac
         bool expect_arg_or_call = false;
     };
 
+    struct IR_Validation_Result
+    {
+        BUF(char*) messages = nullptr;
+    };
+
     void ir_builder_init(IR_Builder* ir_builder);
 
     IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, const char* name, AST_Type* return_type);
@@ -143,6 +148,13 @@ namespace Zodiac
 
     IR_Instruction* ir_instruction_new(IR_Builder* ir_builder, IR_Operator op,
                                        IR_Value* arg1, IR_Value* arg2, IR_Value* result);
+
+    bool ir_instruction_is_terminator(IR_Operator op);
+
+    IR_Validation_Result ir_validate(IR_Builder* ir_builder);
+    bool ir_validate_function(IR_Function* ir_function, IR_Validation_Result* valres);
+    bool ir_validate_block(IR_Block* ir_block, IR_Validation_Result* valres);
+    void ir_report_validation_error(IR_Validation_Result* valres, const char* format, ...);
 
     void ir_builder_print_functions(IR_Builder* ir_builder);
     void ir_print_function(IR_Function* function);

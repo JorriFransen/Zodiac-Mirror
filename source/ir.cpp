@@ -262,7 +262,6 @@ namespace Zodiac
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val)
     {
         assert(ir_builder);
-        assert(ret_val);
 
         // TODO: Check return type agains current functions return type
 
@@ -425,6 +424,86 @@ namespace Zodiac
         return result;
     }
 
+    bool ir_instruction_is_terminator(IR_Operator op)
+    {
+        return (op == IR_OP_JMP ||
+                op == IR_OP_RETURN);
+    }
+
+    IR_Validation_Result ir_validate(IR_Builder* ir_builder)
+    {
+        assert(ir_builder);
+
+        IR_Validation_Result valres = {};
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->functions); i++)
+        {
+            ir_validate_function(ir_builder->functions[i], &valres);
+        }
+
+        return valres;
+    }
+
+    bool ir_validate_function(IR_Function* ir_function, IR_Validation_Result* valres)
+    {
+        assert(ir_function);
+        assert(valres);
+
+        bool result = true;
+
+        //@TODO: Validate arguments and return type
+
+        IR_Block* block = ir_function->first_block;
+        while (block)
+        {
+            result &= ir_validate_block(block, valres);
+            block = block->next;
+        }
+
+        return result;
+    }
+
+    bool ir_validate_block(IR_Block* ir_block, IR_Validation_Result* valres)
+    {
+        assert(ir_block);
+        assert(valres);
+
+        bool result = true;
+
+        result &= ir_block->first_instruction != nullptr;
+        result &= ir_block->last_instruction != nullptr;
+
+        bool ends_with_term = ir_instruction_is_terminator(ir_block->last_instruction->op);
+        result &= ends_with_term;
+
+        if (!ends_with_term)
+        {
+            ir_report_validation_error(valres, "Block does not end with a terminator: %s",
+                ir_block->name);
+        }
+
+        return result;
+    }
+
+    void ir_report_validation_error(IR_Validation_Result* valres, const char* format, ...)
+    {
+        assert(valres);
+        assert(format);
+
+        va_list va_args;
+        va_start(va_args, format);
+        int length = vsnprintf(nullptr, 0, format, va_args) + 1;
+        va_end(va_args);
+
+        char* msg_buf = (char*)mem_alloc(length + 1);
+        va_start(va_args, format);
+        int written = vsnprintf(msg_buf, length, format, va_args);
+        va_end(va_args);
+        assert(written == length - 1);
+
+        BUF_PUSH(valres->messages, msg_buf);
+    }
+
     void ir_builder_print_functions(IR_Builder* ir_builder)
     {
         assert(ir_builder);
@@ -540,7 +619,10 @@ namespace Zodiac
             case IR_OP_RETURN:
             {
                 printf("RETURN ");
-                ir_print_value(instruction->arg1);
+                if (instruction->arg1)
+                {
+                    ir_print_value(instruction->arg1);
+                }
                 break;
             }
 

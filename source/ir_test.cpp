@@ -135,8 +135,22 @@ int main(int argc, const char** argv)
                                                                  Builtin::type_int,
                                                                  8));
         IR_Value* fact_result = ir_builder_emit_call(&ir_builder, fact_func);
+
+        ir_builder_emit_return(&ir_builder, nullptr);
     }
     ir_builder_end_function(&ir_builder, main_func);
 
-    ir_builder_print_functions(&ir_builder);
+    IR_Validation_Result validation = ir_validate(&ir_builder);
+
+    if (!validation.messages)
+    {
+        ir_builder_print_functions(&ir_builder);
+    }
+    else
+    {
+        for (uint64_t i = 0; i < BUF_LENGTH(validation.messages); i++)
+        {
+            fprintf(stderr, "%s\n", validation.messages[i]);
+        }
+    }
 }
