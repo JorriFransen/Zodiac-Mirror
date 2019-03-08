@@ -15,6 +15,161 @@ namespace Zodiac
         ir_builder->expect_arg_or_call = false;
     }
 
+    struct _IR_Decl_To_Func_
+    {
+        AST_Declaration* decl = nullptr;
+        IR_Function* func = nullptr;
+    };
+
+    void ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module)
+    {
+        assert(ir_builder);
+        assert(module);
+
+        //@TODO: Stack allocator
+        BUF(_IR_Decl_To_Func_) decl_to_func = nullptr;
+
+        // Emit global declarations
+        for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
+        {
+            AST_Declaration* global_decl = module->global_declarations[i];
+            assert(global_decl->location == AST_DECL_LOC_GLOBAL);
+
+            switch (global_decl->kind)
+            {
+                case AST_DECL_FUNC:
+                {
+                    IR_Value* func_value = ir_builder_begin_function(ir_builder,
+                                                                     global_decl->identifier->atom.data,
+                                                                     global_decl->function.return_type);
+                    IR_Value* entry_block = ir_builder_create_block(ir_builder, "entry", func_value);
+                    ir_builder_set_insert_block(ir_builder, entry_block);
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(global_decl->function.args); i++)
+                    {
+                        AST_Declaration* arg_decl = global_decl->function.args[i];
+                        assert(arg_decl->kind == AST_DECL_MUTABLE);
+                        assert(arg_decl->location == AST_DECL_LOC_ARGUMENT);
+
+                        ir_builder_emit_function_arg(ir_builder, arg_decl->identifier->atom.data,
+                                                     arg_decl->mutable_decl.type);
+                    }
+                    ir_builder_end_function(ir_builder, func_value);
+
+                    _IR_Decl_To_Func_ decl_to_func_entry = { global_decl, func_value->function };
+                    BUF_PUSH(decl_to_func, decl_to_func_entry);
+                    break;
+                }
+
+                case AST_DECL_MUTABLE:
+                {
+                    assert(false);
+                    break;
+                }
+
+                case AST_DECL_TYPE:
+                {
+                    assert(false);
+                    break;
+                }
+
+                default: assert(false);
+            }
+        }
+
+        // Emit function bodies
+        for (uint64_t i = 0; i < BUF_LENGTH(decl_to_func); i++)
+        {
+            AST_Declaration* decl = decl_to_func[i].decl;
+            IR_Function* func = decl_to_func[i].func;
+            IR_Block* entry_block = func->first_block;
+
+            ir_builder->current_function = func;
+            ir_builder_set_insert_block(ir_builder, entry_block);
+
+            ir_builder_emit_statement(ir_builder, decl->function.body_block);
+
+            ir_builder->current_function = nullptr;
+        }
+
+        BUF_FREE(decl_to_func);
+    }
+
+    void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement)
+    {
+        assert(ir_builder);
+        assert(statement);
+
+        switch (statement->kind)
+        {
+            case AST_STMT_DECLARATION:
+            {
+                assert(false);
+                break;
+            }
+
+            case AST_STMT_RETURN:
+            {
+                assert(statement->return_expression);
+                IR_Value* return_value = ir_builder_emit_expression(ir_builder,
+                                                                    statement->return_expression);
+                ir_builder_emit_return(ir_builder, return_value);
+                break;
+            }
+
+            case AST_STMT_BLOCK:
+            {
+                for (uint64_t i = 0; i < BUF_LENGTH(statement->block.statements); i++)
+                {
+                    AST_Statement* block_member_stmt = statement->block.statements[i];
+                    ir_builder_emit_statement(ir_builder, block_member_stmt);
+                }
+                break;
+            }
+
+            case AST_STMT_IF:
+            {
+                assert(false);
+                break;
+            }
+
+            default: assert(false);
+        }
+    }
+
+    IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression)
+    {
+        assert(ir_builder);
+        assert(expression);
+
+        switch (expression->kind)
+        {
+            case AST_EXPR_BINARY:
+            {
+                IR_Value* lhs_value = ir_builder_emit_expression(ir_builder, expression->binary.lhs);
+                IR_Value* rhs_value = ir_builder_emit_expression(ir_builder, expression->binary.rhs);
+
+                switch (expression->binary.op)
+                {
+                    case AST_BINOP_ADD:
+                        return ir_builder_emit_add(ir_builder, lhs_value, rhs_value);
+
+                    default: assert(false);
+                }
+            }
+
+            case AST_EXPR_LITERAL:
+            {
+                return ir_integer_literal(ir_builder, expression->type, (int64_t)expression->literal.u64);
+                break;
+            }
+
+            default: assert(false);
+        }
+
+        return nullptr;
+    }
+
     IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, const char* name, AST_Type* return_type)
     {
         assert(ir_builder);
@@ -470,16 +625,24 @@ namespace Zodiac
 
         bool result = true;
 
-        result &= ir_block->first_instruction != nullptr;
-        result &= ir_block->last_instruction != nullptr;
-
-        bool ends_with_term = ir_instruction_is_terminator(ir_block->last_instruction->op);
-        result &= ends_with_term;
-
-        if (!ends_with_term)
+        if (!ir_block->first_instruction)
         {
-            ir_report_validation_error(valres, "Block does not end with a terminator: %s",
-                ir_block->name);
+            assert(!ir_block->last_instruction);
+            result = false;
+            ir_report_validation_error(valres, "Block is empty: %s", ir_block->name);
+        }
+        else
+        {
+            assert(ir_block->last_instruction);
+
+            bool ends_with_term = ir_instruction_is_terminator(ir_block->last_instruction->op);
+            result &= ends_with_term;
+
+            if (!ends_with_term)
+            {
+                ir_report_validation_error(valres, "Block does not end with a terminator: %s",
+                                           ir_block->name);
+            }
         }
 
         return result;

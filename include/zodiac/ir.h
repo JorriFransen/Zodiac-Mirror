@@ -116,6 +116,10 @@ namespace Zodiac
 
     void ir_builder_init(IR_Builder* ir_builder);
 
+    void ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module);
+    void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement);
+    IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
+
     IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, const char* name, AST_Type* return_type);
     void ir_builder_end_function(IR_Builder* ir_builder, IR_Value* func_value);
     IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name, IR_Value* function);

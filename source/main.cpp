@@ -10,6 +10,8 @@
 #include "stack_vm.h"
 #include "stack_vm_generator.h"
 
+#include "ir.h"
+
 using namespace Zodiac;
 
 void usage(const char* exe_name)
@@ -85,16 +87,27 @@ int main(int argc, char** argv)
     Resolver resolver;
     resolver_init(&resolver, context, parse_result.ast_module);
 
-    Stack_VM_Generator generator;
-    stack_vm_generator_init(&generator, context, parse_result.ast_module);
+    // Stack_VM_Generator generator;
+    // stack_vm_generator_init(&generator, context, parse_result.ast_module);
 
-    while (!resolver.done || !generator.done)
+    // while (!resolver.done || !generator.done)
+    // {
+    //     resolver_do_cycle(&resolver);
+    //     stack_vm_generator_do_cycle(&generator);
+
+    //     if (!resolver.progressed_on_last_cycle &&
+    //         !generator.progressed_on_last_cycle)
+    //     {
+    //         break;
+    //     }
+
+    // }
+
+    while (!resolver.done)
     {
         resolver_do_cycle(&resolver);
-        stack_vm_generator_do_cycle(&generator);
 
-        if (!resolver.progressed_on_last_cycle &&
-            !generator.progressed_on_last_cycle)
+        if (!resolver.progressed_on_last_cycle)
         {
             break;
         }
@@ -109,21 +122,41 @@ int main(int argc, char** argv)
 
     fprintf(stderr, "Resolved file: %s\n", file_name);
 
-    if (!generator.done)
+    // if (!generator.done)
+    // {
+    //     fprintf(stderr, "Generator quitted with errors\n");
+    //     return -1;
+    // }
+
+    // fprintf(stderr, "Generated file: %s\n", file_name);
+
+    // stack_vm_print_program(generator.result.instructions,
+    //                        BUF_LENGTH(generator.result.instructions));
+
+    // Stack_VM vm;
+    // stack_vm_init(&vm, MB(8));
+    // stack_vm_execute_program(&vm, generator.result.instructions,
+    //                          BUF_LENGTH(generator.result.instructions));
+
+
+    IR_Builder ir_builder;
+    ir_builder_init(&ir_builder);
+
+    ir_builder_emit_module(&ir_builder, parse_result.ast_module);
+
+    IR_Validation_Result validation = ir_validate(&ir_builder);
+
+    if (!validation.messages)
     {
-        fprintf(stderr, "Generator quitted with errors\n");
-        return -1;
+        ir_builder_print_functions(&ir_builder);
     }
-
-    fprintf(stderr, "Generated file: %s\n", file_name);
-
-    stack_vm_print_program(generator.result.instructions,
-                           BUF_LENGTH(generator.result.instructions));
-
-    Stack_VM vm;
-    stack_vm_init(&vm, MB(8));
-    stack_vm_execute_program(&vm, generator.result.instructions,
-                             BUF_LENGTH(generator.result.instructions));
+    else
+    {
+        for (uint64_t i = 0; i < BUF_LENGTH(validation.messages); i++)
+        {
+            fprintf(stderr, "%s\n", validation.messages[i]);
+        }
+    }
 
     return 0;
 }

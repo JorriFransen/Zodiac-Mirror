@@ -90,6 +90,11 @@ namespace Zodiac
         }
 
         assert(result);
+        if (global)
+        {
+            assert(result->location == AST_DECL_LOC_INVALID);
+            result->location = AST_DECL_LOC_GLOBAL;
+        }
         return result;
     }
 
