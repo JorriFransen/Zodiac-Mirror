@@ -140,6 +140,20 @@ int main(int argc, const char** argv)
     }
     ir_builder_end_function(&ir_builder, main_func);
 
+    IR_Value* alloc_test_func = ir_builder_begin_function(&ir_builder, "allocl_test", Builtin::type_void);
+    {
+        IR_Value* entry_block = ir_builder_create_block(&ir_builder, "entry", alloc_test_func);
+        ir_builder_set_insert_block(&ir_builder, entry_block);
+
+        IR_Value* x_allocl_value = ir_builder_emit_allocl(&ir_builder, Builtin::type_int, "x");
+        ir_builder_emit_storel(&ir_builder, x_allocl_value, ir_integer_literal(&ir_builder,
+                                                                               Builtin::type_int, 4));
+        IR_Value* t1 = ir_builder_emit_loadl(&ir_builder, x_allocl_value);
+
+        ir_builder_emit_return(&ir_builder, nullptr);
+    }
+    ir_builder_end_function(&ir_builder, alloc_test_func);
+
     IR_Validation_Result validation = ir_validate(&ir_builder);
 
     if (!validation.messages)

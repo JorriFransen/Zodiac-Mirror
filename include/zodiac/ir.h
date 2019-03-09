@@ -15,6 +15,7 @@ namespace Zodiac
         IRV_ARGUMENT,
         IRV_FUNCTION,
         IRV_BLOCK,
+        IRV_ALLOCL,
     };
 
     struct IR_Value
@@ -44,6 +45,11 @@ namespace Zodiac
 
             IR_Function* function;
             IR_Block* block;
+
+            struct
+            {
+                const char* name;
+            } allocl;
         };
     };
 
@@ -63,6 +69,10 @@ namespace Zodiac
 
         IR_OP_JMP,
         IR_OP_JMP_IF,
+
+        IR_OP_ALLOCL,
+        IR_OP_STOREL,
+        IR_OP_LOADL,
     };
 
     struct IR_Instruction
@@ -141,6 +151,9 @@ namespace Zodiac
     IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value);
     void ir_builder_emit_jmp(IR_Builder* ir_builder, IR_Value* block_value);
     void ir_builder_emit_jmp_if(IR_Builder* ir_builder, IR_Value* cond_value, IR_Value* block_value);
+    IR_Value* ir_builder_emit_allocl(IR_Builder* ir_builder, AST_Type* type, const char* name);
+    void ir_builder_emit_storel(IR_Builder* ir_builder, IR_Value* allocl_value, IR_Value* new_value);
+    IR_Value* ir_builder_emit_loadl(IR_Builder* ir_builder, IR_Value* allocl_value);
 
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64);
 
@@ -149,6 +162,7 @@ namespace Zodiac
     IR_Value* ir_value_new(IR_Builder* ir_builder, IR_Value_Kind kind, AST_Type* type);
     IR_Value* ir_value_function_new(IR_Builder* ir_builder, IR_Function* function);
     IR_Value* ir_value_block_new(IR_Builder* ir_builder, IR_Block* block);
+    IR_Value* ir_value_allocl_new(IR_Builder* ir_builder, AST_Type* type, const char* name);
 
     IR_Instruction* ir_instruction_new(IR_Builder* ir_builder, IR_Operator op,
                                        IR_Value* arg1, IR_Value* arg2, IR_Value* result);

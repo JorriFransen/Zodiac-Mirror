@@ -1,4 +1,7 @@
 
+* IR [0/1]
+  - [ ] Prevent functions with the same name
+    
 * Atoms [1/3]
   - [X] Store strings in the table(/arena)
   - [ ] Store the array of atoms in the table 

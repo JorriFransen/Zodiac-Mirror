@@ -476,6 +476,49 @@ namespace Zodiac
         ir_builder_emit_instruction(ir_builder, iri);
     }
 
+    IR_Value* ir_builder_emit_allocl(IR_Builder* ir_builder, AST_Type* type, const char* name)
+    {
+        assert(ir_builder);
+        assert(type);
+        assert(name);
+
+        assert(type == Builtin::type_int);
+
+        IR_Value* allocl_value = ir_value_allocl_new(ir_builder, type, name);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ALLOCL, nullptr, nullptr,
+                                                 allocl_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+        return allocl_value;
+    }
+
+    void ir_builder_emit_storel(IR_Builder* ir_builder, IR_Value* allocl_value, IR_Value* new_value)
+    {
+        assert(ir_builder);
+        assert(allocl_value);
+        assert(new_value);
+
+        assert(allocl_value->kind == IRV_ALLOCL);
+        assert(new_value->kind == IRV_TEMPORARY ||
+               new_value->kind == IRV_ARGUMENT ||
+               new_value->kind == IRV_LITERAL);
+
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_STOREL, allocl_value, new_value,
+                                                 nullptr);
+        ir_builder_emit_instruction(ir_builder, iri);
+    }
+
+    IR_Value* ir_builder_emit_loadl(IR_Builder* ir_builder, IR_Value* allocl_value)
+    {
+        assert(ir_builder);
+        assert(allocl_value);
+
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, allocl_value->type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOADL, allocl_value, nullptr,
+                                                result_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+        return result_value;
+    }
+
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64)
     {
         assert(ir_builder);
@@ -544,6 +587,17 @@ namespace Zodiac
         result->block = block;
         result->assigned = true;
 
+        return result;
+    }
+
+    IR_Value* ir_value_allocl_new(IR_Builder* ir_builder, AST_Type* type, const char* name)
+    {
+        assert(ir_builder);
+        assert(type);
+        assert(name);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_ALLOCL, type);
+        result->allocl.name = name;
         return result;
     }
 
@@ -819,6 +873,28 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_ALLOCL:
+            {
+                printf("ALLOCL ");
+                break;
+            }
+
+            case IR_OP_STOREL:
+            {
+                printf("STOREL ");
+                ir_print_value(instruction->arg2);
+                printf(" INTO ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_LOADL:
+            {
+                printf("LOADL ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
             default: assert(false);
 
         }
@@ -859,6 +935,12 @@ namespace Zodiac
             case IRV_BLOCK:
             {
                 printf("block(%s)", value->block->name);
+                break;
+            }
+
+            case IRV_ALLOCL:
+            {
+                printf("allocl(%s)", value->allocl.name);
                 break;
             }
 
