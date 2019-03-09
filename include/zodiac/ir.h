@@ -107,9 +107,21 @@ namespace Zodiac
         uint64_t next_temp_index = 0;
     };
 
+    struct _IR_Value_To_AST_Decl_Map_Entry_
+    {
+        IR_Value* ir_value = nullptr;
+        AST_Declaration* declaration = nullptr;
+    };
+
+#define ir_builder_push_value_and_decl(ir_builder, value, decl)  \
+    { _IR_Value_To_AST_Decl_Map_Entry_ entry = {value, decl};    \
+      BUF_PUSH(ir_builder->value_to_decl_map, entry); }
+
     struct IR_Builder
     {
         Arena arena = {};
+
+        BUF(_IR_Value_To_AST_Decl_Map_Entry_) value_to_decl_map = nullptr;
 
         BUF(IR_Function*) functions = nullptr;
         IR_Function* current_function = nullptr;
@@ -129,6 +141,8 @@ namespace Zodiac
     void ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module);
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement);
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
+
+    IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder, AST_Declaration* declaration);
 
     IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, const char* name, AST_Type* return_type);
     void ir_builder_end_function(IR_Builder* ir_builder, IR_Value* func_value);

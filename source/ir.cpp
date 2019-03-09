@@ -9,6 +9,7 @@ namespace Zodiac
         assert(ir_builder);
 
         ir_builder->arena = arena_create(MB(1));
+        ir_builder->value_to_decl_map = nullptr;
         ir_builder->functions = nullptr;
         ir_builder->current_function = nullptr;
         ir_builder->insert_block = nullptr;
@@ -27,6 +28,7 @@ namespace Zodiac
         assert(module);
 
         //@TODO: Stack allocator
+        //  Altough it would probably be a better idea to use the map stored on the builder
         BUF(_IR_Decl_To_Func_) decl_to_func = nullptr;
 
         // Emit global declarations
@@ -51,13 +53,17 @@ namespace Zodiac
                         assert(arg_decl->kind == AST_DECL_MUTABLE);
                         assert(arg_decl->location == AST_DECL_LOC_ARGUMENT);
 
-                        ir_builder_emit_function_arg(ir_builder, arg_decl->identifier->atom.data,
-                                                     arg_decl->mutable_decl.type);
+                        IR_Value* arg_value = ir_builder_emit_function_arg(ir_builder,
+                                                                           arg_decl->identifier->atom.data,
+                                                                           arg_decl->mutable_decl.type);
+                        ir_builder_push_value_and_decl(ir_builder, arg_value, arg_decl);
                     }
                     ir_builder_end_function(ir_builder, func_value);
 
                     _IR_Decl_To_Func_ decl_to_func_entry = { global_decl, func_value->function };
                     BUF_PUSH(decl_to_func, decl_to_func_entry);
+
+                    ir_builder_push_value_and_decl(ir_builder, func_value, global_decl);
                     break;
                 }
 
@@ -104,7 +110,21 @@ namespace Zodiac
         {
             case AST_STMT_DECLARATION:
             {
-                assert(false);
+                AST_Declaration* decl = statement->declaration;
+                assert(decl->kind == AST_DECL_MUTABLE);
+                assert(decl->location = AST_DECL_LOC_LOCAL);
+
+                IR_Value* allocl = ir_builder_emit_allocl(ir_builder, decl->mutable_decl.type,
+                                                          decl->identifier->atom.data);
+
+                ir_builder_push_value_and_decl(ir_builder, allocl, decl);
+
+                AST_Expression* init_expr = decl->mutable_decl.init_expression;
+                if (init_expr)
+                {
+                    IR_Value* init_value = ir_builder_emit_expression(ir_builder, init_expr);
+                    ir_builder_emit_storel(ir_builder, allocl, init_value);
+                }
                 break;
             }
 
@@ -164,7 +184,52 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_IDENTIFIER:
+            {
+                AST_Declaration* ident_decl = expression->identifier->declaration;
+                return ir_builder_value_for_declaration(ir_builder, ident_decl);
+                break;
+            }
+
+            case AST_EXPR_CALL:
+            {
+                AST_Declaration* callee_decl = expression->call.callee_declaration;
+                assert(callee_decl);
+                assert(callee_decl->kind == AST_DECL_FUNC);
+
+                IR_Value* callee_value = ir_builder_value_for_declaration(ir_builder, callee_decl);
+                assert(callee_value);
+                assert(callee_value->kind == IRV_FUNCTION);
+
+                for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
+                {
+                    AST_Expression* arg_expr = expression->call.arg_expressions[i];
+                    IR_Value* arg_value = ir_builder_emit_expression(ir_builder, arg_expr);
+                    ir_builder_emit_call_arg(ir_builder, arg_value);
+                }
+
+                return ir_builder_emit_call(ir_builder, callee_value);
+                break;
+            }
+
             default: assert(false);
+        }
+
+        return nullptr;
+    }
+
+    IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder, AST_Declaration* declaration)
+    {
+        assert(ir_builder);
+        assert(declaration);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->value_to_decl_map); i++)
+        {
+            auto entry = ir_builder->value_to_decl_map[i];
+            if (entry.declaration == declaration)
+            {
+                return entry.ir_value;
+            }
         }
 
         return nullptr;
