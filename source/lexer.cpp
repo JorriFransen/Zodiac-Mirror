@@ -82,7 +82,6 @@ namespace Zodiac
                 lexer_consume_character(lexer);
                 break;
 
-
             _SINGLE_CHAR_TOKEN_CASE('+', TOK_PLUS);
             _SINGLE_CHAR_TOKEN_CASE('*', TOK_MUL);
             _SINGLE_CHAR_TOKEN_CASE('=', TOK_EQ);

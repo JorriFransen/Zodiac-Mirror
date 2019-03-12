@@ -187,7 +187,22 @@ namespace Zodiac
             case AST_EXPR_IDENTIFIER:
             {
                 AST_Declaration* ident_decl = expression->identifier->declaration;
-                return ir_builder_value_for_declaration(ir_builder, ident_decl);
+                IR_Value* value = ir_builder_value_for_declaration(ir_builder, ident_decl);
+                if (value->kind == IRV_TEMPORARY ||
+                    value->kind == IRV_LITERAL)
+                {
+                    // Do nothing else for now
+                }
+                else if (value->kind == IRV_ALLOCL)
+                {
+                    value = ir_builder_emit_loadl(ir_builder, value);
+                }
+                else if (value->kind == IRV_ARGUMENT)
+                {
+                    // Do nothing else for now
+                }
+                else assert(false);
+                return  value;
                 break;
             }
 
