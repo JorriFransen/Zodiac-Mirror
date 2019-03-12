@@ -27,10 +27,6 @@ namespace Zodiac
         assert(ir_builder);
         assert(module);
 
-        //@TODO: Stack allocator
-        //  Altough it would probably be a better idea to use the map stored on the builder
-        BUF(_IR_Decl_To_Func_) decl_to_func = nullptr;
-
         // Emit global declarations
         for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
         {
@@ -61,8 +57,6 @@ namespace Zodiac
                     ir_builder_end_function(ir_builder, func_value);
 
                     _IR_Decl_To_Func_ decl_to_func_entry = { global_decl, func_value->function };
-                    BUF_PUSH(decl_to_func, decl_to_func_entry);
-
                     ir_builder_push_value_and_decl(ir_builder, func_value, global_decl);
                     break;
                 }
@@ -84,21 +78,23 @@ namespace Zodiac
         }
 
         // Emit function bodies
-        for (uint64_t i = 0; i < BUF_LENGTH(decl_to_func); i++)
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->value_to_decl_map); i++)
         {
-            AST_Declaration* decl = decl_to_func[i].decl;
-            IR_Function* func = decl_to_func[i].func;
-            IR_Block* entry_block = func->first_block;
+            AST_Declaration* decl = ir_builder->value_to_decl_map[i].declaration;
+            IR_Value* ir_value = ir_builder->value_to_decl_map[i].ir_value;
+            if (ir_value->kind == IRV_FUNCTION)
+            {
+                IR_Function* func = ir_value->function;
+                IR_Block* entry_block = func->first_block;
 
-            ir_builder->current_function = func;
-            ir_builder_set_insert_block(ir_builder, entry_block);
+                ir_builder->current_function = func;
+                ir_builder_set_insert_block(ir_builder, entry_block);
 
-            ir_builder_emit_statement(ir_builder, decl->function.body_block);
+                ir_builder_emit_statement(ir_builder, decl->function.body_block);
 
-            ir_builder->current_function = nullptr;
+                ir_builder->current_function = nullptr;
+            }
         }
-
-        BUF_FREE(decl_to_func);
     }
 
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement)
