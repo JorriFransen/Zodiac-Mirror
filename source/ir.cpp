@@ -149,6 +149,32 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_ASSIGN:
+            {
+                AST_Declaration* lvalue_decl = statement->assign.identifier->declaration;
+                IR_Value* target_alloc = ir_builder_value_for_declaration(ir_builder, lvalue_decl);
+                assert(target_alloc);
+                IR_Value* new_value = ir_builder_emit_expression(ir_builder, statement->assign.expression);
+
+                switch (target_alloc->kind)
+                {
+                    case IRV_ALLOCL:
+                    {
+                        ir_builder_emit_storel(ir_builder, target_alloc, new_value);
+                        break;
+                    }
+
+                    case IRV_ARGUMENT:
+                    {
+                        ir_builder_emit_storea(ir_builder, target_alloc, new_value);
+                        break;
+                    }
+
+                    default: assert(false);
+                }
+                break;
+            }
+
             default: assert(false);
         }
     }
@@ -598,6 +624,22 @@ namespace Zodiac
         return result_value;
     }
 
+    void ir_builder_emit_storea(IR_Builder* ir_builder, IR_Value* arg_value, IR_Value* new_value)
+    {
+        assert(ir_builder);
+        assert(arg_value);
+        assert(new_value);
+
+        assert(arg_value->kind == IRV_ARGUMENT);
+        assert(new_value->kind == IRV_TEMPORARY ||
+               new_value->kind == IRV_ARGUMENT ||
+               new_value->kind == IRV_LITERAL);
+
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_STOREA, arg_value, new_value,
+                                                 nullptr);
+        ir_builder_emit_instruction(ir_builder, iri);
+    }
+
     IR_Value* ir_builder_emit_loada(IR_Builder* ir_builder, IR_Value* alloca_value)
     {
         assert(ir_builder);
@@ -990,6 +1032,8 @@ namespace Zodiac
             case IR_OP_STOREA:
             {
                 printf("STOREA ");
+                ir_print_value(instruction->arg2);
+                printf(" INTO ");
                 ir_print_value(instruction->arg1);
                 break;
             }

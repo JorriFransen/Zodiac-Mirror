@@ -4,6 +4,12 @@ add :: (a: int, b: int) -> int
     return a + b;
 }
 
+plusone :: (x: int) -> int
+{
+    x = x + 1;
+    return x;
+}
+
 main :: () -> int
 {
     // x : int = add(4, 5);
@@ -13,7 +19,7 @@ main :: () -> int
 
     // return fib_recursive(30) / (fact_recursive(y - 2) - 20);
 
-    return 1 + 2 + add(4, 5) + z;
+    return 1 + 2 + add(4, 5) + plusone(z);
 }
 
 // sub :: (a: int, b: int)
