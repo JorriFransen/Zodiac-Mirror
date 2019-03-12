@@ -238,6 +238,23 @@ namespace Zodiac
         return result;
     }
 
+    AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
+                                            AST_Expression* expression)
+    {
+        assert(context);
+        assert(identifier);
+        assert(expression);
+
+        AST_Statement* result = arena_alloc(context->arena, AST_Statement);
+        result->kind = AST_STMT_ASSIGN;
+        result->file_pos = file_pos;
+
+        result->assign.identifier = identifier;
+        result->assign.expression = expression;
+
+        return result;
+    }
+
     AST_Type* ast_type_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size)
     {
         assert(context);

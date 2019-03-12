@@ -9,10 +9,12 @@ Mutable_Declaration = ('=' Expression)?  ';'
 
 Statement = Block_Statement |
             Declaration_Statement |
+            Assign_Statement |
             Return_Statement;
 
 Block_Statement = '{' (Statement*)? '}'
 Declaration_Statement = Declaration
+Assign_statement = Ident '=' Expression;
 Return_Statement = 'return' Expression? ';'
 
 Expression = Ternary_Expression

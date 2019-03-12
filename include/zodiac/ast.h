@@ -107,6 +107,7 @@ namespace Zodiac
         AST_STMT_RETURN,
         AST_STMT_BLOCK,
         AST_STMT_IF,
+        AST_STMT_ASSIGN,
     };
 
     typedef uint64_t _AST_STMT_FLAGS_;
@@ -139,6 +140,12 @@ namespace Zodiac
                 AST_Statement* then_statement;
                 AST_Statement* else_statement;
             } if_stmt;
+
+            struct
+            {
+                AST_Identifier* identifier;
+                AST_Expression* expression;
+            } assign;
         };
     };
 
@@ -266,6 +273,8 @@ namespace Zodiac
     AST_Statement* ast_return_statement_new(Context* context, File_Pos file_pos, AST_Expression* return_expr);
     AST_Statement* ast_if_statement_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
                                         AST_Statement* then_stmt, AST_Statement* else_stmt);
+    AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
+                                            AST_Expression* expression);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size);
 

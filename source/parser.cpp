@@ -54,13 +54,22 @@ namespace Zodiac
         assert(parser);
         assert(scope);
 
-        AST_Declaration* result = nullptr;
-
         AST_Identifier* identifier = parse_identifier(parser);
         if (!identifier)
         {
             return nullptr;
         }
+        return parse_declaration(parser, identifier, scope, global, location);
+    }
+
+    static AST_Declaration* parse_declaration(Parser* parser, AST_Identifier* identifier, AST_Scope* scope,
+                                              bool global, AST_Declaration_Location location/*= AST_DECL_LOC_INVALID*/)
+    {
+        assert(parser);
+        assert(scope);
+        assert(identifier);
+
+        AST_Declaration* result = nullptr;
 
         AST_Type_Spec* type_spec = nullptr;
         expect_token(parser, TOK_COLON);
@@ -199,13 +208,26 @@ namespace Zodiac
             default: break;
         }
 
-        AST_Declaration* decl = parse_declaration(parser, scope, false);
-        if (!decl)
+        AST_Identifier* identifier = parse_identifier(parser);
+        assert(identifier);
+        if (is_token(parser, TOK_COLON))
         {
-            return  nullptr;
+            AST_Declaration* decl = parse_declaration(parser, identifier, scope, false);
+            if (!decl)
+            {
+                return  nullptr;
+            }
+            expect_token(parser, TOK_SEMICOLON);
+            return ast_declaration_statement_new(parser->context, ft.file_pos, decl);
         }
-        expect_token(parser, TOK_SEMICOLON);
-        return ast_declaration_statement_new(parser->context, ft.file_pos, decl);
+        else if (match_token(parser, TOK_EQ))
+        {
+            AST_Expression* assign_expression = parse_expression(parser);
+            expect_token(parser, TOK_SEMICOLON);
+            return ast_assign_statement_new(parser->context, ft.file_pos, identifier,
+                                            assign_expression);
+        }
+        else assert(false);
     }
 
     static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope)
