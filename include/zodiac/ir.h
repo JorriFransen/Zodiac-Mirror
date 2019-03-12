@@ -73,6 +73,9 @@ namespace Zodiac
         IR_OP_ALLOCL,
         IR_OP_STOREL,
         IR_OP_LOADL,
+
+        IR_OP_STOREA,
+        IR_OP_LOADA,
     };
 
     struct IR_Instruction
@@ -168,6 +171,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_allocl(IR_Builder* ir_builder, AST_Type* type, const char* name);
     void ir_builder_emit_storel(IR_Builder* ir_builder, IR_Value* allocl_value, IR_Value* new_value);
     IR_Value* ir_builder_emit_loadl(IR_Builder* ir_builder, IR_Value* allocl_value);
+    IR_Value* ir_builder_emit_loada(IR_Builder* ir_builder, IR_Value* alloca_value);
 
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64);
 

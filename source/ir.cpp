@@ -199,10 +199,12 @@ namespace Zodiac
                 }
                 else if (value->kind == IRV_ARGUMENT)
                 {
-                    // Do nothing else for now
+                    value = ir_builder_emit_loada(ir_builder, value);
                 }
                 else assert(false);
+
                 return  value;
+
                 break;
             }
 
@@ -591,10 +593,24 @@ namespace Zodiac
     {
         assert(ir_builder);
         assert(allocl_value);
+        assert(allocl_value->kind == IRV_ALLOCL);
 
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, allocl_value->type);
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOADL, allocl_value, nullptr,
                                                 result_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+        return result_value;
+    }
+
+    IR_Value* ir_builder_emit_loada(IR_Builder* ir_builder, IR_Value* alloca_value)
+    {
+        assert(ir_builder);
+        assert(alloca_value);
+        assert(alloca_value->kind == IRV_ARGUMENT);
+
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, alloca_value->type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOADA, alloca_value, nullptr,
+                                                 result_value);
         ir_builder_emit_instruction(ir_builder, iri);
         return result_value;
     }
@@ -971,6 +987,20 @@ namespace Zodiac
             case IR_OP_LOADL:
             {
                 printf("LOADL ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_STOREA:
+            {
+                printf("STOREA ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_LOADA:
+            {
+                printf("LOADA ");
                 ir_print_value(instruction->arg1);
                 break;
             }
