@@ -257,6 +257,20 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_ASSIGN:
+            {
+                result &= try_resolve_identifier(resolver, statement->assign.identifier,
+                                                 scope);
+                result &= try_resolve_expression(resolver, statement->assign.expression,
+                                                 scope);
+                if (result)
+                {
+                    assert(statement->assign.identifier->declaration->mutable_decl.type ==
+                           statement->assign.expression->type);
+                }
+                break;
+            }
+
             default:
                 assert(false);
                 result = false;
@@ -459,28 +473,15 @@ namespace Zodiac
         assert(expression);
         assert(expression->kind == AST_EXPR_IDENTIFIER);
 
-        AST_Declaration* decl = find_declaration(scope, expression->identifier);
-        if (!decl)
+        AST_Identifier* ident = expression->identifier;
+
+        bool result = try_resolve_identifier(resolver, ident, scope);
+
+        if (result)
         {
-            report_undeclared_identifier(resolver, expression->file_pos,
-                                         expression->identifier);
-            return false;
+            assert(ident->declaration);
+            expression->type = ident->declaration->mutable_decl.type;
         }
-
-        if (!(decl->flags & AST_DECL_FLAG_RESOLVED))
-        {
-            return false;
-        }
-
-        assert(decl->kind == AST_DECL_MUTABLE);
-        expression->identifier->declaration = decl;
-
-        if (!decl->mutable_decl.type)
-        {
-            return false;
-        }
-
-        expression->type = decl->mutable_decl.type;
 
         return true;
     }
@@ -507,6 +508,35 @@ namespace Zodiac
         }
 
         return result;
+    }
+
+    static bool try_resolve_identifier(Resolver* resolver, AST_Identifier* identifier, AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(identifier);
+        assert(scope);
+
+        AST_Declaration* decl = find_declaration(scope, identifier);
+        if (!decl)
+        {
+            report_undeclared_identifier(resolver, identifier->file_pos, identifier);
+            return false;
+        }
+
+        if (!(decl->flags & AST_DECL_FLAG_RESOLVED))
+        {
+            return false;
+        }
+
+        assert(decl->kind == AST_DECL_MUTABLE);
+        identifier->declaration = decl;
+
+        if (!decl->mutable_decl.type)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     static bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec, AST_Type** type_dest,
