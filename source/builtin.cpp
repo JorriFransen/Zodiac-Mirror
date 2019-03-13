@@ -12,6 +12,7 @@ namespace Zodiac
         Builtin::type_int = register_builtin_type(context, signed_int_flags, 64, "int");
 
         AST_Type_Flags unsigned_int_flags = AST_TYPE_FLAG_INT;
+        Builtin::type_char = register_builtin_type(context, unsigned_int_flags, 8, "char");
         Builtin::type_bool = register_builtin_type(context, unsigned_int_flags, 64, "bool");
     }
 
@@ -35,5 +36,6 @@ namespace Zodiac
 
     AST_Type* Builtin::type_void = nullptr;
     AST_Type* Builtin::type_int = nullptr;
+    AST_Type* Builtin::type_char = nullptr;
     AST_Type* Builtin::type_bool = nullptr;
 }

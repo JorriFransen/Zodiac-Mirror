@@ -271,6 +271,13 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_CALL:
+            {
+                result &= try_resolve_expression(resolver, statement->call_expression,
+                                                 scope);
+                break;
+            }
+
             default:
                 assert(false);
                 result = false;

@@ -12,6 +12,7 @@ namespace Zodiac
     {
         static AST_Type* type_void;
         static AST_Type* type_int;
+        static AST_Type* type_char;
         static AST_Type* type_bool;
     };
 }
