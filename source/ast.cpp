@@ -25,6 +25,18 @@ namespace Zodiac
         return result;
     }
 
+    AST_Directive* ast_directive_new(Context* context, AST_Identifier* identifier, File_Pos file_pos)
+    {
+        assert(context);
+        assert(identifier);
+
+        AST_Directive* result = arena_alloc(context->arena, AST_Directive);
+        result->file_pos = file_pos;
+        result->identifier = identifier;
+
+        return result;
+    }
+
     AST_Expression* ast_expression_new(Context* context, File_Pos file_pos, AST_Expression_Kind kind)
     {
         assert(context);
@@ -119,6 +131,7 @@ namespace Zodiac
         result->kind = AST_DECL_FUNC;
         result->file_pos = file_pos;
         result->identifier = identifier;
+        result->directive = nullptr;
         result->gen_data = nullptr;
 
         result->function.args = args;
@@ -152,6 +165,7 @@ namespace Zodiac
         result->kind = AST_DECL_MUTABLE;
         result->file_pos = file_pos;
         result->identifier = identifier;
+        result->directive = nullptr;
         result->location = location;
         result->gen_data = nullptr;
 
@@ -172,6 +186,7 @@ namespace Zodiac
         result->kind = AST_DECL_TYPE;
         result->file_pos = file_pos;
         result->identifier = identifier;
+        result->directive = nullptr;
         result->gen_data = nullptr;
 
         result->type.type = type;
@@ -251,6 +266,21 @@ namespace Zodiac
 
         result->assign.identifier = identifier;
         result->assign.expression = expression;
+
+        return result;
+    }
+
+    AST_Statement* ast_call_statement_new(Context* context, AST_Expression* call_expression)
+    {
+        assert(context);
+        assert(call_expression);
+        assert(call_expression->kind == AST_EXPR_CALL);
+
+        AST_Statement* result = arena_alloc(context->arena, AST_Statement);
+        result->kind = AST_STMT_CALL;
+        result->file_pos = call_expression->file_pos;
+
+        result->call_expression = call_expression;
 
         return result;
     }

@@ -17,6 +17,8 @@ namespace Zodiac
         TOK_LT,         // <
         TOK_LTEQ,       // <=
 
+        TOK_POUND,      // #
+
         TOK_COLON,      // :
         TOK_SEMICOLON,  // ;
         TOK_COMMA,      // ,

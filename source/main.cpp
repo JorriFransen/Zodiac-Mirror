@@ -131,8 +131,8 @@ int main(int argc, char** argv)
 
     fprintf(stderr, "Generated file: %s:\n", file_name);
 
-    stack_vm_print_program(vm_gen.result.instructions,
-                           BUF_LENGTH(vm_gen.result.instructions));
+    // stack_vm_print_program(vm_gen.result.instructions,
+    //                        BUF_LENGTH(vm_gen.result.instructions));
 
     Stack_VM vm;
     stack_vm_init(&vm, MB(8));

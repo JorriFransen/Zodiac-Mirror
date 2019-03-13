@@ -25,9 +25,16 @@ namespace Zodiac
         while (parser->ti < BUF_LENGTH(parser->tokens) &&
                BUF_LENGTH(parser->result.errors) == 0)
         {
+            AST_Directive* directive = nullptr;
+            if (match_token(parser, TOK_POUND))
+            {
+                directive = parse_directive(parser);
+            }
             AST_Declaration* global_decl = parse_declaration(parser, ast_module->module_scope,
-                                                             true);
-            assert(global_decl);
+                                                             true, directive);
+            if (!global_decl)
+                break;
+
             BUF_PUSH(ast_module->global_declarations, global_decl);
         }
 
@@ -45,10 +52,24 @@ namespace Zodiac
             return ast_identifier_new(parser->context, id_token.atom, id_token.file_pos);
         }
 
+        parser_report_error(parser, id_token.file_pos,
+                            "Expected identifier token, got: %s",
+                            id_token.atom.data);
+
         return nullptr;
     }
 
+    static AST_Directive* parse_directive(Parser* parser)
+    {
+        assert(parser);
+
+        AST_Identifier* identifier = parse_identifier(parser);
+
+        return ast_directive_new(parser->context, identifier, identifier->file_pos);
+    }
+
     static AST_Declaration* parse_declaration(Parser* parser, AST_Scope* scope, bool global,
+                                              AST_Directive* directive,
                                               AST_Declaration_Location location/*= AST_DECL_LOC_INVALID*/)
     {
         assert(parser);
@@ -59,11 +80,12 @@ namespace Zodiac
         {
             return nullptr;
         }
-        return parse_declaration(parser, identifier, scope, global, location);
+        return parse_declaration(parser, identifier, scope, global, directive, location);
     }
 
     static AST_Declaration* parse_declaration(Parser* parser, AST_Identifier* identifier, AST_Scope* scope,
-                                              bool global, AST_Declaration_Location location/*= AST_DECL_LOC_INVALID*/)
+                                              bool global, AST_Directive* directive,
+                                              AST_Declaration_Location location/*= AST_DECL_LOC_INVALID*/)
     {
         assert(parser);
         assert(scope);
@@ -99,6 +121,7 @@ namespace Zodiac
         }
 
         assert(result);
+        result->directive = directive;
         if (global)
         {
             assert(result->location == AST_DECL_LOC_INVALID);
@@ -128,7 +151,7 @@ namespace Zodiac
                 expect_token(parser, TOK_COMMA);
             }
 
-            AST_Declaration* decl = parse_declaration(parser, scope, false, AST_DECL_LOC_ARGUMENT);
+            AST_Declaration* decl = parse_declaration(parser, scope, false, nullptr, AST_DECL_LOC_ARGUMENT);
             if (!decl)
             {
                 return nullptr;
@@ -177,7 +200,10 @@ namespace Zodiac
             }
         }
 
-        assert(type_spec || init_expression);
+        if (!(type_spec || init_expression))
+        {
+            return nullptr;
+        }
 
         return ast_mutable_declaration_new(parser->context, identifier->file_pos, identifier,
                                            type_spec, init_expression, location);
@@ -209,10 +235,14 @@ namespace Zodiac
         }
 
         AST_Identifier* identifier = parse_identifier(parser);
-        assert(identifier);
+        if (!identifier)
+        {
+            return nullptr;
+        }
+
         if (is_token(parser, TOK_COLON))
         {
-            AST_Declaration* decl = parse_declaration(parser, identifier, scope, false);
+            AST_Declaration* decl = parse_declaration(parser, identifier, scope, false, nullptr);
             if (!decl)
             {
                 return  nullptr;
@@ -226,6 +256,12 @@ namespace Zodiac
             expect_token(parser, TOK_SEMICOLON);
             return ast_assign_statement_new(parser->context, ft.file_pos, identifier,
                                             assign_expression);
+        }
+        else if (is_token(parser, TOK_LPAREN))
+        {
+            AST_Expression* call_expression = parse_call_expression(parser, identifier);
+            expect_token(parser, TOK_SEMICOLON);
+            return ast_call_statement_new(parser->context, call_expression);
         }
         else assert(false);
     }
@@ -449,26 +485,9 @@ namespace Zodiac
                 return nullptr;
             }
 
-            if (match_token(parser, TOK_LPAREN))
+            if (is_token(parser, TOK_LPAREN))
             {
-                BUF(AST_Expression*) arg_exprs = nullptr;
-
-                while (!match_token(parser, TOK_RPAREN))
-                {
-                    if (arg_exprs)
-                    {
-                        expect_token(parser, TOK_COMMA);
-                    }
-
-                    AST_Expression* arg_expr = parse_expression(parser);
-                    if (!arg_expr)
-                    {
-                        return nullptr;
-                    }
-                    BUF_PUSH(arg_exprs, arg_expr);
-                }
-
-                return ast_call_expression_new(parser->context, identifier->file_pos, identifier, arg_exprs);
+                return parse_call_expression(parser, identifier);
             }
             else
             {
@@ -501,12 +520,44 @@ namespace Zodiac
         return ast_literal_expression_new(parser->context, integer_token.file_pos, value);
     }
 
+    static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier)
+    {
+        assert(parser);
+        assert(identifier);
+
+        expect_token(parser, TOK_LPAREN);
+
+        BUF(AST_Expression*) arg_exprs = nullptr;
+
+        while (!match_token(parser, TOK_RPAREN))
+        {
+            if (arg_exprs)
+            {
+                expect_token(parser, TOK_COMMA);
+            }
+
+            AST_Expression* arg_expr = parse_expression(parser);
+            if (!arg_expr)
+            {
+                return nullptr;
+            }
+            BUF_PUSH(arg_exprs, arg_expr);
+        }
+
+        return ast_call_expression_new(parser->context, identifier->file_pos, identifier, arg_exprs);
+    }
+
     static AST_Type_Spec* parse_type_spec(Parser* parser)
 
     {
         assert(parser);
 
         AST_Identifier* typespec_ident = parse_identifier(parser);
+        if (!typespec_ident)
+        {
+            return nullptr;
+        }
+
         return ast_type_spec_new(parser->context, typespec_ident->file_pos, typespec_ident);
     }
 

@@ -1,0 +1,9 @@
+
+#foreign putchar :: (c: char) -> int;
+
+main :: () -> int
+{
+    x := 5;
+    putchar(48 + x);
+    return x;
+}

@@ -13,6 +13,7 @@ namespace Zodiac
     struct AST_Type;
     struct AST_Type_Spec;
     struct AST_Scope;
+    struct AST_Directive;
 
     struct AST_Module
     {
@@ -108,6 +109,7 @@ namespace Zodiac
         AST_STMT_BLOCK,
         AST_STMT_IF,
         AST_STMT_ASSIGN,
+        AST_STMT_CALL,
     };
 
     typedef uint64_t _AST_STMT_FLAGS_;
@@ -146,6 +148,8 @@ namespace Zodiac
                 AST_Identifier* identifier;
                 AST_Expression* expression;
             } assign;
+
+            AST_Expression* call_expression;
         };
     };
 
@@ -200,6 +204,7 @@ namespace Zodiac
         File_Pos file_pos = {};
 
         AST_Identifier* identifier = nullptr;
+        AST_Directive* directive = nullptr;
 
         union
         {
@@ -242,8 +247,15 @@ namespace Zodiac
         BUF(AST_Declaration*) declarations = nullptr;
     };
 
+    struct AST_Directive
+    {
+        File_Pos file_pos = {};
+        AST_Identifier* identifier = nullptr;
+    };
+
     AST_Module* ast_module_new(Context* context, const char* module_name);
     AST_Identifier* ast_identifier_new(Context* context, Atom atom, File_Pos file_pos);
+    AST_Directive* ast_directive_new(Context* context, AST_Identifier* identifier, File_Pos file_pos);
 
     AST_Expression* ast_expression_new(Context* context, File_Pos file_pos, AST_Expression_Kind kind);
     AST_Expression* ast_binary_expression_new(Context* context, File_Pos file_pos,
@@ -275,6 +287,7 @@ namespace Zodiac
                                         AST_Statement* then_stmt, AST_Statement* else_stmt);
     AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
                                             AST_Expression* expression);
+    AST_Statement* ast_call_statement_new(Context* context, AST_Expression* call_expression);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size);
 
