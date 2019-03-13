@@ -480,10 +480,11 @@ namespace Zodiac
         if (result)
         {
             assert(ident->declaration);
+            assert(ident->declaration->mutable_decl.type);
             expression->type = ident->declaration->mutable_decl.type;
         }
 
-        return true;
+        return result;
     }
 
     static bool try_resolve_binary_expression(Resolver* resolver, AST_Expression* expression,

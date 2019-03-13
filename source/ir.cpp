@@ -92,6 +92,21 @@ namespace Zodiac
 
                 ir_builder_emit_statement(ir_builder, decl->function.body_block);
 
+                auto insert_block = ir_builder->insert_block;
+                auto first_instruction = insert_block->first_instruction;
+                auto last_instruction = insert_block->last_instruction;
+                if (!first_instruction && insert_block->previous)
+                {
+                    //@TODO: Free list
+                    insert_block->previous->next = nullptr;
+                    insert_block->previous = nullptr;
+                }
+                else if (!last_instruction ||
+                         !ir_instruction_is_terminator(last_instruction->op))
+                {
+                    ir_builder_emit_return(ir_builder, nullptr);
+                }
+
                 ir_builder->current_function = nullptr;
             }
         }
@@ -145,7 +160,46 @@ namespace Zodiac
 
             case AST_STMT_IF:
             {
-                assert(false);
+                IR_Value* cond_value = ir_builder_emit_expression(ir_builder,
+                                                                  statement->if_stmt.if_expression);
+
+
+                IR_Function* cur_func = ir_builder->current_function;
+                IR_Value* then_block_val = ir_builder_create_block(ir_builder, "then", cur_func);
+                IR_Value* else_block_val = nullptr;
+                IR_Value* post_if_block_val = ir_builder_create_block(ir_builder, "post_if");
+                if (statement->if_stmt.else_statement)
+                {
+                    else_block_val = ir_builder_create_block(ir_builder, "else");
+                }
+                else
+                {
+                    else_block_val = post_if_block_val;
+                }
+
+                ir_builder_emit_jmp_if(ir_builder, cond_value, then_block_val);
+                ir_builder_emit_jmp(ir_builder, else_block_val);
+
+                ir_builder_set_insert_block(ir_builder, then_block_val);
+                ir_builder_emit_statement(ir_builder, statement->if_stmt.then_statement);
+                if (!ir_instruction_is_terminator(then_block_val->block->last_instruction->op))
+                {
+                    ir_builder_emit_jmp(ir_builder, post_if_block_val);
+                }
+
+                if (statement->if_stmt.else_statement)
+                {
+                    ir_builder_append_block(ir_builder, cur_func, else_block_val->block);
+                    ir_builder_set_insert_block(ir_builder, else_block_val);
+                    ir_builder_emit_statement(ir_builder, statement->if_stmt.else_statement);
+                    if (!ir_instruction_is_terminator(else_block_val->block->last_instruction->op))
+                    {
+                        ir_builder_emit_jmp(ir_builder, post_if_block_val);
+                    }
+                }
+
+                ir_builder_append_block(ir_builder, cur_func, post_if_block_val->block);
+                ir_builder_set_insert_block(ir_builder, post_if_block_val);
                 break;
             }
 
@@ -195,6 +249,21 @@ namespace Zodiac
                 {
                     case AST_BINOP_ADD:
                         return ir_builder_emit_add(ir_builder, lhs_value, rhs_value);
+
+                    case AST_BINOP_SUB:
+                        return ir_builder_emit_sub(ir_builder, lhs_value, rhs_value);
+
+                    case AST_BINOP_DIV:
+                        return ir_builder_emit_div(ir_builder, lhs_value, rhs_value);
+
+                    case AST_BINOP_MUL:
+                        return ir_builder_emit_mul(ir_builder, lhs_value, rhs_value);
+
+                    case AST_BINOP_LT:
+                        return ir_builder_emit_lt(ir_builder, lhs_value, rhs_value);
+
+                    case AST_BINOP_LTEQ:
+                        return ir_builder_emit_lteq(ir_builder, lhs_value, rhs_value);
 
                     default: assert(false);
                 }
@@ -307,23 +376,35 @@ namespace Zodiac
         ir_builder->insert_block = nullptr;
     }
 
-    IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name, IR_Value* function_value)
+    IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name, IR_Function* function/*= nullptr*/)
     {
         assert(ir_builder);
         assert(name);
-        assert(function_value);
 
         IR_Block* block = arena_alloc(&ir_builder->arena, IR_Block);
         block->name = name;
         block->first_instruction = nullptr;
         block->last_instruction = nullptr;
 
-        if (function_value)
+        if (function)
         {
-            ir_builder_append_block(ir_builder, function_value->function, block);
+            ir_builder_append_block(ir_builder, function, block);
         }
 
         return ir_value_block_new(ir_builder, block);
+    }
+
+    IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name, IR_Value* function_value)
+    {
+        assert(ir_builder);
+        assert(name);
+
+        if (function_value)
+        {
+            assert(function_value->kind == IRV_FUNCTION);
+        }
+
+        return ir_builder_create_block(ir_builder, name, function_value->function);
     }
 
     void ir_builder_append_block(IR_Builder* ir_builder, IR_Function* function, IR_Block* block)
@@ -340,6 +421,7 @@ namespace Zodiac
             assert(function->last_block->next == nullptr);
 
             function->last_block->next = block;
+            block->previous = function->last_block;
             function->last_block = block;
         }
         else
@@ -348,6 +430,7 @@ namespace Zodiac
 
             function->first_block = block;
             function->last_block = block;
+            block->previous = nullptr;
         }
     }
 
@@ -480,6 +563,22 @@ namespace Zodiac
 
         IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, lhs->type);
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_MUL, lhs, rhs, result);
+
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result;
+    }
+
+    IR_Value* ir_builder_emit_div(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        assert(lhs->type == rhs->type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, lhs->type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_DIV, lhs, rhs, result);
 
         ir_builder_emit_instruction(ir_builder, iri);
 
@@ -947,6 +1046,14 @@ namespace Zodiac
             {
                 ir_print_value(instruction->arg1);
                 printf(" * ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_DIV:
+            {
+                ir_print_value(instruction->arg1);
+                printf(" / ");
                 ir_print_value(instruction->arg2);
                 break;
             }

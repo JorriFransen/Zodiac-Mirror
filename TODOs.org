@@ -1,8 +1,10 @@
 
-* IR [0/3]
+* IR [0/5]
   - [ ] Prevent functions with the same name
   - [ ] Check function aruguments in the validator
   - [ ] Check function return types in the validator
+  - [ ] Check jumps in the validator
+  - [ ] Free list for blocks
     
 * Atoms [1/3]
   - [X] Store strings in the table(/arena)
