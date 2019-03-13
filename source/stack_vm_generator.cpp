@@ -33,7 +33,27 @@ namespace Zodiac
             *found = false;
             return 0;
         }
+    }
 
+    uint64_t stack_vm_generator_get_block_address(Stack_VM_Generator* generator, IR_Block* block,
+                                                  bool* found)
+    {
+        assert(generator);
+        assert(block);
+        assert(found);
+
+        auto gen_data = stack_vm_generator_get_gen_data(generator, block);
+        if (gen_data)
+        {
+            assert(gen_data->kind == SVMGD_BLOCK);
+            *found = true;
+            return gen_data->block.address;
+        }
+        else
+        {
+            *found = false;
+            return 0;
+        }
     }
 
     Stack_VM_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
@@ -47,6 +67,25 @@ namespace Zodiac
             auto gen_data = &generator->gen_data[i];
 
             if (gen_data->function.function == func)
+            {
+                return gen_data;
+            }
+        }
+
+        return nullptr;
+    }
+
+    Stack_VM_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
+                                                       IR_Block* block)
+    {
+        assert(generator);
+        assert(block);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(generator->gen_data); i++)
+        {
+            auto gen_data = &generator->gen_data[i];
+
+            if (gen_data->block.block == block)
             {
                 return gen_data;
             }
@@ -92,6 +131,21 @@ namespace Zodiac
     }
 
     Stack_VM_Gen_Data* stack_vm_generator_create_gen_data(Stack_VM_Generator* generator,
+                                                          IR_Block* block)
+    {
+        assert(generator);
+        assert(block);
+        assert(!stack_vm_generator_get_gen_data(generator, block));
+
+        Stack_VM_Gen_Data dummy = {};
+        dummy.kind = SVMGD_BLOCK;
+        dummy.block.block = block;
+        BUF_PUSH(generator->gen_data, dummy);
+
+        return stack_vm_generator_get_gen_data(generator, block);
+    }
+
+    Stack_VM_Gen_Data* stack_vm_generator_create_gen_data(Stack_VM_Generator* generator,
                                                           IR_Value* value)
     {
         assert(generator);
@@ -108,13 +162,13 @@ namespace Zodiac
     }
 
     void stack_vm_generator_add_address_dependency(Stack_VM_Generator* generator, uint64_t address_index,
-                                                   IR_Function* ir_function)
+                                                   IR_Value* ir_value)
     {
         assert(generator);
-        assert(ir_function);
+        assert(ir_value);
 
         SVMG_Address_Dependency dep = {};
-        dep.function = ir_function;
+        dep.value = ir_value;
         dep.address_index = address_index;
 
         BUF_PUSH(generator->address_dependencies, dep);
@@ -129,7 +183,25 @@ namespace Zodiac
             auto dep = generator->address_dependencies[i];
 
             bool found = false;
-            uint64_t address = stack_vm_generator_get_func_address(generator, dep.function, &found);
+            uint64_t address = 0;
+
+            switch (dep.value->kind)
+            {
+                case IRV_FUNCTION:
+                {
+                    address = stack_vm_generator_get_func_address(generator, dep.value->function, &found);
+                    break;
+                }
+
+                case IRV_BLOCK:
+                {
+                    address = stack_vm_generator_get_block_address(generator, dep.value->block, &found);
+                    break;
+                }
+
+                default: assert(false);
+            }
+
             assert(found);
 
             generator->result.instructions[dep.address_index] = address;
@@ -222,6 +294,9 @@ namespace Zodiac
         assert(generator);
         assert(ir_block);
 
+        auto gd = stack_vm_generator_create_gen_data(generator, ir_block);
+        gd->block.address = BUF_LENGTH(generator->result.instructions);
+
         IR_Instruction* iri = ir_block->first_instruction;
         while (iri)
         {
@@ -278,13 +353,17 @@ namespace Zodiac
 
             case IR_OP_LT:
             {
-                assert(false);
+                stack_vm_generator_emit_value(generator, iri->arg1);
+                stack_vm_generator_emit_value(generator, iri->arg2);
+                stack_vm_generator_emit_op(generator, SVMI_LT_S64);
                 break;
             }
 
             case IR_OP_LTEQ:
             {
-                assert(false);
+                stack_vm_generator_emit_value(generator, iri->arg1);
+                stack_vm_generator_emit_value(generator, iri->arg2);
+                stack_vm_generator_emit_op(generator, SVMI_LTEQ_S64);
                 break;
             }
 
@@ -313,7 +392,7 @@ namespace Zodiac
                     // Emmit dummy
                     stack_vm_generator_emit_address(generator, 0);
 
-                    stack_vm_generator_add_address_dependency(generator, address_index, func_value->function);
+                    stack_vm_generator_add_address_dependency(generator, address_index, func_value);
                 }
                 stack_vm_generator_emit_u64(generator, iri->arg2->literal.s64);
                 break;
@@ -328,13 +407,31 @@ namespace Zodiac
 
             case IR_OP_JMP:
             {
-                assert(false);
+                stack_vm_generator_emit_op(generator, SVMI_JMP_IMM);
+                IR_Value* target_block_value = iri->arg1;
+                assert(target_block_value);
+                assert(target_block_value->kind == IRV_BLOCK);
+
+                auto target_block_addr_index = BUF_LENGTH(generator->result.instructions);
+                stack_vm_generator_emit_address(generator, 0);
+                stack_vm_generator_add_address_dependency(generator, target_block_addr_index,
+                                                          target_block_value);
                 break;
             }
 
             case IR_OP_JMP_IF:
             {
-                assert(false);
+                stack_vm_generator_emit_value(generator, iri->arg1);
+                stack_vm_generator_emit_op(generator, SVMI_JMP_COND);
+
+                IR_Value* then_block_value = iri->arg2;
+                assert(then_block_value);
+                assert(then_block_value->kind == IRV_BLOCK);
+
+                auto then_address_index = BUF_LENGTH(generator->result.instructions);
+                stack_vm_generator_emit_address(generator, 0);
+                stack_vm_generator_add_address_dependency(generator, then_address_index,
+                                                          then_block_value);
                 break;
             }
 

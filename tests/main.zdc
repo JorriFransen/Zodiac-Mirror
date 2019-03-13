@@ -14,15 +14,12 @@ main :: () -> int
 {
     x : int = add(4, 5);
     y := sub(x, 2);
-    // z : int = 4;
-    // z = 5;
+    z : int = 4;
+    z = 5;
 
-    // result := 1 + 2 + add(4, 5) + plusone(z);
+    result := 1 + 2 + add(4, 5) + plusone(z);
 
-    // return fib_recursive(30) / (fact_recursive(y - 2) - 20) + result;
-
-    // return y;
-    return add(36 / (4 * 3), plusone(y));
+    return fib_recursive(30) / (fact_recursive(y - 2) - 20) + result;
 }
 
 sub :: (a: int, b: int)
@@ -30,27 +27,27 @@ sub :: (a: int, b: int)
     return a - b;
 }
 
-// fib_recursive :: (x: int) -> int
-// {
-//     if (x < 2)
-//     {
-//         return x;
-//     }
-//     else
-//     {
-//         return fib_recursive(x - 1) + fib_recursive(x - 2);
-//     }
-// }
+fib_recursive :: (x: int) -> int
+{
+    if (x < 2)
+    {
+        return x;
+    }
+    else
+    {
+        return fib_recursive(x - 1) + fib_recursive(x - 2);
+    }
+}
 
-// fact_recursive :: (n: int) -> int
-// {
-//     if (n <= 1)
-//     {
-//         return 1;
-//     }
-//     else
-//     {
-//         return n * fact_recursive(n - 1);
-//     }
-// }
+fact_recursive :: (n: int) -> int
+{
+    if (n <= 1)
+    {
+        return 1;
+    }
+    else
+    {
+        return n * fact_recursive(n - 1);
+    }
+}
 

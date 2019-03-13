@@ -1,6 +1,7 @@
 
-* IR [1/6]
+* IR [1/7]
   - [X] Argument count should be an argument for function calls
+  - [ ] Cleanup the gendata situation
   - [ ] Make block names unique with a counter
   - [ ] Free list for blocks
   - [ ] Prevent functions with the same name

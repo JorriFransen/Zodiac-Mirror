@@ -14,6 +14,7 @@ namespace Zodiac
     {
         SVMGD_FUNCTION,
         SVMGD_ALLOCL,
+        SVMGD_BLOCK,
     };
 
     struct Stack_VM_Gen_Data
@@ -31,12 +32,18 @@ namespace Zodiac
             IR_Value* allocl;
             int64_t function_local_offset;
         } allocl;
+
+        struct
+        {
+            IR_Block* block;
+            uint64_t address = 0;
+        } block;
     };
 
     struct SVMG_Address_Dependency
     {
         uint64_t address_index = 0;
-        IR_Function* function = nullptr;
+        IR_Value* value = nullptr;
     };
 
     struct Stack_VM_Generator
@@ -56,17 +63,23 @@ namespace Zodiac
 
     uint64_t stack_vm_generator_get_func_address(Stack_VM_Generator* generator, IR_Function* func,
                                                  bool* found);
+    uint64_t stack_vm_generator_get_block_address(Stack_VM_Generator* generator, IR_Block* block,
+                                                 bool* found);
     Stack_VM_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
                                                             IR_Function* func);
+    Stack_VM_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
+                                                       IR_Block* block);
     Stack_VM_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
                                                        IR_Value* value);
     Stack_VM_Gen_Data* stack_vm_generator_create_gen_data(Stack_VM_Generator* generator,
                                                                IR_Function* func);
     Stack_VM_Gen_Data* stack_vm_generator_create_gen_data(Stack_VM_Generator* generator,
+                                                          IR_Block* block);
+    Stack_VM_Gen_Data* stack_vm_generator_create_gen_data(Stack_VM_Generator* generator,
                                                           IR_Value* value);
 
     void stack_vm_generator_add_address_dependency(Stack_VM_Generator* generator, uint64_t address_index,
-                                                   IR_Function* ir_function);
+                                                   IR_Value* ir_value);
     void stack_vm_generator_satisfy_address_dependencies(Stack_VM_Generator* generator);
 
     void stack_vm_generator_emit_space_for_locals(Stack_VM_Generator* generator, IR_Function* func);
