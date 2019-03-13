@@ -152,7 +152,9 @@ namespace Zodiac
 
             case IR_OP_DIV:
             {
-                assert(false);
+                stack_vm_generator_emit_value(generator, iri->arg1);
+                stack_vm_generator_emit_value(generator, iri->arg2);
+                stack_vm_generator_emit_op(generator, SVMI_DIV_S64);
                 break;
             }
 
@@ -238,6 +240,14 @@ namespace Zodiac
                 stack_vm_generator_emit_op(generator, SVMI_LOADL_S64);
                 IR_Value* argument = iri->arg1;
                 stack_vm_generator_emit_s64(generator, -2 - argument->argument.index);
+                break;
+            }
+
+            case IR_OP_LOAD_LIT:
+            {
+                IR_Value* literal = iri->arg1;
+                stack_vm_generator_emit_op(generator, SVMI_PUSH_S64);
+                stack_vm_generator_emit_s64(generator, literal->literal.s64);
                 break;
             }
 

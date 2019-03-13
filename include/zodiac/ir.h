@@ -77,6 +77,8 @@ namespace Zodiac
 
         IR_OP_STOREA,
         IR_OP_LOADA,
+
+        IR_OP_LOAD_LIT,
     };
 
     struct IR_Instruction
@@ -138,8 +140,6 @@ namespace Zodiac
         IR_Function* current_function = nullptr;
 
         IR_Block* insert_block = nullptr;
-
-        bool expect_arg_or_call = false;
     };
 
     struct IR_Validation_Result

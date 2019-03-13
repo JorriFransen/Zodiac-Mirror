@@ -103,7 +103,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    fprintf(stderr, "Resolved file: %s\n", file_name);
+    fprintf(stderr, "Resolved file: %s\n\n", file_name);
 
     IR_Builder ir_builder;
     ir_builder_init(&ir_builder);
@@ -114,6 +114,7 @@ int main(int argc, char** argv)
 
     if (!validation.messages)
     {
+        fprintf(stderr, "Generated ir for file: %s:\n", file_name);
         ir_builder_print_functions(&ir_builder);
     }
     else
@@ -124,13 +125,11 @@ int main(int argc, char** argv)
         }
     }
 
-    fprintf(stderr, "Generated ir for file: %s\n", file_name);
-
     Stack_VM_Generator vm_gen;
     stack_vm_generator_init(&vm_gen);
     stack_vm_generator_emit_module(&vm_gen, &ir_module);
 
-    fprintf(stderr, "Generated file: %s\n", file_name);
+    fprintf(stderr, "Generated file: %s:\n", file_name);
 
     stack_vm_print_program(vm_gen.result.instructions,
                            BUF_LENGTH(vm_gen.result.instructions));

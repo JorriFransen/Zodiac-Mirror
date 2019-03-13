@@ -21,7 +21,7 @@ main :: () -> int
 
     // return fib_recursive(30) / (fact_recursive(y - 2) - 20) + result;
 
-    return add(7 + 4 * 3, 8);
+    return add(36 / (4 * 3), 8);
 }
 
 // sub :: (a: int, b: int)

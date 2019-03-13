@@ -13,7 +13,6 @@ namespace Zodiac
         ir_builder->result = {};
         ir_builder->current_function = nullptr;
         ir_builder->insert_block = nullptr;
-        ir_builder->expect_arg_or_call = false;
     }
 
     struct _IR_Decl_To_Func_
@@ -273,7 +272,13 @@ namespace Zodiac
 
             case AST_EXPR_LITERAL:
             {
-                return ir_integer_literal(ir_builder, expression->type, (int64_t)expression->literal.u64);
+                IR_Value* literal = ir_integer_literal(ir_builder, expression->type, (int64_t)expression->literal.u64);
+
+                IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
+                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal, nullptr, result);
+                ir_builder_emit_instruction(ir_builder, iri);
+
+                return result;
                 break;
             }
 
@@ -358,8 +363,6 @@ namespace Zodiac
         ir_builder->current_function = function;
         BUF_PUSH(ir_builder->result.functions, function);
 
-        ir_builder->expect_arg_or_call = false;
-
         if (strcmp("main", name) == 0)
         {
             function->is_entry = true;
@@ -377,7 +380,6 @@ namespace Zodiac
         IR_Function* function = func_value->function;
 
         assert(ir_builder->current_function == function);
-        assert(ir_builder->expect_arg_or_call == false);
         ir_builder->current_function = nullptr;
 
         ir_builder->insert_block = nullptr;
@@ -447,17 +449,6 @@ namespace Zodiac
         assert(block);
 
         ir_builder->insert_block = block;
-
-        ir_builder->expect_arg_or_call = false;
-
-        auto li = block->last_instruction;
-        if (li)
-        {
-            if (li->op == IR_OP_PUSH_CALL_ARG)
-            {
-                ir_builder->expect_arg_or_call = true;
-            }
-        }
     }
 
     void ir_builder_set_insert_block(IR_Builder* ir_builder, IR_Value* block_value)
@@ -478,22 +469,6 @@ namespace Zodiac
         assert(ir_builder->insert_block);
 
         assert(iri->next == nullptr);
-
-        if (ir_builder->expect_arg_or_call)
-        {
-            assert(iri->op == IR_OP_PUSH_CALL_ARG ||
-                   iri->op == IR_OP_CALL);
-
-            if (iri->op == IR_OP_CALL)
-            {
-                ir_builder->expect_arg_or_call = false;
-            }
-        }
-
-        if (iri->op == IR_OP_PUSH_CALL_ARG)
-        {
-            ir_builder->expect_arg_or_call = true;
-        }
 
         auto block = ir_builder->insert_block;
         if (block->first_instruction)
@@ -1156,6 +1131,13 @@ namespace Zodiac
             case IR_OP_LOADA:
             {
                 printf("LOADA ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_LOAD_LIT:
+            {
+                printf("LOAD_LIT ");
                 ir_print_value(instruction->arg1);
                 break;
             }
