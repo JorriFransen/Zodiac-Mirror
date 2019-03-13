@@ -1,87 +1,48 @@
 #pragma once
 
-#include "zodiac.h"
-#include "ast.h"
 #include "stack_vm.h"
+#include "ir.h"
 
 namespace Zodiac
 {
-    struct Stack_VM_Generator_Result
+    struct Stack_VM_Gen_Result
     {
         BUF(uint64_t) instructions = nullptr;
     };
 
+    struct Stack_VM_Func_Gen_Data
+    {
+        IR_Function* function = nullptr;
+        uint64_t address = 0;
+    };
+
     struct Stack_VM_Generator
     {
-        Context* context = nullptr;
-        AST_Module* ast_module = nullptr;
+        uint64_t entry_address = 0;
+        bool found_entry = false;
 
-        bool done = false;
-        bool progressed_on_last_cycle = false;
+        BUF(Stack_VM_Func_Gen_Data) func_gen_data = nullptr;
+        uint64_t pushed_arg_count = 0;
 
-        bool entry_addr_pos_set = false;
-        uint64_t entry_addr_pos = 0;
-
-        bool replacements_done = false;
-
-        AST_Declaration* current_func_decl = nullptr;
-
-        Stack_VM_Generator_Result result = {};
+        Stack_VM_Gen_Result result = {};
     };
 
-    enum Stack_VM_Address_Placeholder_Kind
-    {
-        SVM_ADDRESS_PLACEHOLDER_ENTRY,
-    };
+    void stack_vm_generator_init(Stack_VM_Generator* generator);
 
-    enum Stack_VM_Gen_Data_Kind
-    {
-        SVM_GEN_DATA_FUNC,
-    };
+    uint64_t stack_vm_generator_get_func_address(Stack_VM_Generator* generator, IR_Function* func);
+    Stack_VM_Func_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
+                                                            IR_Function* func);
+    Stack_VM_Func_Gen_Data* stack_vm_generator_create_gen_data(Stack_VM_Generator* generator,
+                                                               IR_Function* func);
 
-    struct Stack_VM_Gen_Data
-    {
-        Stack_VM_Gen_Data_Kind kind;
+    void stack_vm_generator_emit_module(Stack_VM_Generator* generator, IR_Module* ir_module);
+    void stack_vm_generator_emit_function(Stack_VM_Generator* generator, IR_Function* ir_function);
+    void stack_vm_generator_emit_block(Stack_VM_Generator* generator, IR_Block* ir_block);
+    void stack_vm_generator_emit_instruction(Stack_VM_Generator* generator, IR_Instruction* iri);
 
-        union
-        {
-            struct
-            {
-                uint64_t address;
-            } func;
-        };
-    };
-
-    void stack_vm_generator_init(Stack_VM_Generator* generator, Context* context, AST_Module* ast_module);
-    void stack_vm_generator_do_cycle(Stack_VM_Generator* generator);
-    void stack_vm_generator_do_replacements(Stack_VM_Generator* generator);
-
-    static void emit_address_placeholder(Stack_VM_Generator* generator, Stack_VM_Address_Placeholder_Kind kind);
-
-    static void emit_declaration(Stack_VM_Generator* generator, AST_Declaration* decl);
-    static void emit_function_declaration(Stack_VM_Generator* generator, AST_Declaration* decl);
-
-    static void emit_statement(Stack_VM_Generator* generator, AST_Statement* stmt);
-    static void emit_if_statement(Stack_VM_Generator* generator, AST_Statement* stmt);
-
-    static void emit_expression(Stack_VM_Generator* generator, AST_Expression* expr);
-    static void emit_binary_expression(Stack_VM_Generator* generator, AST_Expression* expr);
-    static void emit_identifier_expression(Stack_VM_Generator* generator, AST_Expression* expr);
-    static void emit_literal_expression(Stack_VM_Generator* generator, AST_Expression* expr);
-    static void emit_call_expression(Stack_VM_Generator* generator, AST_Expression* expr);
-
-    static void emit_argument_load(Stack_VM_Generator* generator, AST_Declaration* arg_decl);
-    static void emit_local_load(Stack_VM_Generator* generator, AST_Declaration* local_decl);
-
-    static void emit_instruction(Stack_VM_Generator* generator, Stack_VM_Instruction instruction);
-    static void emit_address(Stack_VM_Generator* generator, uint64_t address);
-    static void emit_s64(Stack_VM_Generator* generator, int64_t s64);
-    static void emit_u64(Stack_VM_Generator* generator, uint64_t u64);
-
-    static Stack_VM_Gen_Data* get_gen_data(Stack_VM_Generator* generator, AST_Declaration* declaration);
-    static int64_t get_argument_offset(Stack_VM_Generator* generator, AST_Declaration* func_decl,
-                                  AST_Declaration* arg_decl);
-    static int64_t get_local_offset(Stack_VM_Generator* generator, AST_Declaration* local_decl);
-
-    static bool last_emitted_was_terminator(Stack_VM_Generator* generator);
+    void stack_vm_generator_emit_value(Stack_VM_Generator* generator, IR_Value* ir_value);
+    void stack_vm_generator_emit_op(Stack_VM_Generator* generator, Stack_VM_Instruction op);
+    void stack_vm_generator_emit_address(Stack_VM_Generator* generator, uint64_t address);
+    void stack_vm_generator_emit_s64(Stack_VM_Generator* generator, int64_t s64);
+    void stack_vm_generator_emit_u64(Stack_VM_Generator* generator, uint64_t u64);
 }

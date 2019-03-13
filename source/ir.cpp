@@ -10,7 +10,7 @@ namespace Zodiac
 
         ir_builder->arena = arena_create(MB(1));
         ir_builder->value_to_decl_map = nullptr;
-        ir_builder->functions = nullptr;
+        ir_builder->result = {};
         ir_builder->current_function = nullptr;
         ir_builder->insert_block = nullptr;
         ir_builder->expect_arg_or_call = false;
@@ -22,7 +22,7 @@ namespace Zodiac
         IR_Function* func = nullptr;
     };
 
-    void ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module)
+    IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module)
     {
         assert(ir_builder);
         assert(module);
@@ -110,6 +110,8 @@ namespace Zodiac
                 ir_builder->current_function = nullptr;
             }
         }
+
+        return ir_builder->result;
     }
 
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement)
@@ -354,9 +356,14 @@ namespace Zodiac
         //TODO: Assert we don't have a function with the same name
         IR_Function* function = ir_function_new(ir_builder, name, return_type);
         ir_builder->current_function = function;
-        BUF_PUSH(ir_builder->functions, function);
+        BUF_PUSH(ir_builder->result.functions, function);
 
         ir_builder->expect_arg_or_call = false;
+
+        if (strcmp("main", name) == 0)
+        {
+            function->is_entry = true;
+        }
 
         return ir_value_function_new(ir_builder, function);
     }
@@ -777,6 +784,7 @@ namespace Zodiac
         result->last_block = nullptr;
         result->arguments = nullptr;
         result->next_temp_index = 0;
+        result->is_entry = false;
 
         return result;
     }
@@ -878,9 +886,9 @@ namespace Zodiac
 
         IR_Validation_Result valres = {};
 
-        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->functions); i++)
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.functions); i++)
         {
-            ir_validate_function(ir_builder->functions[i], &valres);
+            ir_validate_function(ir_builder->result.functions[i], &valres);
         }
 
         return valres;
@@ -958,9 +966,9 @@ namespace Zodiac
     {
         assert(ir_builder);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->functions); i++)
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.functions); i++)
         {
-            IR_Function* func = ir_builder->functions[i];
+            IR_Function* func = ir_builder->result.functions[i];
             ir_print_function(func);
         }
     }

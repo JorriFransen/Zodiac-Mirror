@@ -82,26 +82,9 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    // printf("Parsed file: %s\n", file_name);
 
     Resolver resolver;
     resolver_init(&resolver, context, parse_result.ast_module);
-
-    // Stack_VM_Generator generator;
-    // stack_vm_generator_init(&generator, context, parse_result.ast_module);
-
-    // while (!resolver.done || !generator.done)
-    // {
-    //     resolver_do_cycle(&resolver);
-    //     stack_vm_generator_do_cycle(&generator);
-
-    //     if (!resolver.progressed_on_last_cycle &&
-    //         !generator.progressed_on_last_cycle)
-    //     {
-    //         break;
-    //     }
-
-    // }
 
     while (!resolver.done)
     {
@@ -122,27 +105,10 @@ int main(int argc, char** argv)
 
     fprintf(stderr, "Resolved file: %s\n", file_name);
 
-    // if (!generator.done)
-    // {
-    //     fprintf(stderr, "Generator quitted with errors\n");
-    //     return -1;
-    // }
-
-    // fprintf(stderr, "Generated file: %s\n", file_name);
-
-    // stack_vm_print_program(generator.result.instructions,
-    //                        BUF_LENGTH(generator.result.instructions));
-
-    // Stack_VM vm;
-    // stack_vm_init(&vm, MB(8));
-    // stack_vm_execute_program(&vm, generator.result.instructions,
-    //                          BUF_LENGTH(generator.result.instructions));
-
-
     IR_Builder ir_builder;
     ir_builder_init(&ir_builder);
 
-    ir_builder_emit_module(&ir_builder, parse_result.ast_module);
+    IR_Module ir_module = ir_builder_emit_module(&ir_builder, parse_result.ast_module);
 
     IR_Validation_Result validation = ir_validate(&ir_builder);
 
@@ -157,6 +123,22 @@ int main(int argc, char** argv)
             fprintf(stderr, "%s\n", validation.messages[i]);
         }
     }
+
+    fprintf(stderr, "Generated ir for file: %s\n", file_name);
+
+    Stack_VM_Generator vm_gen;
+    stack_vm_generator_init(&vm_gen);
+    stack_vm_generator_emit_module(&vm_gen, &ir_module);
+
+    fprintf(stderr, "Generated file: %s\n", file_name);
+
+    stack_vm_print_program(vm_gen.result.instructions,
+                           BUF_LENGTH(vm_gen.result.instructions));
+
+    Stack_VM vm;
+    stack_vm_init(&vm, MB(8));
+    stack_vm_execute_program(&vm, vm_gen.result.instructions,
+                             BUF_LENGTH(vm_gen.result.instructions));
 
     return 0;
 }

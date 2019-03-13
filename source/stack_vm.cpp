@@ -370,9 +370,6 @@ namespace Zodiac
                 uint64_t return_address = *(vm->stack + vm->fp + (1*sizeof(uint64_t)));
                 uint64_t previous_fp = *(uint64_t*)(vm->stack + vm->fp);
                 uint64_t num_args = *(vm->stack + vm->fp - (1*sizeof(uint64_t)));
-                // uint64_t return_address = stack_vm_pop(vm);
-                // uint64_t previous_fp = stack_vm_pop(vm);
-                // uint64_t num_args = stack_vm_pop(vm);
 
                 vm->sp = vm->fp - (1*sizeof(uint64_t));
 

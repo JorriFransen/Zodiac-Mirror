@@ -1,375 +1,289 @@
 #include "stack_vm_generator.h"
 
-#include "builtin.h"
-
 namespace Zodiac
 {
-    void stack_vm_generator_init(Stack_VM_Generator* generator, Context* context, AST_Module* ast_module)
+    void stack_vm_generator_init(Stack_VM_Generator* generator)
     {
         assert(generator);
-        assert(context);
-        assert(ast_module);
 
-
-        generator->context = context;
-        generator->ast_module = ast_module;
-        generator->done = false;
-        generator->progressed_on_last_cycle = false;
-        generator->entry_addr_pos_set = false;
-        generator->replacements_done = false;
-
-        generator->current_func_decl = nullptr;
-
+        generator->entry_address = 0;
+        generator->found_entry = false;
+        generator->func_gen_data = nullptr;
+        generator->pushed_arg_count = 0;
         generator->result = {};
-
-        emit_instruction(generator, SVMI_CALL_IMM);
-        emit_address_placeholder(generator, SVM_ADDRESS_PLACEHOLDER_ENTRY);
-        emit_u64(generator, 0); // num args;
-
-        emit_instruction(generator, SVMI_HALT);
     }
 
-    void stack_vm_generator_do_cycle(Stack_VM_Generator* generator)
+    uint64_t stack_vm_generator_get_func_address(Stack_VM_Generator* generator, IR_Function* func)
     {
         assert(generator);
+        assert(func);
 
-        generator->progressed_on_last_cycle = false;
-        generator->done = true;
-
-        AST_Module* module = generator->ast_module;
-        for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
-        {
-            AST_Declaration* global_decl = module->global_declarations[i];
-            if (global_decl->flags & AST_DECL_FLAG_RESOLVED &&
-                !(global_decl->flags & AST_DECL_FLAG_GENERATED))
-            {
-                emit_declaration(generator, global_decl);
-                generator->progressed_on_last_cycle = true;
-            }
-            if (!(global_decl->flags & AST_DECL_FLAG_GENERATED))
-            {
-                generator->done = false;
-            }
-        }
-
-        if (generator->done)
-        {
-            assert(!generator->replacements_done);
-            stack_vm_generator_do_replacements(generator);
-            assert(generator->replacements_done);
-        }
+        return stack_vm_generator_get_gen_data(generator, func)->address;
     }
 
-    void stack_vm_generator_do_replacements(Stack_VM_Generator* generator)
+    Stack_VM_Func_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
+                                                            IR_Function* func)
     {
         assert(generator);
+        assert(func);
 
-        assert(generator->entry_addr_pos_set);
-        AST_Declaration* entry_point_decl = generator->ast_module->entry_point;
-        assert(entry_point_decl);
-        assert(entry_point_decl->kind == AST_DECL_FUNC);
+        for (uint64_t i = 0; i < BUF_LENGTH(generator->func_gen_data); i++)
+        {
+            auto gen_data = &generator->func_gen_data[i];
 
-        assert(entry_point_decl->gen_data);
-        auto gen_data = get_gen_data(generator, entry_point_decl);
-        assert(gen_data);
-        assert(gen_data->kind == SVM_GEN_DATA_FUNC);
-        uint64_t entry_addr = gen_data->func.address;
-        assert(BUF_LENGTH(generator->result.instructions) > generator->entry_addr_pos);
-        generator->result.instructions[generator->entry_addr_pos] = entry_addr;
+            if (gen_data->function == func)
+            {
+                return gen_data;
+            }
+        }
 
-        generator->replacements_done = true;
+        return nullptr;
     }
 
-    static void emit_address_placeholder(Stack_VM_Generator* generator, Stack_VM_Address_Placeholder_Kind kind)
+    Stack_VM_Func_Gen_Data* stack_vm_generator_create_gen_data(Stack_VM_Generator* generator,
+                                                               IR_Function* func)
     {
         assert(generator);
+        assert(func);
+        assert(!stack_vm_generator_get_gen_data(generator, func));
 
-        switch (kind)
-        {
-            case SVM_ADDRESS_PLACEHOLDER_ENTRY:
-            {
-                assert(!generator->entry_addr_pos_set);
-                generator->entry_addr_pos = BUF_LENGTH(generator->result.instructions);
-                emit_address(generator, 0);
-                generator->entry_addr_pos_set = true;
-                break;
-            }
+        Stack_VM_Func_Gen_Data dummy = {};
+        dummy.function = func;
+        BUF_PUSH(generator->func_gen_data, dummy);
 
-            default: assert(false);
-        }
+        return stack_vm_generator_get_gen_data(generator, func);
     }
 
-    static void emit_declaration(Stack_VM_Generator* generator, AST_Declaration* decl)
+    void stack_vm_generator_emit_module(Stack_VM_Generator* generator, IR_Module* ir_module)
     {
         assert(generator);
-        assert(decl);
-        assert(decl->flags & AST_DECL_FLAG_RESOLVED);
-        assert(!(decl->flags & AST_DECL_FLAG_GENERATED));
+        assert(ir_module);
 
-        switch (decl->kind)
+        stack_vm_generator_emit_op(generator, SVMI_CALL_IMM);
+        // Will be replaced with the entry point address
+        auto main_address_index = BUF_LENGTH(generator->result.instructions);
+        stack_vm_generator_emit_address(generator, 0);
+        stack_vm_generator_emit_u64(generator, 0);
+        stack_vm_generator_emit_op(generator, SVMI_HALT);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_module->functions); i++)
         {
-            case AST_DECL_FUNC:
-                emit_function_declaration(generator, decl);
-                break;
-
-            default: assert(false);
+            IR_Function* function = ir_module->functions[i];
+            stack_vm_generator_emit_function(generator, function);
         }
 
-        decl->flags |= AST_DECL_FLAG_GENERATED;
+        assert(generator->found_entry);
+        generator->result.instructions[main_address_index] = generator->entry_address;
     }
 
-    static void emit_function_declaration(Stack_VM_Generator* generator, AST_Declaration* decl)
+    void stack_vm_generator_emit_function(Stack_VM_Generator* generator, IR_Function* ir_function)
     {
         assert(generator);
-        assert(decl);
-        assert(decl->kind == AST_DECL_FUNC);
-        assert(decl->flags & AST_DECL_FLAG_RESOLVED);
-        assert(!(decl->flags & AST_DECL_FLAG_GENERATED));
+        assert(ir_function);
 
-        assert(!generator->current_func_decl);
-        generator->current_func_decl = decl;
+        auto function_address = BUF_LENGTH(generator->result.instructions);
 
-        uint64_t entry_addr = BUF_LENGTH(generator->result.instructions);
-        assert(!decl->gen_data);
-        auto gen_data = get_gen_data(generator, decl);
-        gen_data->func.address = entry_addr;
-
-        uint64_t local_count = BUF_LENGTH(decl->function.locals);
-        if (local_count)
+        if (ir_function->is_entry)
         {
-            emit_instruction(generator, SVMI_ALLOCL);
-            emit_u64(generator, local_count);
+            assert(!generator->found_entry);
+            generator->found_entry = true;
+            generator->entry_address = function_address;
         }
 
-        assert(decl->function.body_block);
-        emit_statement(generator, decl->function.body_block);
+        IR_Block* block = ir_function->first_block;
+        while (block)
+        {
+            stack_vm_generator_emit_block(generator, block);
+            block = block->next;
+        }
 
-        //TODO: void return
-        emit_instruction(generator, SVMI_PUSH_S64);
-        emit_s64(generator, 0);
-        emit_instruction(generator, SVMI_RETURN);
-
-        generator->current_func_decl = nullptr;
+        Stack_VM_Func_Gen_Data* fgd = stack_vm_generator_create_gen_data(generator, ir_function);
+        fgd->address = function_address;
     }
 
-    static void emit_statement(Stack_VM_Generator* generator, AST_Statement* stmt)
+    void stack_vm_generator_emit_block(Stack_VM_Generator* generator, IR_Block* ir_block)
     {
         assert(generator);
-        assert(stmt);
-        assert(!(stmt->flags & AST_STMT_FLAG_GENERATED));
+        assert(ir_block);
 
-        switch (stmt->kind)
+        IR_Instruction* iri = ir_block->first_instruction;
+        while (iri)
         {
-            case AST_STMT_BLOCK:
-            {
-                for (uint64_t i = 0; i < BUF_LENGTH(stmt->block.statements); i++)
-                {
-                    AST_Statement* block_stmt = stmt->block.statements[i];
-                    emit_statement(generator, block_stmt);
-                }
-                break;
-            }
-
-            case AST_STMT_RETURN:
-            {
-                assert(stmt->return_expression);
-                emit_expression(generator, stmt->return_expression);
-                emit_instruction(generator, SVMI_RETURN);
-                break;
-            }
-
-            case AST_STMT_DECLARATION:
-            {
-                AST_Declaration* decl = stmt->declaration;
-                assert(decl->kind == AST_DECL_MUTABLE);
-
-                if (decl->mutable_decl.init_expression)
-                {
-                    emit_expression(generator, decl->mutable_decl.init_expression);
-                    int64_t offset = 2 + get_local_offset(generator, stmt->declaration);
-                    emit_instruction(generator, SVMI_STOREL_S64);
-                    emit_s64(generator, offset);
-                }
-                break;
-            }
-
-            case AST_STMT_IF:
-            {
-                emit_if_statement(generator, stmt);
-                break;
-            }
-
-            default: assert(false);
-        }
-
-        stmt->flags |= AST_STMT_FLAG_GENERATED;
-    }
-
-    static void emit_if_statement(Stack_VM_Generator* generator, AST_Statement* stmt)
-    {
-        assert(generator);
-        assert(stmt);
-        assert(stmt->kind == AST_STMT_IF);
-
-        emit_expression(generator, stmt->if_stmt.if_expression);
-        emit_instruction(generator, SVMI_NOT_BOOL);
-
-        emit_instruction(generator, SVMI_JMP_COND);
-        uint64_t cond_jump_target_pos = BUF_LENGTH(generator->result.instructions);
-        emit_address(generator, 0); // Will be replaced with the address of the else block
-
-        emit_statement(generator, stmt->if_stmt.then_statement);
-        bool then_terminated = last_emitted_was_terminator(generator);
-        uint64_t then_exit_jump_target_pos;
-        if (then_terminated)
-        {
-            emit_instruction(generator, SVMI_JMP_IMM);
-            then_exit_jump_target_pos = BUF_LENGTH(generator->result.instructions);
-            emit_address(generator, 0); // Will be replaced with address of the first thing after the if
-        }
-
-        uint64_t else_block_addr = BUF_LENGTH(generator->result.instructions);
-
-        if (stmt->if_stmt.else_statement)
-        {
-            emit_statement(generator, stmt->if_stmt.else_statement);
-        }
-
-        uint64_t post_if_addr = BUF_LENGTH(generator->result.instructions);
-
-        if (then_terminated)
-        {
-            generator->result.instructions[cond_jump_target_pos] = else_block_addr;
-        }
-
-        generator->result.instructions[then_exit_jump_target_pos] = post_if_addr;
-    }
-
-    static void emit_expression(Stack_VM_Generator* generator, AST_Expression* expr)
-    {
-        assert(generator);
-        assert(expr);
-        assert(!(expr->flags & AST_EXPR_FLAG_GENERATED));
-
-        switch (expr->kind)
-        {
-            case AST_EXPR_BINARY:
-            {
-                emit_binary_expression(generator, expr);
-                break;
-            }
-
-            case AST_EXPR_IDENTIFIER:
-            {
-                emit_identifier_expression(generator, expr);
-                break;
-            }
-
-            case AST_EXPR_LITERAL:
-            {
-                emit_literal_expression(generator, expr);
-                break;
-            }
-
-            case AST_EXPR_CALL:
-            {
-                emit_call_expression(generator, expr);
-                break;
-            }
-
-            default: assert(false);
-        }
-
-        expr->flags |= AST_EXPR_FLAG_GENERATED;
-    }
-
-    static void emit_binary_expression(Stack_VM_Generator* generator, AST_Expression* expr)
-    {
-        assert(generator);
-        assert(expr);
-        assert(expr->kind == AST_EXPR_BINARY);
-        assert(!(expr->flags & AST_EXPR_FLAG_GENERATED));
-
-        emit_expression(generator, expr->binary.lhs);
-        emit_expression(generator, expr->binary.rhs);
-
-        assert(expr->type == Builtin::type_int);
-
-        switch (expr->binary.op)
-        {
-            case AST_BINOP_ADD:
-            {
-                emit_instruction(generator, SVMI_ADD_S64);
-                break;
-            }
-
-            case AST_BINOP_SUB:
-            {
-                emit_instruction(generator, SVMI_SUB_S64);
-                break;
-            }
-
-            case AST_BINOP_LT:
-            {
-                emit_instruction(generator, SVMI_LT_S64);
-                break;
-            }
-
-            case AST_BINOP_LTEQ:
-            {
-                emit_instruction(generator, SVMI_LTEQ_S64);
-                break;
-            }
-
-            case AST_BINOP_MUL:
-            {
-                emit_instruction(generator, SVMI_MUL_S64);
-                break;
-            }
-
-            case AST_BINOP_DIV:
-            {
-                emit_instruction(generator, SVMI_DIV_S64);
-                break;
-            }
-
-            default: assert(false);
+            stack_vm_generator_emit_instruction(generator, iri);
+            iri = iri->next;
         }
     }
 
-    static void emit_identifier_expression(Stack_VM_Generator* generator, AST_Expression* expr)
+    void stack_vm_generator_emit_instruction(Stack_VM_Generator* generator, IR_Instruction* iri)
     {
         assert(generator);
-        assert(expr);
-        assert(expr->kind == AST_EXPR_IDENTIFIER);
+        assert(iri);
 
-        assert(!(expr->flags & AST_EXPR_FLAG_GENERATED));
-
-        auto decl = expr->identifier->declaration;
-        assert(decl);
-        assert(decl->kind == AST_DECL_MUTABLE);
-
-        switch (decl->location)
+        switch (iri->op)
         {
-            case AST_DECL_LOC_INVALID:
+
+            case IR_OP_NOP:
             {
                 assert(false);
                 break;
             }
 
-            case AST_DECL_LOC_ARGUMENT:
+            case IR_OP_ADD:
             {
-                emit_argument_load(generator, decl);
+                stack_vm_generator_emit_value(generator, iri->arg1);
+                stack_vm_generator_emit_value(generator, iri->arg2);
+                stack_vm_generator_emit_op(generator, SVMI_ADD_S64);
                 break;
             }
 
-            case AST_DECL_LOC_LOCAL:
+            case IR_OP_SUB:
             {
-                emit_local_load(generator, decl);
+                assert(false);
                 break;
             }
 
-            case AST_DECL_LOC_GLOBAL:
+            case IR_OP_MUL:
+            {
+                stack_vm_generator_emit_value(generator, iri->arg1);
+                stack_vm_generator_emit_value(generator, iri->arg2);
+                stack_vm_generator_emit_op(generator, SVMI_MUL_S64);
+                break;
+            }
+
+            case IR_OP_DIV:
+            {
+                assert(false);
+                break;
+            }
+
+            case IR_OP_LT:
+            {
+                assert(false);
+                break;
+            }
+
+            case IR_OP_LTEQ:
+            {
+                assert(false);
+                break;
+            }
+
+            case IR_OP_PUSH_CALL_ARG:
+            {
+                stack_vm_generator_emit_value(generator, iri->arg1);
+                generator->pushed_arg_count++;
+                break;
+            }
+
+            case IR_OP_CALL:
+            {
+                IR_Value* func_value = iri->arg1;
+                uint64_t function_address = stack_vm_generator_get_func_address(generator,
+                                                                                func_value->function);
+                stack_vm_generator_emit_op(generator, SVMI_CALL_IMM);
+                stack_vm_generator_emit_address(generator, function_address);
+                stack_vm_generator_emit_u64(generator, generator->pushed_arg_count);
+                generator->pushed_arg_count = 0;
+                break;
+            }
+
+            case IR_OP_RETURN:
+            {
+                stack_vm_generator_emit_value(generator, iri->arg1);
+                stack_vm_generator_emit_op(generator, SVMI_RETURN);
+                break;
+            }
+
+            case IR_OP_JMP:
+            {
+                assert(false);
+                break;
+            }
+
+            case IR_OP_JMP_IF:
+            {
+                assert(false);
+                break;
+            }
+
+            case IR_OP_ALLOCL:
+            {
+                assert(false);
+                break;
+            }
+
+            case IR_OP_STOREL:
+            {
+                assert(false);
+                break;
+            }
+
+            case IR_OP_LOADL:
+            {
+                assert(false);
+                break;
+            }
+
+            case IR_OP_STOREA:
+            {
+                stack_vm_generator_emit_value(generator, iri->arg2);
+                stack_vm_generator_emit_op(generator, SVMI_STOREL_S64);
+                IR_Value* argument = iri->arg1;
+                stack_vm_generator_emit_s64(generator, -2 - argument->argument.index);
+                break;
+            }
+
+            case IR_OP_LOADA:
+            {
+                stack_vm_generator_emit_op(generator, SVMI_LOADL_S64);
+                IR_Value* argument = iri->arg1;
+                stack_vm_generator_emit_s64(generator, -2 - argument->argument.index);
+                break;
+            }
+
+            default: assert(false);
+        }
+    }
+
+    void stack_vm_generator_emit_value(Stack_VM_Generator* generator, IR_Value* ir_value)
+    {
+        assert(generator);
+        assert(ir_value);
+
+        switch (ir_value->kind)
+        {
+            case IRV_TEMPORARY:
+            {
+                // assert(false);
+                break;
+            }
+
+            case IRV_LITERAL:
+            {
+                stack_vm_generator_emit_op(generator, SVMI_PUSH_S64);
+                stack_vm_generator_emit_s64(generator, ir_value->literal.s64);
+                break;
+            }
+
+            case IRV_ARGUMENT:
+            {
+                assert(false);
+                break;
+            }
+
+            case IRV_FUNCTION:
+            {
+                assert(false);
+                break;
+            }
+
+            case IRV_BLOCK:
+            {
+                assert(false);
+                break;
+            }
+
+            case IRV_ALLOCL:
             {
                 assert(false);
                 break;
@@ -377,186 +291,33 @@ namespace Zodiac
 
             default: assert(false);
         }
-
     }
 
-    static void emit_literal_expression(Stack_VM_Generator* generator, AST_Expression* expr)
+    void stack_vm_generator_emit_op(Stack_VM_Generator* generator, Stack_VM_Instruction op)
     {
         assert(generator);
-        assert(expr);
-        assert(expr->kind == AST_EXPR_LITERAL);
 
-        assert(expr->type == Builtin::type_int);
-
-        emit_instruction(generator, SVMI_PUSH_S64);
-        emit_s64(generator, expr->literal.u64);
+        stack_vm_generator_emit_u64(generator, op);
     }
 
-    static void emit_call_expression(Stack_VM_Generator* generator, AST_Expression* expr)
+    void stack_vm_generator_emit_address(Stack_VM_Generator* generator, uint64_t address)
     {
         assert(generator);
-        assert(expr);
-        assert(expr->kind == AST_EXPR_CALL);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(expr->call.arg_expressions); i++)
-        {
-            AST_Expression* arg_expr = expr->call.arg_expressions[i];
-            emit_expression(generator, arg_expr);
-        }
-
-        AST_Declaration* func_decl = expr->call.callee_declaration;
-        assert(func_decl);
-        assert(func_decl->kind == AST_DECL_FUNC);
-        assert(func_decl->flags & AST_DECL_FLAG_GENERATED ||
-               func_decl == generator->current_func_decl);
-
-        assert(func_decl->gen_data);
-        auto gen_data = get_gen_data(generator, func_decl);
-
-        emit_instruction(generator, SVMI_CALL_IMM);
-        emit_address(generator, gen_data->func.address);
-        emit_u64(generator, BUF_LENGTH(expr->call.arg_expressions));
+        stack_vm_generator_emit_u64(generator, address);
     }
 
-    static void emit_argument_load(Stack_VM_Generator* generator, AST_Declaration* arg_decl)
+    void stack_vm_generator_emit_s64(Stack_VM_Generator* generator, int64_t s64)
     {
         assert(generator);
-        assert(arg_decl);
-        assert(arg_decl->location == AST_DECL_LOC_ARGUMENT);
 
-        assert(arg_decl->mutable_decl.type);
-        assert(arg_decl->mutable_decl.type == Builtin::type_int);
-
-        int64_t arg_offset = get_argument_offset(generator, generator->current_func_decl, arg_decl);
-        int64_t num_args = BUF_LENGTH(generator->current_func_decl->function.args);
-        int64_t offset = -2 - (num_args - 1) + arg_offset;
-        emit_instruction(generator, SVMI_LOADL_S64);
-        emit_s64(generator, offset);
+        stack_vm_generator_emit_u64(generator, s64);
     }
 
-    static void emit_local_load(Stack_VM_Generator* generator, AST_Declaration* local_decl)
+    void stack_vm_generator_emit_u64(Stack_VM_Generator* generator, uint64_t u64)
     {
         assert(generator);
-        assert(local_decl);
-        assert(local_decl->location == AST_DECL_LOC_LOCAL);
 
-        assert(local_decl->mutable_decl.type);
-        assert(local_decl->mutable_decl.type == Builtin::type_int);
-
-        int64_t local_offset = get_local_offset(generator, local_decl);
-        int64_t offset = 2 + local_offset;
-        emit_instruction(generator, SVMI_LOADL_S64);
-        emit_s64(generator, offset);
-    }
-
-    static void emit_instruction(Stack_VM_Generator* generator, Stack_VM_Instruction instruction)
-    {
-        assert(generator);
-        emit_u64(generator, instruction);
-    }
-
-    static void emit_address(Stack_VM_Generator* generator, uint64_t address)
-    {
-        assert(generator);
-        emit_u64(generator, address);
-    }
-
-
-    static void emit_s64(Stack_VM_Generator* generator, int64_t s64)
-    {
-        assert(generator);
-        emit_u64(generator, s64);
-    }
-
-    static void emit_u64(Stack_VM_Generator* generator, uint64_t u64)
-    {
-        assert(generator);
         BUF_PUSH(generator->result.instructions, u64);
-    }
-
-    static Stack_VM_Gen_Data* get_gen_data(Stack_VM_Generator* generator, AST_Declaration* declaration)
-    {
-        assert(generator);
-        assert(declaration);
-
-        if (declaration->gen_data)
-        {
-            return (Stack_VM_Gen_Data*)declaration->gen_data;
-        }
-        else
-        {
-            Stack_VM_Gen_Data* result = arena_alloc(generator->context->arena, Stack_VM_Gen_Data);
-
-            switch (declaration->kind)
-            {
-                case AST_DECL_FUNC:
-                {
-                    result->kind = SVM_GEN_DATA_FUNC;
-                    break;
-                }
-
-                default: assert(false);
-            }
-
-            declaration->gen_data = result;
-            return result;
-        }
-    }
-
-    static int64_t get_argument_offset(Stack_VM_Generator* generator, AST_Declaration* func_decl,
-                                  AST_Declaration* arg_decl)
-    {
-        assert(generator);
-        assert(func_decl);
-        assert(func_decl->kind == AST_DECL_FUNC);
-        assert(arg_decl);
-        assert(arg_decl->kind == AST_DECL_MUTABLE);
-        assert(arg_decl->location == AST_DECL_LOC_ARGUMENT);
-
-        for (uint64_t i = 0; i < BUF_LENGTH(func_decl->function.args); i++)
-        {
-            AST_Declaration* func_arg_decl = func_decl->function.args[i];
-            if (func_arg_decl == arg_decl)
-            {
-                return i;
-            }
-        }
-
-        assert(false);
-    }
-
-    static int64_t get_local_offset(Stack_VM_Generator* generator, AST_Declaration* local_decl)
-    {
-        assert(generator);
-        assert(local_decl);
-        assert(local_decl->kind == AST_DECL_MUTABLE);
-        assert(local_decl->location == AST_DECL_LOC_LOCAL);
-
-        for (uint64_t i = 0; i < BUF_LENGTH(generator->current_func_decl->function.locals); i++)
-        {
-            AST_Declaration* func_local_decl = generator->current_func_decl->function.locals[i];
-            if (func_local_decl == local_decl)
-            {
-                return i;
-            }
-        }
-
-        assert(false);
-    }
-
-    static bool last_emitted_was_terminator(Stack_VM_Generator* generator)
-    {
-        assert(generator);
-
-        auto gen_count = BUF_LENGTH(generator->result.instructions);
-
-        if (gen_count)
-        {
-            auto instruction = (Stack_VM_Instruction)generator->result.instructions[gen_count - 1];
-
-            return instruction == SVMI_RETURN;
-        }
-
-        return false;
     }
 }

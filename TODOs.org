@@ -1,10 +1,13 @@
 
 * IR [0/5]
-  - [ ] Prevent functions with the same name
-  - [ ] Check function aruguments in the validator
-  - [ ] Check function return types in the validator
-  - [ ] Check jumps in the validator
+  - [ ] Argument count should be an argument for function calls
+  - [ ] Make block names unique with a counter
   - [ ] Free list for blocks
+  - [ ] Prevent functions with the same name
+  - [ ] Validator [0/3]
+    - [ ] Check function aruguments in the validator
+    - [ ] Check function return types in the validator
+    - [ ] Check jumps in the validator
     
 * Atoms [1/3]
   - [X] Store strings in the table(/arena)
