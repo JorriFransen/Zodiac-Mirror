@@ -8,20 +8,32 @@ namespace Zodiac
 
         generator->entry_address = 0;
         generator->found_entry = false;
+        generator->current_function = nullptr;
         generator->gen_data = nullptr;
+        generator->address_dependencies = nullptr;
         generator->result = {};
     }
 
-    uint64_t stack_vm_generator_get_func_address(Stack_VM_Generator* generator, IR_Function* func)
+    uint64_t stack_vm_generator_get_func_address(Stack_VM_Generator* generator, IR_Function* func,
+                                                 bool* found)
     {
         assert(generator);
         assert(func);
+        assert(found);
 
         auto gen_data = stack_vm_generator_get_gen_data(generator, func);
-        assert(gen_data);
-        assert(gen_data->kind == SVMGD_FUNCTION);
+        if (gen_data)
+        {
+            assert(gen_data->kind == SVMGD_FUNCTION);
+            *found = true;
+            return gen_data->function.address;
+        }
+        else
+        {
+            *found = false;
+            return 0;
+        }
 
-        return gen_data->function.address;
     }
 
     Stack_VM_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
@@ -95,6 +107,35 @@ namespace Zodiac
         return stack_vm_generator_get_gen_data(generator, value);
     }
 
+    void stack_vm_generator_add_address_dependency(Stack_VM_Generator* generator, uint64_t address_index,
+                                                   IR_Function* ir_function)
+    {
+        assert(generator);
+        assert(ir_function);
+
+        SVMG_Address_Dependency dep = {};
+        dep.function = ir_function;
+        dep.address_index = address_index;
+
+        BUF_PUSH(generator->address_dependencies, dep);
+    }
+
+    void stack_vm_generator_satisfy_address_dependencies(Stack_VM_Generator* generator)
+    {
+        assert(generator);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(generator->address_dependencies); i++)
+        {
+            auto dep = generator->address_dependencies[i];
+
+            bool found = false;
+            uint64_t address = stack_vm_generator_get_func_address(generator, dep.function, &found);
+            assert(found);
+
+            generator->result.instructions[dep.address_index] = address;
+        }
+    }
+
     void stack_vm_generator_emit_space_for_locals(Stack_VM_Generator* generator, IR_Function* func)
     {
         assert(generator);
@@ -139,12 +180,17 @@ namespace Zodiac
 
         assert(generator->found_entry);
         generator->result.instructions[main_address_index] = generator->entry_address;
+
+        stack_vm_generator_satisfy_address_dependencies(generator);
     }
 
     void stack_vm_generator_emit_function(Stack_VM_Generator* generator, IR_Function* ir_function)
     {
         assert(generator);
         assert(ir_function);
+
+        assert(generator->current_function == nullptr);
+        generator->current_function = ir_function;
 
         auto function_address = BUF_LENGTH(generator->result.instructions);
 
@@ -166,6 +212,9 @@ namespace Zodiac
 
         Stack_VM_Gen_Data* gd = stack_vm_generator_create_gen_data(generator, ir_function);
         gd->function.address = function_address;
+
+
+        generator->current_function = nullptr;
     }
 
     void stack_vm_generator_emit_block(Stack_VM_Generator* generator, IR_Block* ir_block)
@@ -205,7 +254,9 @@ namespace Zodiac
 
             case IR_OP_SUB:
             {
-                assert(false);
+                stack_vm_generator_emit_value(generator, iri->arg1);
+                stack_vm_generator_emit_value(generator, iri->arg2);
+                stack_vm_generator_emit_op(generator, SVMI_SUB_S64);
                 break;
             }
 
@@ -246,10 +297,24 @@ namespace Zodiac
             case IR_OP_CALL:
             {
                 IR_Value* func_value = iri->arg1;
+                bool function_generated = false;
                 uint64_t function_address = stack_vm_generator_get_func_address(generator,
-                                                                                func_value->function);
+                                                                                func_value->function,
+                                                                                &function_generated);
                 stack_vm_generator_emit_op(generator, SVMI_CALL_IMM);
-                stack_vm_generator_emit_address(generator, function_address);
+                if (function_generated)
+                {
+                    stack_vm_generator_emit_address(generator, function_address);
+                }
+                else
+                {
+                    auto address_index = BUF_LENGTH(generator->result.instructions);
+
+                    // Emmit dummy
+                    stack_vm_generator_emit_address(generator, 0);
+
+                    stack_vm_generator_add_address_dependency(generator, address_index, func_value->function);
+                }
                 stack_vm_generator_emit_u64(generator, iri->arg2->literal.s64);
                 break;
             }
@@ -312,7 +377,9 @@ namespace Zodiac
                 stack_vm_generator_emit_value(generator, iri->arg2);
                 stack_vm_generator_emit_op(generator, SVMI_STOREL_S64);
                 IR_Value* argument = iri->arg1;
-                stack_vm_generator_emit_s64(generator, -2 - argument->argument.index);
+                uint64_t arg_offset = (BUF_LENGTH(generator->current_function->arguments) - 1) -
+                    argument->argument.index;
+                stack_vm_generator_emit_s64(generator, -2 - arg_offset);
                 break;
             }
 
@@ -320,7 +387,10 @@ namespace Zodiac
             {
                 stack_vm_generator_emit_op(generator, SVMI_LOADL_S64);
                 IR_Value* argument = iri->arg1;
-                stack_vm_generator_emit_s64(generator, -2 - argument->argument.index);
+                assert(generator->current_function);
+                uint64_t arg_offset = (BUF_LENGTH(generator->current_function->arguments) - 1) -
+                    argument->argument.index;
+                stack_vm_generator_emit_s64(generator, -2 - arg_offset);
                 break;
             }
 

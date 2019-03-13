@@ -33,19 +33,29 @@ namespace Zodiac
         } allocl;
     };
 
+    struct SVMG_Address_Dependency
+    {
+        uint64_t address_index = 0;
+        IR_Function* function = nullptr;
+    };
+
     struct Stack_VM_Generator
     {
         uint64_t entry_address = 0;
         bool found_entry = false;
 
+        IR_Function* current_function = nullptr;
+
         BUF(Stack_VM_Gen_Data) gen_data = nullptr;
+        BUF(SVMG_Address_Dependency) address_dependencies = nullptr;
 
         Stack_VM_Gen_Result result = {};
     };
 
     void stack_vm_generator_init(Stack_VM_Generator* generator);
 
-    uint64_t stack_vm_generator_get_func_address(Stack_VM_Generator* generator, IR_Function* func);
+    uint64_t stack_vm_generator_get_func_address(Stack_VM_Generator* generator, IR_Function* func,
+                                                 bool* found);
     Stack_VM_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
                                                             IR_Function* func);
     Stack_VM_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
@@ -54,6 +64,10 @@ namespace Zodiac
                                                                IR_Function* func);
     Stack_VM_Gen_Data* stack_vm_generator_create_gen_data(Stack_VM_Generator* generator,
                                                           IR_Value* value);
+
+    void stack_vm_generator_add_address_dependency(Stack_VM_Generator* generator, uint64_t address_index,
+                                                   IR_Function* ir_function);
+    void stack_vm_generator_satisfy_address_dependencies(Stack_VM_Generator* generator);
 
     void stack_vm_generator_emit_space_for_locals(Stack_VM_Generator* generator, IR_Function* func);
 
