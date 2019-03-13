@@ -323,7 +323,9 @@ namespace Zodiac
                     ir_builder_emit_call_arg(ir_builder, arg_value);
                 }
 
-                return ir_builder_emit_call(ir_builder, callee_value);
+                IR_Value* num_args_lit = ir_integer_literal(ir_builder, Builtin::type_int,
+                                                            BUF_LENGTH(expression->call.arg_expressions));
+                return ir_builder_emit_call(ir_builder, callee_value, num_args_lit);
                 break;
             }
 
@@ -620,18 +622,20 @@ namespace Zodiac
         ir_builder_emit_instruction(ir_builder, iri);
     }
 
-    IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value)
+    IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value, IR_Value* num_args)
     {
         assert(ir_builder);
         assert(func_value);
         assert(func_value->kind == IRV_FUNCTION);
+        assert(num_args);
+        assert(num_args->kind == IRV_LITERAL);
 
         IR_Function* function = func_value->function;
         assert(function->return_type);
 
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, function->return_type);
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_CALL, func_value,
-                                                 nullptr, result_value);
+                                                 num_args, result_value);
         ir_builder_emit_instruction(ir_builder, iri);
         return result_value;
     }
@@ -1078,6 +1082,8 @@ namespace Zodiac
             {
                 printf("CALL ");
                 ir_print_value(instruction->arg1);
+                printf(", ");
+                ir_print_value(instruction->arg2);
                 break;
             }
 

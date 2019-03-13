@@ -22,7 +22,6 @@ namespace Zodiac
         bool found_entry = false;
 
         BUF(Stack_VM_Func_Gen_Data) func_gen_data = nullptr;
-        uint64_t pushed_arg_count = 0;
 
         Stack_VM_Gen_Result result = {};
     };

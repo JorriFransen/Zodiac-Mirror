@@ -9,7 +9,6 @@ namespace Zodiac
         generator->entry_address = 0;
         generator->found_entry = false;
         generator->func_gen_data = nullptr;
-        generator->pushed_arg_count = 0;
         generator->result = {};
     }
 
@@ -173,7 +172,6 @@ namespace Zodiac
             case IR_OP_PUSH_CALL_ARG:
             {
                 stack_vm_generator_emit_value(generator, iri->arg1);
-                generator->pushed_arg_count++;
                 break;
             }
 
@@ -184,8 +182,7 @@ namespace Zodiac
                                                                                 func_value->function);
                 stack_vm_generator_emit_op(generator, SVMI_CALL_IMM);
                 stack_vm_generator_emit_address(generator, function_address);
-                stack_vm_generator_emit_u64(generator, generator->pushed_arg_count);
-                generator->pushed_arg_count = 0;
+                stack_vm_generator_emit_u64(generator, iri->arg2->literal.s64);
                 break;
             }
 

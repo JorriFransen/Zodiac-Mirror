@@ -65,10 +65,10 @@ int main(int argc, const char** argv)
         ir_builder_set_insert_block(&ir_builder, else_block);
         {
             ir_builder_emit_call_arg(&ir_builder, ir_builder_emit_sub(&ir_builder, x_arg, one_value));
-            IR_Value* r1 = ir_builder_emit_call(&ir_builder, fib_func);
+            IR_Value* r1 = ir_builder_emit_call(&ir_builder, fib_func, one_value);
 
             ir_builder_emit_call_arg(&ir_builder, ir_builder_emit_sub(&ir_builder, x_arg, two_value));
-            IR_Value* r2 = ir_builder_emit_call(&ir_builder, fib_func);
+            IR_Value* r2 = ir_builder_emit_call(&ir_builder, fib_func, one_value);
 
             ir_builder_emit_return(&ir_builder, ir_builder_emit_add(&ir_builder,
                                                                     r1, r2));
@@ -101,7 +101,7 @@ int main(int argc, const char** argv)
         ir_builder_set_insert_block(&ir_builder, else_block);
         {
             ir_builder_emit_call_arg(&ir_builder, ir_builder_emit_sub(&ir_builder, n_arg, one_value));
-            IR_Value* r1 = ir_builder_emit_call(&ir_builder, fact_func);
+            IR_Value* r1 = ir_builder_emit_call(&ir_builder, fact_func, one_value);
             ir_builder_emit_return(&ir_builder, ir_builder_emit_mul(&ir_builder,
                                                                     n_arg, r1));
         }
@@ -113,28 +113,31 @@ int main(int argc, const char** argv)
         IR_Value* main_entry_block = ir_builder_create_block(&ir_builder, "main_entry", main_func);
         ir_builder_set_insert_block(&ir_builder, main_entry_block);
 
+        IR_Value* one_value = ir_integer_literal(&ir_builder, Builtin::type_int, 1);
+        IR_Value* two_value = ir_integer_literal(&ir_builder, Builtin::type_int, 2);
+
         IR_Value* a = ir_integer_literal(&ir_builder, Builtin::type_int, 3);
         IR_Value* b = ir_integer_literal(&ir_builder, Builtin::type_int, 6);
         IR_Value* c = ir_integer_literal(&ir_builder, Builtin::type_int, 11);
 
         ir_builder_emit_call_arg(&ir_builder, a);
         ir_builder_emit_call_arg(&ir_builder, b);
-        IR_Value* r1 = ir_builder_emit_call(&ir_builder, add_func);
+        IR_Value* r1 = ir_builder_emit_call(&ir_builder, add_func, two_value);
 
         ir_builder_emit_call_arg(&ir_builder, r1);
         ir_builder_emit_call_arg(&ir_builder, c);
-        r1 = ir_builder_emit_call(&ir_builder, sub_func);
+        r1 = ir_builder_emit_call(&ir_builder, sub_func, two_value);
         IR_Value* r2 = ir_builder_emit_sub(&ir_builder, r1, c);
 
         ir_builder_emit_call_arg(&ir_builder, ir_integer_literal(&ir_builder,
                                                                  Builtin::type_int,
                                                                  8));
-        IR_Value* fib_result = ir_builder_emit_call(&ir_builder, fib_func);
+        IR_Value* fib_result = ir_builder_emit_call(&ir_builder, fib_func, one_value);
 
         ir_builder_emit_call_arg(&ir_builder, ir_integer_literal(&ir_builder,
                                                                  Builtin::type_int,
                                                                  8));
-        IR_Value* fact_result = ir_builder_emit_call(&ir_builder, fact_func);
+        IR_Value* fact_result = ir_builder_emit_call(&ir_builder, fact_func, one_value);
 
         ir_builder_emit_return(&ir_builder, nullptr);
     }
