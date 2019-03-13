@@ -8,7 +8,7 @@ namespace Zodiac
 
         generator->entry_address = 0;
         generator->found_entry = false;
-        generator->func_gen_data = nullptr;
+        generator->gen_data = nullptr;
         generator->result = {};
     }
 
@@ -17,20 +17,24 @@ namespace Zodiac
         assert(generator);
         assert(func);
 
-        return stack_vm_generator_get_gen_data(generator, func)->address;
+        auto gen_data = stack_vm_generator_get_gen_data(generator, func);
+        assert(gen_data);
+        assert(gen_data->kind == SVMGD_FUNCTION);
+
+        return gen_data->function.address;
     }
 
-    Stack_VM_Func_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
+    Stack_VM_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
                                                             IR_Function* func)
     {
         assert(generator);
         assert(func);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(generator->func_gen_data); i++)
+        for (uint64_t i = 0; i < BUF_LENGTH(generator->gen_data); i++)
         {
-            auto gen_data = &generator->func_gen_data[i];
+            auto gen_data = &generator->gen_data[i];
 
-            if (gen_data->function == func)
+            if (gen_data->function.function == func)
             {
                 return gen_data;
             }
@@ -39,18 +43,80 @@ namespace Zodiac
         return nullptr;
     }
 
-    Stack_VM_Func_Gen_Data* stack_vm_generator_create_gen_data(Stack_VM_Generator* generator,
+    Stack_VM_Gen_Data* stack_vm_generator_get_gen_data(Stack_VM_Generator* generator,
+                                                       IR_Value* value)
+    {
+        assert(generator);
+        assert(value);
+
+        assert(value->kind == IRV_ALLOCL);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(generator->gen_data); i++)
+        {
+            auto gen_data = &generator->gen_data[i];
+
+            if (gen_data->allocl.allocl == value)
+            {
+                return gen_data;
+            }
+        }
+
+        return nullptr;
+    }
+
+    Stack_VM_Gen_Data* stack_vm_generator_create_gen_data(Stack_VM_Generator* generator,
                                                                IR_Function* func)
     {
         assert(generator);
         assert(func);
         assert(!stack_vm_generator_get_gen_data(generator, func));
 
-        Stack_VM_Func_Gen_Data dummy = {};
-        dummy.function = func;
-        BUF_PUSH(generator->func_gen_data, dummy);
+        Stack_VM_Gen_Data dummy = {};
+        dummy.kind = SVMGD_FUNCTION;
+        dummy.function.function = func;
+        BUF_PUSH(generator->gen_data, dummy);
 
         return stack_vm_generator_get_gen_data(generator, func);
+    }
+
+    Stack_VM_Gen_Data* stack_vm_generator_create_gen_data(Stack_VM_Generator* generator,
+                                                          IR_Value* value)
+    {
+        assert(generator);
+        assert(value);
+        assert(value->kind == IRV_ALLOCL);
+        assert(!stack_vm_generator_get_gen_data(generator, value));
+
+        Stack_VM_Gen_Data dummy = {};
+        dummy.kind = SVMGD_ALLOCL;
+        dummy.allocl.allocl = value;
+        BUF_PUSH(generator->gen_data, dummy);
+
+        return stack_vm_generator_get_gen_data(generator, value);
+    }
+
+    void stack_vm_generator_emit_space_for_locals(Stack_VM_Generator* generator, IR_Function* func)
+    {
+        assert(generator);
+        assert(func);
+
+        uint64_t offset = 0;
+
+        for (uint64_t i = 0; i < BUF_LENGTH(func->allocls); i++)
+        {
+            IR_Value* allocl_value = func->allocls[i];
+            assert(allocl_value->kind == IRV_ALLOCL);
+            auto gd = stack_vm_generator_create_gen_data(generator, allocl_value);
+            gd->allocl.function_local_offset = offset;
+
+            offset += 1;
+        }
+
+        if (offset)
+        {
+            stack_vm_generator_emit_op(generator, SVMI_ALLOCL);
+            stack_vm_generator_emit_u64(generator, offset);
+        }
     }
 
     void stack_vm_generator_emit_module(Stack_VM_Generator* generator, IR_Module* ir_module)
@@ -89,6 +155,8 @@ namespace Zodiac
             generator->entry_address = function_address;
         }
 
+        stack_vm_generator_emit_space_for_locals(generator, ir_function);
+
         IR_Block* block = ir_function->first_block;
         while (block)
         {
@@ -96,8 +164,8 @@ namespace Zodiac
             block = block->next;
         }
 
-        Stack_VM_Func_Gen_Data* fgd = stack_vm_generator_create_gen_data(generator, ir_function);
-        fgd->address = function_address;
+        Stack_VM_Gen_Data* gd = stack_vm_generator_create_gen_data(generator, ir_function);
+        gd->function.address = function_address;
     }
 
     void stack_vm_generator_emit_block(Stack_VM_Generator* generator, IR_Block* ir_block)
@@ -207,19 +275,35 @@ namespace Zodiac
 
             case IR_OP_ALLOCL:
             {
-                assert(false);
+                // Don't do anything, space for all of these will be emitted at the
+                //  beginning of every function.
                 break;
             }
 
             case IR_OP_STOREL:
             {
-                assert(false);
+                stack_vm_generator_emit_value(generator, iri->arg2);
+                stack_vm_generator_emit_op(generator, SVMI_STOREL_S64);
+                IR_Value* allocl_value = iri->arg1;
+                assert(allocl_value);
+                assert(allocl_value->kind == IRV_ALLOCL);
+                auto gd = stack_vm_generator_get_gen_data(generator, allocl_value);
+                assert(gd);
+                assert(gd->kind == SVMGD_ALLOCL);
+                stack_vm_generator_emit_s64(generator, 2 + gd->allocl.function_local_offset);
                 break;
             }
 
             case IR_OP_LOADL:
             {
-                assert(false);
+                stack_vm_generator_emit_op(generator, SVMI_LOADL_S64);
+                IR_Value* allocl_value = iri->arg1;
+                assert(allocl_value);
+                assert(allocl_value->kind == IRV_ALLOCL);
+                auto gd = stack_vm_generator_get_gen_data(generator, allocl_value);
+                assert(gd);
+                assert(gd->kind == SVMGD_ALLOCL);
+                stack_vm_generator_emit_s64(generator, 2 + gd->allocl.function_local_offset);
                 break;
             }
 

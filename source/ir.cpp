@@ -677,6 +677,10 @@ namespace Zodiac
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ALLOCL, nullptr, nullptr,
                                                  allocl_value);
         ir_builder_emit_instruction(ir_builder, iri);
+
+        assert(ir_builder->current_function);
+        BUF_PUSH(ir_builder->current_function->allocls, allocl_value);
+
         return allocl_value;
     }
 
@@ -688,8 +692,7 @@ namespace Zodiac
 
         assert(allocl_value->kind == IRV_ALLOCL);
         assert(new_value->kind == IRV_TEMPORARY ||
-               new_value->kind == IRV_ARGUMENT ||
-               new_value->kind == IRV_LITERAL);
+               new_value->kind == IRV_ARGUMENT);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_STOREL, allocl_value, new_value,
                                                  nullptr);
@@ -762,6 +765,7 @@ namespace Zodiac
         result->first_block = nullptr;
         result->last_block = nullptr;
         result->arguments = nullptr;
+        result->allocls = nullptr;
         result->next_temp_index = 0;
         result->is_entry = false;
 

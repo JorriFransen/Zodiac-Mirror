@@ -110,6 +110,7 @@ namespace Zodiac
         IR_Block* last_block = nullptr;
 
         BUF(IR_Value*) arguments = nullptr;
+        BUF(IR_Value*) allocls = nullptr;
 
         uint64_t next_temp_index = 0;
         bool is_entry = false;
