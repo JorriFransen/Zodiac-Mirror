@@ -273,18 +273,21 @@ namespace Zodiac
             generator->entry_address = function_address;
         }
 
-        stack_vm_generator_emit_space_for_locals(generator, ir_function);
-
-        IR_Block* block = ir_function->first_block;
-        while (block)
+        if (ir_function->first_block)
         {
-            stack_vm_generator_emit_block(generator, block);
-            block = block->next;
+            stack_vm_generator_emit_space_for_locals(generator, ir_function);
+
+            IR_Block* block = ir_function->first_block;
+            while (block)
+            {
+                stack_vm_generator_emit_block(generator, block);
+                block = block->next;
+            }
+
+            Stack_VM_Gen_Data* gd = stack_vm_generator_create_gen_data(generator, ir_function);
+            gd->function.address = function_address;
         }
-
-        Stack_VM_Gen_Data* gd = stack_vm_generator_create_gen_data(generator, ir_function);
-        gd->function.address = function_address;
-
+        else assert(false);
 
         generator->current_function = nullptr;
     }
@@ -383,6 +386,7 @@ namespace Zodiac
                 stack_vm_generator_emit_op(generator, SVMI_CALL_IMM);
                 if (function_generated)
                 {
+                    printf("Emitted %lu for function: %s\n", function_address, func_value->function->name);
                     stack_vm_generator_emit_address(generator, function_address);
                 }
                 else

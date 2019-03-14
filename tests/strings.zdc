@@ -3,7 +3,6 @@
 
 main :: () -> int
 {
-    x := 5;
-    putchar(48 + x);
-    return x;
+    putchar(48);
+    return 0;
 }

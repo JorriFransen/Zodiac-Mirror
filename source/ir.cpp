@@ -39,19 +39,22 @@ namespace Zodiac
                     IR_Value* func_value = ir_builder_begin_function(ir_builder,
                                                                      global_decl->identifier->atom.data,
                                                                      global_decl->function.return_type);
-                    IR_Value* entry_block = ir_builder_create_block(ir_builder, "entry", func_value);
-                    ir_builder_set_insert_block(ir_builder, entry_block);
-
-                    for (uint64_t i = 0; i < BUF_LENGTH(global_decl->function.args); i++)
+                    if (global_decl->function.body_block)
                     {
-                        AST_Declaration* arg_decl = global_decl->function.args[i];
-                        assert(arg_decl->kind == AST_DECL_MUTABLE);
-                        assert(arg_decl->location == AST_DECL_LOC_ARGUMENT);
+                        IR_Value* entry_block = ir_builder_create_block(ir_builder, "entry", func_value);
+                        ir_builder_set_insert_block(ir_builder, entry_block);
 
-                        IR_Value* arg_value = ir_builder_emit_function_arg(ir_builder,
-                                                                           arg_decl->identifier->atom.data,
-                                                                           arg_decl->mutable_decl.type);
-                        ir_builder_push_value_and_decl(ir_builder, arg_value, arg_decl);
+                        for (uint64_t i = 0; i < BUF_LENGTH(global_decl->function.args); i++)
+                        {
+                            AST_Declaration* arg_decl = global_decl->function.args[i];
+                            assert(arg_decl->kind == AST_DECL_MUTABLE);
+                            assert(arg_decl->location == AST_DECL_LOC_ARGUMENT);
+
+                            IR_Value* arg_value = ir_builder_emit_function_arg(ir_builder,
+                                                                            arg_decl->identifier->atom.data,
+                                                                            arg_decl->mutable_decl.type);
+                            ir_builder_push_value_and_decl(ir_builder, arg_value, arg_decl);
+                        }
                     }
                     ir_builder_end_function(ir_builder, func_value);
 
@@ -86,27 +89,36 @@ namespace Zodiac
                 IR_Function* func = ir_value->function;
                 IR_Block* entry_block = func->first_block;
 
-                ir_builder->current_function = func;
-                ir_builder_set_insert_block(ir_builder, entry_block);
-
-                ir_builder_emit_statement(ir_builder, decl->function.body_block);
-
-                auto insert_block = ir_builder->insert_block;
-                auto first_instruction = insert_block->first_instruction;
-                auto last_instruction = insert_block->last_instruction;
-                if (!first_instruction && insert_block->previous)
+                if (decl->function.body_block)
                 {
-                    //@TODO: Free list
-                    insert_block->previous->next = nullptr;
-                    insert_block->previous = nullptr;
-                }
-                else if (!last_instruction ||
-                         !ir_instruction_is_terminator(last_instruction->op))
-                {
-                    ir_builder_emit_return(ir_builder, nullptr);
-                }
+                    ir_builder->current_function = func;
+                    ir_builder_set_insert_block(ir_builder, entry_block);
 
-                ir_builder->current_function = nullptr;
+                    ir_builder_emit_statement(ir_builder, decl->function.body_block);
+
+                    auto insert_block = ir_builder->insert_block;
+                    auto first_instruction = insert_block->first_instruction;
+                    auto last_instruction = insert_block->last_instruction;
+                    if (!first_instruction && insert_block->previous)
+                    {
+                        //@TODO: Free list
+                        insert_block->previous->next = nullptr;
+                        insert_block->previous = nullptr;
+                    }
+                    else if (!last_instruction ||
+                            !ir_instruction_is_terminator(last_instruction->op))
+                    {
+                        ir_builder_emit_return(ir_builder, nullptr);
+                    }
+
+                    ir_builder->current_function = nullptr;
+                }
+                else
+                {
+                    assert(decl->directive);
+                    assert(strncmp(decl->directive->identifier->atom.data, "foreign",
+                                   decl->directive->identifier->atom.length) == 0);
+                }
             }
         }
 
@@ -182,6 +194,7 @@ namespace Zodiac
                 ir_builder_emit_jmp(ir_builder, else_block_val);
 
                 ir_builder_set_insert_block(ir_builder, then_block_val);
+                assert(statement->if_stmt.then_statement);
                 ir_builder_emit_statement(ir_builder, statement->if_stmt.then_statement);
                 if (!ir_instruction_is_terminator(then_block_val->block->last_instruction->op))
                 {
@@ -227,6 +240,12 @@ namespace Zodiac
 
                     default: assert(false);
                 }
+                break;
+            }
+
+            case AST_STMT_CALL:
+            {
+                ir_builder_emit_expression(ir_builder, statement->call_expression);
                 break;
             }
 
