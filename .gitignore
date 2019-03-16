@@ -2,3 +2,5 @@
 CMakeLists.txt.user
 
 build/
+
+lib/dyncall-1.0
