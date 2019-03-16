@@ -1,24 +1,39 @@
 
+* Pointers [0/3]
+   - [ ] Basic pointers
+   - [ ] Pointer math
+   - [ ] Member expressions on pointers
+     
+* Foreign functions [0/2]
+   - [ ] Call via dyncall/load
+   - [ ] Store a table with information about foreign functions in the stack program
+    
+* Statements [0/3]
+   - [ ] While
+   - [ ] For
+   - [ ] Case
+
 * IR [1/8]
-  - [X] Argument count should be an argument for function calls
-  - [ ] Cleanup the gendata situation
-  - [ ] Use atoms where possible
-  - [ ] Make block names unique with a counter
-  - [ ] Free list for blocks
-  - [ ] Prevent functions with the same name
-  - [ ] Emit the number of argument for function calls as a u64 instead of a s64
-         This is done with s64 right now because that's the only literal type we
-         have. 
-  - [ ] Validator [0/3]
-    - [ ] Check function aruguments in the validator
-    - [ ] Check function return types in the validator
-    - [ ] Check jumps in the validator
+   - [X] Argument count should be an argument for function calls
+   - [ ] Cleanup the gendata situation
+   - [ ] Use atoms where possible
+   - [ ] Make block names unique with a counter
+   - [ ] Free list for blocks
+   - [ ] Prevent functions with the same name
+   - [ ] Emit the number of argument for function calls as a u64 instead of a s64
+          This is done with s64 right now because that's the only literal type we
+          have. 
+   - [ ] Validator [0/3]
+     - [ ] Check function aruguments in the validator
+     - [ ] Check function return types in the validator
+     - [ ] Check jumps in the validator
     
 * Atoms [1/3]
-  - [X] Store strings in the table(/arena)
-  - [ ] Store the array of atoms in the table 
-  - [ ] Hash strings
+   - [X] Store strings in the table(/arena)
+   - [ ] Store the array of atoms in the table 
+   - [ ] Hash strings
 
 * Resolver [2/2]
   - [X] Check type of return expression agains function decl
   - [X] Probably move (builtin) type declarations to global/module scope
+    
