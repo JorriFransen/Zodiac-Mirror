@@ -1,8 +1,9 @@
 
-* Pointers [0/3]
+* Pointers [0/4]
    - [ ] Basic pointers
    - [ ] Pointer math
    - [ ] Member expressions on pointers
+   - [ ] String type
      
 * Foreign functions [0/2]
    - [ ] Call via dyncall/load
