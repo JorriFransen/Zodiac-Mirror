@@ -1,8 +1,18 @@
 
-#foreign putchar :: (c: char) -> int;
+#foreign putchar :: (c: int) -> int;
+
+newline :: () -> void { putchar(10); }
+
+print_digit :: (digit: int) -> void
+{
+    putchar(digit + 48);
+}
 
 main :: () -> int
 {
-    putchar(48);
+    putchar(50);
+    newline();
+    print_digit(7);
+    newline();
     return 0;
 }

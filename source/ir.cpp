@@ -56,6 +56,10 @@ namespace Zodiac
                             ir_builder_push_value_and_decl(ir_builder, arg_value, arg_decl);
                         }
                     }
+                    else
+                    {
+                        func_value->function->flags |= IR_FUNC_FLAG_FOREIGN;
+                    }
                     ir_builder_end_function(ir_builder, func_value);
 
                     _IR_Decl_To_Func_ decl_to_func_entry = { global_decl, func_value->function };
@@ -116,8 +120,7 @@ namespace Zodiac
                 else
                 {
                     assert(decl->directive);
-                    assert(strncmp(decl->directive->identifier->atom.data, "foreign",
-                                   decl->directive->identifier->atom.length) == 0);
+                    assert(decl->directive->kind == AST_DIREC_FOREIGN);
                 }
             }
         }
@@ -779,6 +782,7 @@ namespace Zodiac
         assert(return_type);
 
         IR_Function* result = arena_alloc(&ir_builder->arena, IR_Function);
+        result->flags = IR_FUNC_FLAG_NONE;
         result->name = name;
         result->return_type = return_type;
         result->first_block = nullptr;
@@ -979,6 +983,13 @@ namespace Zodiac
     {
         assert(function);
 
+        bool is_foreign = function->flags &= IR_FUNC_FLAG_FOREIGN;
+
+        if (is_foreign)
+        {
+            printf("#foreign ");
+        }
+
         printf("%s(", function->name);
         for (uint64_t i = 0; i < BUF_LENGTH(function->arguments); i++)
         {
@@ -988,17 +999,24 @@ namespace Zodiac
             }
             ir_print_value(function->arguments[i]);
         }
-        printf(")\n{\n");
+        printf(")\n");
 
-        IR_Block* block = function->first_block;
-
-        while (block)
+        if (!is_foreign)
         {
-            ir_print_block(block);
-            block = block->next;
+            printf("{\n");
+
+            IR_Block* block = function->first_block;
+
+            while (block)
+            {
+                ir_print_block(block);
+                block = block->next;
+            }
+
+            printf("}\n");
         }
 
-        printf("}\n\n");
+        printf("\n");
     }
 
     void ir_print_block(IR_Block* block)

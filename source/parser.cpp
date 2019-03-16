@@ -63,9 +63,16 @@ namespace Zodiac
     {
         assert(parser);
 
-        AST_Identifier* identifier = parse_identifier(parser);
+        auto ft = current_token(parser);
 
-        return ast_directive_new(parser->context, identifier, identifier->file_pos);
+        AST_Directive_Kind kind = AST_DIREC_INVALID;
+
+        if (match_token(parser, TOK_KW_FOREIGN))
+        {
+            kind = AST_DIREC_FOREIGN;
+        }
+
+        return ast_directive_new(parser->context, kind, ft.file_pos);
     }
 
     static AST_Declaration* parse_declaration(Parser* parser, AST_Scope* scope, bool global,

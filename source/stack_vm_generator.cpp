@@ -1,5 +1,7 @@
 #include "stack_vm_generator.h"
 
+#include "builtin.h"
+
 namespace Zodiac
 {
     void stack_vm_generator_init(Stack_VM_Generator* generator)
@@ -273,8 +275,9 @@ namespace Zodiac
             generator->entry_address = function_address;
         }
 
-        if (ir_function->first_block)
+        if (!(ir_function->flags &= IR_FUNC_FLAG_FOREIGN))
         {
+            assert(ir_function->first_block);
             stack_vm_generator_emit_space_for_locals(generator, ir_function);
 
             IR_Block* block = ir_function->first_block;
@@ -287,7 +290,10 @@ namespace Zodiac
             Stack_VM_Gen_Data* gd = stack_vm_generator_create_gen_data(generator, ir_function);
             gd->function.address = function_address;
         }
-        else assert(false);
+        else
+        {
+            // Foreign function, do noting for now?
+        }
 
         generator->current_function = nullptr;
     }
@@ -379,32 +385,51 @@ namespace Zodiac
             case IR_OP_CALL:
             {
                 IR_Value* func_value = iri->arg1;
-                bool function_generated = false;
-                uint64_t function_address = stack_vm_generator_get_func_address(generator,
-                                                                                func_value->function,
-                                                                                &function_generated);
-                stack_vm_generator_emit_op(generator, SVMI_CALL_IMM);
-                if (function_generated)
+                bool is_foreign = func_value->function->flags &= IR_FUNC_FLAG_FOREIGN;
+                if (!is_foreign)
                 {
-                    printf("Emitted %lu for function: %s\n", function_address, func_value->function->name);
-                    stack_vm_generator_emit_address(generator, function_address);
+                    bool function_generated = false;
+                    uint64_t function_address = stack_vm_generator_get_func_address(generator,
+                                                                                    func_value->function,
+                                                                                    &function_generated);
+                    stack_vm_generator_emit_op(generator, SVMI_CALL_IMM);
+                    if (function_generated)
+                    {
+                        // printf("Emitted %lu for function: %s\n", function_address, func_value->function->name);
+                        stack_vm_generator_emit_address(generator, function_address);
+                    }
+                    else
+                    {
+                        auto address_index = BUF_LENGTH(generator->result.instructions);
+
+                        // Emmit dummy
+                        stack_vm_generator_emit_address(generator, 0);
+
+                        stack_vm_generator_add_address_dependency(generator, address_index, func_value);
+                    }
+                    stack_vm_generator_emit_u64(generator, iri->arg2->literal.s64);
                 }
                 else
                 {
-                    auto address_index = BUF_LENGTH(generator->result.instructions);
-
-                    // Emmit dummy
-                    stack_vm_generator_emit_address(generator, 0);
-
-                    stack_vm_generator_add_address_dependency(generator, address_index, func_value);
+                    stack_vm_generator_emit_op(generator, SVMI_CALL_EX);
+                    stack_vm_generator_emit_u64(generator, 0); // index into foreign function table
+                    stack_vm_generator_emit_u64(generator, iri->arg2->literal.s64);
                 }
-                stack_vm_generator_emit_u64(generator, iri->arg2->literal.s64);
                 break;
             }
 
             case IR_OP_RETURN:
             {
-                stack_vm_generator_emit_value(generator, iri->arg1);
+                if (!iri->arg1)
+                {
+                    assert(generator->current_function->return_type == Builtin::type_void);
+                    stack_vm_generator_emit_op(generator, SVMI_PUSH_S64);
+                    stack_vm_generator_emit_u64(generator, 0);
+                }
+                else
+                {
+                    stack_vm_generator_emit_value(generator, iri->arg1);
+                }
                 stack_vm_generator_emit_op(generator, SVMI_RETURN);
                 break;
             }

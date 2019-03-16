@@ -36,6 +36,7 @@ namespace Zodiac
         "TOK_KW_RETURN",
         "TOK_KW_IF",
         "TOK_KW_ELSE",
+        "TOK_KW_FOREIGN",
 
         "TOK_COUNT",
     };

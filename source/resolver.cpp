@@ -155,6 +155,15 @@ namespace Zodiac
                                             &declaration->function.return_type, scope);
         }
 
+        if (declaration->directive)
+        {
+            if (declaration->directive->kind == AST_DIREC_FOREIGN)
+            {
+                declaration->flags |= AST_DECL_FLAG_FOREIGN;
+                assert(!declaration->function.body_block);
+            }
+        }
+
         if (declaration->function.body_block)
         {
             assert(declaration->function.body_block->block.scope->parent == arg_scope);
@@ -167,6 +176,10 @@ namespace Zodiac
             {
                 declaration->function.return_type = declaration->function.inferred_return_type;
             }
+        }
+        else
+        {
+            assert(declaration->flags &= AST_DECL_FLAG_FOREIGN);
         }
 
         if (result)

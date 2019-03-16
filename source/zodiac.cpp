@@ -34,7 +34,7 @@ namespace Zodiac
         DEFINE_KW("return", TOK_KW_RETURN);
         DEFINE_KW("if", TOK_KW_IF);
         DEFINE_KW("else", TOK_KW_ELSE);
-
+        DEFINE_KW("foreign", TOK_KW_FOREIGN);
     }
 
 #undef DEFINE_KW

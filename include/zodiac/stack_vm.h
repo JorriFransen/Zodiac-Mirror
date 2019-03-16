@@ -24,6 +24,7 @@ namespace Zodiac
         SVMI_DIV_S64,
 
         SVMI_CALL_IMM,
+        SVMI_CALL_EX,
         SVMI_RETURN,
 
         SVMI_JMP_IMM,
@@ -70,6 +71,8 @@ namespace Zodiac
     int64_t stack_vm_fetch_s64(Stack_VM* vm);
     uint64_t stack_vm_fetch_u64(Stack_VM* vm);
     void stack_vm_execute(Stack_VM* vm, Stack_VM_Instruction instruction);
+
+    void stack_vm_call_foreign(Stack_VM* vm, uint64_t foreign_index, uint64_t num_args);
 
     void stack_vm_push(Stack_VM* vm, uint64_t value);
     uint64_t stack_vm_pop(Stack_VM* vm);

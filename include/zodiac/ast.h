@@ -186,6 +186,7 @@ namespace Zodiac
         AST_DECL_FLAG_NONE      = 0x00,
         AST_DECL_FLAG_RESOLVED  = 0x01,
         AST_DECL_FLAG_GENERATED = 0x02,
+        AST_DECL_FLAG_FOREIGN   = 0x04,
     };
 
     enum AST_Declaration_Location
@@ -247,15 +248,23 @@ namespace Zodiac
         BUF(AST_Declaration*) declarations = nullptr;
     };
 
+
+    enum AST_Directive_Kind
+    {
+        AST_DIREC_INVALID,
+        AST_DIREC_FOREIGN,
+    };
+
     struct AST_Directive
     {
+        AST_Directive_Kind kind = AST_DIREC_INVALID;
+
         File_Pos file_pos = {};
-        AST_Identifier* identifier = nullptr;
     };
 
     AST_Module* ast_module_new(Context* context, const char* module_name);
     AST_Identifier* ast_identifier_new(Context* context, Atom atom, File_Pos file_pos);
-    AST_Directive* ast_directive_new(Context* context, AST_Identifier* identifier, File_Pos file_pos);
+    AST_Directive* ast_directive_new(Context* context, AST_Directive_Kind kind, File_Pos file_pos);
 
     AST_Expression* ast_expression_new(Context* context, File_Pos file_pos, AST_Expression_Kind kind);
     AST_Expression* ast_binary_expression_new(Context* context, File_Pos file_pos,

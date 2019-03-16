@@ -142,6 +142,14 @@ namespace Zodiac
                     break;
                 }
 
+                case SVMI_CALL_EX:
+                {
+                    uint64_t index = instructions[ip++];
+                    uint64_t num_args = instructions[ip++];
+                    printf("SVMI_CALL_EX %lu, %lu\n", index, num_args);
+                    break;
+                }
+
                 case SVMI_RETURN:
                 {
                     printf("SVMI_RETURN\n");
@@ -364,6 +372,15 @@ namespace Zodiac
                 break;
             }
 
+            case SVMI_CALL_EX:
+            {
+                uint64_t foreign_index = stack_vm_fetch_u64(vm);
+                uint64_t num_args = stack_vm_fetch_u64(vm);
+
+                stack_vm_call_foreign(vm, foreign_index, num_args);
+                break;
+            }
+
             case SVMI_RETURN:
             {
                 uint64_t return_value = stack_vm_pop(vm);
@@ -480,6 +497,18 @@ namespace Zodiac
 
             default: assert(false);
         }
+    }
+
+    void stack_vm_call_foreign(Stack_VM* vm, uint64_t foreign_index, uint64_t num_args)
+    {
+        assert(vm);
+
+        assert(foreign_index == 0);
+        assert(num_args == 1);
+
+        int64_t arg = stack_vm_pop(vm);
+        int64_t result = putchar(arg);
+        stack_vm_push(vm, result);
     }
 
     void stack_vm_push(Stack_VM* vm, uint64_t value)

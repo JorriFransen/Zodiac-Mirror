@@ -25,14 +25,14 @@ namespace Zodiac
         return result;
     }
 
-    AST_Directive* ast_directive_new(Context* context, AST_Identifier* identifier, File_Pos file_pos)
+    AST_Directive* ast_directive_new(Context* context, AST_Directive_Kind kind, File_Pos file_pos)
     {
         assert(context);
-        assert(identifier);
+        assert(kind != AST_DIREC_INVALID);
 
         AST_Directive* result = arena_alloc(context->arena, AST_Directive);
+        result->kind = kind;
         result->file_pos = file_pos;
-        result->identifier = identifier;
 
         return result;
     }

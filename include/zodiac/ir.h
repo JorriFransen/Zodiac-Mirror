@@ -101,8 +101,17 @@ namespace Zodiac
         IR_Block* next = nullptr;
     };
 
+    typedef uint64_t _IR_Function_Flags_;
+    enum IR_Function_Flags : _IR_Function_Flags_
+    {
+        IR_FUNC_FLAG_NONE    = 0x00,
+        IR_FUNC_FLAG_FOREIGN = 0x01,
+    };
+
     struct IR_Function
     {
+        _IR_Function_Flags_ flags = IR_FUNC_FLAG_NONE;
+
         const char* name = nullptr;
         AST_Type* return_type = nullptr;
 
