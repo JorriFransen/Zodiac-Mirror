@@ -56,6 +56,8 @@ namespace Zodiac
         BUF(Stack_VM_Gen_Data) gen_data = nullptr;
         BUF(SVMG_Address_Dependency) address_dependencies = nullptr;
 
+        BUF(const char*) foreign_names = nullptr;
+
         Stack_VM_Gen_Result result = {};
     };
 
@@ -63,6 +65,10 @@ namespace Zodiac
 
     void stack_vm_generator_emit_strings(Stack_VM_Generator* generator, IR_Module* module);
     void stack_vm_generator_emit_string(Stack_VM_Generator* generator, Atom string);
+
+    void stack_vm_generator_emit_dynamic_lib_loads(Stack_VM_Generator* generator, IR_Module* module);
+
+    void stack_vm_generator_emit_foreigns(Stack_VM_Generator* generator, IR_Module* module);
 
     uint64_t stack_vm_generator_get_func_address(Stack_VM_Generator* generator, IR_Function* func,
                                                  bool* found);

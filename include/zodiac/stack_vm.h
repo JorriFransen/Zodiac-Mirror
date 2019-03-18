@@ -46,6 +46,9 @@ namespace Zodiac
         SVMI_SWP_64,
 
         SVMI_STRING_TABLE,
+        SVMI_FOREIGN_TABLE,
+
+        SVMI_LOAD_DYN_LIB,
 
         SVMI_HALT,
         SVMI_PRINT_S64,

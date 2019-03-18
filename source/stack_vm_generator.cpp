@@ -13,6 +13,7 @@ namespace Zodiac
         generator->current_function = nullptr;
         generator->gen_data = nullptr;
         generator->address_dependencies = nullptr;
+        generator->foreign_names = nullptr;
         generator->result = {};
     }
 
@@ -60,6 +61,38 @@ namespace Zodiac
         if (shift != 0)
         {
             stack_vm_generator_emit_u64(generator, to_push);
+        }
+    }
+
+    void stack_vm_generator_emit_dynamic_lib_loads(Stack_VM_Generator* generator, IR_Module* module)
+    {
+        assert(generator);
+        assert(module);
+
+        auto idx_count = BUF_LENGTH(module->dynamic_lib_idxs);
+
+        for (uint64_t i = 0; i < idx_count; i++)
+        {
+            stack_vm_generator_emit_op(generator, SVMI_LOAD_DYN_LIB);
+            stack_vm_generator_emit_u64(generator, module->dynamic_lib_idxs[i]);
+        }
+    }
+
+    void stack_vm_generator_emit_foreigns(Stack_VM_Generator* generator, IR_Module* module)
+    {
+        assert(generator);
+        assert(module);
+
+        auto foreign_count = BUF_LENGTH(module->foreign_table);
+        if (foreign_count)
+        {
+            stack_vm_generator_emit_op(generator, SVMI_FOREIGN_TABLE);
+            stack_vm_generator_emit_u64(generator, foreign_count);
+
+            for (uint64_t i = 0; i < foreign_count; i++)
+            {
+                stack_vm_generator_emit_string(generator, module->foreign_table[i]);
+            }
         }
     }
 
@@ -286,6 +319,8 @@ namespace Zodiac
         assert(generator);
         assert(ir_module);
 
+        stack_vm_generator_emit_dynamic_lib_loads(generator, ir_module);
+
         stack_vm_generator_emit_op(generator, SVMI_CALL_IMM);
         // Will be replaced with the entry point address
         auto main_address_index = BUF_LENGTH(generator->result.instructions);
@@ -294,6 +329,7 @@ namespace Zodiac
         stack_vm_generator_emit_op(generator, SVMI_HALT);
 
         stack_vm_generator_emit_strings(generator, ir_module);
+        stack_vm_generator_emit_foreigns(generator, ir_module);
 
         for (uint64_t i = 0; i < BUF_LENGTH(ir_module->functions); i++)
         {
@@ -434,36 +470,34 @@ namespace Zodiac
             case IR_OP_CALL:
             {
                 IR_Value* func_value = iri->arg1;
-                bool is_foreign = func_value->function->flags &= IR_FUNC_FLAG_FOREIGN;
-                if (!is_foreign)
+                bool function_generated = false;
+                uint64_t function_address = stack_vm_generator_get_func_address(generator,
+                                                                                func_value->function,
+                                                                                &function_generated);
+                stack_vm_generator_emit_op(generator, SVMI_CALL_IMM);
+                if (function_generated)
                 {
-                    bool function_generated = false;
-                    uint64_t function_address = stack_vm_generator_get_func_address(generator,
-                                                                                    func_value->function,
-                                                                                    &function_generated);
-                    stack_vm_generator_emit_op(generator, SVMI_CALL_IMM);
-                    if (function_generated)
-                    {
-                        // printf("Emitted %lu for function: %s\n", function_address, func_value->function->name);
-                        stack_vm_generator_emit_address(generator, function_address);
-                    }
-                    else
-                    {
-                        auto address_index = BUF_LENGTH(generator->result.instructions);
-
-                        // Emmit dummy
-                        stack_vm_generator_emit_address(generator, 0);
-
-                        stack_vm_generator_add_address_dependency(generator, address_index, func_value);
-                    }
-                    stack_vm_generator_emit_u64(generator, iri->arg2->literal.s64);
+                    // printf("Emitted %lu for function: %s\n", function_address, func_value->function->name);
+                    stack_vm_generator_emit_address(generator, function_address);
                 }
                 else
                 {
-                    stack_vm_generator_emit_op(generator, SVMI_CALL_EX);
-                    stack_vm_generator_emit_u64(generator, 0); // index into foreign function table
-                    stack_vm_generator_emit_u64(generator, iri->arg2->literal.s64);
+                    auto address_index = BUF_LENGTH(generator->result.instructions);
+
+                    // Emmit dummy
+                    stack_vm_generator_emit_address(generator, 0);
+
+                    stack_vm_generator_add_address_dependency(generator, address_index, func_value);
                 }
+                stack_vm_generator_emit_u64(generator, iri->arg2->literal.s64);
+                break;
+            }
+
+            case IR_OP_CALL_FOREIGN:
+            {
+                stack_vm_generator_emit_op(generator, SVMI_CALL_EX);
+                stack_vm_generator_emit_u64(generator, iri->arg1->literal.s64);
+                stack_vm_generator_emit_u64(generator, iri->arg2->literal.s64);
                 break;
             }
 

@@ -2,6 +2,7 @@
 #dynamic_link "libc.so.6";
 
 #foreign putchar :: (c: int) -> int;
+#foreign getchar :: () -> int;
 
 newline :: () -> void { putchar(10); }
 
@@ -15,6 +16,9 @@ main :: () -> int
     putchar(50);
     newline();
     print_digit(7);
+    newline();
+    c := getchar();
+    putchar(c);
     newline();
     return 0;
 }

@@ -66,6 +66,7 @@ namespace Zodiac
 
         IR_OP_PUSH_CALL_ARG,
         IR_OP_CALL,
+        IR_OP_CALL_FOREIGN,
         IR_OP_RETURN,
 
         IR_OP_JMP,
@@ -123,12 +124,14 @@ namespace Zodiac
 
         uint64_t next_temp_index = 0;
         bool is_entry = false;
+        uint64_t foreign_index = 0;
     };
 
     struct IR_Module
     {
         BUF(IR_Function*) functions = nullptr;
         BUF(Atom) string_table = nullptr;
+        BUF(Atom) foreign_table = nullptr;
         BUF(uint64_t) dynamic_lib_idxs = nullptr;
     };
 
@@ -198,6 +201,7 @@ namespace Zodiac
 
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64);
     uint64_t ir_builder_add_string_literal(IR_Builder* ir_builder, Atom atom);
+    uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, const char* name, AST_Type* return_type);
 

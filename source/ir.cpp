@@ -59,6 +59,8 @@ namespace Zodiac
                     else
                     {
                         func_value->function->flags |= IR_FUNC_FLAG_FOREIGN;
+                        func_value->function->foreign_index =
+                            ir_builder_emit_foreign(ir_builder, global_decl->identifier->atom);
                     }
                     ir_builder_end_function(ir_builder, func_value);
 
@@ -677,7 +679,14 @@ namespace Zodiac
         assert(function->return_type);
 
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, function->return_type);
-        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_CALL, func_value,
+        auto op = IR_OP_CALL;
+        IR_Value* arg_1 = func_value;
+        if (func_value->function->flags & IR_FUNC_FLAG_FOREIGN)
+        {
+            arg_1 = ir_integer_literal(ir_builder, Builtin::type_int, func_value->function->foreign_index);
+            op = IR_OP_CALL_FOREIGN;
+        }
+        IR_Instruction* iri = ir_instruction_new(ir_builder, op, arg_1,
                                                  num_args, result_value);
         ir_builder_emit_instruction(ir_builder, iri);
         return result_value;
@@ -810,6 +819,22 @@ namespace Zodiac
 
         BUF_PUSH(ir_builder->result.string_table, atom);
         return BUF_LENGTH(ir_builder->result.string_table) - 1;
+    }
+
+    uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom)
+    {
+        assert(ir_builder);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.foreign_table); i++)
+        {
+            if (ir_builder->result.foreign_table[i] == atom)
+            {
+                return i;
+            }
+        }
+
+        BUF_PUSH(ir_builder->result.foreign_table, atom);
+        return BUF_LENGTH(ir_builder->result.foreign_table) - 1;
     }
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, const char* name, AST_Type* return_type)
@@ -1173,6 +1198,15 @@ namespace Zodiac
             case IR_OP_CALL:
             {
                 printf("CALL ");
+                ir_print_value(instruction->arg1);
+                printf(", ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_CALL_FOREIGN:
+            {
+                printf("CALL_FOREIGN ");
                 ir_print_value(instruction->arg1);
                 printf(", ");
                 ir_print_value(instruction->arg2);
