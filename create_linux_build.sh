@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 pushd lib
-    unzip dyncall-1.0.zip
+    unzip -u dyncall-1.0.zip
 popd
 
 mkdir -p build

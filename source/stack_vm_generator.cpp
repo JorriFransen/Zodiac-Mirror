@@ -16,6 +16,53 @@ namespace Zodiac
         generator->result = {};
     }
 
+    void stack_vm_generator_emit_strings(Stack_VM_Generator* generator, IR_Module* module)
+    {
+        assert(generator);
+        assert(module);
+
+        auto string_count = BUF_LENGTH(module->string_table);
+        if (string_count)
+        {
+            stack_vm_generator_emit_op(generator, SVMI_STRING_TABLE);
+            stack_vm_generator_emit_u64(generator, string_count);
+
+            for (uint64_t i = 0; i < string_count; i++)
+            {
+                stack_vm_generator_emit_string(generator, module->string_table[i]);
+            }
+        }
+    }
+
+    void stack_vm_generator_emit_string(Stack_VM_Generator* generator, Atom string)
+    {
+        assert(generator);
+
+        uint64_t length = string.length;
+
+        stack_vm_generator_emit_u64(generator, length);
+
+        uint64_t to_push = 0;
+        uint64_t shift = 0;
+        for (uint64_t i = 0; i < string.length; i++)
+        {
+            to_push |= (uint64_t)string.data[i] << shift;
+            shift += 8;
+
+            if (shift > 56)
+            {
+                stack_vm_generator_emit_u64(generator, to_push);
+                shift = 0;
+                to_push = 0;
+            }
+        }
+
+        if (shift != 0)
+        {
+            stack_vm_generator_emit_u64(generator, to_push);
+        }
+    }
+
     uint64_t stack_vm_generator_get_func_address(Stack_VM_Generator* generator, IR_Function* func,
                                                  bool* found)
     {
@@ -245,6 +292,8 @@ namespace Zodiac
         stack_vm_generator_emit_address(generator, 0);
         stack_vm_generator_emit_u64(generator, 0);
         stack_vm_generator_emit_op(generator, SVMI_HALT);
+
+        stack_vm_generator_emit_strings(generator, ir_module);
 
         for (uint64_t i = 0; i < BUF_LENGTH(ir_module->functions); i++)
         {

@@ -61,6 +61,9 @@ namespace Zodiac
 
     void stack_vm_generator_init(Stack_VM_Generator* generator);
 
+    void stack_vm_generator_emit_strings(Stack_VM_Generator* generator, IR_Module* module);
+    void stack_vm_generator_emit_string(Stack_VM_Generator* generator, Atom string);
+
     uint64_t stack_vm_generator_get_func_address(Stack_VM_Generator* generator, IR_Function* func,
                                                  bool* found);
     uint64_t stack_vm_generator_get_block_address(Stack_VM_Generator* generator, IR_Block* block,

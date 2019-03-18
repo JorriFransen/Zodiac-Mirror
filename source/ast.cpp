@@ -194,6 +194,21 @@ namespace Zodiac
         return result;
     }
 
+    AST_Declaration* ast_dyn_link_declaration_new(Context* context, File_Pos file_pos, Atom link_name,
+                                                  AST_Declaration_Location location)
+    {
+        assert(context);
+
+        AST_Declaration* result = arena_alloc(context->arena, AST_Declaration);
+        result->kind = AST_DECL_DYN_LINK;
+        result->location = location;
+        result->file_pos = file_pos;
+
+        result->dyn_link_name = link_name;
+
+        return result;
+    }
+
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos, AST_Declaration* declaration)
     {
         assert(context);

@@ -102,6 +102,11 @@ namespace Zodiac
                     break;
                 }
 
+                case AST_DECL_DYN_LINK:
+                {
+                    break;
+                }
+
                 default:
                     assert(false);
                     break;

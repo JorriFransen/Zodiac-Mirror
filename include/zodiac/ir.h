@@ -128,6 +128,8 @@ namespace Zodiac
     struct IR_Module
     {
         BUF(IR_Function*) functions = nullptr;
+        BUF(Atom) string_table = nullptr;
+        BUF(uint64_t) dynamic_lib_idxs = nullptr;
     };
 
     struct _IR_Value_To_AST_Decl_Map_Entry_
@@ -195,6 +197,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_loada(IR_Builder* ir_builder, IR_Value* alloca_value);
 
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64);
+    uint64_t ir_builder_add_string_literal(IR_Builder* ir_builder, Atom atom);
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, const char* name, AST_Type* return_type);
 
@@ -213,6 +216,7 @@ namespace Zodiac
     bool ir_validate_block(IR_Block* ir_block, IR_Validation_Result* valres);
     void ir_report_validation_error(IR_Validation_Result* valres, const char* format, ...);
 
+    void ir_builder_print_result(IR_Builder* ir_builder);
     void ir_builder_print_functions(IR_Builder* ir_builder);
     void ir_print_function(IR_Function* function);
     void ir_print_block(IR_Block* block);

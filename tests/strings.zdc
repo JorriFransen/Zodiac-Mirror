@@ -1,4 +1,6 @@
 
+#dynamic_link "libc.so.6";
+
 #foreign putchar :: (c: int) -> int;
 
 newline :: () -> void { putchar(10); }

@@ -158,6 +158,7 @@ namespace Zodiac
         AST_DECL_FUNC,
         AST_DECL_MUTABLE,
         AST_DECL_TYPE,
+        AST_DECL_DYN_LINK,
     };
 
     struct AST_Function_Declaration
@@ -216,6 +217,8 @@ namespace Zodiac
             {
                 AST_Type* type;
             } type;
+
+            Atom dyn_link_name;
         };
 
         void* gen_data = nullptr;
@@ -248,11 +251,11 @@ namespace Zodiac
         BUF(AST_Declaration*) declarations = nullptr;
     };
 
-
     enum AST_Directive_Kind
     {
         AST_DIREC_INVALID,
         AST_DIREC_FOREIGN,
+        AST_DIREC_DYN_LINK,
     };
 
     struct AST_Directive
@@ -287,6 +290,8 @@ namespace Zodiac
                                                  AST_Declaration_Location location);
     AST_Declaration* ast_type_declaration_new(Context* context, File_Pos file_pos, AST_Type* type,
                                               AST_Identifier* identifier);
+    AST_Declaration* ast_dyn_link_declaration_new(Context* context, File_Pos file_pos, Atom link_name,
+                                                  AST_Declaration_Location location);
 
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos, AST_Declaration* declaration);
     AST_Statement* ast_block_statement_new(Context* context, File_Pos file_pos, BUF(AST_Statement*) block_statements,

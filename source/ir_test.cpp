@@ -161,7 +161,7 @@ int main(int argc, const char** argv)
 
     if (!validation.messages)
     {
-        ir_builder_print_functions(&ir_builder);
+        ir_builder_print_result(&ir_builder);
     }
     else
     {

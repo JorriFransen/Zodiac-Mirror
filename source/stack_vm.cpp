@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+#include <dynload/dynload.h>
+
 #include <assert.h>
 
 namespace Zodiac
@@ -20,6 +22,18 @@ namespace Zodiac
         vm->stack_size = stack_byte_size;
 
         vm->fp = 0;
+
+        vm->dyn_vm = dcNewCallVM(4096);
+        dcMode(vm->dyn_vm, DC_CALL_C_DEFAULT);
+        dcReset(vm->dyn_vm);
+
+        vm->foreign_functions = nullptr;
+
+        DLLib* c_lib = dlLoadLibrary("libc.so.6");
+        assert(c_lib);
+        void* putchar_ptr = dlFindSymbol(c_lib, "putchar");
+        assert(putchar_ptr);
+        BUF_PUSH(vm->foreign_functions, putchar_ptr);
     }
 
     void stack_vm_execute_program(Stack_VM* vm, uint64_t* instructions, uint64_t instruction_count)
@@ -215,6 +229,23 @@ namespace Zodiac
                 case SVMI_SWP_64:
                 {
                     printf("SVMI_SWP_S64\n");
+                    break;
+                }
+
+                case SVMI_STRING_TABLE:
+                {
+                    uint64_t entry_count = instructions[ip++];
+                    printf("STRING_TABLE (%lu entries)\n", entry_count);
+
+                    for (uint64_t i = 0; i < entry_count; i++)
+                    {
+                        uint64_t string_length = instructions[ip++];
+                        char* first_char = (char*)(instructions + ip);
+                        printf("\t%lu: %.*s\n", i, (int)string_length, first_char);
+                        ip += string_length % 4;
+                        ip += 1;
+                    }
+
                     break;
                 }
 
@@ -503,11 +534,18 @@ namespace Zodiac
     {
         assert(vm);
 
+        assert(foreign_index < BUF_LENGTH(vm->foreign_functions));
+
         assert(foreign_index == 0);
         assert(num_args == 1);
 
         int64_t arg = stack_vm_pop(vm);
-        int64_t result = putchar(arg);
+
+        dcMode(vm->dyn_vm, DC_CALL_C_DEFAULT);
+        dcReset(vm->dyn_vm);
+        dcArgLong(vm->dyn_vm, arg);
+        int64_t result = dcCallInt(vm->dyn_vm, vm->foreign_functions[foreign_index]);
+
         stack_vm_push(vm, result);
     }
 

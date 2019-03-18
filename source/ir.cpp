@@ -79,6 +79,27 @@ namespace Zodiac
                     break;
                 }
 
+                case AST_DECL_DYN_LINK:
+                {
+                    uint64_t idx = ir_builder_add_string_literal(ir_builder, global_decl->dyn_link_name);
+                    bool found = false;
+                    for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.dynamic_lib_idxs); i++)
+                    {
+                        uint64_t ex_idx = ir_builder->result.dynamic_lib_idxs[i];
+                        if (ex_idx == idx)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        BUF_PUSH(ir_builder->result.dynamic_lib_idxs, idx);
+                    }
+                    break;
+                }
+
                 default: assert(false);
             }
         }
@@ -775,6 +796,22 @@ namespace Zodiac
         return result;
     }
 
+    uint64_t ir_builder_add_string_literal(IR_Builder* ir_builder, Atom atom)
+    {
+        assert(ir_builder);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.string_table); i++)
+        {
+            if (ir_builder->result.string_table[i] == atom)
+            {
+                return i;
+            }
+        }
+
+        BUF_PUSH(ir_builder->result.string_table, atom);
+        return BUF_LENGTH(ir_builder->result.string_table) - 1;
+    }
+
     IR_Function* ir_function_new(IR_Builder* ir_builder, const char* name, AST_Type* return_type)
     {
         assert(ir_builder);
@@ -966,6 +1003,20 @@ namespace Zodiac
         assert(written == length - 1);
 
         BUF_PUSH(valres->messages, msg_buf);
+    }
+
+    void ir_builder_print_result(IR_Builder* ir_builder)
+    {
+        assert(ir_builder);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.dynamic_lib_idxs); i++)
+        {
+            auto idx = ir_builder->result.dynamic_lib_idxs[i];
+            auto lib_atom = ir_builder->result.string_table[idx];
+            printf("#dynamic_link %s\n", lib_atom.data);
+        }
+
+        ir_builder_print_functions(ir_builder);
     }
 
     void ir_builder_print_functions(IR_Builder* ir_builder)

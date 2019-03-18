@@ -1,5 +1,9 @@
 #pragma once
 
+#include "common.h"
+
+#include <dyncall/dyncall.h>
+
 #include <stdint.h>
 
 namespace Zodiac
@@ -41,6 +45,8 @@ namespace Zodiac
         SVMI_DUP_64,
         SVMI_SWP_64,
 
+        SVMI_STRING_TABLE,
+
         SVMI_HALT,
         SVMI_PRINT_S64,
 
@@ -60,6 +66,9 @@ namespace Zodiac
         uint64_t stack_size = 0;
 
         bool running = false;
+
+        DCCallVM* dyn_vm = nullptr;
+        BUF(DCpointer) foreign_functions = nullptr;
     };
 
     void stack_vm_init(Stack_VM* vm, uint64_t stack_byte_size);

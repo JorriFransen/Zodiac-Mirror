@@ -115,7 +115,7 @@ int main(int argc, char** argv)
     if (!validation.messages)
     {
         fprintf(stderr, "Generated ir for file: %s:\n", file_name);
-        ir_builder_print_functions(&ir_builder);
+        ir_builder_print_result(&ir_builder);
     }
     else
     {

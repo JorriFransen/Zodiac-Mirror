@@ -32,11 +32,13 @@ namespace Zodiac
 
         "TOK_IDENTIFIER",
         "TOK_INTEGER",
+        "TOK_STRING_LIT",
 
         "TOK_KW_RETURN",
         "TOK_KW_IF",
         "TOK_KW_ELSE",
         "TOK_KW_FOREIGN",
+        "TOK_KW_DYN_LINK",
 
         "TOK_COUNT",
     };

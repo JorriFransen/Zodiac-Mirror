@@ -112,6 +112,22 @@ namespace Zodiac
                 break;
             }
 
+            case '"':
+            {
+                lexer_consume_character(lexer);
+                File_Pos file_pos = lexer->current_file_pos;
+                uint64_t length = 0;
+                while (current_char(lexer) != '"')
+                {
+                    length++;
+                    lexer_consume_character(lexer);
+                }
+                lexer_consume_character(lexer);
+
+                lexer_push_token(lexer, TOK_STRING_LIT, file_pos, length);
+                break;
+            }
+
             case EOF: break;
 
             default:

@@ -71,6 +71,11 @@ namespace Zodiac
         {
             kind = AST_DIREC_FOREIGN;
         }
+        else if (match_token(parser, TOK_KW_DYN_LINK))
+        {
+            kind = AST_DIREC_DYN_LINK;
+        }
+        else assert(false);
 
         return ast_directive_new(parser->context, kind, ft.file_pos);
     }
@@ -81,6 +86,11 @@ namespace Zodiac
     {
         assert(parser);
         assert(scope);
+
+        if (directive && directive->kind == AST_DIREC_DYN_LINK)
+        {
+            return parse_link_declaration(parser, global, scope, directive);
+        }
 
         AST_Identifier* identifier = parse_identifier(parser);
         if (!identifier)
@@ -214,6 +224,23 @@ namespace Zodiac
 
         return ast_mutable_declaration_new(parser->context, identifier->file_pos, identifier,
                                            type_spec, init_expression, location);
+    }
+
+    static AST_Declaration* parse_link_declaration(Parser* parser, bool global, AST_Scope* scope,
+                                                   AST_Directive* directive)
+    {
+        assert(parser);
+        assert(global);
+        assert(scope);
+        assert(directive);
+        assert(directive->kind == AST_DIREC_DYN_LINK);
+
+        auto sl_tok = current_token(parser);
+        expect_token(parser, TOK_STRING_LIT);
+        expect_token(parser, TOK_SEMICOLON);
+
+        return ast_dyn_link_declaration_new(parser->context, directive->file_pos, sl_tok.atom,
+            AST_DECL_LOC_GLOBAL);
     }
 
     static AST_Statement* parse_statement(Parser* parser, AST_Scope* scope)
