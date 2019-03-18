@@ -69,12 +69,12 @@ namespace Zodiac
         assert(generator);
         assert(module);
 
-        auto idx_count = BUF_LENGTH(module->dynamic_lib_idxs);
+        auto lib_count = BUF_LENGTH(module->dynamic_lib_names);
 
-        for (uint64_t i = 0; i < idx_count; i++)
+        for (uint64_t i = 0; i < lib_count; i++)
         {
             stack_vm_generator_emit_op(generator, SVMI_LOAD_DYN_LIB);
-            stack_vm_generator_emit_u64(generator, module->dynamic_lib_idxs[i]);
+            stack_vm_generator_emit_string(generator, module->dynamic_lib_names[i]);
         }
     }
 

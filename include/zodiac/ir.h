@@ -132,7 +132,7 @@ namespace Zodiac
         BUF(IR_Function*) functions = nullptr;
         BUF(Atom) string_table = nullptr;
         BUF(Atom) foreign_table = nullptr;
-        BUF(uint64_t) dynamic_lib_idxs = nullptr;
+        BUF(Atom) dynamic_lib_names = nullptr;
     };
 
     struct _IR_Value_To_AST_Decl_Map_Entry_

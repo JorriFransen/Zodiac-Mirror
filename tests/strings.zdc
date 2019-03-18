@@ -3,6 +3,7 @@
 
 #foreign putchar :: (c: int) -> int;
 #foreign getchar :: () -> int;
+#foreign printf :: () -> void;
 
 newline :: () -> void { putchar(10); }
 
@@ -17,8 +18,8 @@ main :: () -> int
     newline();
     print_digit(7);
     newline();
-    c := getchar();
-    putchar(c);
+    c1 := getchar();
+    putchar(c1);
     newline();
-    return 0;
+    return getchar();
 }

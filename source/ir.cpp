@@ -83,12 +83,11 @@ namespace Zodiac
 
                 case AST_DECL_DYN_LINK:
                 {
-                    uint64_t idx = ir_builder_add_string_literal(ir_builder, global_decl->dyn_link_name);
                     bool found = false;
-                    for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.dynamic_lib_idxs); i++)
+                    for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.dynamic_lib_names); i++)
                     {
-                        uint64_t ex_idx = ir_builder->result.dynamic_lib_idxs[i];
-                        if (ex_idx == idx)
+                        Atom ex_lib = ir_builder->result.dynamic_lib_names[i];
+                        if (ex_lib == global_decl->dyn_link_name)
                         {
                             found = true;
                             break;
@@ -97,7 +96,7 @@ namespace Zodiac
 
                     if (!found)
                     {
-                        BUF_PUSH(ir_builder->result.dynamic_lib_idxs, idx);
+                        BUF_PUSH(ir_builder->result.dynamic_lib_names, global_decl->dyn_link_name);
                     }
                     break;
                 }
@@ -1034,10 +1033,9 @@ namespace Zodiac
     {
         assert(ir_builder);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.dynamic_lib_idxs); i++)
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.dynamic_lib_names); i++)
         {
-            auto idx = ir_builder->result.dynamic_lib_idxs[i];
-            auto lib_atom = ir_builder->result.string_table[idx];
+            auto lib_atom = ir_builder->result.dynamic_lib_names[i];
             printf("#dynamic_link %s\n", lib_atom.data);
         }
 

@@ -25,11 +25,8 @@ namespace Zodiac
         dcMode(vm->dyn_vm, DC_CALL_C_DEFAULT);
         dcReset(vm->dyn_vm);
 
+        vm->loaded_libs = nullptr;
         vm->foreign_functions = nullptr;
-
-        vm->c_lib = dlLoadLibrary("libc.so.6");
-        assert(vm->c_lib);
-
     }
 
     void stack_vm_execute_program(Stack_VM* vm, uint64_t* instructions, uint64_t instruction_count)
@@ -59,6 +56,25 @@ namespace Zodiac
             int64_t value = stack_vm_pop(vm);
             printf("entry point returned: %ld\n", value);
         }
+    }
+
+    void* stack_vm_find_foreign(Stack_VM* vm, const char* foreign_name)
+    {
+        assert(vm);
+        assert(foreign_name);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(vm->loaded_libs); i++)
+        {
+            DLLib* lib = vm->loaded_libs[i];
+            void* result = dlFindSymbol(lib, foreign_name);
+
+            if (result)
+            {
+                return result;
+            }
+        }
+
+        return nullptr;
     }
 
     void stack_vm_print_program(uint64_t* instructions, uint64_t instruction_count)
@@ -264,8 +280,11 @@ namespace Zodiac
 
                 case SVMI_LOAD_DYN_LIB:
                 {
-                    uint64_t idx = instructions[ip++];
-                    printf("LOAD_DYN_LIB %lu\n", idx);
+                    uint64_t name_length = instructions[ip++];
+                    char* first_char = (char*)(instructions + ip);
+                    printf("LOAD_DYN_LIB %.*s\n", (int)name_length, first_char);
+                    ip += name_length / 8;
+                    if (name_length % 8) ip++;
                     break;
                 }
 
@@ -541,7 +560,7 @@ namespace Zodiac
                     uint64_t foreign_name_length = stack_vm_fetch_u64(vm);
                     const char* foreign_name = (const char*)&vm->instructions[vm->ip];
 
-                    void* foreign_ptr = dlFindSymbol(vm->c_lib, foreign_name);
+                    void* foreign_ptr = stack_vm_find_foreign(vm, foreign_name);
                     assert(foreign_ptr);
                     BUF_PUSH(vm->foreign_functions, foreign_ptr);
 
@@ -553,7 +572,14 @@ namespace Zodiac
 
             case SVMI_LOAD_DYN_LIB:
             {
-                uint64_t lib_name_idx = stack_vm_fetch_u64(vm);
+                uint64_t lib_name_length = stack_vm_fetch_u64(vm);
+                char* lib_name = (char*)&vm->instructions[vm->ip];
+                vm->ip += lib_name_length / 8;
+                if (lib_name_length % 8) vm->ip++;
+
+                DLLib* lib = dlLoadLibrary(lib_name);
+                assert(lib);
+                BUF_PUSH(vm->loaded_libs, lib);
                 break;
             }
 

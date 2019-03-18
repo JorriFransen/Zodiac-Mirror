@@ -5,10 +5,12 @@
    - [ ] Member expressions on pointers
    - [ ] String type
      
-* Foreign functions [0/3]
-   - [ ] Call via dyncall/load
-   - [ ] Store a table with information about foreign functions in the stack program
-   - [ ] Load this table in the vm, and attempt to load the foreign functions with dynload
+* Foreign functions [3/5]
+   - [X] Call via dyncall/load
+   - [X] Store a table with information about foreign functions in the stack program
+   - [X] Load this table in the vm, and attempt to load the foreign functions with dynload
+   - [ ] Stack command for pushing arguments for foreign functions
+   - [ ] Varargs functions
     
 * Statements [0/3]
    - [ ] While

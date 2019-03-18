@@ -72,13 +72,14 @@ namespace Zodiac
         bool running = false;
 
         DCCallVM* dyn_vm = nullptr;
+        BUF(DLLib*) loaded_libs = nullptr;
         BUF(DCpointer) foreign_functions = nullptr;
-
-        DLLib* c_lib = nullptr;
     };
 
     void stack_vm_init(Stack_VM* vm, uint64_t stack_byte_size);
     void stack_vm_execute_program(Stack_VM* vm, uint64_t* instructions, uint64_t instruction_count);
+
+    void* stack_vm_find_foreign(Stack_VM* vm, const char* foreign_name);
 
     void stack_vm_print_program(uint64_t* instructions, uint64_t instruction_count);
 
