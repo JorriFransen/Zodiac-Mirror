@@ -320,6 +320,7 @@ namespace Zodiac
         assert(ir_module);
 
         stack_vm_generator_emit_dynamic_lib_loads(generator, ir_module);
+        stack_vm_generator_emit_foreigns(generator, ir_module);
 
         stack_vm_generator_emit_op(generator, SVMI_CALL_IMM);
         // Will be replaced with the entry point address
@@ -329,7 +330,6 @@ namespace Zodiac
         stack_vm_generator_emit_op(generator, SVMI_HALT);
 
         stack_vm_generator_emit_strings(generator, ir_module);
-        stack_vm_generator_emit_foreigns(generator, ir_module);
 
         for (uint64_t i = 0; i < BUF_LENGTH(ir_module->functions); i++)
         {

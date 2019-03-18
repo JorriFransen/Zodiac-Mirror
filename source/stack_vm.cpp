@@ -2,8 +2,6 @@
 
 #include "common.h"
 
-#include <dynload/dynload.h>
-
 #include <assert.h>
 
 namespace Zodiac
@@ -29,16 +27,9 @@ namespace Zodiac
 
         vm->foreign_functions = nullptr;
 
-        DLLib* c_lib = dlLoadLibrary("libc.so.6");
-        assert(c_lib);
+        vm->c_lib = dlLoadLibrary("libc.so.6");
+        assert(vm->c_lib);
 
-        void* putchar_ptr = dlFindSymbol(c_lib, "putchar");
-        assert(putchar_ptr);
-        BUF_PUSH(vm->foreign_functions, putchar_ptr);
-
-        void* getchar_ptr = dlFindSymbol(c_lib, "getchar");
-        assert(getchar_ptr);
-        BUF_PUSH(vm->foreign_functions, getchar_ptr);
     }
 
     void stack_vm_execute_program(Stack_VM* vm, uint64_t* instructions, uint64_t instruction_count)
@@ -539,6 +530,24 @@ namespace Zodiac
                 auto b = stack_vm_pop(vm);
                 stack_vm_push(vm, a);
                 stack_vm_push(vm, b);
+                break;
+            }
+
+            case SVMI_FOREIGN_TABLE:
+            {
+                uint64_t foreign_count = stack_vm_fetch_u64(vm);
+                for (uint64_t i = 0; i < foreign_count; i++)
+                {
+                    uint64_t foreign_name_length = stack_vm_fetch_u64(vm);
+                    const char* foreign_name = (const char*)&vm->instructions[vm->ip];
+
+                    void* foreign_ptr = dlFindSymbol(vm->c_lib, foreign_name);
+                    assert(foreign_ptr);
+                    BUF_PUSH(vm->foreign_functions, foreign_ptr);
+
+                    vm->ip += foreign_name_length / 8;
+                    if (foreign_name_length % 8) vm->ip++;
+                }
                 break;
             }
 

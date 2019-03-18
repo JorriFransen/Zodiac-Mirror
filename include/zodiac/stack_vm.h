@@ -3,6 +3,7 @@
 #include "common.h"
 
 #include <dyncall/dyncall.h>
+#include <dynload/dynload.h>
 
 #include <stdint.h>
 
@@ -72,6 +73,8 @@ namespace Zodiac
 
         DCCallVM* dyn_vm = nullptr;
         BUF(DCpointer) foreign_functions = nullptr;
+
+        DLLib* c_lib = nullptr;
     };
 
     void stack_vm_init(Stack_VM* vm, uint64_t stack_byte_size);
