@@ -493,7 +493,14 @@ namespace Zodiac
                 break;
             }
 
-            case IR_OP_CALL_FOREIGN:
+            case IR_OP_PUSH_EX_CALL_ARG:
+            {
+                stack_vm_generator_emit_value(generator, iri->arg1);
+                stack_vm_generator_emit_op(generator, SVMI_PUSH_EX_ARG_S64);
+                break;
+            }
+
+            case IR_OP_CALL_EX:
             {
                 stack_vm_generator_emit_op(generator, SVMI_CALL_EX);
                 stack_vm_generator_emit_u64(generator, iri->arg1->literal.s64);

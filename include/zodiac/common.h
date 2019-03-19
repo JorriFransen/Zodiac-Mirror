@@ -189,6 +189,15 @@ T stack_top(Stack<T>& stack)
 }
 
 template <typename T>
+T stack_peek(Stack<T>& stack, uint64_t offset = 0)
+{
+    assert(stack.data);
+    assert(stack.sp);
+
+    return stack.data[(stack.sp - 1) - offset];
+}
+
+template <typename T>
 void stack_copy(Stack<T>& dest, Stack<T>& source)
 {
     assert(dest.data == nullptr);

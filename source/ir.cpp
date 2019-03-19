@@ -360,11 +360,13 @@ namespace Zodiac
                 assert(callee_value);
                 assert(callee_value->kind == IRV_FUNCTION);
 
+                bool is_foreign = callee_value->function->flags & IR_FUNC_FLAG_FOREIGN;
+
                 for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
                 {
                     AST_Expression* arg_expr = expression->call.arg_expressions[i];
                     IR_Value* arg_value = ir_builder_emit_expression(ir_builder, arg_expr);
-                    ir_builder_emit_call_arg(ir_builder, arg_value);
+                    ir_builder_emit_call_arg(ir_builder, arg_value, is_foreign);
                 }
 
                 IR_Value* num_args_lit = ir_integer_literal(ir_builder, Builtin::type_int,
@@ -656,12 +658,17 @@ namespace Zodiac
         ir_builder_emit_instruction(ir_builder, iri);
     }
 
-    void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value)
+    void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value, bool is_foreign/*=false*/)
     {
         assert(ir_builder);
         assert(arg_value);
 
-        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_PUSH_CALL_ARG, arg_value,
+        auto op = IR_OP_PUSH_CALL_ARG;
+        if (is_foreign)
+        {
+            op = IR_OP_PUSH_EX_CALL_ARG;
+        }
+        IR_Instruction* iri = ir_instruction_new(ir_builder, op, arg_value,
                                                  nullptr, nullptr);
         ir_builder_emit_instruction(ir_builder, iri);
     }
@@ -683,7 +690,7 @@ namespace Zodiac
         if (func_value->function->flags & IR_FUNC_FLAG_FOREIGN)
         {
             arg_1 = ir_integer_literal(ir_builder, Builtin::type_int, func_value->function->foreign_index);
-            op = IR_OP_CALL_FOREIGN;
+            op = IR_OP_CALL_EX;
         }
         IR_Instruction* iri = ir_instruction_new(ir_builder, op, arg_1,
                                                  num_args, result_value);
@@ -1039,6 +1046,8 @@ namespace Zodiac
             printf("#dynamic_link %s\n", lib_atom.data);
         }
 
+        printf("\n");
+
         ir_builder_print_functions(ir_builder);
     }
 
@@ -1057,7 +1066,7 @@ namespace Zodiac
     {
         assert(function);
 
-        bool is_foreign = function->flags &= IR_FUNC_FLAG_FOREIGN;
+        bool is_foreign = function->flags & IR_FUNC_FLAG_FOREIGN;
 
         if (is_foreign)
         {
@@ -1202,9 +1211,16 @@ namespace Zodiac
                 break;
             }
 
-            case IR_OP_CALL_FOREIGN:
+            case IR_OP_PUSH_EX_CALL_ARG:
             {
-                printf("CALL_FOREIGN ");
+                printf("PUSH_EX_ARG ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_CALL_EX:
+            {
+                printf("CALL_EX ");
                 ir_print_value(instruction->arg1);
                 printf(", ");
                 ir_print_value(instruction->arg2);

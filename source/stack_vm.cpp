@@ -176,6 +176,12 @@ namespace Zodiac
                     break;
                 }
 
+                case SVMI_PUSH_EX_ARG_S64:
+                {
+                    printf("SVMI_PUSH_EX_ARG_S64\n");
+                    break;
+                }
+
                 case SVMI_RETURN:
                 {
                     printf("SVMI_RETURN\n");
@@ -451,6 +457,13 @@ namespace Zodiac
                 break;
             }
 
+            case SVMI_PUSH_EX_ARG_S64:
+            {
+                uint64_t value = stack_vm_pop(vm);
+                dcArgLong(vm->dyn_vm, value);
+                break;
+            }
+
             case SVMI_RETURN:
             {
                 uint64_t return_value = stack_vm_pop(vm);
@@ -606,19 +619,9 @@ namespace Zodiac
 
         assert(foreign_index < BUF_LENGTH(vm->foreign_functions));
 
-        int64_t arg = stack_vm_pop(vm);
-
         dcMode(vm->dyn_vm, DC_CALL_C_DEFAULT);
         dcReset(vm->dyn_vm);
 
-        if (num_args == 1)
-        {
-            dcArgLong(vm->dyn_vm, arg);
-        }
-        else
-        {
-            assert(num_args == 0);
-        }
         int64_t result = dcCallInt(vm->dyn_vm, vm->foreign_functions[foreign_index]);
 
         stack_vm_push(vm, result);

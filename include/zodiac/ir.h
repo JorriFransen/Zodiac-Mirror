@@ -66,7 +66,8 @@ namespace Zodiac
 
         IR_OP_PUSH_CALL_ARG,
         IR_OP_CALL,
-        IR_OP_CALL_FOREIGN,
+        IR_OP_PUSH_EX_CALL_ARG,
+        IR_OP_CALL_EX,
         IR_OP_RETURN,
 
         IR_OP_JMP,
@@ -189,7 +190,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_lt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_lteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val);
-    void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value);
+    void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value, bool is_foreign = false);
     IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value, IR_Value* num_args);
     void ir_builder_emit_jmp(IR_Builder* ir_builder, IR_Value* block_value);
     void ir_builder_emit_jmp_if(IR_Builder* ir_builder, IR_Value* cond_value, IR_Value* block_value);

@@ -30,6 +30,7 @@ namespace Zodiac
 
         SVMI_CALL_IMM,
         SVMI_CALL_EX,
+        SVMI_PUSH_EX_ARG_S64,
         SVMI_RETURN,
 
         SVMI_JMP_IMM,
