@@ -574,25 +574,52 @@ namespace Zodiac
         assert(*type_dest == nullptr);
         assert(scope);
 
-        assert(type_spec->identifier);
-        AST_Identifier* identifier = type_spec->identifier;
-
-        AST_Declaration* type_decl = find_declaration(scope, type_spec->identifier);
-        if (!type_decl)
+        switch (type_spec->kind)
         {
-            report_undeclared_identifier(resolver, identifier->file_pos, identifier);
-            return false;
-        }
+            case AST_TYPE_SPEC_IDENT:
+            {
+                    assert(type_spec->identifier);
+                    AST_Identifier* identifier = type_spec->identifier;
 
-        assert(type_decl->kind == AST_DECL_TYPE);
-        AST_Type* type = type_decl->type.type;
-        if (type)
-        {
-            *type_dest = type;
-            return true;
-        }
+                    AST_Declaration* type_decl = find_declaration(scope, type_spec->identifier);
+                    if (!type_decl)
+                    {
+                        report_undeclared_identifier(resolver, identifier->file_pos, identifier);
+                        return false;
+                    }
 
-        return false;
+                    assert(type_decl->kind == AST_DECL_TYPE);
+                    AST_Type* type = type_decl->type.type;
+                    if (type)
+                    {
+                        *type_dest = type;
+                        return true;
+                    }
+
+                    return false;
+            }
+
+            case AST_TYPE_SPEC_POINTER:
+            {
+                AST_Type* base_type = nullptr;
+                bool base_result = try_resolve_type_spec(resolver, type_spec->base_type_spec, &base_type,
+                                                         scope);
+                if (base_result)
+                {
+                    AST_Type* pointer_type = ast_find_or_create_pointer_type(resolver->context, resolver->module, base_type);
+                    assert(pointer_type);
+                    *type_dest = pointer_type;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+                break;
+            }
+
+            default: assert(false);
+        }
     }
 
     AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier)

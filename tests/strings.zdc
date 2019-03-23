@@ -10,16 +10,18 @@ newline :: () -> void { putchar(10); }
 print_digit :: (digit: int) -> void
 {
     putchar(digit + 48);
+    newline();
 }
 
 main :: () -> int
 {
-    putchar(50);
-    newline();
-    print_digit(7);
-    newline();
-    c1 := getchar();
-    putchar(c1);
-    newline();
-    return getchar();
+    pointer_test();
+    return 0;
+}
+
+pointer_test :: () -> void
+{
+    x: int;
+    print_digit(x);
+    x_ptr : *int;
 }

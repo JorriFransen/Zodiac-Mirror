@@ -1,4 +1,7 @@
 
+ - 
+ - normal types are not pushed in the per module type table.
+
 * Pointers [0/4]
    - [ ] Basic pointers
    - [ ] Pointer math

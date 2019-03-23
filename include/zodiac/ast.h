@@ -18,6 +18,7 @@ namespace Zodiac
     struct AST_Module
     {
         BUF(AST_Declaration*) global_declarations = nullptr;
+        BUF(AST_Type*) types = nullptr;
         AST_Scope* module_scope = nullptr;
         AST_Declaration* entry_point = nullptr;
         const char* module_name = nullptr;
@@ -224,9 +225,16 @@ namespace Zodiac
         void* gen_data = nullptr;
     };
 
+    enum AST_Type_Kind
+    {
+        AST_TYPE_BASE,
+        AST_TYPE_POINTER,
+    };
+
     typedef uint64_t AST_Type_Flags;
     enum _AST_TYPE_FLAG_TYPE_ : AST_Type_Flags
     {
+        AST_TYPE_FLAG_NONE   = 0x00,
         AST_TYPE_FLAG_INT    = 0x01,
         AST_TYPE_FLAG_SIGNED = 0x02,
         AST_TYPE_FLAG_VOID   = 0x04,
@@ -234,14 +242,36 @@ namespace Zodiac
 
     struct AST_Type
     {
-        AST_Type_Flags flags = 0;
-        uint64_t bit_size = 0;
+        AST_Type_Kind kind;
+        AST_Type_Flags flags = AST_TYPE_FLAG_NONE;
+
+        union
+        {
+            struct
+            {
+                uint64_t bit_size = 0;
+            } base;
+
+            AST_Type* base_type;
+        };
+    };
+
+    enum AST_Type_Spec_Kind
+    {
+        AST_TYPE_SPEC_IDENT,
+        AST_TYPE_SPEC_POINTER,
     };
 
     struct AST_Type_Spec
     {
+        AST_Type_Spec_Kind kind;
         File_Pos file_pos;
-        AST_Identifier* identifier = nullptr;
+
+        union
+        {
+            AST_Identifier* identifier;
+            AST_Type_Spec* base_type_spec;
+        };
     };
 
     struct AST_Scope
@@ -303,9 +333,15 @@ namespace Zodiac
                                             AST_Expression* expression);
     AST_Statement* ast_call_statement_new(Context* context, AST_Expression* call_expression);
 
-    AST_Type* ast_type_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size);
+    AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags);
+    AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size);
+    AST_Type* ast_type_pointer_new(Context* context, AST_Type* base_type);
 
-    AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Identifier* identifier);
+    AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind);
+    AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos, AST_Identifier* identifier);
+    AST_Type_Spec* ast_type_spec_pointer_new(Context* context, File_Pos file_pos, AST_Type_Spec* base_type_spec);
 
     AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope);
+
+    AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Module* module, AST_Type* base_type);
 }

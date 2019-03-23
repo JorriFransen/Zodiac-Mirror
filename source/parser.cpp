@@ -47,7 +47,7 @@ namespace Zodiac
 
         Token id_token = current_token(parser);
 
-        if (expect_token(parser, TOK_IDENTIFIER))
+        if (match_token(parser, TOK_IDENTIFIER))
         {
             return ast_identifier_new(parser->context, id_token.atom, id_token.file_pos);
         }
@@ -586,13 +586,23 @@ namespace Zodiac
     {
         assert(parser);
 
-        AST_Identifier* typespec_ident = parse_identifier(parser);
-        if (!typespec_ident)
-        {
-            return nullptr;
-        }
+        auto ft = current_token(parser);
 
-        return ast_type_spec_new(parser->context, typespec_ident->file_pos, typespec_ident);
+        if (match_token(parser, TOK_MUL))
+        {
+            AST_Type_Spec* base_type_spec = parse_type_spec(parser);
+            return ast_type_spec_pointer_new(parser->context, ft.file_pos, base_type_spec);
+        }
+        else
+        {
+            AST_Identifier* typespec_ident = parse_identifier(parser);
+            if (!typespec_ident)
+            {
+                return nullptr;
+            }
+
+            return ast_type_spec_identifier_new(parser->context, typespec_ident->file_pos, typespec_ident);
+        }
     }
 
     static bool is_add_op(Parser* parser)

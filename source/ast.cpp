@@ -8,8 +8,11 @@ namespace Zodiac
         assert(module_name);
 
         AST_Module* result = arena_alloc(context->arena, AST_Module);
-        result->module_name = module_name;
+        result->global_declarations = nullptr;
+        result->types = nullptr;
         result->module_scope = ast_scope_new(context, nullptr);
+        result->entry_point = nullptr;
+        result->module_name = module_name;
 
         return result;
     }
@@ -300,26 +303,68 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type* ast_type_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size)
+    AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags)
     {
         assert(context);
-        // assert(bit_size > 0);
-        assert(bit_size % 8 == 0);
 
         AST_Type* result = arena_alloc(context->arena, AST_Type);
+        result->kind = kind;
         result->flags = type_flags;
-        result->bit_size = bit_size;
 
         return result;
     }
-    AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Identifier* identifier)
+
+    AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size)
+    {
+        assert(context);
+        assert(bit_size % 8 == 0);
+
+        AST_Type* result = ast_type_new(context, AST_TYPE_BASE, type_flags);
+        result->base.bit_size = bit_size;
+
+        return result;
+    }
+
+    AST_Type* ast_type_pointer_new(Context* context, AST_Type* base_type)
+    {
+        assert(context);
+        assert(base_type);
+
+        AST_Type* result = ast_type_new(context, AST_TYPE_POINTER, AST_TYPE_FLAG_NONE);
+        result->base_type = base_type;
+
+        return result;
+    }
+
+    AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind)
+    {
+        assert(context);
+
+        AST_Type_Spec* result = arena_alloc(context->arena, AST_Type_Spec);
+        result->kind = kind;
+        result->file_pos = file_pos;
+
+        return result;
+    }
+
+    AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos, AST_Identifier* identifier)
     {
         assert(context);
         assert(identifier);
 
-        AST_Type_Spec* result = arena_alloc(context->arena, AST_Type_Spec);
-        result->file_pos = file_pos;
+        AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_IDENT);
         result->identifier = identifier;
+
+        return result;
+    }
+
+    AST_Type_Spec* ast_type_spec_pointer_new(Context* context, File_Pos file_pos, AST_Type_Spec* base_type_spec)
+    {
+        assert(context);
+        assert(base_type_spec);
+
+        AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_POINTER);
+        result->base_type_spec = base_type_spec;
 
         return result;
     }
@@ -333,5 +378,28 @@ namespace Zodiac
         result->declarations = nullptr;
 
         return result;
+    }
+
+    AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Module* module, AST_Type* base_type)
+    {
+        assert(context);
+        assert(module);
+        assert(base_type);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(module->types); i++)
+        {
+            AST_Type* ex_type = module->types[i];
+            if (ex_type->kind == AST_TYPE_POINTER)
+            {
+                if (ex_type->base_type == base_type)
+                {
+                    return ex_type;
+                }
+            }
+        }
+
+        AST_Type* pointer_type = ast_type_pointer_new(context, base_type);
+        BUF_PUSH(module->types, pointer_type);
+        return pointer_type;
     }
 }

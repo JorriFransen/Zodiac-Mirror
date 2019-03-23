@@ -10,6 +10,20 @@ plusone :: (x: int) -> int
     return x;
 }
 
+#dynamic_link "libc.so.6";
+
+#foreign putchar :: (c: int) -> int;
+#foreign getchar :: () -> int;
+#foreign printf :: () -> void;
+
+newline :: () -> void { putchar(10); }
+
+print_digit :: (digit: int) -> void
+{
+    putchar(digit + 48);
+    newline();
+}
+
 main :: () -> int
 {
     x : int = add(4, 5);
@@ -18,6 +32,13 @@ main :: () -> int
     z = 5;
 
     result := 1 + 2 + add(4, 5) + plusone(z);
+
+    putchar(50);
+    newline();
+    print_digit(7);
+    c1 := getchar();
+    putchar(c1);
+    newline();
 
     return fib_recursive(30) / (fact_recursive(y - 2) - 20) + result;
 }
