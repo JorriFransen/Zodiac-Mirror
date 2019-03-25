@@ -1,6 +1,6 @@
 #include "parser.h"
 
-#include <varargs.h>
+#include <stdarg.h>
 
 namespace Zodiac
 {

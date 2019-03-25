@@ -44,11 +44,6 @@ target_include_directories(zodiac PRIVATE include/zodiac)
 target_include_directories(zodiac PRIVATE lib/dyncall-1.0)
 target_link_libraries(zodiac dyncall_s dynload_s ${ZODIAC_LIBS})
 
-add_executable(vm_test source/vm_test.cpp ${ZODIAC_COMPILER_SOURCE})
-target_include_directories(vm_test PRIVATE include/zodiac)
-target_include_directories(vm_test PRIVATE lib/dyncall-1.0)
-target_link_libraries(vm_test dyncall_s dynload_s ${ZODIAC_LIBS})
-
 add_executable(ir_test source/ir_test.cpp ${ZODIAC_COMPILER_SOURCE})
 target_include_directories(ir_test PRIVATE include/zodiac)
 target_include_directories(ir_test PRIVATE lib/dyncall-1.0)

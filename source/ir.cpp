@@ -2,6 +2,7 @@
 
 #include "builtin.h"
 
+#include <inttypes.h>
 #include <stdarg.h>
 
 namespace Zodiac
@@ -1305,13 +1306,13 @@ namespace Zodiac
         {
             case IRV_TEMPORARY:
             {
-                printf("t(%I64u)", value->temp.index);
+                printf("t(%" PRIu64 ")", value->temp.index);
                 break;
             }
 
             case IRV_LITERAL:
             {
-                printf("lit(%I64d)", value->literal.s64);
+                printf("lit(%" PRIu64 ")", value->literal.s64);
                 break;
             }
 
