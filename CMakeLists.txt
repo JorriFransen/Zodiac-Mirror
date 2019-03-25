@@ -27,8 +27,6 @@ set (ZODIAC_COMPILER_SOURCE
     source/lexer.cpp
     source/parser.cpp
     source/resolver.cpp
-    source/stack_vm.cpp
-    source/stack_vm_generator.cpp
     source/token.cpp
     source/types.cpp
 )

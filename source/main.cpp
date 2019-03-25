@@ -7,9 +7,6 @@
 #include "parser.h"
 #include "resolver.h"
 
-#include "stack_vm.h"
-#include "stack_vm_generator.h"
-
 #include "ir.h"
 
 using namespace Zodiac;
@@ -124,20 +121,6 @@ int main(int argc, char** argv)
             fprintf(stderr, "%s\n", validation.messages[i]);
         }
     }
-
-    Stack_VM_Generator vm_gen;
-    stack_vm_generator_init(&vm_gen);
-    stack_vm_generator_emit_module(&vm_gen, &ir_module);
-
-    fprintf(stderr, "Generated file: %s:\n", file_name);
-
-    stack_vm_print_program(vm_gen.result.instructions,
-                           BUF_LENGTH(vm_gen.result.instructions));
-
-    Stack_VM vm;
-    stack_vm_init(&vm, MB(8));
-    stack_vm_execute_program(&vm, vm_gen.result.instructions,
-                             BUF_LENGTH(vm_gen.result.instructions));
 
     return 0;
 }
