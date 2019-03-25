@@ -2,7 +2,7 @@
 
 #include "builtin.h"
 
-#include <varargs.h>
+#include <stdarg.h>
 
 namespace Zodiac
 {
@@ -1305,13 +1305,13 @@ namespace Zodiac
         {
             case IRV_TEMPORARY:
             {
-                printf("t(%lu)", value->temp.index);
+                printf("t(%I64u)", value->temp.index);
                 break;
             }
 
             case IRV_LITERAL:
             {
-                printf("lit(%ld)", value->literal.s64);
+                printf("lit(%I64d)", value->literal.s64);
                 break;
             }
 
