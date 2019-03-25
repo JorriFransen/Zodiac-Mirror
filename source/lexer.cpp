@@ -310,7 +310,7 @@ namespace Zodiac
 
     static bool char_is_whitespace(char c)
     {
-        return (c == ' ' || c == '\t' || c == '\n');
+        return (c == ' ' || c == '\t' || c == '\n' || c == 13);
     }
 
     void lexer_report_error(Lexer* lexer, const char* format, ...)

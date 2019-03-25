@@ -33,26 +33,25 @@ set (ZODIAC_COMPILER_SOURCE
     source/types.cpp
 )
 
-# add_executable(zodiac source/main.cpp ${ZODIAC_SOURCE})
-# target_link_libraries(zodiac ${llvm_libs})
-# if (WIN32)
-# target_link_libraries(zodiac shlwapi)
-# endif()
-# target_include_directories(zodiac PRIVATE include/zodiac)
-
 add_subdirectory(lib/dyncall-1.0/)
+
+if (WIN32)
+    set(ZODIAC_LIBS user32.lib kernel32.lib Shlwapi.lib)
+elseif(UNIX)
+    set(ZODIAC_LIBS dl)
+endif()
 
 add_executable(zodiac source/main.cpp ${ZODIAC_COMPILER_SOURCE})
 target_include_directories(zodiac PRIVATE include/zodiac)
 target_include_directories(zodiac PRIVATE lib/dyncall-1.0)
-target_link_libraries(zodiac dyncall_s dynload_s dl)
+target_link_libraries(zodiac dyncall_s dynload_s ${ZODIAC_LIBS})
 
 add_executable(vm_test source/vm_test.cpp ${ZODIAC_COMPILER_SOURCE})
 target_include_directories(vm_test PRIVATE include/zodiac)
 target_include_directories(vm_test PRIVATE lib/dyncall-1.0)
-target_link_libraries(vm_test dyncall_s dynload_s dl)
+target_link_libraries(vm_test dyncall_s dynload_s ${ZODIAC_LIBS})
 
 add_executable(ir_test source/ir_test.cpp ${ZODIAC_COMPILER_SOURCE})
 target_include_directories(ir_test PRIVATE include/zodiac)
 target_include_directories(ir_test PRIVATE lib/dyncall-1.0)
-target_link_libraries(ir_test dyncall_s dynload_s dl)
+target_link_libraries(ir_test dyncall_s dynload_s ${ZODIAC_LIBS})

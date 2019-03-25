@@ -54,6 +54,7 @@ namespace Zodiac
 
     enum AST_Unop_Kind
     {
+        AST_UNOP_INVALID,
         AST_UNOP_MINUS,
     };
 

@@ -2,6 +2,8 @@
 
 #include "builtin.h"
 
+#include <varargs.h>
+
 namespace Zodiac
 {
     void ir_builder_init(IR_Builder* ir_builder)

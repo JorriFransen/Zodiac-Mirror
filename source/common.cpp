@@ -113,10 +113,14 @@ void* _arena_alloc_from_block(Arena_Block* block, size_t size)
 
     return result;
 }
+
 bool path_exists(const char* path)
 {
-    auto _access = access;
-    if (_access(path, F_OK) != -1)
+    if (file_exists(path))
+    {
+        return true;
+    }
+    else if (dir_exists(path))
     {
         return true;
     }

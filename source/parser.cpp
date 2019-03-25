@@ -1,5 +1,7 @@
 #include "parser.h"
 
+#include <varargs.h>
+
 namespace Zodiac
 {
     void parser_init(Parser* parser, Context* context)
@@ -720,6 +722,8 @@ namespace Zodiac
     {
         assert(parser);
         assert(false);
+
+        return AST_UNOP_INVALID;
     }
 
     static Token current_token(Parser* parser)

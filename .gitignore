@@ -2,5 +2,6 @@
 CMakeLists.txt.user
 
 build/
+.vscode/
 
 lib/dyncall-1.0

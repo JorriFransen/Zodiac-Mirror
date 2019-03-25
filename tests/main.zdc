@@ -10,7 +10,8 @@ plusone :: (x: int) -> int
     return x;
 }
 
-#dynamic_link "libc.so.6";
+//#dynamic_link "libc.so.6";
+#dynamic_link "msvcrt.dll";
 
 #foreign putchar :: (c: int) -> int;
 #foreign getchar :: () -> int;

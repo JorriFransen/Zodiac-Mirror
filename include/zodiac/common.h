@@ -81,7 +81,7 @@ typedef struct _Arena_Block
 
 typedef struct _Arena
 {
-    size_t default_block_size = -1;
+    size_t default_block_size = 0;
     Arena_Block* blocks = nullptr;
 } Arena;
 
