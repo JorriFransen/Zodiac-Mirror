@@ -1,5 +1,10 @@
 
+add :: (a: int, b: int) -> int
+{
+    return a + b;
+}
+
 main :: () -> int
 {
-    return 7 + 8;
+    return add(7, 8);
 }

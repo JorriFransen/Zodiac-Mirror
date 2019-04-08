@@ -9,6 +9,7 @@ namespace Zodiac
         assert(ir_runner);
 
         stack_init(&ir_runner->call_stack, 16);
+        stack_init(&ir_runner->arg_stack, 8);
     }
 
     void ir_runner_execute(IR_Runner* ir_runner, IR_Module* ir_module)
@@ -18,7 +19,7 @@ namespace Zodiac
 
         assert(ir_module->entry_function);
 
-        ir_runner_call_function(ir_runner, ir_module->entry_function);
+        ir_runner_call_function(ir_runner, ir_module->entry_function, 0);
 
         auto entry_stack_frame = ir_runner->last_popped_stack_frame;
         IR_Value return_value = entry_stack_frame.return_value;
@@ -36,12 +37,25 @@ namespace Zodiac
         return &stack_frame.temps[temp_index];
     }
 
-    void ir_runner_call_function(IR_Runner* runner, IR_Function* function)
+    void ir_runner_call_function(IR_Runner* runner, IR_Function* function, uint64_t num_args)
     {
         assert(runner);
         assert(function);
 
-        ir_runner_push_stack_frame(runner, function);
+        BUF(IR_Value) args = nullptr;
+        assert(stack_count(runner->arg_stack) >= num_args);
+
+        for (uint64_t i = 0; i < num_args; i++)
+        {
+            IR_Value arg = stack_peek(runner->arg_stack, (num_args - 1) - i);
+            BUF_PUSH(args, arg);
+        }
+        for (uint64_t i = 0; i < num_args; i++)
+        {
+            stack_pop(runner->arg_stack);
+        }
+
+        ir_runner_push_stack_frame(runner, function, args);
 
         auto block = function->first_block;
         while (block)
@@ -126,13 +140,37 @@ namespace Zodiac
 
             case IR_OP_PUSH_CALL_ARG:
             {
-                assert(false);
+                assert(iri->arg1);
+                assert(iri->arg1->kind == IRV_TEMPORARY);
+
+                IR_Stack_Frame* stack_frame = stack_top_ptr(runner->call_stack);
+
+                auto temp_index = iri->arg1->temp.index;
+                IR_Value arg_value = stack_frame->temps[temp_index];
+                stack_push(runner->arg_stack, arg_value);
                 break;
             }
 
             case IR_OP_CALL:
             {
-                assert(false);
+                assert(iri->arg1);
+                assert(iri->arg1->kind == IRV_FUNCTION);
+                assert(iri->arg2);
+                assert(iri->arg2->kind == IRV_LITERAL);
+                assert(iri->result);
+                assert(iri->result->kind == IRV_TEMPORARY);
+
+                IR_Function* function = iri->arg1->function;
+                auto num_args = iri->arg2->literal.s64;
+                ir_runner_call_function(runner, function, num_args);
+
+                auto result_index = iri->result->temp.index;
+                IR_Value* result_value = ir_runner_get_local_temporary(runner, result_index);
+
+                auto callee_stack_frame = runner->last_popped_stack_frame;
+                IR_Value return_value = callee_stack_frame.return_value;
+
+                result_value->temp.s64 = return_value.temp.s64;
                 break;
             }
 
@@ -206,7 +244,23 @@ namespace Zodiac
 
             case IR_OP_LOADA:
             {
-                assert(false);
+                assert(iri->arg1);
+                assert(iri->arg1->kind == IRV_ARGUMENT);
+                assert(iri->result);
+                assert(iri->result->kind == IRV_TEMPORARY);
+
+                IR_Stack_Frame* stack_frame = stack_top_ptr(runner->call_stack);
+
+                auto source_index = iri->arg1->argument.index;
+                assert(BUF_LENGTH(stack_frame->args) > source_index);
+                IR_Value* source = &stack_frame->args[source_index];
+                assert(source->kind == IRV_TEMPORARY);
+
+                auto dest_index = iri->result->temp.index;
+                IR_Value* dest = ir_runner_get_local_temporary(runner, dest_index);
+                assert(dest->kind == IRV_TEMPORARY);
+
+                dest->temp.s64 = source->temp.s64;
                 break;
             }
 
@@ -223,13 +277,14 @@ namespace Zodiac
         }
     }
 
-    void ir_runner_push_stack_frame(IR_Runner* ir_runner, IR_Function* function)
+    void ir_runner_push_stack_frame(IR_Runner* ir_runner, IR_Function* function, BUF(IR_Value) args)
     {
         assert(ir_runner);
         assert(function);
 
         IR_Stack_Frame new_frame = {};
         new_frame.function = function;
+        new_frame.args = args;
 
         for (uint64_t i = 0; i < function->next_temp_index; i++)
         {
