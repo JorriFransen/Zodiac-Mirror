@@ -50,6 +50,7 @@ namespace Zodiac
             struct
             {
                 const char* name;
+                uint64_t index;
             } allocl;
         };
     };

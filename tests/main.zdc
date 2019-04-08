@@ -11,19 +11,19 @@ plusone :: (x: int) -> int
 }
 
 //#dynamic_link "libc.so.6";
-#dynamic_link "msvcrt.dll";
+//#dynamic_link "msvcrt.dll";
 
-#foreign putchar :: (c: int) -> int;
-#foreign getchar :: () -> int;
-#foreign printf :: () -> void;
+// #foreign putchar :: (c: int) -> int;
+// #foreign getchar :: () -> int;
+// #foreign printf :: () -> void;
 
-newline :: () -> void { putchar(10); }
+// newline :: () -> void { putchar(10); }
 
-print_digit :: (digit: int) -> void
-{
-    putchar(digit + 48);
-    newline();
-}
+// print_digit :: (digit: int) -> void
+// {
+    // putchar(digit + 48);
+    // newline();
+// }
 
 main :: () -> int
 {
@@ -34,14 +34,16 @@ main :: () -> int
 
     result := 1 + 2 + add(4, 5) + plusone(z);
 
-    putchar(50);
-    newline();
-    print_digit(7);
-    c1 := getchar();
-    putchar(c1);
-    newline();
+    // putchar(50);
+    // newline();
+    // print_digit(7);
+    // c1 := getchar();
+    // putchar(c1);
+    // newline();
 
-    return fib_recursive(30) / (fact_recursive(y - 2) - 20) + result;
+    return fib_recursive(30);
+    // return fib_recursive(30) + result;
+    // return fib_recursive(30) / (fact_recursive(y - 2) - 20) + result;
 }
 
 sub :: (a: int, b: int)

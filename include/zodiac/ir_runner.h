@@ -14,9 +14,11 @@ namespace Zodiac
 
     struct IR_Runner
     {
-        Stack<IR_Stack_Frame> call_stack = {};
+        Arena arena = {};
+        Stack<IR_Stack_Frame*> call_stack = {};
         Stack<IR_Value> arg_stack = {};
-        IR_Stack_Frame last_popped_stack_frame;
+        IR_Stack_Frame* last_popped_stack_frame;
+        IR_Block* jump_block = nullptr;
     };
 
     void ir_runner_init(IR_Runner* ir_runner);
@@ -28,7 +30,9 @@ namespace Zodiac
     void ir_runner_execute_block(IR_Runner* runner, IR_Block* block);
     void ir_runner_execute_instruction(IR_Runner* runner, IR_Instruction* iri);
 
-    void ir_runner_push_stack_frame(IR_Runner* ir_runner, IR_Function* function, BUF(IR_Value) args);
+    IR_Stack_Frame* ir_runner_new_stack_frame(IR_Runner* ir_runner, IR_Function* function, BUF(IR_Value) args);
+
+    IR_Stack_Frame* ir_runner_push_stack_frame(IR_Runner* ir_runner, IR_Function* function, BUF(IR_Value) args);
     IR_Stack_Frame* ir_runner_top_stack_frame(IR_Runner* ir_runner);
     void ir_runner_pop_stack_frame(IR_Runner* ir_runner);
 }

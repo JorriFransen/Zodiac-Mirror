@@ -864,7 +864,8 @@ namespace Zodiac
         if (kind == IRV_TEMPORARY)
         {
             assert(ir_builder->current_function);
-            result->temp.index = ir_builder->current_function->next_temp_index++;
+            result->temp.index = ir_builder->current_function->next_temp_index;
+            ir_builder->current_function->next_temp_index++;
         }
 
         return result;
@@ -902,6 +903,10 @@ namespace Zodiac
 
         IR_Value* result = ir_value_new(ir_builder, IRV_ALLOCL, type);
         result->allocl.name = name;
+
+        assert(ir_builder->current_function);
+        result->allocl.index = ir_builder->current_function->next_temp_index;
+        ir_builder->current_function->next_temp_index++;
         return result;
     }
 
