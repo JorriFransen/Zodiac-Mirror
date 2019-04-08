@@ -189,6 +189,16 @@ T stack_top(Stack<T>& stack)
 }
 
 template <typename T>
+T* stack_top_ptr(Stack<T>& stack)
+{
+    assert(stack.data);
+    assert(stack.sp);
+    assert(stack.sp <= stack.capacity);
+
+    return &stack.data[stack.sp - 1];
+}
+
+template <typename T>
 T stack_peek(Stack<T>& stack, uint64_t offset = 0)
 {
     assert(stack.data);

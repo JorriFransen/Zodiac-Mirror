@@ -24,6 +24,7 @@ set (ZODIAC_COMPILER_SOURCE
     source/atom.cpp
     source/builtin.cpp
     source/ir.cpp
+    source/ir_runner.cpp
     source/lexer.cpp
     source/parser.cpp
     source/resolver.cpp

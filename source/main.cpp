@@ -8,6 +8,7 @@
 #include "resolver.h"
 
 #include "ir.h"
+#include "ir_runner.h"
 
 using namespace Zodiac;
 
@@ -121,6 +122,11 @@ int main(int argc, char** argv)
             fprintf(stderr, "%s\n", validation.messages[i]);
         }
     }
+
+    IR_Runner ir_runner;
+    ir_runner_init(&ir_runner);
+
+    ir_runner_execute(&ir_runner, &ir_module);
 
     return 0;
 }

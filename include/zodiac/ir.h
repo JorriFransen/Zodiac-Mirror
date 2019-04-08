@@ -30,6 +30,7 @@ namespace Zodiac
             struct
             {
                 uint64_t index;
+                int64_t s64;
             } temp;
 
             struct
@@ -131,7 +132,8 @@ namespace Zodiac
     struct IR_Module
     {
         BUF(IR_Function*) functions = nullptr;
-        BUF(Atom) string_table = nullptr;
+        IR_Function* entry_function = nullptr;
+
         BUF(Atom) foreign_table = nullptr;
         BUF(Atom) dynamic_lib_names = nullptr;
     };
@@ -201,7 +203,6 @@ namespace Zodiac
     IR_Value* ir_builder_emit_loada(IR_Builder* ir_builder, IR_Value* alloca_value);
 
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64);
-    uint64_t ir_builder_add_string_literal(IR_Builder* ir_builder, Atom atom);
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, const char* name, AST_Type* return_type);

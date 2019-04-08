@@ -417,6 +417,8 @@ namespace Zodiac
         if (strcmp("main", name) == 0)
         {
             function->is_entry = true;
+            assert(!ir_builder->result.entry_function);
+            ir_builder->result.entry_function = function;
         }
 
         return ir_value_function_new(ir_builder, function);
@@ -812,22 +814,6 @@ namespace Zodiac
         result->assigned = true;
 
         return result;
-    }
-
-    uint64_t ir_builder_add_string_literal(IR_Builder* ir_builder, Atom atom)
-    {
-        assert(ir_builder);
-
-        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.string_table); i++)
-        {
-            if (ir_builder->result.string_table[i] == atom)
-            {
-                return i;
-            }
-        }
-
-        BUF_PUSH(ir_builder->result.string_table, atom);
-        return BUF_LENGTH(ir_builder->result.string_table) - 1;
     }
 
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom)
