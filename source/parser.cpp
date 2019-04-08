@@ -1,6 +1,7 @@
 #include "parser.h"
 
 #include <stdarg.h>
+#include <inttypes.h>
 
 namespace Zodiac
 {
@@ -300,6 +301,9 @@ namespace Zodiac
             return ast_call_statement_new(parser->context, call_expression);
         }
         else assert(false);
+
+        assert(false);
+        return nullptr;
     }
 
     static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope)
@@ -810,7 +814,7 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(parser->result.errors); i++)
         {
             auto error = parser->result.errors[i];
-            fprintf(stderr, "Error:%s:%lu:%lu: %s\n",
+            fprintf(stderr, "Error:%s:%" PRIu64 ":%" PRIu64 ": %s\n",
                     error.file_pos.file_name, error.file_pos.line,
                     error.file_pos.line_relative_char_pos,
                     error.message);

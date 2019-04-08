@@ -1,6 +1,7 @@
 #include "token.h"
 
 #include <stdio.h>
+#include <inttypes.h>
 
 namespace Zodiac
 {
@@ -52,7 +53,7 @@ namespace Zodiac
 
     void print_token(const Token& token)
     {
-        printf("%lu: %-14s: '%s'\n",
+        printf("%" PRIu64 ": %-14s: '%s'\n",
                token.file_pos.line,
                _token_kind_strings[token.kind],
                token.atom.data);

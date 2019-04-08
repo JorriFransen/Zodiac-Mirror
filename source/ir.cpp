@@ -1298,7 +1298,7 @@ namespace Zodiac
 
             case IRV_LITERAL:
             {
-                printf("lit(%" PRIu64 ")", value->literal.s64);
+                printf("lit(%" PRId64 ")", value->literal.s64);
                 break;
             }
 

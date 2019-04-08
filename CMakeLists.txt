@@ -14,6 +14,9 @@ cmake_minimum_required(VERSION 3.4.3)
 # endif()
 project(zodiac)
 
+if(MSVC)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()
 
 set (ZODIAC_COMPILER_SOURCE
     source/common.cpp

@@ -1,6 +1,7 @@
 #include "lexer.h"
 
 #include <stdarg.h>
+#include <inttypes.h>
 
 namespace Zodiac
 {
@@ -344,7 +345,7 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(lexer->result.errors); i++)
         {
             Lex_Error error = lexer->result.errors[i];
-            fprintf(stderr, "Error: %s:%lu: %s\n", error.file_pos.file_name, error.file_pos.line, error.message);
+            fprintf(stderr, "Error: %s:%" PRIu64 ": %s\n", error.file_pos.file_name, error.file_pos.line, error.message);
         }
     }
 }

@@ -23,7 +23,7 @@ namespace Zodiac
         auto entry_stack_frame = ir_runner->last_popped_stack_frame;
         IR_Value return_value = entry_stack_frame.return_value;
 
-        printf("Entry point returned: %" PRIu64 "\n", return_value.temp.s64);
+        printf("Entry point returned: %" PRId64 "\n", return_value.temp.s64);
     }
 
     IR_Value* ir_runner_get_local_temporary(IR_Runner* ir_runner, uint64_t temp_index)

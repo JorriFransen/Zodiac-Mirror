@@ -5,6 +5,7 @@
 
 #include <string.h>
 #include <stdarg.h>
+#include <inttypes.h>
 
 namespace Zodiac
 {
@@ -620,6 +621,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+        assert(false);
+        return nullptr;
     }
 
     AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier)
@@ -685,7 +689,7 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(resolver->errors); i++)
         {
             auto error = resolver->errors[i];
-            fprintf(stderr, "Error:%s:%lu:%lu: %s\n", error.file_pos.file_name,
+            fprintf(stderr, "Error:%s:%" PRIu64 ":%" PRIu64 ": %s\n", error.file_pos.file_name,
                     error.file_pos.line, error.file_pos.line_relative_char_pos,
                     error.message);
         }
