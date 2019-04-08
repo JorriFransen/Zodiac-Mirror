@@ -623,7 +623,7 @@ namespace Zodiac
         }
 
         assert(false);
-        return nullptr;
+        return false;
     }
 
     AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier)
