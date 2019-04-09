@@ -11,7 +11,7 @@ plusone :: (x: int) -> int
 }
 
 //#dynamic_link "libc.so.6";
-//#dynamic_link "msvcrt.dll";
+#dynamic_link "msvcrt.dll";
 
 #foreign putchar :: (c: int) -> int;
 #foreign getchar :: () -> int;
@@ -41,7 +41,8 @@ main :: () -> int
     putchar(c1);
     newline();
 
-    return fib_recursive(30) / (fact_recursive(y - 2) - 20) + result;
+    return 1;
+    //return fib_recursive(30) / (fact_recursive(y - 2) - 20) + result;
 }
 
 sub :: (a: int, b: int)

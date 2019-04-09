@@ -3,6 +3,7 @@
 #include "ir.h"
 
 #include <dyncall/dyncall.h>
+#include <dynload/dynload.h>
 
 namespace Zodiac
 {
@@ -14,6 +15,12 @@ namespace Zodiac
         IR_Value return_value = {};
     };
 
+    struct IR_Loaded_Dynamic_Lib
+    {
+        Atom name = {};
+        DLLib* lib = nullptr;
+    };
+
     struct IR_Runner
     {
         Arena arena = {};
@@ -22,10 +29,16 @@ namespace Zodiac
         IR_Block* jump_block = nullptr;
 
         DCCallVM* dyn_vm = nullptr;
+        BUF(IR_Loaded_Dynamic_Lib) loaded_dyn_libs = nullptr;
+        BUF(void*) loaded_foreign_symbols = nullptr;
     };
 
     void ir_runner_init(IR_Runner* ir_runner);
     void ir_runner_execute(IR_Runner* ir_runner, IR_Module* ir_module);
+
+    void ir_runner_load_dynamic_libs(IR_Runner* ir_runner, IR_Module* ir_module);
+    void ir_runner_load_dynamic_lib(IR_Runner* ir_runner, Atom lib_name);
+    void ir_runner_load_foreigns(IR_Runner* ir_runner, IR_Module* ir_module);
 
     IR_Value* ir_runner_get_local_temporary(IR_Runner* ir_runner, uint64_t temp_index);
 

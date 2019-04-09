@@ -17,6 +17,9 @@ namespace Zodiac
         ir_runner->dyn_vm = dcNewCallVM(MB(4));
         dcMode(ir_runner->dyn_vm, DC_CALL_C_DEFAULT);
         dcReset(ir_runner->dyn_vm);
+
+        ir_runner->loaded_dyn_libs = nullptr;
+        ir_runner->loaded_foreign_symbols = nullptr;
     }
 
     void ir_runner_execute(IR_Runner* ir_runner, IR_Module* ir_module)
@@ -25,6 +28,9 @@ namespace Zodiac
         assert(ir_module);
 
         assert(ir_module->entry_function);
+
+        ir_runner_load_dynamic_libs(ir_runner, ir_module);
+        ir_runner_load_foreigns(ir_runner, ir_module);
 
         IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(ir_runner, ir_module->entry_function, 0);
 
@@ -37,6 +43,79 @@ namespace Zodiac
             block = block->next_block;
         }
         printf("Arena size: %.2fMB\n", (double)arena_cap / MB(1));
+    }
+
+    void ir_runner_load_dynamic_libs(IR_Runner* ir_runner, IR_Module* ir_module)
+    {
+        assert(ir_runner);
+        assert(ir_module);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_module->dynamic_lib_names); i++)
+        {
+            ir_runner_load_dynamic_lib(ir_runner, ir_module->dynamic_lib_names[i]);
+        }
+    }
+
+    void ir_runner_load_dynamic_lib(IR_Runner* ir_runner, Atom lib_name)
+    {
+        assert(ir_runner);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_runner->loaded_dyn_libs); i++)
+        {
+            const IR_Loaded_Dynamic_Lib& loaded_lib = ir_runner->loaded_dyn_libs[i];
+            if (loaded_lib.name == lib_name)
+            {
+                return;
+            }
+        }
+
+        DLLib* lib = dlLoadLibrary(lib_name.data);
+        if (!lib)
+        {
+            fprintf(stderr, "Could not find library: %s\n", lib_name.data);
+            assert(false);
+        }
+
+        IR_Loaded_Dynamic_Lib loaded_lib = { lib_name, lib };
+        BUF_PUSH(ir_runner->loaded_dyn_libs, loaded_lib);
+        //printf("Loaded dynamic library: %s\n", lib_name.data);
+    }
+
+    void ir_runner_load_foreigns(IR_Runner* ir_runner, IR_Module* ir_module)
+    {
+        assert(ir_runner);
+        assert(ir_module);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_module->foreign_table); i++)
+        {
+            const Atom& foreign_name = ir_module->foreign_table[i];
+
+            bool found = false;
+            
+            for (uint64_t j = 0; j < BUF_LENGTH(ir_runner->loaded_dyn_libs); j++)
+            {
+                const IR_Loaded_Dynamic_Lib& loaded_lib = ir_runner->loaded_dyn_libs[j];
+
+                //printf("Trying to load foreign \"%s\" from library \"%s\"\n",
+                //    foreign_name.data, loaded_lib.name.data);
+
+                void* foreign_symbol = dlFindSymbol(loaded_lib.lib, foreign_name.data);
+                if (foreign_symbol)
+                {
+                    //printf("Loaded foreign \"%s\" from library \"%s\"\n",
+                    //    foreign_name.data, loaded_lib.name.data);
+                    BUF_PUSH(ir_runner->loaded_foreign_symbols, foreign_symbol);
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                fprintf(stderr, "Failed to load foreign symbol: %s\n", foreign_name.data);
+                assert(false);
+            }
+        }
     }
 
     IR_Value* ir_runner_get_local_temporary(IR_Runner* ir_runner, uint64_t temp_index)
@@ -268,7 +347,13 @@ namespace Zodiac
             case IR_OP_CALL_EX:
             {
                 dcMode(runner->dyn_vm, DC_CALL_C_DEFAULT);
-                int64_t result = dcCallInt(runner->dyn_vm, (DCpointer)putchar);
+                uint64_t foreign_index = iri->arg1->literal.s64;
+                assert(BUF_LENGTH(runner->loaded_foreign_symbols) > foreign_index);
+
+                assert(iri->result);
+                IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result->temp.index);
+                assert(result_value);
+                result_value->temp.s64 = dcCallInt(runner->dyn_vm, runner->loaded_foreign_symbols[foreign_index]);
                 dcReset(runner->dyn_vm);
                 break;
             }
