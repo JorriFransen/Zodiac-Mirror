@@ -12,7 +12,6 @@ namespace Zodiac
 
         stack_init(&ir_runner->call_stack, 8);
         stack_init(&ir_runner->arg_stack, 8);
-        ir_runner->last_popped_stack_frame = nullptr;
         ir_runner->jump_block = nullptr;
 
         ir_runner->dyn_vm = dcNewCallVM(MB(4));
@@ -27,12 +26,9 @@ namespace Zodiac
 
         assert(ir_module->entry_function);
 
-        ir_runner_call_function(ir_runner, ir_module->entry_function, 0);
+        IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(ir_runner, ir_module->entry_function, 0);
 
-        auto entry_stack_frame = ir_runner->last_popped_stack_frame;
-        IR_Value return_value = entry_stack_frame->return_value;
-
-        printf("Entry point returned: %" PRId64 "\n", return_value.temp.s64);
+        printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value.temp.s64);
         uint64_t arena_cap = 0;
         auto block = ir_runner->arena.blocks;
         while (block)
@@ -56,7 +52,7 @@ namespace Zodiac
         return &stack_frame->temps[temp_index];
     }
 
-    void ir_runner_call_function(IR_Runner* runner, IR_Function* function, uint64_t num_args)
+    IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, IR_Function* function, uint64_t num_args)
     {
         assert(runner);
         assert(function);
@@ -90,6 +86,8 @@ namespace Zodiac
                 block = block->next;
             }
         }
+
+        return stack_frame;
     }
 
     void ir_runner_execute_block(IR_Runner* runner, IR_Block* block)
@@ -250,15 +248,12 @@ namespace Zodiac
 
                 IR_Function* function = iri->arg1->function;
                 auto num_args = iri->arg2->literal.s64;
-                ir_runner_call_function(runner, function, num_args);
+                IR_Stack_Frame* callee_stack_frame = ir_runner_call_function(runner, function, num_args);
 
                 auto result_index = iri->result->temp.index;
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, result_index);
 
-                auto callee_stack_frame = runner->last_popped_stack_frame;
-                IR_Value return_value = callee_stack_frame->return_value;
-
-                result_value->temp.s64 = return_value.temp.s64;
+                result_value->temp.s64 = callee_stack_frame->return_value.temp.s64;
                 break;
             }
 
@@ -266,7 +261,7 @@ namespace Zodiac
             {
                 auto temp_index = iri->arg1->temp.index;
                 IR_Value* arg_value = ir_runner_get_local_temporary(runner, temp_index);
-                dcArgLong(runner->dyn_vm, arg_value->temp.s64);
+                dcArgLongLong(runner->dyn_vm, arg_value->temp.s64);
                 break;
             }
 
@@ -444,7 +439,6 @@ namespace Zodiac
     {
         assert(ir_runner);
         assert(stack_count(ir_runner->call_stack));
-        ir_runner->last_popped_stack_frame = stack_top(ir_runner->call_stack);
         stack_pop(ir_runner->call_stack);
     }
 }
