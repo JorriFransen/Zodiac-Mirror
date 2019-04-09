@@ -57,7 +57,8 @@ void* _arena_alloc(Arena* arena, size_t size)
     if (arena->blocks == NULL ||
         _arena_block_fits(arena->blocks, size)  == false)
     {
-        Arena_Block* new_block = _arena_alloc_new_block(arena, size);
+        auto new_size = MAX(size, arena->default_block_size);
+        Arena_Block* new_block = _arena_alloc_new_block(arena, new_size);
 
         new_block->next_block = arena->blocks;
         arena->blocks = new_block;

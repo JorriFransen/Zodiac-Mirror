@@ -8,12 +8,9 @@ namespace Zodiac
     {
         assert(ir_runner);
 
-        ir_runner->arena = arena_create(MB(1));
+        ir_runner->arena = arena_create(MB(4));
 
-        // TODO: BUG: For some reason we crash when the call stack depth is grown to 32, 
-        //  but previous grows work fine. This seems to be related to the call stack depth/
-        //  recursion depth.
-        stack_init(&ir_runner->call_stack, 32);
+        stack_init(&ir_runner->call_stack, 8);
         stack_init(&ir_runner->arg_stack, 8);
         ir_runner->last_popped_stack_frame = nullptr;
         ir_runner->jump_block = nullptr;
@@ -45,6 +42,7 @@ namespace Zodiac
     IR_Value* ir_runner_get_local_temporary(IR_Runner* ir_runner, uint64_t temp_index)
     {
         assert(ir_runner);
+        assert(stack_count(ir_runner->call_stack));
 
         IR_Stack_Frame* stack_frame = stack_top(ir_runner->call_stack);
         assert(stack_frame);
@@ -389,7 +387,7 @@ namespace Zodiac
     {
         assert(ir_runner);
         assert(function);
-        
+
         IR_Stack_Frame* result = nullptr;
         result = arena_alloc(&ir_runner->arena, IR_Stack_Frame);
         result->function = function;
@@ -411,9 +409,10 @@ namespace Zodiac
         assert(function);
 
         IR_Stack_Frame* new_frame = ir_runner_new_stack_frame(ir_runner, function, args);
+        assert(new_frame);
 
         stack_push(ir_runner->call_stack, new_frame);
-        return stack_top(ir_runner->call_stack);
+        return new_frame;
     }
 
     IR_Stack_Frame* ir_runner_top_stack_frame(IR_Runner* ir_runner)

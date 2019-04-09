@@ -148,7 +148,7 @@ void stack_grow(Stack<T>& stack, uint64_t new_capacity)
     assert(new_capacity > stack.capacity);
 
     T* new_data = (T*)mem_alloc(new_capacity * sizeof(T));
-    memcpy(new_data, stack.data, stack.capacity);
+    memcpy(new_data, stack.data, stack.capacity * sizeof(T));
     mem_free(stack.data);
     stack.data = new_data;
     stack.capacity = new_capacity;
