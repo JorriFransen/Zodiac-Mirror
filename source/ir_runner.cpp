@@ -156,7 +156,18 @@ namespace Zodiac
 
             case IR_OP_MUL:
             {
-                assert(false);
+                assert(iri->arg1);
+                assert(iri->arg1->kind == IRV_TEMPORARY);
+                assert(iri->arg2);
+                assert(iri->arg2->kind == IRV_TEMPORARY);
+                assert(iri->result);
+                assert(iri->result->kind == IRV_TEMPORARY);
+
+                IR_Value* arg1 = ir_runner_get_local_temporary(runner, iri->arg1->temp.index);
+                IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
+                IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result->temp.index);
+
+                dest->temp.s64 = arg1->temp.s64 * arg2->temp.s64;
                 break;
             }
 

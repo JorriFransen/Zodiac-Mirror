@@ -41,9 +41,7 @@ main :: () -> int
     // putchar(c1);
     // newline();
 
-    return fib_recursive(30);
-    // return fib_recursive(30) + result;
-    // return fib_recursive(30) / (fact_recursive(y - 2) - 20) + result;
+    return fib_recursive(30) / (fact_recursive(y - 2) - 20) + result;
 }
 
 sub :: (a: int, b: int)
