@@ -2,6 +2,8 @@
 
 #include "ir.h"
 
+#include <dyncall/dyncall.h>
+
 namespace Zodiac
 {
     struct IR_Stack_Frame
@@ -19,6 +21,8 @@ namespace Zodiac
         Stack<IR_Value> arg_stack = {};
         IR_Stack_Frame* last_popped_stack_frame;
         IR_Block* jump_block = nullptr;
+
+        DCCallVM* dyn_vm = nullptr;
     };
 
     void ir_runner_init(IR_Runner* ir_runner);
@@ -30,9 +34,11 @@ namespace Zodiac
     void ir_runner_execute_block(IR_Runner* runner, IR_Block* block);
     void ir_runner_execute_instruction(IR_Runner* runner, IR_Instruction* iri);
 
-    IR_Stack_Frame* ir_runner_new_stack_frame(IR_Runner* ir_runner, IR_Function* function, BUF(IR_Value) args);
+    IR_Stack_Frame* ir_runner_new_stack_frame(IR_Runner* ir_runner, IR_Function* function,
+                                              BUF(IR_Value) args);
 
-    IR_Stack_Frame* ir_runner_push_stack_frame(IR_Runner* ir_runner, IR_Function* function, BUF(IR_Value) args);
+    IR_Stack_Frame* ir_runner_push_stack_frame(IR_Runner* ir_runner, IR_Function* function,
+                                               BUF(IR_Value) args);
     IR_Stack_Frame* ir_runner_top_stack_frame(IR_Runner* ir_runner);
     void ir_runner_pop_stack_frame(IR_Runner* ir_runner);
 }

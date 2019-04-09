@@ -14,6 +14,10 @@ namespace Zodiac
         stack_init(&ir_runner->arg_stack, 8);
         ir_runner->last_popped_stack_frame = nullptr;
         ir_runner->jump_block = nullptr;
+
+        ir_runner->dyn_vm = dcNewCallVM(MB(4));
+        dcMode(ir_runner->dyn_vm, DC_CALL_C_DEFAULT);
+        dcReset(ir_runner->dyn_vm);
     }
 
     void ir_runner_execute(IR_Runner* ir_runner, IR_Module* ir_module)
@@ -260,13 +264,17 @@ namespace Zodiac
 
             case IR_OP_PUSH_EX_CALL_ARG:
             {
-                assert(false);
+                auto temp_index = iri->arg1->temp.index;
+                IR_Value* arg_value = ir_runner_get_local_temporary(runner, temp_index);
+                dcArgLong(runner->dyn_vm, arg_value->temp.s64);
                 break;
             }
 
             case IR_OP_CALL_EX:
             {
-                assert(false);
+                dcMode(runner->dyn_vm, DC_CALL_C_DEFAULT);
+                int64_t result = dcCallInt(runner->dyn_vm, (DCpointer)putchar);
+                dcReset(runner->dyn_vm);
                 break;
             }
 
@@ -280,13 +288,9 @@ namespace Zodiac
 
                     auto current_stack_frame = ir_runner_top_stack_frame(runner);
                     current_stack_frame->return_value = *temp;
+                }
 
-                    ir_runner_pop_stack_frame(runner);
-                }
-                else
-                {
-                    assert(false);
-                }
+                ir_runner_pop_stack_frame(runner);
                 break;
             }
 
@@ -316,7 +320,8 @@ namespace Zodiac
 
             case IR_OP_ALLOCL:
             {
-                // Don't do anything for now
+                // Don't do anything for now, these are handled when pushing a new
+                //  stack frame
                 break;
             }
 
@@ -394,7 +399,8 @@ namespace Zodiac
         }
     }
 
-    IR_Stack_Frame* ir_runner_new_stack_frame(IR_Runner* ir_runner, IR_Function* function, BUF(IR_Value) args)
+    IR_Stack_Frame* ir_runner_new_stack_frame(IR_Runner* ir_runner, IR_Function* function,
+                                              BUF(IR_Value) args)
     {
         assert(ir_runner);
         assert(function);
@@ -414,7 +420,8 @@ namespace Zodiac
         return result;
     }
 
-    IR_Stack_Frame* ir_runner_push_stack_frame(IR_Runner* ir_runner, IR_Function* function, BUF(IR_Value) args)
+    IR_Stack_Frame* ir_runner_push_stack_frame(IR_Runner* ir_runner, IR_Function* function,
+                                               BUF(IR_Value) args)
     {
         assert(ir_runner);
         assert(function);
