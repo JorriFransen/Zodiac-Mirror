@@ -734,7 +734,7 @@ namespace Zodiac
         assert(type);
         assert(name);
 
-        assert(type == Builtin::type_int);
+        assert(type->kind == AST_TYPE_POINTER || type == Builtin::type_int);
 
         IR_Value* allocl_value = ir_value_allocl_new(ir_builder, type, name);
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ALLOCL, nullptr, nullptr,

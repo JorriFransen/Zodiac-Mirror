@@ -380,7 +380,7 @@ namespace Zodiac
 
             case AST_EXPR_UNARY:
             {
-                assert(false);
+                result &= try_resolve_unary_expression(resolver, expression, scope);
                 break;
             }
 
@@ -535,6 +535,18 @@ namespace Zodiac
         }
 
         return result;
+    }
+
+    static bool try_resolve_unary_expression(Resolver* resolver, AST_Expression* expression,
+                                             AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(expression);
+        assert(expression->kind == AST_EXPR_UNARY);
+        assert(scope);
+
+        assert(false);
+        return false;
     }
 
     static bool try_resolve_identifier(Resolver* resolver, AST_Identifier* identifier, AST_Scope* scope)

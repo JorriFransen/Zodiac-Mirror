@@ -1,5 +1,6 @@
 
-#dynamic_link "libc.so.6";
+//#dynamic_link "libc.so.6";
+#dynamic_link "msvcrt.dll";
 
 #foreign putchar :: (c: int) -> int;
 #foreign getchar :: () -> int;
@@ -24,4 +25,5 @@ pointer_test :: () -> void
     x: int;
     print_digit(x);
     x_ptr : *int;
+    x_ptr = *x;
 }
