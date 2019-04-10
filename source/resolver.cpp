@@ -396,6 +396,12 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_STRING_LITERAL:
+            {
+                result &= try_resolve_string_literal_expression(resolver, expression);
+                break;
+            }
+
             case AST_EXPR_INTEGER_LITERAL:
             {
                 result &= try_resolve_integer_literal_expression(resolver, expression);
@@ -482,6 +488,20 @@ namespace Zodiac
         }
 
         return result;
+    }
+
+    static bool try_resolve_string_literal_expression(Resolver* resolver, AST_Expression* expression)
+    {
+        assert(resolver);
+        assert(expression);
+        assert(expression->kind == AST_EXPR_STRING_LITERAL);
+
+        if (!expression->type)
+        {
+            expression->type = ast_find_or_create_pointer_type(resolver->context, resolver->module, Builtin::type_u8);
+        }
+
+        return true;
     }
 
     static bool try_resolve_integer_literal_expression(Resolver* resolver, AST_Expression* expression)

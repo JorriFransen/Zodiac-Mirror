@@ -1,6 +1,12 @@
 
+#dynamic_link "msvcrt.dll";
+
+#foreign puts :: (string: *u8) -> int;
 
 main :: () -> int
 {
     c : u8 = 'c';
+    string : *u8 = "Hello Zodiac!!!";
+    puts(string);
+    puts("test");
 }

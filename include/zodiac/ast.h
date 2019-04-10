@@ -38,6 +38,7 @@ namespace Zodiac
         AST_EXPR_UNARY,
         AST_EXPR_IDENTIFIER,
         AST_EXPR_CALL,
+        AST_EXPR_STRING_LITERAL,
         AST_EXPR_INTEGER_LITERAL,
         AST_EXPR_CHAR_LITERAL,
     };
@@ -99,6 +100,11 @@ namespace Zodiac
                 AST_Declaration* callee_declaration;
                 BUF(AST_Expression*) arg_expressions;
             } call;
+
+            struct
+            {
+                Atom atom;
+            } string_literal;
 
             struct
             {
@@ -316,6 +322,7 @@ namespace Zodiac
     AST_Expression* ast_ident_expression_new(Context* context, File_Pos file_pos, AST_Identifier* identifier);
     AST_Expression* ast_call_expression_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
                                             BUF(AST_Expression*) arg_exprs);
+    AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos, Atom value);
     AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos, uint64_t value);
     AST_Expression* ast_character_literal_expression_new(Context* context, File_Pos file_pos, char value);
 

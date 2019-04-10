@@ -575,6 +575,13 @@ namespace Zodiac
         //expect_token(parser, TOK_INTEGER);
         switch (ct.kind)
         {
+            case TOK_STRING_LIT:
+            {
+                consume_token(parser);
+                return ast_string_literal_expression_new(parser->context, ct.file_pos, ct.atom);
+                break;
+            }
+
             case TOK_INTEGER:
             {
                 consume_token(parser);

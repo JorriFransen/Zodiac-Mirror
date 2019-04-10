@@ -53,7 +53,7 @@ namespace Zodiac
     }
 
     AST_Expression* ast_binary_expression_new(Context* context, File_Pos file_pos,
-                                              AST_Expression* lhs, AST_Binop_Kind op, AST_Expression* rhs)
+        AST_Expression* lhs, AST_Binop_Kind op, AST_Expression* rhs)
     {
         assert(context);
         assert(lhs);
@@ -69,7 +69,7 @@ namespace Zodiac
     }
 
     AST_Expression* ast_unary_expression_new(Context* context, File_Pos file_pos,
-                                             AST_Unop_Kind op, AST_Expression* operand)
+        AST_Unop_Kind op, AST_Expression* operand)
     {
         assert(context);
         assert(operand);
@@ -95,7 +95,7 @@ namespace Zodiac
     }
 
     AST_Expression* ast_call_expression_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
-                                            BUF(AST_Expression*) arg_exprs)
+        BUF(AST_Expression*) arg_exprs)
     {
         assert(context);
         assert(identifier);
@@ -105,6 +105,15 @@ namespace Zodiac
         result->call.identifier = identifier;
         result->call.arg_expressions = arg_exprs;
 
+        return result;
+    }
+
+    AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos, Atom value)
+    {
+        assert(context);
+
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_STRING_LITERAL);
+        result->string_literal.atom = value;
         return result;
     }
 

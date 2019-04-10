@@ -15,6 +15,7 @@ namespace Zodiac
         ir_builder->arena = arena_create(MB(1));
         ir_builder->value_to_decl_map = nullptr;
         ir_builder->result = {};
+        ir_builder->result.string_literal_arena = arena_create(MB(1));
         ir_builder->current_function = nullptr;
         ir_builder->insert_block = nullptr;
     }
@@ -370,6 +371,18 @@ namespace Zodiac
 
                     default: assert(false);
                 }
+                break;
+            }
+
+            case AST_EXPR_STRING_LITERAL:
+            {
+                IR_Value* literal = ir_string_literal(ir_builder, expression->type, expression->string_literal.atom);
+
+                IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
+                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal, nullptr, result);
+                ir_builder_emit_instruction(ir_builder, iri);
+
+                return result;
                 break;
             }
 
@@ -931,6 +944,19 @@ namespace Zodiac
         ir_builder_emit_instruction(ir_builder, iri);
     }
 
+    IR_Value* ir_string_literal(IR_Builder* ir_builder, AST_Type* type, Atom string)
+    {
+        assert(ir_builder);
+        assert(type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_STRING_LITERAL, type);
+        result->value.string = arena_alloc_array(&ir_builder->result.string_literal_arena, uint8_t, string.length + 1);
+        memcpy(result->value.string, string.data, string.length + 1);
+        result->assigned = true;
+
+        return result;
+    }
+
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64)
     {
         assert(ir_builder);
@@ -1460,6 +1486,12 @@ namespace Zodiac
             case IRV_TEMPORARY:
             {
                 printf("t(%" PRIu64 ")", value->temp.index);
+                break;
+            }
+
+            case IRV_STRING_LITERAL:
+            {
+                printf("lit(\"%s\")", value->value.string);
                 break;
             }
 

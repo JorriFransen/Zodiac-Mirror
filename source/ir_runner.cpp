@@ -340,7 +340,14 @@ namespace Zodiac
             {
                 auto temp_index = iri->arg1->temp.index;
                 IR_Value* arg_value = ir_runner_get_local_temporary(runner, temp_index);
-                dcArgLongLong(runner->dyn_vm, arg_value->value.s64);
+                if (iri->arg1->type->kind == AST_TYPE_POINTER)
+                {
+                    dcArgPointer(runner->dyn_vm, arg_value->value.string);
+                }
+                else
+                {
+                    dcArgLongLong(runner->dyn_vm, arg_value->value.s64);
+                }
                 break;
             }
 
@@ -487,12 +494,15 @@ namespace Zodiac
                 IR_Value* dest = ir_runner_get_local_temporary(runner, temp_index);
                 switch (iri->arg1->kind)
                 {
+                    case IRV_STRING_LITERAL:
                     case IRV_INT_LITERAL:
                     case IRV_CHAR_LITERAL:
                     {
                         dest->value = iri->arg1->value;
                         break;
                     }
+
+                    default: assert(false);
                 }
                 break;
             }

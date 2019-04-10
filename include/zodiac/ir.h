@@ -16,6 +16,7 @@ namespace Zodiac
         IRV_BLOCK,
         IRV_ALLOCL,
 
+        IRV_STRING_LITERAL,
         IRV_INT_LITERAL,
         IRV_CHAR_LITERAL,
     };
@@ -31,6 +32,7 @@ namespace Zodiac
         {
             int64_t s64;
             uint8_t u8;
+            uint8_t* string;
         } value;
 
         union
@@ -142,6 +144,9 @@ namespace Zodiac
         BUF(IR_Function*) functions = nullptr;
         IR_Function* entry_function = nullptr;
 
+        BUF(IR_Value*) string_literal_values = nullptr;
+        Arena string_literal_arena = {};
+
         BUF(Atom) foreign_table = nullptr;
         BUF(Atom) dynamic_lib_names = nullptr;
     };
@@ -216,6 +221,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_loada(IR_Builder* ir_builder, IR_Value* alloca_value);
     void ir_builder_emit_storep(IR_Builder* ir_builder, IR_Value* pointer_allocl, IR_Value* new_value);
 
+    IR_Value* ir_string_literal(IR_Builder* ir_builder, AST_Type* type, Atom string);
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64);
     IR_Value* ir_character_literal(IR_Builder* ir_builder, AST_Type* type, char c);
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);

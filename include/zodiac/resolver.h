@@ -51,6 +51,7 @@ namespace Zodiac
     static bool try_resolve_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope);
     static bool try_resolve_call_expression(Resolver* resolver, AST_Expression* expression,
                                             AST_Scope* scope);
+    static bool try_resolve_string_literal_expression(Resolver* resolver, AST_Expression* expression);
     static bool try_resolve_integer_literal_expression(Resolver* resolver, AST_Expression* expression);
     static bool try_resolve_character_literal_expression(Resolver* resolver, AST_Expression* expression);
     static bool try_resolve_identifier_expression(Resolver* resolver, AST_Expression* expression,
