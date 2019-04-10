@@ -271,18 +271,18 @@ namespace Zodiac
         return result;
     }
 
-    AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
+    AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos, AST_Expression* lvalue_expr,
                                             AST_Expression* expression)
     {
         assert(context);
-        assert(identifier);
+        assert(lvalue_expr);
         assert(expression);
 
         AST_Statement* result = arena_alloc(context->arena, AST_Statement);
         result->kind = AST_STMT_ASSIGN;
         result->file_pos = file_pos;
 
-        result->assign.identifier = identifier;
+        result->assign.lvalue_expression = lvalue_expr;
         result->assign.expression = expression;
 
         return result;

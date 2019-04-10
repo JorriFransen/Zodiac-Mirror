@@ -251,27 +251,7 @@ namespace Zodiac
 
             case AST_STMT_ASSIGN:
             {
-                AST_Declaration* lvalue_decl = statement->assign.identifier->declaration;
-                IR_Value* target_alloc = ir_builder_value_for_declaration(ir_builder, lvalue_decl);
-                assert(target_alloc);
-                IR_Value* new_value = ir_builder_emit_expression(ir_builder, statement->assign.expression);
-
-                switch (target_alloc->kind)
-                {
-                    case IRV_ALLOCL:
-                    {
-                        ir_builder_emit_storel(ir_builder, target_alloc, new_value);
-                        break;
-                    }
-
-                    case IRV_ARGUMENT:
-                    {
-                        ir_builder_emit_storea(ir_builder, target_alloc, new_value);
-                        break;
-                    }
-
-                    default: assert(false);
-                }
+                ir_builder_emit_assign_statement(ir_builder, statement);
                 break;
             }
 
@@ -283,6 +263,51 @@ namespace Zodiac
 
             default: assert(false);
         }
+    }
+
+    void ir_builder_emit_assign_statement(IR_Builder* ir_builder, AST_Statement* statement)
+    {
+        assert(ir_builder);
+        assert(statement);
+        assert(statement->kind == AST_STMT_ASSIGN);
+
+        AST_Expression* lvalue_expr = statement->assign.lvalue_expression;
+        if (lvalue_expr->kind == AST_EXPR_IDENTIFIER)
+        {
+            AST_Declaration* lvalue_decl = lvalue_expr->identifier->declaration;
+            IR_Value* target_alloc = ir_builder_value_for_declaration(ir_builder, lvalue_decl);
+            assert(target_alloc);
+            IR_Value* new_value = ir_builder_emit_expression(ir_builder, statement->assign.expression);
+
+            switch (target_alloc->kind)
+            {
+                case IRV_ALLOCL:
+                {
+                    ir_builder_emit_storel(ir_builder, target_alloc, new_value);
+                    break;
+                }
+
+                case IRV_ARGUMENT:
+                {
+                    ir_builder_emit_storea(ir_builder, target_alloc, new_value);
+                    break;
+                }
+
+                default: assert(false);
+            }
+        }
+        else if (lvalue_expr->kind == AST_EXPR_UNARY)
+        {
+            assert(lvalue_expr->unary.op == AST_UNOP_DEREF);
+            AST_Expression* operand_expr = lvalue_expr->unary.operand;
+            assert(operand_expr->type->kind == AST_TYPE_POINTER);
+            assert(operand_expr->kind == AST_EXPR_IDENTIFIER);
+            IR_Value* pointer_alloc = ir_builder_value_for_declaration(ir_builder,
+                                                                       operand_expr->identifier->declaration);
+            IR_Value* new_value = ir_builder_emit_expression(ir_builder, statement->assign.expression);
+            ir_builder_emit_storep(ir_builder, pointer_alloc, new_value);
+        }
+        else assert(false);
     }
 
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression)
@@ -876,6 +901,23 @@ namespace Zodiac
         return result_value;
     }
 
+    void ir_builder_emit_storep(IR_Builder* ir_builder, IR_Value* pointer_allocl, IR_Value* new_value)
+    {
+        assert(ir_builder);
+        assert(pointer_allocl);
+        assert(new_value);
+
+        assert(pointer_allocl->kind == IRV_ALLOCL);
+        assert(pointer_allocl->type);
+        assert(pointer_allocl->type->kind == AST_TYPE_POINTER);
+        assert(new_value->kind == IRV_TEMPORARY ||
+               new_value->kind == IRV_ARGUMENT ||
+               new_value->kind == IRV_LITERAL);
+
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_STOREP, pointer_allocl, new_value, nullptr);
+        ir_builder_emit_instruction(ir_builder, iri);
+    }
+
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64)
     {
         assert(ir_builder);
@@ -1343,6 +1385,15 @@ namespace Zodiac
             case IR_OP_LOADA:
             {
                 printf("LOADA ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_STOREP:
+            {
+                printf("STOREP ");
+                ir_print_value(instruction->arg2);
+                printf(" INTO ");
                 ir_print_value(instruction->arg1);
                 break;
             }

@@ -271,15 +271,21 @@ namespace Zodiac
             default: break;
         }
 
-        AST_Identifier* identifier = parse_identifier(parser);
-        if (!identifier)
+        // AST_Identifier* identifier = parse_identifier(parser);
+        AST_Expression* lvalue_expr = parse_expression(parser);
+        // if (!identifier)
+        // {
+        //     return nullptr;
+        // }
+        if (!lvalue_expr)
         {
             return nullptr;
         }
 
         if (is_token(parser, TOK_COLON))
         {
-            AST_Declaration* decl = parse_declaration(parser, identifier, scope, false, nullptr);
+            AST_Declaration* decl = parse_declaration(parser, lvalue_expr->identifier,
+                                                      scope, false, nullptr);
             if (!decl)
             {
                 return  nullptr;
@@ -291,15 +297,20 @@ namespace Zodiac
         {
             AST_Expression* assign_expression = parse_expression(parser);
             expect_token(parser, TOK_SEMICOLON);
-            return ast_assign_statement_new(parser->context, ft.file_pos, identifier,
+            return ast_assign_statement_new(parser->context, ft.file_pos, lvalue_expr,
                                             assign_expression);
         }
-        else if (is_token(parser, TOK_LPAREN))
+        else if (lvalue_expr->kind == AST_EXPR_CALL)
         {
-            AST_Expression* call_expression = parse_call_expression(parser, identifier);
             expect_token(parser, TOK_SEMICOLON);
-            return ast_call_statement_new(parser->context, call_expression);
+            return ast_call_statement_new(parser->context, lvalue_expr);
         }
+        // else if (is_token(parser, TOK_LPAREN))
+        // {
+        //     AST_Expression* call_expression = parse_call_expression(parser, lvalue_expr->identifier);
+        //     expect_token(parser, TOK_SEMICOLON);
+        //     return ast_call_statement_new(parser->context, call_expression);
+        // }
         else assert(false);
 
         assert(false);

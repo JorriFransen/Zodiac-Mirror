@@ -278,13 +278,13 @@ namespace Zodiac
 
             case AST_STMT_ASSIGN:
             {
-                result &= try_resolve_identifier(resolver, statement->assign.identifier,
+                result &= try_resolve_expression(resolver, statement->assign.lvalue_expression,
                                                  scope);
                 result &= try_resolve_expression(resolver, statement->assign.expression,
                                                  scope);
-                if (result)
+                if (result && statement->assign.lvalue_expression->kind == AST_EXPR_IDENTIFIER)
                 {
-                    assert(statement->assign.identifier->declaration->mutable_decl.type ==
+                    assert(statement->assign.lvalue_expression->identifier->declaration->mutable_decl.type ==
                            statement->assign.expression->type);
                 }
                 break;

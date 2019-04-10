@@ -14,7 +14,7 @@ Statement = Block_Statement |
 
 Block_Statement = '{' (Statement*)? '}'
 Declaration_Statement = Declaration
-Assign_statement = Ident '=' Expression;
+Assign_statement = LValue '=' Expression;
 Return_Statement = 'return' Expression? ';'
 
 Expression = Ternary_Expression

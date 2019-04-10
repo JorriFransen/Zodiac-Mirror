@@ -82,6 +82,8 @@ namespace Zodiac
         IR_OP_STOREA,
         IR_OP_LOADA,
 
+        IR_OP_STOREP,
+
         IR_OP_LOAD_LIT,
 
         IR_OP_ADDROF,
@@ -175,6 +177,7 @@ namespace Zodiac
 
     IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module);
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement);
+    void ir_builder_emit_assign_statement(IR_Builder* ir_builder, AST_Statement* statement);
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression);
@@ -209,6 +212,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_loadl(IR_Builder* ir_builder, IR_Value* allocl_value);
     void ir_builder_emit_storea(IR_Builder* ir_builder, IR_Value* arg_value, IR_Value* new_value);
     IR_Value* ir_builder_emit_loada(IR_Builder* ir_builder, IR_Value* alloca_value);
+    void ir_builder_emit_storep(IR_Builder* ir_builder, IR_Value* pointer_allocl, IR_Value* new_value);
 
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64);
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);

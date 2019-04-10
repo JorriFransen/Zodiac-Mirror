@@ -466,6 +466,19 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_STOREP:
+            {
+                auto allocl_value_index = iri->arg1->allocl.index;
+                IR_Value* pointer_allocl = ir_runner_get_local_temporary(runner, allocl_value_index);
+                int64_t* pointer_value = (int64_t*)pointer_allocl->temp.s64;
+
+                auto source_value_index = iri->arg2->temp.index;
+                IR_Value* source_value = ir_runner_get_local_temporary(runner, source_value_index);
+
+                *pointer_value = source_value->temp.s64;
+                break;
+            }
+
             case IR_OP_LOAD_LIT:
             {
                 assert(iri->arg1);

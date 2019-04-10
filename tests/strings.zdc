@@ -30,5 +30,9 @@ pointer_test :: () -> void
 
     print_digit(<x_ptr);
 
+    <x_ptr = 4;
+
+    print_digit(x);
+
     return <x_ptr;
 }

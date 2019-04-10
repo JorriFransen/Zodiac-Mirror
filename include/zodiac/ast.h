@@ -149,7 +149,7 @@ namespace Zodiac
 
             struct
             {
-                AST_Identifier* identifier;
+                AST_Expression* lvalue_expression;
                 AST_Expression* expression;
             } assign;
 
@@ -332,7 +332,7 @@ namespace Zodiac
     AST_Statement* ast_return_statement_new(Context* context, File_Pos file_pos, AST_Expression* return_expr);
     AST_Statement* ast_if_statement_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
                                         AST_Statement* then_stmt, AST_Statement* else_stmt);
-    AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
+    AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos, AST_Expression* lvalue_expression,
                                             AST_Expression* expression);
     AST_Statement* ast_call_statement_new(Context* context, AST_Expression* call_expression);
 
