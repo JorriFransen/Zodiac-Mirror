@@ -645,7 +645,7 @@ namespace Zodiac
 
         auto ct = current_token(parser);
 
-        return ct.kind == TOK_MINUS || ct.kind == TOK_MUL;
+        return ct.kind == TOK_MINUS || ct.kind == TOK_MUL || ct.kind == TOK_LT;
     }
 
     static AST_Binop_Kind parse_add_op(Parser* parser)
@@ -738,6 +738,10 @@ namespace Zodiac
 
             case TOK_MUL:
                 result = AST_UNOP_ADDROF;
+                break;
+
+            case TOK_LT:
+                result = AST_UNOP_DEREF;
                 break;
 
             default:

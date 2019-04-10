@@ -545,23 +545,36 @@ namespace Zodiac
         assert(expression->kind == AST_EXPR_UNARY);
         assert(scope);
 
-        bool result = try_resolve_expression(resolver, expression->unary.operand, scope);
+        AST_Expression* operand_expr = expression->unary.operand;
+        bool result = try_resolve_expression(resolver, operand_expr, scope);
 
         if (result)
         {
             switch (expression->unary.op)
             {
                 case AST_UNOP_MINUS:
+                {
                     assert(false);
                     break;
+                }
 
                 case AST_UNOP_ADDROF:
-                    assert(expression->unary.operand->kind == AST_EXPR_IDENTIFIER);
-                    assert(expression->unary.operand->type == Builtin::type_int);
+                {
+                    assert(operand_expr->kind == AST_EXPR_IDENTIFIER);
+                    assert(operand_expr->type == Builtin::type_int);
                     expression->type = ast_find_or_create_pointer_type(resolver->context,
                                                                        resolver->module,
-                                                                       expression->unary.operand->type);
+                                                                       operand_expr->type);
                     break;
+                }
+
+                case AST_UNOP_DEREF:
+                {
+                    assert(operand_expr->kind == AST_EXPR_IDENTIFIER);
+                    assert(operand_expr->type->kind == AST_TYPE_POINTER);
+                    expression->type = operand_expr->type->base_type;
+                    break;
+                }
 
                 default: assert(false);
             }

@@ -16,20 +16,19 @@ print_digit :: (digit: int) -> void
 
 main :: () -> int
 {
-    pointer_test();
-    return 0;
+    return pointer_test();
 }
 
 pointer_test :: () -> void
 {
-    x: int;
+    x: int = 3;
 
     print_digit(x);
 
     x_ptr : *int;
     x_ptr = *x;
 
-    // print_digit(<x_ptr);
+    print_digit(<x_ptr);
 
-    // print_digit(x_ptr);
+    return <x_ptr;
 }

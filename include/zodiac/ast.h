@@ -57,6 +57,7 @@ namespace Zodiac
         AST_UNOP_INVALID,
         AST_UNOP_MINUS,
         AST_UNOP_ADDROF,
+        AST_UNOP_DEREF,
     };
 
     typedef uint64_t _AST_EXPR_FLAGS_;

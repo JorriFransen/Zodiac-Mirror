@@ -488,9 +488,27 @@ namespace Zodiac
                 IR_Value* dest = ir_runner_get_local_temporary(runner, dest_index);
 
                 auto source_index = iri->arg1->allocl.index;
-                IR_Value* source = ir_runner_get_local_temporary(runner, dest_index);
+                IR_Value* source = ir_runner_get_local_temporary(runner, source_index);
 
                 dest->temp.s64 = (int64_t)&source->temp.s64;
+                break;
+            }
+
+            case IR_OP_DEREF:
+            {
+                assert(iri->arg1);
+                assert(iri->arg1->kind == IRV_ALLOCL);
+                assert(iri->result);
+                assert(iri->result->kind == IRV_TEMPORARY);
+
+                auto source_index = iri->arg1->allocl.index;
+                IR_Value* source_allocl = ir_runner_get_local_temporary(runner, source_index);
+                int64_t* source_ptr = (int64_t*)source_allocl->temp.s64;
+
+                auto dest_index = iri->result->temp.index;
+                IR_Value* dest = ir_runner_get_local_temporary(runner, dest_index);
+                dest->temp.s64 = *source_ptr;
+
                 break;
             }
 

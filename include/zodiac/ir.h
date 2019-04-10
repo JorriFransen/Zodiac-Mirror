@@ -85,6 +85,7 @@ namespace Zodiac
         IR_OP_LOAD_LIT,
 
         IR_OP_ADDROF,
+        IR_OP_DEREF,
     };
 
     struct IR_Instruction
@@ -176,6 +177,7 @@ namespace Zodiac
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement);
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression);
+    IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression);
 
     IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder, AST_Declaration* declaration);
 

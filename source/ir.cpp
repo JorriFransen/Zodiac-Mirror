@@ -326,12 +326,22 @@ namespace Zodiac
                 switch (expression->unary.op)
                 {
                     case AST_UNOP_MINUS:
+                    {
                         assert(false);
                         break;
+                    }
 
                     case AST_UNOP_ADDROF:
+                    {
                         return ir_builder_emit_addrof(ir_builder, expression->unary.operand);
                         break;
+                    }
+
+                    case AST_UNOP_DEREF:
+                    {
+                        return ir_builder_emit_deref(ir_builder, expression->unary.operand);
+                        break;
+                    }
 
                     default: assert(false);
                 }
@@ -414,10 +424,33 @@ namespace Zodiac
         IR_Value* expression_value = ir_builder_value_for_declaration(ir_builder, expression->identifier->declaration);
         assert(expression_value);
 
-        AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context, ir_builder->ast_module, expression->type);
+        AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context, ir_builder->ast_module,
+                                                                expression->type);
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ADDROF, expression_value, nullptr, result_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result_value;
+    }
+
+    IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression)
+    {
+        assert(ir_builder);
+        assert(expression);
+        assert(expression->kind == AST_EXPR_IDENTIFIER);
+
+        IR_Value* expression_value = ir_builder_value_for_declaration(ir_builder, expression->identifier->declaration);
+        assert(expression_value);
+
+        AST_Type* operand_type = expression->type;
+        assert(operand_type->kind == AST_TYPE_POINTER);
+
+        AST_Type* result_type = operand_type->base_type;
+
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
+
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_DEREF, expression_value, nullptr, result_value);
         ir_builder_emit_instruction(ir_builder, iri);
 
         return result_value;
@@ -1324,6 +1357,13 @@ namespace Zodiac
             case IR_OP_ADDROF:
             {
                 printf("ADDROF ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_DEREF:
+            {
+                printf("DEREF ");
                 ir_print_value(instruction->arg1);
                 break;
             }
