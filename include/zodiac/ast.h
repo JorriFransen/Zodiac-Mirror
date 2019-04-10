@@ -52,6 +52,8 @@ namespace Zodiac
 
         AST_BINOP_LT,
         AST_BINOP_LTEQ,
+        AST_BINOP_GT,
+        AST_BINOP_GTEQ,
     };
 
     enum AST_Unop_Kind
@@ -126,6 +128,7 @@ namespace Zodiac
         AST_STMT_IF,
         AST_STMT_ASSIGN,
         AST_STMT_CALL,
+        AST_STMT_WHILE,
     };
 
     typedef uint64_t _AST_STMT_FLAGS_;
@@ -166,6 +169,12 @@ namespace Zodiac
             } assign;
 
             AST_Expression* call_expression;
+
+            struct
+            {
+                AST_Expression* cond_expr;
+                AST_Statement* body_stmt;
+            } while_stmt;
         };
     };
 
@@ -349,6 +358,8 @@ namespace Zodiac
     AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos, AST_Expression* lvalue_expression,
                                             AST_Expression* expression);
     AST_Statement* ast_call_statement_new(Context* context, AST_Expression* call_expression);
+    AST_Statement* ast_while_statement_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
+                                           AST_Statement* body_stmt);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags);
     AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size);

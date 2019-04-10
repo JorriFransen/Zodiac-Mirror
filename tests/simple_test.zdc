@@ -1,12 +1,43 @@
 
 #dynamic_link "msvcrt.dll";
 
+#foreign putchar :: (x: int) -> int;
 #foreign puts :: (string: *u8) -> int;
+
+newline :: () -> void { putchar(10); }
+
+print_digit :: (digit: int) -> void
+{
+    putchar(digit + 48);
+    newline();
+}
 
 main :: () -> int
 {
     c : u8 = 'c';
     string : *u8 = "Hello Zodiac!!!";
     puts(string);
+    puts("test");
+
+    loop();
+}
+
+loop :: () -> void
+{
+    i := 0;
+    while (i < 10)
+    {
+        print_digit(i);
+        i = i + 1;
+    }
+
+    i = i - 1;
+
+    while (i >= 0)
+    {
+        print_digit(i);
+        i = i - 1;
+    }
+
     puts("test");
 }

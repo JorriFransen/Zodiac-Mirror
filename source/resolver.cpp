@@ -297,6 +297,13 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_WHILE:
+            {
+                result &= try_resolve_expression(resolver, statement->while_stmt.cond_expr, scope);
+                result &= try_resolve_statement(resolver, statement->while_stmt.body_stmt, scope);
+                break;
+            }
+
             default:
                 assert(false);
                 result = false;

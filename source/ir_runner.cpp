@@ -271,13 +271,6 @@ namespace Zodiac
 
             case IR_OP_LT:
             {
-                assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_TEMPORARY);
-                assert(iri->arg2);
-                assert(iri->arg2->kind == IRV_TEMPORARY);
-                assert(iri->result);
-                assert(iri->result->kind == IRV_TEMPORARY);
-
                 IR_Value* arg1 = ir_runner_get_local_temporary(runner, iri->arg1->temp.index);
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result->temp.index);
@@ -288,18 +281,31 @@ namespace Zodiac
 
             case IR_OP_LTEQ:
             {
-                assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_TEMPORARY);
-                assert(iri->arg2);
-                assert(iri->arg2->kind == IRV_TEMPORARY);
-                assert(iri->result);
-                assert(iri->result->kind == IRV_TEMPORARY);
-
                 IR_Value* arg1 = ir_runner_get_local_temporary(runner, iri->arg1->temp.index);
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result->temp.index);
 
                 dest->value.s64 = arg1->value.s64 <= arg2->value.s64;
+                break;
+            }
+
+            case IR_OP_GT:
+            {
+                IR_Value* arg1 = ir_runner_get_local_temporary(runner, iri->arg1->temp.index);
+                IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
+                IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result->temp.index);
+
+                dest->value.s64 = arg1->value.s64 > arg2->value.s64;
+                break;
+            }
+
+            case IR_OP_GTEQ:
+            {
+                IR_Value* arg1 = ir_runner_get_local_temporary(runner, iri->arg1->temp.index);
+                IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
+                IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result->temp.index);
+
+                dest->value.s64 = arg1->value.s64 >= arg2->value.s64;
                 break;
             }
 

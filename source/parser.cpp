@@ -268,6 +268,10 @@ namespace Zodiac
                 return parse_block_statement(parser, scope);
                 break;
 
+            case TOK_KW_WHILE:
+                return parse_while_statement(parser, scope);
+                break;
+
             default: break;
         }
 
@@ -398,6 +402,33 @@ namespace Zodiac
 
         return ast_if_statement_new(parser->context, if_tok.file_pos, cond_expr,
                                     then_stmt, else_stmt);
+    }
+
+    static AST_Statement* parse_while_statement(Parser* parser, AST_Scope* scope)
+    {
+        assert(parser);
+        assert(scope);
+
+        auto while_tok = current_token(parser);
+        expect_token(parser, TOK_KW_WHILE);
+        expect_token(parser, TOK_LPAREN);
+
+        AST_Expression* while_condition_expr = parse_expression(parser);
+        if (!while_condition_expr)
+        {
+            return nullptr;
+        }
+
+        expect_token(parser, TOK_RPAREN);
+
+        AST_Statement* while_body_statement = parse_statement(parser, scope);
+        if (!while_body_statement)
+        {
+            return nullptr;
+        }
+
+        return ast_while_statement_new(parser->context, while_tok.file_pos, while_condition_expr,
+                                       while_body_statement);
     }
 
     static AST_Expression* parse_expression(Parser* parser)
@@ -679,7 +710,9 @@ namespace Zodiac
         auto ct = current_token(parser);
 
         return ct.kind == TOK_LT ||
-               ct.kind == TOK_LTEQ;
+               ct.kind == TOK_LTEQ ||
+               ct.kind == TOK_GT ||
+               ct.kind == TOK_GTEQ;
     }
 
     static bool is_unary_op(Parser* parser)
@@ -756,6 +789,14 @@ namespace Zodiac
 
             case TOK_LTEQ:
                 result = AST_BINOP_LTEQ;
+                break;
+
+            case TOK_GT:
+                result = AST_BINOP_GT;
+                break;
+
+            case TOK_GTEQ:
+                result = AST_BINOP_GTEQ;
                 break;
 
             default: assert(false);

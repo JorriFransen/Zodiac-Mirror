@@ -17,6 +17,8 @@ namespace Zodiac
         "TOK_EQ",         // =
         "TOK_LT",         // <
         "TOK_LTEQ",       // <=
+        "TOK_GT",         // >
+        "TOK_GTEQ",       // >=
 
         "TOK_POUND",      // #
 
@@ -41,6 +43,7 @@ namespace Zodiac
         "TOK_KW_ELSE",
         "TOK_KW_FOREIGN",
         "TOK_KW_DYN_LINK",
+        "TOK_KW_WHILE",
 
         "TOK_COUNT",
     };

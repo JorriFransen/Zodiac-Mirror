@@ -321,6 +321,23 @@ namespace Zodiac
         return result;
     }
 
+    AST_Statement* ast_while_statement_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
+        AST_Statement* body_stmt)
+    {
+        assert(context);
+        assert(cond_expr);
+        assert(body_stmt);
+
+        AST_Statement* result = arena_alloc(context->arena, AST_Statement);
+        result->kind = AST_STMT_WHILE;
+        result->file_pos = file_pos;
+
+        result->while_stmt.cond_expr = cond_expr;
+        result->while_stmt.body_stmt = body_stmt;
+
+        return result;
+    }
+
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags)
     {
         assert(context);

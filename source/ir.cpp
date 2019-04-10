@@ -262,6 +262,28 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_WHILE:
+            {
+                IR_Function* cur_func = ir_builder->current_function;
+                IR_Value* while_cond_block_value = ir_builder_create_block(ir_builder, "while_cond", cur_func);
+                IR_Value* while_body_block_value = ir_builder_create_block(ir_builder, "while_body", cur_func);
+                IR_Value* post_while_block_value = ir_builder_create_block(ir_builder, "post_while", cur_func);
+
+                ir_builder_emit_jmp(ir_builder, while_cond_block_value);
+
+                ir_builder_set_insert_block(ir_builder, while_cond_block_value);
+                IR_Value* cond_value = ir_builder_emit_expression(ir_builder, statement->while_stmt.cond_expr);
+                ir_builder_emit_jmp_if(ir_builder, cond_value, while_body_block_value);
+                ir_builder_emit_jmp(ir_builder, post_while_block_value);
+
+                ir_builder_set_insert_block(ir_builder, while_body_block_value);
+                ir_builder_emit_statement(ir_builder, statement->while_stmt.body_stmt);
+                ir_builder_emit_jmp(ir_builder, while_cond_block_value);
+
+                ir_builder_set_insert_block(ir_builder, post_while_block_value);
+                break;
+            }
+
             default: assert(false);
         }
     }
@@ -342,6 +364,12 @@ namespace Zodiac
 
                     case AST_BINOP_LTEQ:
                         return ir_builder_emit_lteq(ir_builder, lhs_value, rhs_value);
+
+                    case AST_BINOP_GT:
+                        return ir_builder_emit_gt(ir_builder, lhs_value, rhs_value);
+
+                    case AST_BINOP_GTEQ:
+                        return ir_builder_emit_gteq(ir_builder, lhs_value, rhs_value);
 
                     default: assert(false);
                 }
@@ -768,6 +796,38 @@ namespace Zodiac
 
         IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LTEQ, lhs, rhs, result);
+
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result;
+    }
+
+    IR_Value* ir_builder_emit_gt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        assert(lhs->type == rhs->type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_GT, lhs, rhs, result);
+
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result;
+    }
+
+    IR_Value* ir_builder_emit_gteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        assert(lhs->type == rhs->type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_GTEQ, lhs, rhs, result);
 
         ir_builder_emit_instruction(ir_builder, iri);
 
@@ -1340,6 +1400,22 @@ namespace Zodiac
             {
                 ir_print_value(instruction->arg1);
                 printf(" <= ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_GT:
+            {
+                ir_print_value(instruction->arg1);
+                printf(" > ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_GTEQ:
+            {
+                ir_print_value(instruction->arg1);
+                printf(" >= ");
                 ir_print_value(instruction->arg2);
                 break;
             }

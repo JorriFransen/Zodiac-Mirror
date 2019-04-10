@@ -69,6 +69,8 @@ namespace Zodiac
         IR_OP_DIV,
         IR_OP_LT,
         IR_OP_LTEQ,
+        IR_OP_GT,
+        IR_OP_GTEQ,
 
         IR_OP_PUSH_CALL_ARG,
         IR_OP_CALL,
@@ -209,6 +211,8 @@ namespace Zodiac
     IR_Value* ir_builder_emit_div(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_lt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_lteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
+    IR_Value* ir_builder_emit_gt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
+    IR_Value* ir_builder_emit_gteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val);
     void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value, bool is_foreign = false);
     IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value, IR_Value* num_args);
