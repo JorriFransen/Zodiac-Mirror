@@ -34,7 +34,7 @@ namespace Zodiac
 
         IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(ir_runner, ir_module->entry_function, 0);
 
-        printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value.temp.s64);
+        printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value.value.s64);
         uint64_t arena_cap = 0;
         auto block = ir_runner->arena.blocks;
         while (block)
@@ -214,7 +214,7 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result->temp.index);
 
-                dest->temp.s64 = arg1->temp.s64 + arg2->temp.s64;
+                dest->value.s64 = arg1->value.s64 + arg2->value.s64;
                 break;
             }
 
@@ -231,7 +231,7 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result->temp.index);
 
-                dest->temp.s64 = arg1->temp.s64 - arg2->temp.s64;
+                dest->value.s64 = arg1->value.s64 - arg2->value.s64;
                 break;
             }
 
@@ -248,7 +248,7 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result->temp.index);
 
-                dest->temp.s64 = arg1->temp.s64 * arg2->temp.s64;
+                dest->value.s64 = arg1->value.s64 * arg2->value.s64;
                 break;
             }
 
@@ -265,7 +265,7 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result->temp.index);
 
-                dest->temp.s64 = arg1->temp.s64 / arg2->temp.s64;
+                dest->value.s64 = arg1->value.s64 / arg2->value.s64;
                 break;
             }
 
@@ -282,7 +282,7 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result->temp.index);
 
-                dest->temp.s64 = arg1->temp.s64 < arg2->temp.s64;
+                dest->value.s64 = arg1->value.s64 < arg2->value.s64;
                 break;
             }
 
@@ -299,7 +299,7 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result->temp.index);
 
-                dest->temp.s64 = arg1->temp.s64 <= arg2->temp.s64;
+                dest->value.s64 = arg1->value.s64 <= arg2->value.s64;
                 break;
             }
 
@@ -321,18 +321,18 @@ namespace Zodiac
                 assert(iri->arg1);
                 assert(iri->arg1->kind == IRV_FUNCTION);
                 assert(iri->arg2);
-                assert(iri->arg2->kind == IRV_LITERAL);
+                assert(iri->arg2->kind == IRV_INT_LITERAL);
                 assert(iri->result);
                 assert(iri->result->kind == IRV_TEMPORARY);
 
                 IR_Function* function = iri->arg1->function;
-                auto num_args = iri->arg2->literal.s64;
+                auto num_args = iri->arg2->value.s64;
                 IR_Stack_Frame* callee_stack_frame = ir_runner_call_function(runner, function, num_args);
 
                 auto result_index = iri->result->temp.index;
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, result_index);
 
-                result_value->temp.s64 = callee_stack_frame->return_value.temp.s64;
+                result_value->value.s64 = callee_stack_frame->return_value.value.s64;
                 break;
             }
 
@@ -340,20 +340,20 @@ namespace Zodiac
             {
                 auto temp_index = iri->arg1->temp.index;
                 IR_Value* arg_value = ir_runner_get_local_temporary(runner, temp_index);
-                dcArgLongLong(runner->dyn_vm, arg_value->temp.s64);
+                dcArgLongLong(runner->dyn_vm, arg_value->value.s64);
                 break;
             }
 
             case IR_OP_CALL_EX:
             {
                 dcMode(runner->dyn_vm, DC_CALL_C_DEFAULT);
-                uint64_t foreign_index = iri->arg1->literal.s64;
+                uint64_t foreign_index = iri->arg1->value.s64;
                 assert(BUF_LENGTH(runner->loaded_foreign_symbols) > foreign_index);
 
                 assert(iri->result);
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result->temp.index);
                 assert(result_value);
-                result_value->temp.s64 = dcCallInt(runner->dyn_vm, runner->loaded_foreign_symbols[foreign_index]);
+                result_value->value.s64 = dcCallInt(runner->dyn_vm, runner->loaded_foreign_symbols[foreign_index]);
                 dcReset(runner->dyn_vm);
                 break;
             }
@@ -389,7 +389,7 @@ namespace Zodiac
 
                 IR_Value* block_value = iri->arg2;
 
-                if (cond_value->temp.s64)
+                if (cond_value->value.s64)
                 {
                     assert(!runner->jump_block);
                     runner->jump_block = block_value->block;
@@ -413,7 +413,7 @@ namespace Zodiac
                 auto source_value_index = iri->arg2->temp.index;
                 IR_Value* source_value = ir_runner_get_local_temporary(runner, source_value_index);
 
-                dest_value->temp.s64 = source_value->temp.s64;
+                dest_value->value.s64 = source_value->value.s64;
                 break;
             }
 
@@ -425,7 +425,7 @@ namespace Zodiac
                 auto result_value_index = iri->result->temp.index;
                 IR_Value* dest_value = ir_runner_get_local_temporary(runner, result_value_index);
 
-                dest_value->temp.s64 = source_value->temp.s64;
+                dest_value->value.s64 = source_value->value.s64;
                 break;
             }
 
@@ -440,7 +440,7 @@ namespace Zodiac
                 auto source_index = iri->arg2->temp.index;
                 IR_Value* source = ir_runner_get_local_temporary(runner, source_index);
 
-                dest->temp.s64 = source->temp.s64;
+                dest->value.s64 = source->value.s64;
                 break;
             }
 
@@ -462,7 +462,7 @@ namespace Zodiac
                 IR_Value* dest = ir_runner_get_local_temporary(runner, dest_index);
                 assert(dest->kind == IRV_TEMPORARY);
 
-                dest->temp.s64 = source->temp.s64;
+                dest->value.s64 = source->value.s64;
                 break;
             }
 
@@ -470,23 +470,30 @@ namespace Zodiac
             {
                 auto allocl_value_index = iri->arg1->allocl.index;
                 IR_Value* pointer_allocl = ir_runner_get_local_temporary(runner, allocl_value_index);
-                int64_t* pointer_value = (int64_t*)pointer_allocl->temp.s64;
+                int64_t* pointer_value = (int64_t*)pointer_allocl->value.s64;
 
                 auto source_value_index = iri->arg2->temp.index;
                 IR_Value* source_value = ir_runner_get_local_temporary(runner, source_value_index);
 
-                *pointer_value = source_value->temp.s64;
+                *pointer_value = source_value->value.s64;
                 break;
             }
 
             case IR_OP_LOAD_LIT:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_LITERAL);
                 assert(iri->result->kind == IRV_TEMPORARY);
                 auto temp_index = iri->result->temp.index;
                 IR_Value* dest = ir_runner_get_local_temporary(runner, temp_index);
-                dest->temp.s64 = iri->arg1->literal.s64;
+                switch (iri->arg1->kind)
+                {
+                    case IRV_INT_LITERAL:
+                    case IRV_CHAR_LITERAL:
+                    {
+                        dest->value = iri->arg1->value;
+                        break;
+                    }
+                }
                 break;
             }
 
@@ -503,7 +510,7 @@ namespace Zodiac
                 auto source_index = iri->arg1->allocl.index;
                 IR_Value* source = ir_runner_get_local_temporary(runner, source_index);
 
-                dest->temp.s64 = (int64_t)&source->temp.s64;
+                dest->value.s64 = (int64_t)&source->value.s64;
                 break;
             }
 
@@ -516,11 +523,11 @@ namespace Zodiac
 
                 auto source_index = iri->arg1->allocl.index;
                 IR_Value* source_allocl = ir_runner_get_local_temporary(runner, source_index);
-                int64_t* source_ptr = (int64_t*)source_allocl->temp.s64;
+                int64_t* source_ptr = (int64_t*)source_allocl->value.s64;
 
                 auto dest_index = iri->result->temp.index;
                 IR_Value* dest = ir_runner_get_local_temporary(runner, dest_index);
-                dest->temp.s64 = *source_ptr;
+                dest->value.s64 = *source_ptr;
 
                 break;
             }

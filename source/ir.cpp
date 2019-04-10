@@ -373,9 +373,21 @@ namespace Zodiac
                 break;
             }
 
-            case AST_EXPR_LITERAL:
+            case AST_EXPR_INTEGER_LITERAL:
             {
-                IR_Value* literal = ir_integer_literal(ir_builder, expression->type, (int64_t)expression->literal.u64);
+                IR_Value* literal = ir_integer_literal(ir_builder, expression->type, (int64_t)expression->integer_literal.u64);
+
+                IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
+                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal, nullptr, result);
+                ir_builder_emit_instruction(ir_builder, iri);
+
+                return result;
+                break;
+            }
+
+            case AST_EXPR_CHAR_LITERAL:
+            {
+                IR_Value* literal = ir_character_literal(ir_builder, expression->type, expression->character_literal.c);
 
                 IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
                 IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal, nullptr, result);
@@ -390,7 +402,7 @@ namespace Zodiac
                 AST_Declaration* ident_decl = expression->identifier->declaration;
                 IR_Value* value = ir_builder_value_for_declaration(ir_builder, ident_decl);
                 if (value->kind == IRV_TEMPORARY ||
-                    value->kind == IRV_LITERAL)
+                    value->kind == IRV_INT_LITERAL)
                 {
                     // Do nothing else for now
                 }
@@ -781,7 +793,7 @@ namespace Zodiac
         assert(func_value);
         assert(func_value->kind == IRV_FUNCTION);
         assert(num_args);
-        assert(num_args->kind == IRV_LITERAL);
+        assert(num_args->kind == IRV_INT_LITERAL);
 
         IR_Function* function = func_value->function;
         assert(function->return_type);
@@ -831,7 +843,8 @@ namespace Zodiac
         assert(type);
         assert(name);
 
-        assert(type->kind == AST_TYPE_POINTER || type == Builtin::type_int);
+        assert(type->kind == AST_TYPE_POINTER ||
+               type->flags | AST_TYPE_FLAG_INT);
 
         IR_Value* allocl_value = ir_value_allocl_new(ir_builder, type, name);
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ALLOCL, nullptr, nullptr,
@@ -881,7 +894,7 @@ namespace Zodiac
         assert(arg_value->kind == IRV_ARGUMENT);
         assert(new_value->kind == IRV_TEMPORARY ||
                new_value->kind == IRV_ARGUMENT ||
-               new_value->kind == IRV_LITERAL);
+               new_value->kind == IRV_INT_LITERAL);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_STOREA, arg_value, new_value,
                                                  nullptr);
@@ -912,7 +925,7 @@ namespace Zodiac
         assert(pointer_allocl->type->kind == AST_TYPE_POINTER);
         assert(new_value->kind == IRV_TEMPORARY ||
                new_value->kind == IRV_ARGUMENT ||
-               new_value->kind == IRV_LITERAL);
+               new_value->kind == IRV_INT_LITERAL);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_STOREP, pointer_allocl, new_value, nullptr);
         ir_builder_emit_instruction(ir_builder, iri);
@@ -923,8 +936,20 @@ namespace Zodiac
         assert(ir_builder);
         assert(type);
 
-        IR_Value* result = ir_value_new(ir_builder, IRV_LITERAL, Builtin::type_int);
-        result->literal.s64 = s64;
+        IR_Value* result = ir_value_new(ir_builder, IRV_INT_LITERAL, type);
+        result->value.s64 = s64;
+        result->assigned = true;
+
+        return result;
+    }
+
+    IR_Value* ir_character_literal(IR_Builder* ir_builder, AST_Type* type, char c)
+    {
+        assert(ir_builder);
+        assert(type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_CHAR_LITERAL, type);
+        result->value.u8 = c;
         result->assigned = true;
 
         return result;
@@ -1438,9 +1463,15 @@ namespace Zodiac
                 break;
             }
 
-            case IRV_LITERAL:
+            case IRV_INT_LITERAL:
             {
-                printf("lit(%" PRId64 ")", value->literal.s64);
+                printf("lit(%" PRId64 ")", value->value.s64);
+                break;
+            }
+
+            case IRV_CHAR_LITERAL:
+            {
+                printf("lit('%c')", value->value.u8);
                 break;
             }
 

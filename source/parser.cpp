@@ -290,8 +290,15 @@ namespace Zodiac
             {
                 return  nullptr;
             }
-            expect_token(parser, TOK_SEMICOLON);
-            return ast_declaration_statement_new(parser->context, ft.file_pos, decl);
+
+            if (expect_token(parser, TOK_SEMICOLON))
+            {
+                return ast_declaration_statement_new(parser->context, ft.file_pos, decl);
+            }
+            else
+            {
+                return nullptr;
+            }
         }
         else if (match_token(parser, TOK_EQ))
         {
@@ -564,11 +571,29 @@ namespace Zodiac
     {
         assert(parser);
 
-        auto integer_token = current_token(parser);
-        expect_token(parser, TOK_INTEGER);
+        auto ct = current_token(parser);
+        //expect_token(parser, TOK_INTEGER);
+        switch (ct.kind)
+        {
+            case TOK_INTEGER:
+            {
+                consume_token(parser);
+                uint64_t value = atom_to_u64(ct.atom);
+                return ast_integer_literal_expression_new(parser->context, ct.file_pos, value);
+                break;
+            }
 
-        uint64_t value = atom_to_u64(integer_token.atom);
-        return ast_literal_expression_new(parser->context, integer_token.file_pos, value);
+            case TOK_CHAR_LIT:
+            {
+                consume_token(parser);
+                char c = ct.atom.data[0];
+                return ast_character_literal_expression_new(parser->context, ct.file_pos, c);
+                break;
+            }
+
+            default: assert(false);
+        }
+
     }
 
     static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier)

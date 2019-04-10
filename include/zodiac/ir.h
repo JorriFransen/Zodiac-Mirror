@@ -11,11 +11,13 @@ namespace Zodiac
     enum IR_Value_Kind
     {
         IRV_TEMPORARY,
-        IRV_LITERAL,
         IRV_ARGUMENT,
         IRV_FUNCTION,
         IRV_BLOCK,
         IRV_ALLOCL,
+
+        IRV_INT_LITERAL,
+        IRV_CHAR_LITERAL,
     };
 
     struct IR_Value
@@ -27,16 +29,16 @@ namespace Zodiac
 
         union
         {
+            int64_t s64;
+            uint8_t u8;
+        } value;
+
+        union
+        {
             struct
             {
                 uint64_t index;
-                int64_t s64;
             } temp;
-
-            struct
-            {
-                int64_t s64;
-            } literal;
 
             struct
             {
@@ -215,6 +217,7 @@ namespace Zodiac
     void ir_builder_emit_storep(IR_Builder* ir_builder, IR_Value* pointer_allocl, IR_Value* new_value);
 
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64);
+    IR_Value* ir_character_literal(IR_Builder* ir_builder, AST_Type* type, char c);
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, const char* name, AST_Type* return_type);

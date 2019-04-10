@@ -123,9 +123,20 @@ namespace Zodiac
                     length++;
                     lexer_consume_character(lexer);
                 }
-                lexer_consume_character(lexer);
+               lexer_consume_character(lexer);
 
                 lexer_push_token(lexer, TOK_STRING_LIT, file_pos, length);
+                break;
+            }
+            
+            case '\'':
+            {
+                lexer_consume_character(lexer);
+                File_Pos file_pos = lexer->current_file_pos;
+                lexer_consume_character(lexer);
+                assert(current_char(lexer) == '\'');
+                lexer_consume_character(lexer);
+                lexer_push_token(lexer, TOK_CHAR_LIT, file_pos, 1);
                 break;
             }
 

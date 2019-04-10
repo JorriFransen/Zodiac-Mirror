@@ -108,14 +108,23 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_literal_expression_new(Context* context, File_Pos file_pos, uint64_t value)
+    AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos, uint64_t value)
     {
         assert(context);
 
-        auto result = ast_expression_new(context, file_pos, AST_EXPR_LITERAL);
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_INTEGER_LITERAL);
 
-        result->literal.u64 = value;
+        result->integer_literal.u64 = value;
 
+        return result;
+    }
+
+    AST_Expression* ast_character_literal_expression_new(Context* context, File_Pos file_pos, char value)
+    {
+        assert(context);
+
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_CHAR_LITERAL);
+        result->character_literal.c = value;
         return result;
     }
 

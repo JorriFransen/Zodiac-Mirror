@@ -32,6 +32,7 @@ namespace Zodiac
 
         TOK_IDENTIFIER,
         TOK_INTEGER,
+        TOK_CHAR_LIT,
         TOK_STRING_LIT,
 
         TOK_KW_RETURN,

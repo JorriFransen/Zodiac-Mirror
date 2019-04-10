@@ -38,7 +38,8 @@ namespace Zodiac
         AST_EXPR_UNARY,
         AST_EXPR_IDENTIFIER,
         AST_EXPR_CALL,
-        AST_EXPR_LITERAL,
+        AST_EXPR_INTEGER_LITERAL,
+        AST_EXPR_CHAR_LITERAL,
     };
 
     enum AST_Binop_Kind
@@ -102,7 +103,12 @@ namespace Zodiac
             struct
             {
                 uint64_t u64;
-            } literal;
+            } integer_literal;
+
+            struct
+            {
+                char c;
+            } character_literal;
         };
     };
 
@@ -310,7 +316,8 @@ namespace Zodiac
     AST_Expression* ast_ident_expression_new(Context* context, File_Pos file_pos, AST_Identifier* identifier);
     AST_Expression* ast_call_expression_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
                                             BUF(AST_Expression*) arg_exprs);
-    AST_Expression* ast_literal_expression_new(Context* context, File_Pos file_pos, uint64_t value);
+    AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos, uint64_t value);
+    AST_Expression* ast_character_literal_expression_new(Context* context, File_Pos file_pos, char value);
 
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,

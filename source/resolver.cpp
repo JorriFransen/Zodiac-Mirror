@@ -396,9 +396,15 @@ namespace Zodiac
                 break;
             }
 
-            case AST_EXPR_LITERAL:
+            case AST_EXPR_INTEGER_LITERAL:
             {
-                result &= try_resolve_literal_expression(resolver, expression);
+                result &= try_resolve_integer_literal_expression(resolver, expression);
+                break;
+            }
+
+            case AST_EXPR_CHAR_LITERAL:
+            {
+                result &= try_resolve_character_literal_expression(resolver, expression);
                 break;
             }
 
@@ -478,15 +484,29 @@ namespace Zodiac
         return result;
     }
 
-    static bool try_resolve_literal_expression(Resolver* resolver, AST_Expression* expression)
+    static bool try_resolve_integer_literal_expression(Resolver* resolver, AST_Expression* expression)
     {
         assert(resolver);
         assert(expression);
-        assert(expression->kind == AST_EXPR_LITERAL);
+        assert(expression->kind == AST_EXPR_INTEGER_LITERAL);
 
         if (!expression->type)
         {
             expression->type = Builtin::type_int;
+        }
+
+        return true;
+    }
+
+    static bool try_resolve_character_literal_expression(Resolver* resolver, AST_Expression* expression)
+    {
+        assert(resolver);
+        assert(expression);
+        assert(expression->kind == AST_EXPR_CHAR_LITERAL);
+
+        if (!expression->type)
+        {
+            expression->type = Builtin::type_u8;
         }
 
         return true;
