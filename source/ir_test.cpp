@@ -10,10 +10,10 @@ int main(int argc, const char** argv)
 {
     printf("ir_test\n\n");
 
-    IR_Builder ir_builder;
-    ir_builder_init(&ir_builder);
-
     Context context;
+    IR_Builder ir_builder;
+    ir_builder_init(&ir_builder, &context);
+
     context_init(&context, &ir_builder.arena);
 
     IR_Value* add_func = ir_builder_begin_function(&ir_builder, "add", Builtin::type_int);

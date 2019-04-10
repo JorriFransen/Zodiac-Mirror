@@ -737,8 +737,11 @@ namespace Zodiac
                 break;
 
             case TOK_MUL:
-                result = AST_UNOP_MUL;
+                result = AST_UNOP_ADDROF;
                 break;
+
+            default:
+                assert(false);
         }
 
         if (result != AST_UNOP_INVALID)

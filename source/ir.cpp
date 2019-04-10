@@ -7,10 +7,11 @@
 
 namespace Zodiac
 {
-    void ir_builder_init(IR_Builder* ir_builder)
+    void ir_builder_init(IR_Builder* ir_builder, Context* context)
     {
         assert(ir_builder);
 
+        ir_builder->context = context;
         ir_builder->arena = arena_create(MB(1));
         ir_builder->value_to_decl_map = nullptr;
         ir_builder->result = {};
@@ -28,6 +29,9 @@ namespace Zodiac
     {
         assert(ir_builder);
         assert(module);
+
+        assert(ir_builder->ast_module == nullptr);
+        ir_builder->ast_module = module;
 
         // Emit global declarations
         for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
@@ -317,6 +321,23 @@ namespace Zodiac
                 }
             }
 
+            case AST_EXPR_UNARY:
+            {
+                switch (expression->unary.op)
+                {
+                    case AST_UNOP_MINUS:
+                        assert(false);
+                        break;
+
+                    case AST_UNOP_ADDROF:
+                        return ir_builder_emit_addrof(ir_builder, expression->unary.operand);
+                        break;
+
+                    default: assert(false);
+                }
+                break;
+            }
+
             case AST_EXPR_LITERAL:
             {
                 IR_Value* literal = ir_integer_literal(ir_builder, expression->type, (int64_t)expression->literal.u64);
@@ -382,6 +403,24 @@ namespace Zodiac
         }
 
         return nullptr;
+    }
+
+    IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression)
+    {
+        assert(ir_builder);
+        assert(expression);
+        assert(expression->kind == AST_EXPR_IDENTIFIER);
+
+        IR_Value* expression_value = ir_builder_value_for_declaration(ir_builder, expression->identifier->declaration);
+        assert(expression_value);
+
+        AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context, ir_builder->ast_module, expression->type);
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
+
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ADDROF, expression_value, nullptr, result_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result_value;
     }
 
     IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder, AST_Declaration* declaration)
@@ -1278,6 +1317,13 @@ namespace Zodiac
             case IR_OP_LOAD_LIT:
             {
                 printf("LOAD_LIT ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_ADDROF:
+            {
+                printf("ADDROF ");
                 ir_print_value(instruction->arg1);
                 break;
             }

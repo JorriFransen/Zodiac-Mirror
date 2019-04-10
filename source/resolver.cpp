@@ -545,8 +545,29 @@ namespace Zodiac
         assert(expression->kind == AST_EXPR_UNARY);
         assert(scope);
 
-        assert(false);
-        return false;
+        bool result = try_resolve_expression(resolver, expression->unary.operand, scope);
+
+        if (result)
+        {
+            switch (expression->unary.op)
+            {
+                case AST_UNOP_MINUS:
+                    assert(false);
+                    break;
+
+                case AST_UNOP_ADDROF:
+                    assert(expression->unary.operand->kind == AST_EXPR_IDENTIFIER);
+                    assert(expression->unary.operand->type == Builtin::type_int);
+                    expression->type = ast_find_or_create_pointer_type(resolver->context,
+                                                                       resolver->module,
+                                                                       expression->unary.operand->type);
+                    break;
+
+                default: assert(false);
+            }
+        }
+
+        return result;
     }
 
     static bool try_resolve_identifier(Resolver* resolver, AST_Identifier* identifier, AST_Scope* scope)
@@ -591,25 +612,25 @@ namespace Zodiac
         {
             case AST_TYPE_SPEC_IDENT:
             {
-                    assert(type_spec->identifier);
-                    AST_Identifier* identifier = type_spec->identifier;
+                assert(type_spec->identifier);
+                AST_Identifier* identifier = type_spec->identifier;
 
-                    AST_Declaration* type_decl = find_declaration(scope, type_spec->identifier);
-                    if (!type_decl)
-                    {
-                        report_undeclared_identifier(resolver, identifier->file_pos, identifier);
-                        return false;
-                    }
-
-                    assert(type_decl->kind == AST_DECL_TYPE);
-                    AST_Type* type = type_decl->type.type;
-                    if (type)
-                    {
-                        *type_dest = type;
-                        return true;
-                    }
-
+                AST_Declaration* type_decl = find_declaration(scope, type_spec->identifier);
+                if (!type_decl)
+                {
+                    report_undeclared_identifier(resolver, identifier->file_pos, identifier);
                     return false;
+                }
+
+                assert(type_decl->kind == AST_DECL_TYPE);
+                AST_Type* type = type_decl->type.type;
+                if (type)
+                {
+                    *type_dest = type;
+                    return true;
+                }
+
+                return false;
             }
 
             case AST_TYPE_SPEC_POINTER:

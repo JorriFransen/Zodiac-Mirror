@@ -83,6 +83,8 @@ namespace Zodiac
         IR_OP_LOADA,
 
         IR_OP_LOAD_LIT,
+
+        IR_OP_ADDROF,
     };
 
     struct IR_Instruction
@@ -151,6 +153,8 @@ namespace Zodiac
 
     struct IR_Builder
     {
+        Context* context = nullptr;
+        AST_Module* ast_module = nullptr;
         Arena arena = {};
 
         BUF(_IR_Value_To_AST_Decl_Map_Entry_) value_to_decl_map = nullptr;
@@ -166,11 +170,12 @@ namespace Zodiac
         BUF(char*) messages = nullptr;
     };
 
-    void ir_builder_init(IR_Builder* ir_builder);
+    void ir_builder_init(IR_Builder* ir_builder, Context* context);
 
     IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module);
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement);
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
+    IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression);
 
     IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder, AST_Declaration* declaration);
 

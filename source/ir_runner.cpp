@@ -91,7 +91,7 @@ namespace Zodiac
             const Atom& foreign_name = ir_module->foreign_table[i];
 
             bool found = false;
-            
+
             for (uint64_t j = 0; j < BUF_LENGTH(ir_runner->loaded_dyn_libs); j++)
             {
                 const IR_Loaded_Dynamic_Lib& loaded_lib = ir_runner->loaded_dyn_libs[j];
@@ -476,6 +476,25 @@ namespace Zodiac
                 dest->temp.s64 = iri->arg1->literal.s64;
                 break;
             }
+
+            case IR_OP_ADDROF:
+            {
+                assert(iri->arg1);
+                assert(iri->arg1->kind == IRV_ALLOCL);
+                assert(iri->result);
+                assert(iri->result->kind == IRV_TEMPORARY);
+
+                auto dest_index = iri->result->temp.index;
+                IR_Value* dest = ir_runner_get_local_temporary(runner, dest_index);
+
+                auto source_index = iri->arg1->allocl.index;
+                IR_Value* source = ir_runner_get_local_temporary(runner, dest_index);
+
+                dest->temp.s64 = (int64_t)&source->temp.s64;
+                break;
+            }
+
+            default: assert(false);
         }
     }
 

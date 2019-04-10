@@ -104,7 +104,7 @@ int main(int argc, char** argv)
     fprintf(stderr, "Resolved file: %s\n\n", file_name);
 
     IR_Builder ir_builder;
-    ir_builder_init(&ir_builder);
+    ir_builder_init(&ir_builder, context);
 
     IR_Module ir_module = ir_builder_emit_module(&ir_builder, parse_result.ast_module);
 
