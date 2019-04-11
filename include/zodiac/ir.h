@@ -190,6 +190,7 @@ namespace Zodiac
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement);
     void ir_builder_emit_assign_statement(IR_Builder* ir_builder, AST_Statement* statement);
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
+    IR_Value* ir_builder_emit_load_lit(IR_Builder* ir_builder, IR_Value* literal);
     IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression);
 

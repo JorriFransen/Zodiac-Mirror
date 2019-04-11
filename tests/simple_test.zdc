@@ -1,6 +1,6 @@
 
-#dynamic_link "libc.so.6";
-//#dynamic_link "msvcrt.dll";
+//#dynamic_link "libc.so.6";
+#dynamic_link "msvcrt.dll";
 
 #foreign putchar :: (x: int) -> int;
 #foreign puts :: (string: *u8) -> int;

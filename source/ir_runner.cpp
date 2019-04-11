@@ -393,6 +393,10 @@ namespace Zodiac
             {
                 assert(iri->arg1->kind == IRV_TEMPORARY);
                 assert(iri->arg1->type->kind == AST_TYPE_POINTER);
+
+                AST_Type* element_type = iri->arg1->type->base_type;
+                assert(element_type->base.bit_size % 8 == 0);
+
                 IR_Value* base_value = ir_runner_get_local_temporary(runner, iri->arg1->temp.index);
 
                 uint8_t* base_pointer = base_value->value.string;
@@ -402,10 +406,8 @@ namespace Zodiac
                 assert(iri->arg2->type == Builtin::type_int);
 
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result->temp.index);
-                result_value->value.s64 = *(base_pointer + index_value->value.s64);
-
-                // The actual index/offet should be  based on the base value size
-                assert(false);
+                auto offset = index_value->value.s64 * (element_type->base.bit_size / 8);
+                result_value->value.s64 = *(base_pointer + offset);
                 break;
             }
 
@@ -503,14 +505,48 @@ namespace Zodiac
 
             case IR_OP_STOREP:
             {
-                auto allocl_value_index = iri->arg1->allocl.index;
-                IR_Value* pointer_allocl = ir_runner_get_local_temporary(runner, allocl_value_index);
-                int64_t* pointer_value = (int64_t*)pointer_allocl->value.s64;
+                void* pointer_value = nullptr;
+                IR_Value* source_value = nullptr;
+                AST_Type* dest_type = dest_type = iri->arg1->type->base_type;
 
-                auto source_value_index = iri->arg2->temp.index;
-                IR_Value* source_value = ir_runner_get_local_temporary(runner, source_value_index);
+                if (iri->arg1->kind == IRV_ALLOCL)
+                {
+                    auto allocl_value_index = iri->arg1->allocl.index;
+                    IR_Value* pointer_allocl = ir_runner_get_local_temporary(runner, allocl_value_index);
+                    pointer_value = (void*)pointer_allocl->value.s64;
 
-                *pointer_value = source_value->value.s64;
+                    auto source_value_index = iri->arg2->temp.index;
+                    source_value = ir_runner_get_local_temporary(runner, source_value_index);
+                }
+                else if (iri->arg1->kind == IRV_TEMPORARY)
+                {
+                    IR_Value* pointer_temp = ir_runner_get_local_temporary(runner, iri->arg1->temp.index);
+                    pointer_value = (void*)pointer_temp->value.string;
+
+                    auto source_value_index = iri->arg2->temp.index;
+                    source_value = ir_runner_get_local_temporary(runner, source_value_index);
+                }
+                else assert(false);
+
+                assert(pointer_value);
+                assert(source_value);
+                assert(dest_type);
+                switch (dest_type->base.bit_size)
+                {
+                    case 8:
+                    {
+                        *((uint8_t*)pointer_value) = source_value->value.u8;
+                        break;
+                    }
+
+                    case 64:
+                    {
+                        *((uint64_t*)pointer_value) = source_value->value.s64;
+                        break;
+                    }
+
+                    default: assert(false);
+                }
                 break;
             }
 

@@ -330,6 +330,34 @@ namespace Zodiac
             IR_Value* new_value = ir_builder_emit_expression(ir_builder, statement->assign.expression);
             ir_builder_emit_storep(ir_builder, pointer_alloc, new_value);
         }
+        else if (lvalue_expr->kind == AST_EXPR_SUBSCRIPT)
+        {
+            AST_Expression* base_expression = lvalue_expr->subscript.base_expression;
+            AST_Expression* index_expression = lvalue_expr->subscript.index_expression;
+            assert(base_expression->type->kind == AST_TYPE_POINTER);
+            AST_Type* element_type = base_expression->type->base_type;
+
+            assert(base_expression->type->kind == AST_TYPE_POINTER);
+            assert(base_expression->kind == AST_EXPR_IDENTIFIER);
+            
+            IR_Value* pointer_alloc = ir_builder_value_for_declaration(ir_builder,
+                base_expression->identifier->declaration);
+            assert(pointer_alloc->kind == IRV_ALLOCL);
+            IR_Value* base_pointer_value = ir_builder_emit_loadl(ir_builder, pointer_alloc);
+            IR_Value* index_value = ir_builder_emit_expression(ir_builder, index_expression);
+            IR_Value* element_bit_size_lit = ir_integer_literal(ir_builder, Builtin::type_int, element_type->base.bit_size);
+            IR_Value* element_bit_size = ir_builder_emit_load_lit(ir_builder, element_bit_size_lit);
+            IR_Value* eight_value_lit = ir_integer_literal(ir_builder, Builtin::type_int, 8);
+            IR_Value* eight_value = ir_builder_emit_load_lit(ir_builder, eight_value_lit);
+            IR_Value* element_byte_size = ir_builder_emit_div(ir_builder, element_bit_size, eight_value);
+            IR_Value* offset_value = ir_builder_emit_mul(ir_builder, element_byte_size, index_value);
+            offset_value->type = base_pointer_value->type;
+
+            IR_Value* target_addr = ir_builder_emit_add(ir_builder, base_pointer_value, offset_value);
+            IR_Value* new_value = ir_builder_emit_expression(ir_builder, statement->assign.expression);
+
+            ir_builder_emit_storep(ir_builder, target_addr, new_value);
+        }
         else assert(false);
     }
 
@@ -503,6 +531,19 @@ namespace Zodiac
         }
 
         return nullptr;
+    }
+
+    IR_Value* ir_builder_emit_load_lit(IR_Builder* ir_builder, IR_Value* literal)
+    {
+        assert(ir_builder);
+        assert(literal);
+        assert(literal->kind == IRV_INT_LITERAL);
+
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, literal->type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal, nullptr, result_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result_value;
     }
 
     IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression)
@@ -1021,7 +1062,8 @@ namespace Zodiac
         assert(pointer_allocl);
         assert(new_value);
 
-        assert(pointer_allocl->kind == IRV_ALLOCL);
+        assert(pointer_allocl->kind == IRV_ALLOCL ||
+               (pointer_allocl->kind == IRV_TEMPORARY) && pointer_allocl->type->kind == AST_TYPE_POINTER);
         assert(pointer_allocl->type);
         assert(pointer_allocl->type->kind == AST_TYPE_POINTER);
         assert(new_value->kind == IRV_TEMPORARY ||
