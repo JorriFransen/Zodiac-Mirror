@@ -108,6 +108,20 @@ namespace Zodiac
         return result;
     }
 
+    AST_Expression* ast_subscript_expression_new(Context* context, File_Pos file_pos, AST_Expression* base_expression,
+                                                 AST_Expression* index_expression)
+    {
+        assert(context);
+        assert(base_expression);
+        assert(index_expression);
+
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_SUBSCRIPT);
+        result->subscript.base_expression = base_expression;
+        result->subscript.index_expression = index_expression;
+
+        return result;
+    }
+
     AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos, Atom value)
     {
         assert(context);

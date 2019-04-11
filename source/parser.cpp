@@ -565,22 +565,25 @@ namespace Zodiac
     {
         assert(parser);
 
+        AST_Expression* result = nullptr;
+        auto ft = current_token(parser);
+
         if (is_token(parser, TOK_IDENTIFIER))
         {
             // Identifier, Call
             AST_Identifier* identifier = parse_identifier(parser);
             if (!identifier)
             {
-                return nullptr;
+                assert(false);
             }
 
             if (is_token(parser, TOK_LPAREN))
             {
-                return parse_call_expression(parser, identifier);
+                result = parse_call_expression(parser, identifier);
             }
             else
             {
-                return ast_ident_expression_new(parser->context, identifier->file_pos, identifier);
+                result = ast_ident_expression_new(parser->context, identifier->file_pos, identifier);
             }
         }
         else
@@ -588,14 +591,26 @@ namespace Zodiac
             // Paren expr
             if (match_token(parser, TOK_LPAREN))
             {
-                AST_Expression* result = parse_expression(parser);
+                result = parse_expression(parser);
                 expect_token(parser, TOK_RPAREN);
-                return result;
             }
-
-            // Literal
-            return parse_literal_expression(parser);
+            else
+            {
+                // Literal
+                result = parse_literal_expression(parser);
+            }
         }
+
+        assert(result);
+
+        if (match_token(parser, TOK_LBRACK))
+        {
+            AST_Expression* index_expr = parse_expression(parser);
+            expect_token(parser, TOK_RBRACK);
+            result = ast_subscript_expression_new(parser->context, ft.file_pos, result, index_expr);
+        }
+
+        return result;
     }
 
     static AST_Expression* parse_literal_expression(Parser* parser)

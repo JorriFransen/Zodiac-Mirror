@@ -403,6 +403,19 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_SUBSCRIPT:
+            {
+                AST_Expression* base_expr = expression->subscript.base_expression;
+                result &= try_resolve_expression(resolver, expression->subscript.index_expression, scope);
+                result &= try_resolve_expression(resolver, base_expr, scope);
+                if (result)
+                {
+                    assert(base_expr->type->kind == AST_TYPE_POINTER);
+                    expression->type = base_expr->type->base_type;
+                }
+                break;
+            }
+
             case AST_EXPR_STRING_LITERAL:
             {
                 result &= try_resolve_string_literal_expression(resolver, expression);

@@ -416,7 +416,8 @@ namespace Zodiac
 
             case AST_EXPR_INTEGER_LITERAL:
             {
-                IR_Value* literal = ir_integer_literal(ir_builder, expression->type, (int64_t)expression->integer_literal.u64);
+                IR_Value* literal = ir_integer_literal(ir_builder, expression->type,
+                                                       (int64_t)expression->integer_literal.u64);
 
                 IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
                 IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal, nullptr, result);
@@ -484,6 +485,17 @@ namespace Zodiac
                 IR_Value* num_args_lit = ir_integer_literal(ir_builder, Builtin::type_int,
                                                             BUF_LENGTH(expression->call.arg_expressions));
                 return ir_builder_emit_call(ir_builder, callee_value, num_args_lit);
+                break;
+            }
+
+            case AST_EXPR_SUBSCRIPT:
+            {
+                IR_Value* index_value = ir_builder_emit_expression(ir_builder,
+                                                                   expression->subscript.index_expression);
+                IR_Value* base_value = ir_builder_emit_expression(ir_builder,
+                                                                  expression->subscript.base_expression);
+                return ir_builder_emit_subscript(ir_builder, base_value, index_value);
+                assert(false);
                 break;
             }
 
@@ -882,6 +894,22 @@ namespace Zodiac
         IR_Instruction* iri = ir_instruction_new(ir_builder, op, arg_1,
                                                  num_args, result_value);
         ir_builder_emit_instruction(ir_builder, iri);
+        return result_value;
+    }
+
+    IR_Value* ir_builder_emit_subscript(IR_Builder* ir_builder, IR_Value* base_value, IR_Value* index_value)
+    {
+        assert(ir_builder);
+        assert(base_value);
+        assert(index_value);
+
+        assert(base_value->type->kind == AST_TYPE_POINTER);
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, base_value->type->base_type);
+
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_SUBSCRIPT, base_value, index_value,
+                                                 result_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+
         return result_value;
     }
 
@@ -1427,6 +1455,14 @@ namespace Zodiac
                 {
                     ir_print_value(instruction->arg1);
                 }
+                break;
+            }
+
+            case IR_OP_SUBSCRIPT:
+            {
+                ir_print_value(instruction->arg1);
+                printf(" SUBSCRIPT ");
+                ir_print_value(instruction->arg2);
                 break;
             }
 

@@ -1,5 +1,7 @@
 #include "ir_runner.h"
 
+#include "builtin.h"
+
 #include <inttypes.h>
 
 namespace Zodiac
@@ -384,6 +386,26 @@ namespace Zodiac
                 }
 
                 ir_runner_pop_stack_frame(runner);
+                break;
+            }
+
+            case IR_OP_SUBSCRIPT:
+            {
+                assert(iri->arg1->kind == IRV_TEMPORARY);
+                assert(iri->arg1->type->kind == AST_TYPE_POINTER);
+                IR_Value* base_value = ir_runner_get_local_temporary(runner, iri->arg1->temp.index);
+
+                uint8_t* base_pointer = base_value->value.string;
+
+                assert(iri->arg2->kind == IRV_TEMPORARY);
+                IR_Value* index_value = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
+                assert(iri->arg2->type == Builtin::type_int);
+
+                IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result->temp.index);
+                result_value->value.s64 = *(base_pointer + index_value->value.s64);
+
+                // The actual index/offet should be  based on the base value size
+                assert(false);
                 break;
             }
 

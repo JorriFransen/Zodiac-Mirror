@@ -1,10 +1,10 @@
 
-// #dynamic_link "libc.so.6";
-#dynamic_link "msvcrt.dll";
+#dynamic_link "libc.so.6";
+// #dynamic_link "msvcrt.dll";
 
 #foreign putchar :: (c: int) -> int;
 #foreign getchar :: () -> int;
-#foreign printf :: () -> void;
+#foreign puts :: (string: *u8) -> int;
 
 newline :: () -> void { putchar(10); }
 
@@ -37,6 +37,10 @@ pointer_test :: () -> void
     c : u8 = 'c';
     putchar(c);
     newline();
+
+    hello_zodiac := "Hello zodiac!";
+    puts(hello_zodiac);
+    putchar(hello_zodiac[1]);
 
     return <x_ptr;
 }

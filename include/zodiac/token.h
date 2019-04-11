@@ -29,6 +29,8 @@ namespace Zodiac
         TOK_RPAREN,     // )
         TOK_LBRACE,     // {
         TOK_RBRACE,     // }
+        TOK_LBRACK,     // [
+        TOK_RBRACK,     // ]
 
         TOK_RARROW,     // ->
 
