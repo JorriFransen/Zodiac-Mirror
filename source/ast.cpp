@@ -354,10 +354,12 @@ namespace Zodiac
         return result;
     }
 
-    AST_Statement* ast_for_statement_new(Context* context, File_Pos file_pos, AST_Statement* init_stmt,
-        AST_Expression* cond_expr, AST_Statement* step_stmt, AST_Statement* body_stmt)
+    AST_Statement* ast_for_statement_new(Context* context, File_Pos file_pos, AST_Scope* scope,
+                                         AST_Statement* init_stmt, AST_Expression* cond_expr,
+                                         AST_Statement* step_stmt, AST_Statement* body_stmt)
     {
         assert(context);
+        assert(scope);
         assert(init_stmt);
         assert(cond_expr);
         assert(step_stmt);
@@ -367,6 +369,7 @@ namespace Zodiac
         result->kind = AST_STMT_FOR;
         result->file_pos = file_pos;
 
+        result->for_stmt.scope = scope;
         result->for_stmt.init_stmt = init_stmt;
         result->for_stmt.cond_expr = cond_expr;
         result->for_stmt.step_stmt = step_stmt;

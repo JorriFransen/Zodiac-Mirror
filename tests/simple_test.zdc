@@ -52,6 +52,11 @@ loop :: () -> void
         {
             printf("%ld,%ld  ", x, y);
         }
+
+        printf("%ld", x);
         putchar(10);
     }
+
+    printf("%ld", y);
+    putchar(10);
 }

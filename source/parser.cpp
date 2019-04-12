@@ -459,7 +459,9 @@ namespace Zodiac
         expect_token(parser, TOK_KW_FOR);
         expect_token(parser, TOK_LPAREN);
 
-        AST_Statement* for_decl_statement = parse_statement(parser, scope);
+        AST_Scope* for_scope = ast_scope_new(parser->context, scope);
+
+        AST_Statement* for_decl_statement = parse_statement(parser, for_scope);
         if (!for_decl_statement)
         {
             return nullptr;
@@ -475,7 +477,7 @@ namespace Zodiac
 
         assert(expect_token(parser, TOK_SEMICOLON));
 
-        AST_Statement* for_step_stmt = parse_statement(parser, scope);
+        AST_Statement* for_step_stmt = parse_statement(parser, for_scope);
         if (!for_step_stmt)
         {
             return nullptr;
@@ -483,13 +485,14 @@ namespace Zodiac
 
         expect_token(parser, TOK_RPAREN);
 
-        AST_Statement* for_body_statement = parse_statement(parser, scope);
+        AST_Statement* for_body_statement = parse_statement(parser, for_scope);
         if (!for_body_statement)
         {
             return nullptr;
         }
-        return ast_for_statement_new(parser->context, for_tok.file_pos, for_decl_statement,
-            for_cond_expr, for_step_stmt, for_body_statement);
+        return ast_for_statement_new(parser->context, for_tok.file_pos, for_scope,
+                                     for_decl_statement, for_cond_expr, for_step_stmt,
+                                     for_body_statement);
 
     }
 

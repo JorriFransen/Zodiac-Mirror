@@ -306,10 +306,11 @@ namespace Zodiac
 
             case AST_STMT_FOR:
             {
-                result &= try_resolve_statement(resolver, statement->for_stmt.init_stmt, scope);
-                result &= try_resolve_expression(resolver, statement->for_stmt.cond_expr, scope);
-                result &= try_resolve_statement(resolver, statement->for_stmt.step_stmt, scope);
-                result &= try_resolve_statement(resolver, statement->for_stmt.body_stmt, scope);
+                AST_Scope* for_scope = statement->for_stmt.scope;
+                result &= try_resolve_statement(resolver, statement->for_stmt.init_stmt, for_scope);
+                result &= try_resolve_expression(resolver, statement->for_stmt.cond_expr, for_scope);
+                result &= try_resolve_statement(resolver, statement->for_stmt.step_stmt, for_scope);
+                result &= try_resolve_statement(resolver, statement->for_stmt.body_stmt, for_scope);
                 break;
             }
 
