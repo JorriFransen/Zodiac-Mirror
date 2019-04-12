@@ -40,5 +40,20 @@ loop :: () -> void
         i = i - 1;
     }
 
-    puts("test");
+    for (j := 0; j < 5; j = j + 1)
+    {
+        print_digit(j);
+    }
+
+    for (y := 0; y < 10; y = y + 1)
+    {
+        for (x := 0; x < 10; x = x + 1)
+        {
+            putchar(x + 48);
+            putchar(',');
+            putchar(y + 48);
+            putchar(' ');
+        }
+        putchar(10);
+    }
 }

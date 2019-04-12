@@ -272,6 +272,10 @@ namespace Zodiac
                 return parse_while_statement(parser, scope);
                 break;
 
+            case TOK_KW_FOR:
+                return parse_for_statement(parser, scope);
+                break;
+
             default: break;
         }
 
@@ -307,7 +311,7 @@ namespace Zodiac
         else if (match_token(parser, TOK_EQ))
         {
             AST_Expression* assign_expression = parse_expression(parser);
-            expect_token(parser, TOK_SEMICOLON);
+            match_token(parser, TOK_SEMICOLON);
             return ast_assign_statement_new(parser->context, ft.file_pos, lvalue_expr,
                                             assign_expression);
         }
@@ -429,6 +433,49 @@ namespace Zodiac
 
         return ast_while_statement_new(parser->context, while_tok.file_pos, while_condition_expr,
                                        while_body_statement);
+    }
+
+    static AST_Statement* parse_for_statement(Parser* parser, AST_Scope* scope)
+    {
+        assert(parser);
+        assert(scope);
+
+        auto for_tok = current_token(parser);
+        expect_token(parser, TOK_KW_FOR);
+        expect_token(parser, TOK_LPAREN);
+
+        AST_Statement* for_decl_statement = parse_statement(parser, scope);
+        if (!for_decl_statement)
+        {
+            return nullptr;
+        }
+
+        assert(for_decl_statement->kind == AST_STMT_DECLARATION);
+
+        AST_Expression* for_cond_expr = parse_expression(parser);
+        if (!for_cond_expr)
+        {
+            return nullptr;
+        }
+
+        assert(expect_token(parser, TOK_SEMICOLON));
+
+        AST_Statement* for_step_stmt = parse_statement(parser, scope);
+        if (!for_step_stmt)
+        {
+            return nullptr;
+        }
+
+        expect_token(parser, TOK_RPAREN);
+
+        AST_Statement* for_body_statement = parse_statement(parser, scope);
+        if (!for_body_statement)
+        {
+            return nullptr;
+        }
+        return ast_for_statement_new(parser->context, for_tok.file_pos, for_decl_statement,
+            for_cond_expr, for_step_stmt, for_body_statement);
+
     }
 
     static AST_Expression* parse_expression(Parser* parser)
@@ -647,6 +694,8 @@ namespace Zodiac
             default: assert(false);
         }
 
+        assert(false);
+        return nullptr;
     }
 
     static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier)

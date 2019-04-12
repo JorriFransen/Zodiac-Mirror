@@ -304,6 +304,15 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_FOR:
+            {
+                result &= try_resolve_statement(resolver, statement->for_stmt.init_stmt, scope);
+                result &= try_resolve_expression(resolver, statement->for_stmt.cond_expr, scope);
+                result &= try_resolve_statement(resolver, statement->for_stmt.step_stmt, scope);
+                result &= try_resolve_statement(resolver, statement->for_stmt.body_stmt, scope);
+                break;
+            }
+
             default:
                 assert(false);
                 result = false;

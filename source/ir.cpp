@@ -133,14 +133,16 @@ namespace Zodiac
                     auto insert_block = ir_builder->insert_block;
                     auto first_instruction = insert_block->first_instruction;
                     auto last_instruction = insert_block->last_instruction;
-                    if (!first_instruction && insert_block->previous)
-                    {
-                        //@TODO: Free list
-                        insert_block->previous->next = nullptr;
-                        insert_block->previous = nullptr;
-                    }
-                    else if (!last_instruction ||
-                            !ir_instruction_is_terminator(last_instruction->op))
+                    //if (!first_instruction && insert_block->previous)
+                    //{
+                    //    //@TODO: Free list
+                    //    insert_block->previous->next = nullptr;
+                    //    insert_block->previous = nullptr;
+                    //}
+                    //else if (!last_instruction ||
+                    //        !ir_instruction_is_terminator(last_instruction->op))
+                    if (!last_instruction ||
+                        !ir_instruction_is_terminator(last_instruction->op))
                     {
                         ir_builder_emit_return(ir_builder, nullptr);
                     }
@@ -267,7 +269,7 @@ namespace Zodiac
                 IR_Function* cur_func = ir_builder->current_function;
                 IR_Value* while_cond_block_value = ir_builder_create_block(ir_builder, "while_cond", cur_func);
                 IR_Value* while_body_block_value = ir_builder_create_block(ir_builder, "while_body", cur_func);
-                IR_Value* post_while_block_value = ir_builder_create_block(ir_builder, "post_while", cur_func);
+                IR_Value* post_while_block_value = ir_builder_create_block(ir_builder, "post_while");
 
                 ir_builder_emit_jmp(ir_builder, while_cond_block_value);
 
@@ -280,7 +282,33 @@ namespace Zodiac
                 ir_builder_emit_statement(ir_builder, statement->while_stmt.body_stmt);
                 ir_builder_emit_jmp(ir_builder, while_cond_block_value);
 
+                ir_builder_append_block(ir_builder, cur_func, post_while_block_value->block);
                 ir_builder_set_insert_block(ir_builder, post_while_block_value);
+                break;
+            }
+
+            case AST_STMT_FOR:
+            {
+                IR_Function* cur_func = ir_builder->current_function;
+                IR_Value* for_cond_block_value = ir_builder_create_block(ir_builder, "for_cond", cur_func);
+                IR_Value* for_body_block_value = ir_builder_create_block(ir_builder, "for_body", cur_func);
+                IR_Value* post_for_block_value = ir_builder_create_block(ir_builder, "post_for");
+
+                ir_builder_emit_statement(ir_builder, statement->for_stmt.init_stmt);
+                ir_builder_emit_jmp(ir_builder, for_cond_block_value);
+
+                ir_builder_set_insert_block(ir_builder, for_cond_block_value);
+                IR_Value* cond_value = ir_builder_emit_expression(ir_builder, statement->for_stmt.cond_expr);
+                ir_builder_emit_jmp_if(ir_builder, cond_value, for_body_block_value);
+                ir_builder_emit_jmp(ir_builder, post_for_block_value);
+
+                ir_builder_set_insert_block(ir_builder, for_body_block_value);
+                ir_builder_emit_statement(ir_builder, statement->for_stmt.body_stmt);
+                ir_builder_emit_statement(ir_builder, statement->for_stmt.step_stmt);
+                ir_builder_emit_jmp(ir_builder, for_cond_block_value);
+
+                ir_builder_append_block(ir_builder, cur_func, post_for_block_value->block);
+                ir_builder_set_insert_block(ir_builder, post_for_block_value);
                 break;
             }
 

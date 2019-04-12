@@ -352,6 +352,27 @@ namespace Zodiac
         return result;
     }
 
+    AST_Statement* ast_for_statement_new(Context* context, File_Pos file_pos, AST_Statement* init_stmt,
+        AST_Expression* cond_expr, AST_Statement* step_stmt, AST_Statement* body_stmt)
+    {
+        assert(context);
+        assert(init_stmt);
+        assert(cond_expr);
+        assert(step_stmt);
+        assert(body_stmt);
+
+        AST_Statement* result = arena_alloc(context->arena, AST_Statement);
+        result->kind = AST_STMT_FOR;
+        result->file_pos = file_pos;
+
+        result->for_stmt.init_stmt = init_stmt;
+        result->for_stmt.cond_expr = cond_expr;
+        result->for_stmt.step_stmt = step_stmt;
+        result->for_stmt.body_stmt = body_stmt;
+
+        return result;
+    }
+
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags)
     {
         assert(context);

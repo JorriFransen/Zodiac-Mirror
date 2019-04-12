@@ -46,6 +46,7 @@ namespace Zodiac
         "TOK_KW_FOREIGN",
         "TOK_KW_DYN_LINK",
         "TOK_KW_WHILE",
+        "TOK_KW_FOR",
 
         "TOK_COUNT",
     };
