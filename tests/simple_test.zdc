@@ -4,6 +4,7 @@
 
 #foreign putchar :: (x: int) -> int;
 #foreign puts :: (string: *u8) -> int;
+#foreign printf :: (format: *u8, ...) ->int;
 
 newline :: () -> void { putchar(10); }
 
@@ -49,10 +50,11 @@ loop :: () -> void
     {
         for (x := 0; x < 10; x = x + 1)
         {
-            putchar(x + 48);
-            putchar(',');
-            putchar(y + 48);
-            putchar(' ');
+            // putchar(x + 48);
+            // putchar(',');
+            // putchar(y + 48);
+            // putchar(' ');
+            printf("%ld,%ld\n", x, y);
         }
         putchar(10);
     }
