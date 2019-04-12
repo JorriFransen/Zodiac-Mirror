@@ -33,6 +33,7 @@ namespace Zodiac
         TOK_RBRACK,     // ]
 
         TOK_RARROW,     // ->
+        TOK_ELLIPSIS,   // ...
 
         TOK_IDENTIFIER,
         TOK_INTEGER,

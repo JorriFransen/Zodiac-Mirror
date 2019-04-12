@@ -125,6 +125,10 @@ namespace Zodiac
         if (is_token(parser, TOK_COLON))
         {
             result = parse_constant_declaration(parser, identifier, type_spec, scope);
+            if (!result)
+            {
+                return nullptr;
+            }
         }
         else
         {
@@ -164,19 +168,30 @@ namespace Zodiac
 
         BUF(AST_Declaration*) arg_decls = nullptr;
         expect_token(parser, TOK_LPAREN);
+        bool is_vararg = false;
         while (!match_token(parser, TOK_RPAREN))
         {
+            // No arguments allowed after this
+            assert(!is_vararg);
+
             if (arg_decls)
             {
                 expect_token(parser, TOK_COMMA);
             }
 
-            AST_Declaration* decl = parse_declaration(parser, scope, false, nullptr, AST_DECL_LOC_ARGUMENT);
-            if (!decl)
+            if (match_token(parser, TOK_ELLIPSIS))
             {
-                return nullptr;
+                is_vararg = true;
             }
-            BUF_PUSH(arg_decls, decl);
+            else
+            {
+                AST_Declaration* decl = parse_declaration(parser, scope, false, nullptr, AST_DECL_LOC_ARGUMENT);
+                if (!decl)
+                {
+                    return nullptr;
+                }
+                BUF_PUSH(arg_decls, decl);
+            }
         }
 
         AST_Type_Spec* return_type_spec = nullptr;
@@ -198,8 +213,8 @@ namespace Zodiac
         }
 
         AST_Declaration* result = ast_function_declaration_new(parser->context, fp, identifier,
-                                                               arg_decls, return_type_spec, body_block,
-                                                               argument_scope);
+                                                               arg_decls, is_vararg, return_type_spec,
+                                                               body_block, argument_scope);
         return result;
     }
 

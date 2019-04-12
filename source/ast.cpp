@@ -154,6 +154,7 @@ namespace Zodiac
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
+                                                  bool is_vararg,
                                                   AST_Type_Spec* return_type_spec,
                                                   AST_Statement* body_block,
                                                   AST_Scope* argument_scope)
@@ -170,6 +171,7 @@ namespace Zodiac
         result->gen_data = nullptr;
 
         result->function.args = args;
+        result->function.is_vararg = is_vararg;
         result->function.locals = nullptr;
         result->function.return_type_spec = return_type_spec;
         result->function.return_type = nullptr;

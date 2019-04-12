@@ -205,6 +205,7 @@ namespace Zodiac
     struct AST_Function_Declaration
     {
         BUF(AST_Declaration*) args = nullptr;
+        bool is_vararg = false;
         BUF(AST_Declaration*) locals = nullptr;
         AST_Type_Spec* return_type_spec = nullptr;
         AST_Type* return_type = nullptr;
@@ -356,6 +357,7 @@ namespace Zodiac
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
+                                                  bool is_vararg,
                                                   AST_Type_Spec* return_type_spec,
                                                   AST_Statement* body_block,
                                                   AST_Scope* argument_scope);
