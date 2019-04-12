@@ -339,17 +339,18 @@ namespace Zodiac
 
             assert(base_expression->type->kind == AST_TYPE_POINTER);
             assert(base_expression->kind == AST_EXPR_IDENTIFIER);
-            
+
             IR_Value* pointer_alloc = ir_builder_value_for_declaration(ir_builder,
                 base_expression->identifier->declaration);
             assert(pointer_alloc->kind == IRV_ALLOCL);
             IR_Value* base_pointer_value = ir_builder_emit_loadl(ir_builder, pointer_alloc);
+
             IR_Value* index_value = ir_builder_emit_expression(ir_builder, index_expression);
-            IR_Value* element_bit_size_lit = ir_integer_literal(ir_builder, Builtin::type_int, element_type->base.bit_size);
-            IR_Value* element_bit_size = ir_builder_emit_load_lit(ir_builder, element_bit_size_lit);
-            IR_Value* eight_value_lit = ir_integer_literal(ir_builder, Builtin::type_int, 8);
-            IR_Value* eight_value = ir_builder_emit_load_lit(ir_builder, eight_value_lit);
-            IR_Value* element_byte_size = ir_builder_emit_div(ir_builder, element_bit_size, eight_value);
+
+            IR_Value* element_byte_size_lit = ir_integer_literal(ir_builder, Builtin::type_int,
+                                                                 element_type->base.bit_size / 8);
+            IR_Value* element_byte_size = ir_builder_emit_load_lit(ir_builder, element_byte_size_lit);
+
             IR_Value* offset_value = ir_builder_emit_mul(ir_builder, element_byte_size, index_value);
             offset_value->type = base_pointer_value->type;
 
