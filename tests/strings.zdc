@@ -48,5 +48,9 @@ pointer_test :: () -> void
 
     puts(hello_zodiac);
 
+    z_ptr := *hello_zodiac[5];
+    <z_ptr = 'z';
+    puts(hello_zodiac);
+
     return <x_ptr;
 }

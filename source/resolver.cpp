@@ -630,8 +630,8 @@ namespace Zodiac
 
                 case AST_UNOP_ADDROF:
                 {
-                    assert(operand_expr->kind == AST_EXPR_IDENTIFIER);
-                    assert(operand_expr->type == Builtin::type_int);
+                    assert(operand_expr->kind == AST_EXPR_IDENTIFIER ||
+                           operand_expr->kind == AST_EXPR_SUBSCRIPT);
                     expression->type = ast_find_or_create_pointer_type(resolver->context,
                                                                        resolver->module,
                                                                        operand_expr->type);

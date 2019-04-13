@@ -2,6 +2,8 @@
  - normal types are not pushed in the per module type table. (only pointer types?)
    
  - Conditional compilation
+   
+* Arrays [/]
 
 * Pointers [1/4]
    - [X] Basic pointers
@@ -16,18 +18,21 @@
    - [X] Stack command for pushing arguments for foreign functions
    - [X] Varargs functions
     
-* Statements [2/4]
+* Statements [2/5]
    - [X] While
    - [X] For
    - [ ] Switch
    - [ ] break
+   - [ ] defer
 
-* IR [1/8]
+* IR [1/10]
    - [X] Argument count should be an argument for function calls
    - [ ] Cleanup the gendata situation
+   - [ ] Cleanup lvalue expression generation
    - [ ] Use atoms where possible
    - [ ] Make block names unique with a counter
    - [ ] Free list for blocks (We don't have any free ones right now?
+   - [ ] Manage stack frame memory
    - [ ] Prevent functions with the same name
    - [ ] Emit the number of argument for function calls as a u64 instead of a s64
           This is done with s64 right now because that's the only literal type we

@@ -16,12 +16,15 @@ print_digit :: (digit: int) -> void
 
 main :: () -> int
 {
-    c : u8 = 'c';
-    string : *u8 = "Hello Zodiac!!!";
-    puts(string);
-    puts("test");
-
     loop();
+    array_test();
+}
+
+array_test :: () -> void
+{
+    printf("array_test()\n");
+
+    // int_array : [5]int = { 11, 22, 33, 44, 55 };
 }
 
 loop :: () -> void
@@ -50,7 +53,7 @@ loop :: () -> void
     {
         for (x := 0; x < 10; x = x + 1)
         {
-            printf("%ld,%ld\t", x, y);
+            printf("%ld,%ld  ", x, y);
         }
 
         printf("\n");

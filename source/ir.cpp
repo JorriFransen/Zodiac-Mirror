@@ -579,19 +579,42 @@ namespace Zodiac
     {
         assert(ir_builder);
         assert(expression);
-        assert(expression->kind == AST_EXPR_IDENTIFIER);
 
-        IR_Value* expression_value = ir_builder_value_for_declaration(ir_builder, expression->identifier->declaration);
-        assert(expression_value);
+        if (expression->kind == AST_EXPR_IDENTIFIER)
+        {
+            IR_Value* expression_value = ir_builder_value_for_declaration(ir_builder, expression->identifier->declaration);
+            assert(expression_value);
 
-        AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context, ir_builder->ast_module,
-                                                                expression->type);
-        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
+            AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context, ir_builder->ast_module,
+                                                                    expression->type);
+            IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
 
-        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ADDROF, expression_value, nullptr, result_value);
-        ir_builder_emit_instruction(ir_builder, iri);
+            IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ADDROF, expression_value, nullptr, result_value);
+            ir_builder_emit_instruction(ir_builder, iri);
 
-        return result_value;
+            return result_value;
+        }
+        else if (expression->kind == AST_EXPR_SUBSCRIPT)
+        {
+            AST_Expression* base_expr = expression->subscript.base_expression;
+            assert(base_expr->type->kind == AST_TYPE_POINTER);
+            AST_Type* element_type = base_expr->type->base_type;
+            assert(base_expr->kind == AST_EXPR_IDENTIFIER);
+            IR_Value* base_pointer_allocl = ir_builder_value_for_declaration(ir_builder, base_expr->identifier->declaration);
+            IR_Value* base_pointer_value = ir_builder_emit_loadl(ir_builder, base_pointer_allocl);
+
+            IR_Value* index_value = ir_builder_emit_expression(ir_builder, expression->subscript.index_expression);
+            IR_Value* element_byte_size_lit = ir_integer_literal(ir_builder, Builtin::type_int, element_type->base.bit_size / 8);
+            IR_Value* element_byte_size = ir_builder_emit_load_lit(ir_builder, element_byte_size_lit);
+            IR_Value* offset_value = ir_builder_emit_mul(ir_builder, index_value, element_byte_size);
+            offset_value->type = base_pointer_value->type;
+
+            IR_Value* result_value = ir_builder_emit_add(ir_builder, base_pointer_value, offset_value);
+            return result_value;
+        }
+
+        assert(false);
+        return nullptr;
     }
 
     IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression)
