@@ -42,6 +42,8 @@ namespace Zodiac
         AST_EXPR_STRING_LITERAL,
         AST_EXPR_INTEGER_LITERAL,
         AST_EXPR_CHAR_LITERAL,
+        AST_EXPR_COMPOUND_LITERAL,
+        AST_EXPR_ARRAY_LENGTH,
     };
 
     enum AST_Binop_Kind
@@ -124,6 +126,16 @@ namespace Zodiac
             {
                 char c;
             } character_literal;
+
+            struct
+            {
+                BUF(AST_Expression*) expressions;
+            } compound_literal;
+
+            struct
+            {
+                AST_Expression* ident_expr;
+            } array_length;
         };
     };
 
@@ -271,6 +283,7 @@ namespace Zodiac
     {
         AST_TYPE_BASE,
         AST_TYPE_POINTER,
+        AST_TYPE_STATIC_ARRAY,
     };
 
     typedef uint64_t AST_Type_Flags;
@@ -294,7 +307,16 @@ namespace Zodiac
                 uint64_t bit_size = 0;
             } base;
 
-            AST_Type* base_type;
+            struct
+            {
+                AST_Type* base;
+            } pointer;
+
+            struct
+            {
+                uint64_t count;
+                AST_Type* base;
+            } static_array;
         };
     };
 
@@ -302,6 +324,7 @@ namespace Zodiac
     {
         AST_TYPE_SPEC_IDENT,
         AST_TYPE_SPEC_POINTER,
+        AST_TYPE_SPEC_STATIC_ARRAY,
     };
 
     struct AST_Type_Spec
@@ -312,7 +335,17 @@ namespace Zodiac
         union
         {
             AST_Identifier* identifier;
-            AST_Type_Spec* base_type_spec;
+
+            struct
+            {
+                AST_Type_Spec* base;
+            } pointer;
+
+            struct
+            {
+                AST_Expression* count_expr;
+                AST_Type_Spec* base;
+            } static_array;
         };
     };
 
@@ -354,6 +387,9 @@ namespace Zodiac
     AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos, Atom value);
     AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos, uint64_t value);
     AST_Expression* ast_character_literal_expression_new(Context* context, File_Pos file_pos, char value);
+    AST_Expression* ast_compound_literal_expression_new(Context* context, File_Pos file_pos,
+                                                        BUF(AST_Expression*) expressions);
+    AST_Expression* ast_array_length_expression_new(Context* context, File_Pos file_pos, AST_Expression* ident_expr);
 
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
@@ -388,12 +424,17 @@ namespace Zodiac
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags);
     AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size);
     AST_Type* ast_type_pointer_new(Context* context, AST_Type* base_type);
+    AST_Type* ast_type_static_array_new(Context* context, AST_Type* base_type, uint64_t count);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind);
     AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos, AST_Identifier* identifier);
     AST_Type_Spec* ast_type_spec_pointer_new(Context* context, File_Pos file_pos, AST_Type_Spec* base_type_spec);
+    AST_Type_Spec* ast_type_spec_static_array_new(Context* context, File_Pos file_pos, AST_Expression* count_expr,
+                                                  AST_Type_Spec* base_type_spec);
 
     AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope);
 
     AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Module* module, AST_Type* base_type);
+    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module, AST_Type* base_type, AST_Expression* count_expr);
+    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module, AST_Type* base_type, uint64_t count);
 }

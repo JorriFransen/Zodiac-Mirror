@@ -651,6 +651,10 @@ namespace Zodiac
                 result = ast_ident_expression_new(parser->context, identifier->file_pos, identifier);
             }
         }
+        else if (is_token(parser, TOK_KW_ARRAY_LENGTH))
+        {
+            result = parse_array_length_expression(parser);
+        }
         else
         {
             // Paren expr
@@ -709,11 +713,55 @@ namespace Zodiac
                 break;
             }
 
+            case TOK_LBRACE:
+            {
+                return parse_compound_literal_expression(parser);
+                break;
+            }
+
             default: assert(false);
         }
 
         assert(false);
         return nullptr;
+    }
+
+    static AST_Expression* parse_compound_literal_expression(Parser* parser)
+    {
+        assert(parser);
+
+        auto ft = current_token(parser);
+        expect_token(parser, TOK_LBRACE);
+
+        BUF(AST_Expression*) compound_expressions = nullptr;
+
+        while (!match_token(parser, TOK_RBRACE))
+        {
+            if (compound_expressions)
+            {
+                expect_token(parser, TOK_COMMA);
+            }
+
+            AST_Expression* compound_expression = parse_expression(parser);
+            BUF_PUSH(compound_expressions, compound_expression);
+        }
+
+        return ast_compound_literal_expression_new(parser->context, ft.file_pos, compound_expressions);
+    }
+
+    static AST_Expression* parse_array_length_expression(Parser* parser)
+    {
+        assert(parser);
+
+        auto ft = current_token(parser);
+
+        expect_token(parser, TOK_KW_ARRAY_LENGTH);
+        expect_token(parser, TOK_LPAREN);
+        AST_Expression* ident_expr = parse_expression(parser);
+        assert(ident_expr->kind == AST_EXPR_IDENTIFIER);
+        expect_token(parser, TOK_RPAREN);
+
+        return ast_array_length_expression_new(parser->context, ft.file_pos, ident_expr);
     }
 
     static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier)
@@ -754,6 +802,14 @@ namespace Zodiac
         {
             AST_Type_Spec* base_type_spec = parse_type_spec(parser);
             return ast_type_spec_pointer_new(parser->context, ft.file_pos, base_type_spec);
+        }
+        else if (match_token(parser, TOK_LBRACK))
+        {
+            AST_Expression* count_expr = parse_expression(parser);
+            assert(count_expr->kind == AST_EXPR_INTEGER_LITERAL);
+            expect_token(parser, TOK_RBRACK);
+            AST_Type_Spec* base_type_spec = parse_type_spec(parser);
+            return ast_type_spec_static_array_new(parser->context, ft.file_pos, count_expr, base_type_spec);
         }
         else
         {

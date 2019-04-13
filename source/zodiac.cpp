@@ -38,6 +38,7 @@ namespace Zodiac
         DEFINE_KW("dynamic_link", TOK_KW_DYN_LINK);
         DEFINE_KW("while", TOK_KW_WHILE);
         DEFINE_KW("for", TOK_KW_FOR);
+        DEFINE_KW("array_length", TOK_KW_ARRAY_LENGTH);
     }
 
 #undef DEFINE_KW

@@ -151,6 +151,24 @@ namespace Zodiac
         return result;
     }
 
+    AST_Expression* ast_compound_literal_expression_new(Context* context, File_Pos file_pos, BUF(AST_Expression*) expressions)
+    {
+        assert(context);
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_COMPOUND_LITERAL);
+        result->compound_literal.expressions = expressions;
+        return result;
+    }
+
+    AST_Expression* ast_array_length_expression_new(Context* context, File_Pos file_pos, AST_Expression* ident_expr)
+    {
+        assert(context);
+        assert(ident_expr);
+
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_ARRAY_LENGTH);
+        result->array_length.ident_expr = ident_expr;
+        return result;
+    }
+
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
@@ -406,7 +424,19 @@ namespace Zodiac
         assert(base_type);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_POINTER, AST_TYPE_FLAG_NONE);
-        result->base_type = base_type;
+        result->pointer.base = base_type;
+
+        return result;
+    }
+
+    AST_Type* ast_type_static_array_new(Context* context, AST_Type* base_type, uint64_t count)
+    {
+        assert(context);
+        assert(base_type);
+
+        AST_Type* result = ast_type_new(context, AST_TYPE_STATIC_ARRAY, AST_TYPE_FLAG_NONE);
+        result->static_array.base = base_type;
+        result->static_array.count = count;
 
         return result;
     }
@@ -439,7 +469,21 @@ namespace Zodiac
         assert(base_type_spec);
 
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_POINTER);
-        result->base_type_spec = base_type_spec;
+        result->pointer.base = base_type_spec;
+
+        return result;
+    }
+
+    AST_Type_Spec* ast_type_spec_static_array_new(Context* context, File_Pos file_pos, AST_Expression* count_expr,
+                                                  AST_Type_Spec* base_type_spec)
+    {
+        assert(context);
+        assert(count_expr);
+        assert(base_type_spec);
+
+        AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_STATIC_ARRAY);
+        result->static_array.count_expr = count_expr;
+        result->static_array.base = base_type_spec;
 
         return result;
     }
@@ -466,7 +510,7 @@ namespace Zodiac
             AST_Type* ex_type = module->types[i];
             if (ex_type->kind == AST_TYPE_POINTER)
             {
-                if (ex_type->base_type == base_type)
+                if (ex_type->pointer.base == base_type)
                 {
                     return ex_type;
                 }
@@ -476,5 +520,38 @@ namespace Zodiac
         AST_Type* pointer_type = ast_type_pointer_new(context, base_type);
         BUF_PUSH(module->types, pointer_type);
         return pointer_type;
+    }
+
+    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module, AST_Type* base_type, AST_Expression* count_expr)
+    {
+        assert(context);
+        assert(module);
+        assert(base_type);
+        assert(count_expr);
+        assert(count_expr->kind == AST_EXPR_INTEGER_LITERAL);
+
+        return ast_find_or_create_array_type(context, module, base_type, count_expr->integer_literal.u64);
+    }
+
+    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module, AST_Type* base_type, uint64_t count)
+    {
+        assert(context);
+        assert(module);
+        assert(base_type);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(module->types); i++)
+        {
+            AST_Type* ex_type = module->types[i];
+            if (ex_type->kind == AST_TYPE_STATIC_ARRAY &&
+                ex_type->static_array.base == base_type &&\
+                ex_type->static_array.count == count)
+            {
+                return ex_type;
+            }
+        }
+
+        AST_Type* array_type = ast_type_static_array_new(context, base_type, count);
+        BUF_PUSH(module->types, array_type);
+        return array_type;
     }
 }

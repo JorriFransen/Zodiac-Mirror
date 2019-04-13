@@ -421,7 +421,7 @@ namespace Zodiac
                 if (result)
                 {
                     assert(base_expr->type->kind == AST_TYPE_POINTER);
-                    expression->type = base_expr->type->base_type;
+                    expression->type = base_expr->type->pointer.base;
                 }
                 break;
             }
@@ -441,6 +441,18 @@ namespace Zodiac
             case AST_EXPR_CHAR_LITERAL:
             {
                 result &= try_resolve_character_literal_expression(resolver, expression);
+                break;
+            }
+
+            case AST_EXPR_COMPOUND_LITERAL:
+            {
+                result &= try_resolve_compound_literal_expression(resolver, expression, scope);
+                break;
+            }
+
+            case AST_EXPR_ARRAY_LENGTH:
+            {
+                result &= try_resolve_array_length_expression(resolver, expression, scope);
                 break;
             }
 
@@ -562,6 +574,65 @@ namespace Zodiac
         return true;
     }
 
+    static bool try_resolve_compound_literal_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(expression);
+        assert(expression->kind == AST_EXPR_COMPOUND_LITERAL);
+        assert(scope);
+
+        bool result = true;
+        bool same_type = true;
+        AST_Type* first_type = nullptr;
+
+        for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions); i++)
+        {
+            AST_Expression* expr = expression->compound_literal.expressions[i];
+            result &= try_resolve_expression(resolver, expr, scope);
+
+            if (result)
+            {
+                if (!first_type)
+                {
+                    first_type = expr->type;
+                }
+
+                same_type = first_type == expr->type;
+
+                assert(same_type);
+            }
+        }
+
+        assert(same_type);
+
+        expression->type = ast_find_or_create_array_type(resolver->context, resolver->module, first_type,
+                                                         BUF_LENGTH(expression->compound_literal.expressions));
+
+        return result;
+    }
+
+    static bool try_resolve_array_length_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(expression);
+        assert(scope);
+
+        bool result = true;
+
+        AST_Expression* ident_expr = expression->array_length.ident_expr;
+        result &= try_resolve_expression(resolver, ident_expr, scope);
+        if (result)
+        {
+            AST_Declaration* array_decl = ident_expr->identifier->declaration;
+            assert(array_decl);
+            assert(array_decl->kind == AST_DECL_MUTABLE);
+            assert(array_decl->mutable_decl.type);
+            expression->type = Builtin::type_int;
+        }
+
+        return result;
+    }
+
     static bool try_resolve_identifier_expression(Resolver* resolver, AST_Expression* expression,
                                                   AST_Scope* scope)
     {
@@ -642,7 +713,7 @@ namespace Zodiac
                 {
                     assert(operand_expr->kind == AST_EXPR_IDENTIFIER);
                     assert(operand_expr->type->kind == AST_TYPE_POINTER);
-                    expression->type = operand_expr->type->base_type;
+                    expression->type = operand_expr->type->pointer.base;
                     break;
                 }
 
@@ -719,13 +790,32 @@ namespace Zodiac
             case AST_TYPE_SPEC_POINTER:
             {
                 AST_Type* base_type = nullptr;
-                bool base_result = try_resolve_type_spec(resolver, type_spec->base_type_spec, &base_type,
+                bool base_result = try_resolve_type_spec(resolver, type_spec->pointer.base, &base_type,
                                                          scope);
                 if (base_result)
                 {
                     AST_Type* pointer_type = ast_find_or_create_pointer_type(resolver->context, resolver->module, base_type);
                     assert(pointer_type);
                     *type_dest = pointer_type;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+                break;
+            }
+
+            case AST_TYPE_SPEC_STATIC_ARRAY:
+            {
+                AST_Type* base_type = nullptr;
+                bool base_result = try_resolve_type_spec(resolver, type_spec->static_array.base, &base_type, scope);
+                bool count_result = try_resolve_expression(resolver, type_spec->static_array.count_expr, scope);
+                if (base_result && count_result)
+                {
+                    AST_Type* array_type = ast_find_or_create_array_type(resolver->context, resolver->module, base_type,
+                                                                         type_spec->static_array.count_expr);
+                    *type_dest = array_type;
                     return true;
                 }
                 else

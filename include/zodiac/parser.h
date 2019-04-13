@@ -66,6 +66,8 @@ namespace Zodiac
     static AST_Expression* parse_unary_expression(Parser* parser);
     static AST_Expression* parse_base_expression(Parser* parser);
     static AST_Expression* parse_literal_expression(Parser* parser);
+    static AST_Expression* parse_compound_literal_expression(Parser* parser);
+    static AST_Expression* parse_array_length_expression(Parser* parser);
     static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier);
 
     static AST_Type_Spec* parse_type_spec(Parser* parser);

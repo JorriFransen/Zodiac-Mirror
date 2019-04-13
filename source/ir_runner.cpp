@@ -394,7 +394,7 @@ namespace Zodiac
                 assert(iri->arg1->kind == IRV_TEMPORARY);
                 assert(iri->arg1->type->kind == AST_TYPE_POINTER);
 
-                AST_Type* element_type = iri->arg1->type->base_type;
+                AST_Type* element_type = iri->arg1->type->pointer.base;
                 assert(element_type->base.bit_size % 8 == 0);
 
                 IR_Value* base_value = ir_runner_get_local_temporary(runner, iri->arg1->temp.index);
@@ -507,7 +507,7 @@ namespace Zodiac
             {
                 void* pointer_value = nullptr;
                 IR_Value* source_value = nullptr;
-                AST_Type* dest_type = dest_type = iri->arg1->type->base_type;
+                AST_Type* dest_type = dest_type = iri->arg1->type->pointer.base;
 
                 if (iri->arg1->kind == IRV_ALLOCL)
                 {

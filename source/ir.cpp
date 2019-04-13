@@ -363,7 +363,7 @@ namespace Zodiac
             AST_Expression* base_expression = lvalue_expr->subscript.base_expression;
             AST_Expression* index_expression = lvalue_expr->subscript.index_expression;
             assert(base_expression->type->kind == AST_TYPE_POINTER);
-            AST_Type* element_type = base_expression->type->base_type;
+            AST_Type* element_type = base_expression->type->pointer.base;
 
             assert(base_expression->type->kind == AST_TYPE_POINTER);
             assert(base_expression->kind == AST_EXPR_IDENTIFIER);
@@ -598,7 +598,7 @@ namespace Zodiac
         {
             AST_Expression* base_expr = expression->subscript.base_expression;
             assert(base_expr->type->kind == AST_TYPE_POINTER);
-            AST_Type* element_type = base_expr->type->base_type;
+            AST_Type* element_type = base_expr->type->pointer.base;
             assert(base_expr->kind == AST_EXPR_IDENTIFIER);
             IR_Value* base_pointer_allocl = ir_builder_value_for_declaration(ir_builder, base_expr->identifier->declaration);
             IR_Value* base_pointer_value = ir_builder_emit_loadl(ir_builder, base_pointer_allocl);
@@ -629,7 +629,7 @@ namespace Zodiac
         AST_Type* operand_type = expression->type;
         assert(operand_type->kind == AST_TYPE_POINTER);
 
-        AST_Type* result_type = operand_type->base_type;
+        AST_Type* result_type = operand_type->pointer.base;
 
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
 
@@ -997,7 +997,7 @@ namespace Zodiac
         assert(index_value);
 
         assert(base_value->type->kind == AST_TYPE_POINTER);
-        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, base_value->type->base_type);
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, base_value->type->pointer.base);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_SUBSCRIPT, base_value, index_value,
                                                  result_value);
