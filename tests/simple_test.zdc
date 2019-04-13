@@ -50,13 +50,11 @@ loop :: () -> void
     {
         for (x := 0; x < 10; x = x + 1)
         {
-            printf("%ld,%ld  ", x, y);
+            printf("%ld,%ld\t", x, y);
         }
 
-        printf("%ld", x);
-        putchar(10);
+        printf("\n");
     }
 
-    printf("%ld", y);
-    putchar(10);
+    putchar('\n');
 }

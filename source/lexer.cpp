@@ -126,7 +126,7 @@ namespace Zodiac
                     length++;
                     lexer_consume_character(lexer);
                 }
-               lexer_consume_character(lexer);
+                lexer_consume_character(lexer);
 
                 lexer_push_token(lexer, TOK_STRING_LIT, file_pos, length);
                 break;
@@ -136,10 +136,14 @@ namespace Zodiac
             {
                 lexer_consume_character(lexer);
                 File_Pos file_pos = lexer->current_file_pos;
+                uint64_t length = 0;
+                while (current_char(lexer) != '\'')
+                {
+                    length++;
+                    lexer_consume_character(lexer);
+                }
                 lexer_consume_character(lexer);
-                assert(current_char(lexer) == '\'');
-                lexer_consume_character(lexer);
-                lexer_push_token(lexer, TOK_CHAR_LIT, file_pos, 1);
+                lexer_push_token(lexer, TOK_CHAR_LIT, file_pos, length);
                 break;
             }
 
@@ -271,6 +275,51 @@ namespace Zodiac
         return EOF;
     }
 
+    static Atom lexer_replace_escape_chars(Lexer* lexer, File_Pos file_pos, uint64_t token_length)
+    {
+        assert(lexer);
+        assert(token_length);
+
+        const char* cursor = &lexer->file_data[file_pos.char_pos];
+
+        // TODO: temporary memory
+        BUF(char) new_literal = nullptr;
+
+        for (uint64_t i = 0; i < token_length; i++)
+        {
+            if (*cursor == '\\')
+            {
+                cursor++;
+                switch (*cursor)
+                {
+                    case 'n':
+                        BUF_PUSH(new_literal, '\n');
+                        break;
+
+                    case 't':
+                        BUF_PUSH(new_literal, '\t');
+                        break;
+
+                    default: assert(false);
+                }
+                token_length--;
+            }
+            else
+            {
+                BUF_PUSH(new_literal, *cursor);
+            }
+
+            cursor++;
+        }
+
+        BUF_PUSH(new_literal, '\0');
+
+        Atom result = atom_get(lexer->context->atom_table, new_literal);
+        BUF_FREE(new_literal);
+
+        return result;
+    }
+
     static Token lexer_maybe_convert_token_to_keyword(Lexer* lexer, Token token)
     {
         assert(lexer);
@@ -296,12 +345,23 @@ namespace Zodiac
         assert(token_length > 0);
 
         auto context = lexer->context;
+        Atom atom = {};
+
+        if (token_kind == TOK_STRING_LIT ||
+            token_kind == TOK_CHAR_LIT)
+        {
+            atom = lexer_replace_escape_chars(lexer, file_pos, token_length);
+        }
+        else
+        {
+            atom = atom_get(context->atom_table, &lexer->file_data[file_pos.char_pos],
+                            token_length);
+        }
 
         Token result = {};
         result.kind = token_kind;
         result.file_pos = file_pos;
-        result.atom = atom_get(context->atom_table, &lexer->file_data[file_pos.char_pos],
-                               token_length);
+        result.atom = atom;
 
         if (result.kind == TOK_IDENTIFIER)
         {

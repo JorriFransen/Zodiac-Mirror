@@ -1,36 +1,39 @@
 
- - 
- - normal types are not pushed in the per module type table.
+ - normal types are not pushed in the per module type table. (only pointer types?)
+   
+ - Conditional compilation
 
-* Pointers [0/4]
-   - [ ] Basic pointers
+* Pointers [1/4]
+   - [X] Basic pointers
    - [ ] Pointer math
    - [ ] Member expressions on pointers
    - [ ] String type
      
-* Foreign functions [4/5]
+* Foreign functions [5/5]
    - [X] Call via dyncall/load
    - [X] Store a table with information about foreign functions in the stack program
    - [X] Load this table in the vm, and attempt to load the foreign functions with dynload
    - [X] Stack command for pushing arguments for foreign functions
-   - [ ] Varargs functions
+   - [X] Varargs functions
     
-* Statements [0/3]
-   - [ ] While
-   - [ ] For
-   - [ ] Case
+* Statements [2/4]
+   - [X] While
+   - [X] For
+   - [ ] Switch
+   - [ ] break
 
 * IR [1/8]
    - [X] Argument count should be an argument for function calls
    - [ ] Cleanup the gendata situation
    - [ ] Use atoms where possible
    - [ ] Make block names unique with a counter
-   - [ ] Free list for blocks
+   - [ ] Free list for blocks (We don't have any free ones right now?
    - [ ] Prevent functions with the same name
    - [ ] Emit the number of argument for function calls as a u64 instead of a s64
           This is done with s64 right now because that's the only literal type we
           have. 
-   - [ ] Validator [0/3]
+   - [ ] Validator [0/4]
+     - [ ] Check assignment types
      - [ ] Check function aruguments in the validator
      - [ ] Check function return types in the validator
      - [ ] Check jumps in the validator
@@ -44,3 +47,6 @@
   - [X] Check type of return expression agains function decl
   - [X] Probably move (builtin) type declarations to global/module scope
     
+* Lexer [2/2]
+ - [X] String literal escape characters
+ - [X] Char literal escape characters
