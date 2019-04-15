@@ -1115,6 +1115,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+        assert(false);
+        return nullptr;
     }
 
     void ir_builder_emit_jmp(IR_Builder* ir_builder, IR_Value* block_value)

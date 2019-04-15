@@ -1,3 +1,9 @@
+//#dynamic_link "libc.so.6";
+#dynamic_link "msvcrt.dll";
+
+#foreign putchar :: (c: int) -> int;
+#foreign getchar :: () -> int;
+// #foreign printf :: () -> void;
 
 add :: (a: int, b: int) -> int
 {
@@ -9,13 +15,6 @@ plusone :: (x: int) -> int
     x = x + 1;
     return x;
 }
-
-#dynamic_link "libc.so.6";
-//#dynamic_link "msvcrt.dll";
-
-#foreign putchar :: (c: int) -> int;
-#foreign getchar :: () -> int;
-// #foreign printf :: () -> void;
 
 newline :: () -> void { putchar(10); }
 
