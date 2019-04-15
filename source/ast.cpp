@@ -48,6 +48,7 @@ namespace Zodiac
         result->file_pos = file_pos;
         result->kind = kind;
         result->type = nullptr;
+        result->is_const = false;
 
         return result;
     }
@@ -122,6 +123,15 @@ namespace Zodiac
         return result;
     }
 
+    AST_Expression* ast_boolean_literal_expression_new(Context* context, File_Pos file_pos, bool value)
+    {
+        assert(context);
+
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_BOOL_LITERAL);
+        result->bool_literal.boolean = value;
+        return result;
+    }
+
     AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos, Atom value)
     {
         assert(context);
@@ -169,6 +179,25 @@ namespace Zodiac
         return result;
     }
 
+    AST_Declaration* ast_declaration_new(Context* context, File_Pos file_pos, AST_Declaration_Kind kind,
+                                         AST_Declaration_Location location,
+                                         AST_Identifier* identifier, AST_Directive* directive,
+                                         bool constant)
+    {
+        assert(context);
+
+        AST_Declaration* result = arena_alloc(context->arena, AST_Declaration);
+        result->file_pos = file_pos;
+        result->kind = kind;
+        result->location = location;
+        result->identifier = identifier;
+        result->directive = directive;
+        result->constant = constant;
+        result->gen_data = nullptr;
+
+        return result;
+    }
+
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
@@ -181,12 +210,8 @@ namespace Zodiac
         assert(identifier);
         assert(argument_scope);
 
-        AST_Declaration* result = arena_alloc(context->arena, AST_Declaration);
-        result->kind = AST_DECL_FUNC;
-        result->file_pos = file_pos;
-        result->identifier = identifier;
-        result->directive = nullptr;
-        result->gen_data = nullptr;
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_FUNC, AST_DECL_LOC_GLOBAL,
+                                                      identifier, nullptr, true);
 
         result->function.args = args;
         result->function.is_vararg = is_vararg;
@@ -216,16 +241,28 @@ namespace Zodiac
         assert(type_spec || init_expr);
         assert(location != AST_DECL_LOC_INVALID);
 
-        AST_Declaration* result = arena_alloc(context->arena, AST_Declaration);
-        result->kind = AST_DECL_MUTABLE;
-        result->file_pos = file_pos;
-        result->identifier = identifier;
-        result->directive = nullptr;
-        result->location = location;
-        result->gen_data = nullptr;
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_MUTABLE, location,
+                                                      identifier, nullptr, false);
 
         result->mutable_decl.type_spec = type_spec;
         result->mutable_decl.init_expression = init_expr;
+
+        return result;
+    }
+
+    AST_Declaration* ast_constant_variable_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
+                                                           AST_Type_Spec* type_spec, AST_Expression* init_expr,
+                                                           AST_Declaration_Location location)
+    {
+        assert(context);
+        assert(identifier);
+        assert(init_expr);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_CONSTANT_VAR, location,
+                                                      identifier, nullptr, true);
+
+        result->constant_var.type_spec = type_spec;
+        result->constant_var.init_expression = init_expr;
 
         return result;
     }
@@ -237,12 +274,8 @@ namespace Zodiac
         assert(type);
         assert(identifier);
 
-        AST_Declaration* result = arena_alloc(context->arena, AST_Declaration);
-        result->kind = AST_DECL_TYPE;
-        result->file_pos = file_pos;
-        result->identifier = identifier;
-        result->directive = nullptr;
-        result->gen_data = nullptr;
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_TYPE, AST_DECL_LOC_INVALID,
+                                                      identifier, nullptr, true);
 
         result->type.type = type;
 
@@ -254,12 +287,39 @@ namespace Zodiac
     {
         assert(context);
 
-        AST_Declaration* result = arena_alloc(context->arena, AST_Declaration);
-        result->kind = AST_DECL_DYN_LINK;
-        result->location = location;
-        result->file_pos = file_pos;
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_DYN_LINK, location,
+                                                      nullptr, nullptr, false);
 
         result->dyn_link_name = link_name;
+
+        return result;
+    }
+
+    AST_Declaration* ast_static_if_declaration_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
+                                                   AST_Declaration* then_declaration, AST_Declaration* else_declaration)
+    {
+        assert(context);
+        assert(cond_expr);
+        assert(then_declaration);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_STATIC_IF, AST_DECL_LOC_GLOBAL,
+                                                      nullptr, nullptr, true);
+
+        result->static_if.cond_expr = cond_expr;
+        result->static_if.then_declaration = then_declaration;
+        result->static_if.else_declaration = else_declaration;
+
+        return result;
+    }
+
+    AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos, BUF(AST_Declaration*) block_decls)
+    {
+        assert(context);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_BLOCK, AST_DECL_LOC_GLOBAL,
+                                                      nullptr, nullptr, false);
+
+        result->block.decls = block_decls;
 
         return result;
     }

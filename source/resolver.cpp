@@ -103,9 +103,27 @@ namespace Zodiac
                     break;
                 }
 
+                case AST_DECL_CONSTANT_VAR:
+                {
+                    result &= try_resolve_constant_var_declaration(resolver, declaration, scope);
+                    break;
+                }
+
                 case AST_DECL_DYN_LINK:
                 {
                     break;
+                }
+
+                case AST_DECL_STATIC_IF:
+                {
+                    result &= try_resolve_static_if_declaration(resolver, declaration, scope);
+                    break;
+                }
+
+                case AST_DECL_BLOCK:
+                {
+                    result &= try_resolve_block_declaration(resolver, declaration, scope);
+                    break;;
                 }
 
                 default:
@@ -235,6 +253,81 @@ namespace Zodiac
             assert(declaration->location != AST_DECL_LOC_INVALID);
         }
         return result;
+    }
+
+    static bool try_resolve_constant_var_declaration(Resolver* resolver, AST_Declaration* declaration,
+                                                     AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(declaration);
+        assert(declaration->kind == AST_DECL_CONSTANT_VAR);
+        assert(scope);
+
+        bool result = true;
+
+        AST_Type* specified_type = nullptr;
+
+        if (declaration->constant_var.type_spec)
+        {
+            result &= try_resolve_type_spec(resolver, declaration->constant_var.type_spec, &specified_type, scope);
+            if (!result)
+            {
+                return false;
+            }
+        }
+
+        result &= try_resolve_expression(resolver, declaration->constant_var.init_expression, scope);
+
+        if (!result)
+        {
+            return false;
+        }
+
+        assert(declaration->constant_var.init_expression->is_const);
+
+        if (specified_type)
+        {
+            assert(specified_type == declaration->constant_var.init_expression->type);
+        }
+
+        declaration->constant_var.type = declaration->constant_var.init_expression->type;
+
+        return result;
+    }
+
+    static bool try_resolve_static_if_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(declaration);
+        assert(declaration->kind == AST_DECL_STATIC_IF);
+        assert(scope);
+
+        bool result = try_resolve_expression(resolver, declaration->static_if.cond_expr, scope);
+        result &= try_resolve_declaration(resolver, declaration->static_if.then_declaration, scope);
+
+        if (declaration->static_if.else_declaration)
+        {
+            result &= try_resolve_declaration(resolver, declaration->static_if.else_declaration, scope);
+        }
+
+        return result;
+    }
+
+    static bool try_resolve_block_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(declaration);
+        assert(declaration->kind == AST_DECL_BLOCK);
+        assert(scope);
+
+        bool result = true;
+
+        for (uint64_t i = 0; i < BUF_LENGTH(declaration->block.decls); i++)
+        {
+            result &= try_resolve_declaration(resolver, declaration->block.decls[i], scope);
+        }
+
+        return scope;
     }
 
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,
@@ -433,6 +526,13 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_BOOL_LITERAL:
+            {
+                result &= try_resolve_boolean_literal_expression(resolver, expression);
+                if (result)
+                break;
+            }
+
             case AST_EXPR_STRING_LITERAL:
             {
                 result &= try_resolve_string_literal_expression(resolver, expression);
@@ -539,6 +639,21 @@ namespace Zodiac
         return result;
     }
 
+    static bool try_resolve_boolean_literal_expression(Resolver* resolver, AST_Expression* expression)
+    {
+        assert(resolver);
+        assert(expression);
+        assert(expression->kind == AST_EXPR_BOOL_LITERAL);
+
+        if (!expression->type)
+        {
+            expression->type = Builtin::type_bool;
+        }
+        expression->is_const = true;
+
+        return true;
+    }
+
     static bool try_resolve_string_literal_expression(Resolver* resolver, AST_Expression* expression)
     {
         assert(resolver);
@@ -549,6 +664,7 @@ namespace Zodiac
         {
             expression->type = ast_find_or_create_pointer_type(resolver->context, resolver->module, Builtin::type_u8);
         }
+        expression->is_const = true;
 
         return true;
     }
@@ -563,6 +679,7 @@ namespace Zodiac
         {
             expression->type = Builtin::type_int;
         }
+        expression->is_const = true;
 
         return true;
     }
@@ -577,6 +694,7 @@ namespace Zodiac
         {
             expression->type = Builtin::type_u8;
         }
+        expression->is_const = true;
 
         return true;
     }
@@ -749,13 +867,23 @@ namespace Zodiac
             return false;
         }
 
-        assert(decl->kind == AST_DECL_MUTABLE);
-        identifier->declaration = decl;
-
-        if (!decl->mutable_decl.type)
+        if (decl->kind == AST_DECL_MUTABLE)
         {
-            return false;
+            if (!decl->mutable_decl.type)
+            {
+                return false;
+            }
         }
+        else if (decl->kind == AST_DECL_CONSTANT_VAR)
+        {
+            if (!decl->constant_var.type)
+            {
+                return false;
+            }
+        }
+        else assert(false);
+
+        identifier->declaration = decl;
 
         return true;
     }

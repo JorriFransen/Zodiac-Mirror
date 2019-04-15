@@ -35,6 +35,8 @@ namespace Zodiac
     static AST_Directive* parse_directive(Parser* parser);
 
     static AST_Declaration* parse_declaration(Parser* parser, AST_Scope* scope, bool global,
+                                              AST_Declaration_Location location = AST_DECL_LOC_INVALID);
+    static AST_Declaration* parse_declaration(Parser* parser, AST_Scope* scope, bool global,
                                               AST_Directive* directive,
                                               AST_Declaration_Location location = AST_DECL_LOC_INVALID);
     static AST_Declaration* parse_declaration(Parser* parser, AST_Identifier* identifier, AST_Scope* scope,
@@ -42,11 +44,14 @@ namespace Zodiac
                                               AST_Directive* directive,
                                               AST_Declaration_Location location = AST_DECL_LOC_INVALID);
     static AST_Declaration* parse_constant_declaration(Parser* parser, AST_Identifier* identifier,
-                                                       AST_Type_Spec* type_spec, AST_Scope* scope);
+                                                       AST_Type_Spec* type_spec, AST_Scope* scope,
+                                                       AST_Declaration_Location location);
     static AST_Declaration* parse_mutable_declaration(Parser* parser, AST_Identifier* identifier,
                                                       AST_Type_Spec* type_spec, AST_Declaration_Location location);
     static AST_Declaration* parse_link_declaration(Parser* parser, bool global, AST_Scope* scope,
                                                    AST_Directive* directive);
+    static AST_Declaration* parse_static_if_declaration(Parser* parser, bool global, AST_Scope* scope);
+    static AST_Declaration* parse_block_declaration(Parser* parser, bool global, AST_Scope* scope);
 
     static AST_Statement* parse_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope);

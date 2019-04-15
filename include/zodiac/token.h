@@ -40,7 +40,10 @@ namespace Zodiac
         TOK_CHAR_LIT,
         TOK_STRING_LIT,
 
+        TOK_KW_TRUE,
+        TOK_KW_FALSE,
         TOK_KW_RETURN,
+        TOK_KW_STATIC_IF,
         TOK_KW_IF,
         TOK_KW_ELSE,
         TOK_KW_FOREIGN,

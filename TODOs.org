@@ -2,6 +2,7 @@
  - normal types are not pushed in the per module type table. (only pointer and array types?)
  - const expressions
  - Conditional compilation
+ - modules
  - structs 
 
 * Pointers [1/4]

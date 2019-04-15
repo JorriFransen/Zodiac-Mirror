@@ -39,6 +39,7 @@ namespace Zodiac
         AST_EXPR_IDENTIFIER,
         AST_EXPR_CALL,
         AST_EXPR_SUBSCRIPT,
+        AST_EXPR_BOOL_LITERAL,
         AST_EXPR_STRING_LITERAL,
         AST_EXPR_INTEGER_LITERAL,
         AST_EXPR_CHAR_LITERAL,
@@ -81,6 +82,7 @@ namespace Zodiac
         File_Pos file_pos;
 
         AST_Type* type = nullptr;
+        bool is_const = false;
 
         union
         {
@@ -112,6 +114,11 @@ namespace Zodiac
                 AST_Expression* index_expression;
             } subscript;
 
+
+            struct
+            {
+                bool boolean;
+            } bool_literal;
             struct
             {
                 Atom atom;
@@ -211,8 +218,11 @@ namespace Zodiac
     {
         AST_DECL_FUNC,
         AST_DECL_MUTABLE,
+        AST_DECL_CONSTANT_VAR,
         AST_DECL_TYPE,
         AST_DECL_DYN_LINK,
+        AST_DECL_STATIC_IF,
+        AST_DECL_BLOCK,
     };
 
     struct AST_Function_Declaration
@@ -263,9 +273,19 @@ namespace Zodiac
         AST_Identifier* identifier = nullptr;
         AST_Directive* directive = nullptr;
 
+        bool constant = false;
+
         union
         {
             AST_Function_Declaration function;
+
+            struct
+            {
+                AST_Type_Spec* type_spec;
+                AST_Type* type;
+                AST_Expression* init_expression;
+            } constant_var;
+
             AST_Mutable_Declaration mutable_decl;
 
             struct
@@ -274,6 +294,18 @@ namespace Zodiac
             } type;
 
             Atom dyn_link_name;
+
+            struct
+            {
+                AST_Expression* cond_expr;
+                AST_Declaration* then_declaration;
+                AST_Declaration* else_declaration;
+            } static_if;
+
+            struct
+            {
+                BUF(AST_Declaration*) decls;
+            } block;
         };
 
         void* gen_data = nullptr;
@@ -384,6 +416,7 @@ namespace Zodiac
                                             BUF(AST_Expression*) arg_exprs);
     AST_Expression* ast_subscript_expression_new(Context* context, File_Pos file_pos, AST_Expression* base_expression,
                                                  AST_Expression* index_expression);
+    AST_Expression* ast_boolean_literal_expression_new(Context* context, File_Pos file_Pos, bool value);
     AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos, Atom value);
     AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos, uint64_t value);
     AST_Expression* ast_character_literal_expression_new(Context* context, File_Pos file_pos, char value);
@@ -391,6 +424,10 @@ namespace Zodiac
                                                         BUF(AST_Expression*) expressions);
     AST_Expression* ast_array_length_expression_new(Context* context, File_Pos file_pos, AST_Expression* ident_expr);
 
+    AST_Declaration* ast_declaration_new(Context* context, File_Pos file_Pos, AST_Declaration_Kind kind,
+                                         AST_Declaration_Location location,
+                                         AST_Identifier* identifier, AST_Directive* directive,
+                                         bool constant);
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
@@ -401,10 +438,16 @@ namespace Zodiac
     AST_Declaration* ast_mutable_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
                                                  AST_Type_Spec* type_spec, AST_Expression* init_expr,
                                                  AST_Declaration_Location location);
+    AST_Declaration* ast_constant_variable_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
+                                                           AST_Type_Spec* type_spec, AST_Expression* init_expr,
+                                                           AST_Declaration_Location location);
     AST_Declaration* ast_type_declaration_new(Context* context, File_Pos file_pos, AST_Type* type,
                                               AST_Identifier* identifier);
     AST_Declaration* ast_dyn_link_declaration_new(Context* context, File_Pos file_pos, Atom link_name,
                                                   AST_Declaration_Location location);
+    AST_Declaration* ast_static_if_declaration_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
+                                                   AST_Declaration* then_declaration, AST_Declaration* else_declaration);
+    AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos, BUF(AST_Declaration*) block_decls);
 
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos, AST_Declaration* declaration);
     AST_Statement* ast_block_statement_new(Context* context, File_Pos file_pos, BUF(AST_Statement*) block_statements,

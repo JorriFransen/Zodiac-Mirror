@@ -83,6 +83,12 @@ namespace Zodiac
                     break;
                 }
 
+                case AST_DECL_CONSTANT_VAR:
+                {
+                    assert(false);
+                    break;
+                }
+
                 case AST_DECL_TYPE:
                 {
                     assert(false);
