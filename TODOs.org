@@ -18,15 +18,17 @@
    - [X] Stack command for pushing arguments for foreign functions
    - [X] Varargs functions
     
-* Statements [2/5]
+* Statements [2/6]
    - [X] While
    - [X] For
    - [ ] Switch
    - [ ] break
    - [ ] defer
 
-* IR [1/10]
+* IR [1/12]
    - [X] Argument count should be an argument for function calls
+   - [ ] Make assignment statements for array literals more efficient by not using an intermediary array
+   - [ ] Handle pointer offsets the same way as we do for static arrays
    - [ ] Cleanup the gendata situation
    - [ ] Cleanup lvalue expression generation
    - [ ] Use atoms where possible

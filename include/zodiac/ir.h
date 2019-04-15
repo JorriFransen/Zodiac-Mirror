@@ -19,6 +19,7 @@ namespace Zodiac
         IRV_STRING_LITERAL,
         IRV_INT_LITERAL,
         IRV_CHAR_LITERAL,
+        IRV_ARRAY_LITERAL,
     };
 
     struct IR_Value
@@ -33,6 +34,8 @@ namespace Zodiac
             int64_t s64;
             uint8_t u8;
             uint8_t* string;
+
+            void* static_array;
         } value;
 
         union
@@ -96,6 +99,7 @@ namespace Zodiac
 
         IR_OP_ADDROF,
         IR_OP_DEREF,
+        IR_OP_ARRAY_OFFSET_POINTER,
     };
 
     struct IR_Instruction
@@ -135,10 +139,9 @@ namespace Zodiac
         IR_Block* first_block = nullptr;
         IR_Block* last_block = nullptr;
 
-        BUF(IR_Value*) arguments = nullptr;
-        BUF(IR_Value*) allocls = nullptr;
+        BUF(IR_Value*) arguments = nullptr; // These are duplicated in local temps
+        BUF(IR_Value*) local_temps = nullptr;
 
-        uint64_t next_temp_index = 0;
         bool is_entry = false;
         uint64_t foreign_index = 0;
     };
@@ -204,6 +207,10 @@ namespace Zodiac
     void ir_builder_append_block(IR_Builder* ir_builder, IR_Function* function, IR_Block* block);
     void ir_builder_set_insert_block(IR_Builder* ir_builder, IR_Block* block);
     void ir_builder_set_insert_block(IR_Builder* ir_builder, IR_Value* block_value);
+
+    IR_Value* ir_builder_emit_array_offset_pointer(IR_Builder* ir_builder, IR_Value* array_allocl, uint64_t offset);
+    IR_Value* ir_builder_emit_array_offset_pointer(IR_Builder* ir_builder, IR_Value* array_allocl,
+                                                   IR_Value* offset_value);
 
     void ir_builder_emit_instruction(IR_Builder* ir_builder, IR_Instruction* iri);
 

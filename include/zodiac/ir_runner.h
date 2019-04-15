@@ -10,6 +10,7 @@ namespace Zodiac
     struct IR_Stack_Frame
     {
         IR_Function* function = nullptr;
+        Arena arena = {};
         BUF(IR_Value) args = nullptr;
         BUF(IR_Value) temps = nullptr;
         IR_Value return_value = {};

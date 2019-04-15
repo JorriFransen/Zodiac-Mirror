@@ -314,7 +314,7 @@ namespace Zodiac
 
             struct
             {
-                uint64_t count;
+               uint64_t count;
                 AST_Type* base;
             } static_array;
         };

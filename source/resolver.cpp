@@ -420,8 +420,15 @@ namespace Zodiac
                 result &= try_resolve_expression(resolver, base_expr, scope);
                 if (result)
                 {
-                    assert(base_expr->type->kind == AST_TYPE_POINTER);
-                    expression->type = base_expr->type->pointer.base;
+                    if (base_expr->type->kind == AST_TYPE_POINTER)
+                    {
+                        expression->type = base_expr->type->pointer.base;
+                    }
+                    else if (base_expr->type->kind == AST_TYPE_STATIC_ARRAY)
+                    {
+                        expression->type = base_expr->type->static_array.base;
+                    }
+                    else assert(false);
                 }
                 break;
             }

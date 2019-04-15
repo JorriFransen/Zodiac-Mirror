@@ -41,10 +41,12 @@ void arena_free(Arena* arena)
     {
         Arena_Block* next_block = block->next_block;
 
-        assert(block->data_length == 0);
+        assert(block->data_length != 0);
         mem_free(block->data);
 
         mem_free(block);
+
+        block = next_block;
     }
 
     arena->blocks = NULL;

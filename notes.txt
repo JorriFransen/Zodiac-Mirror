@@ -38,3 +38,31 @@ ADD_OP = '+' | '-'
 MUL_OP = '*' | '/'
 
 Type_Spec = Ident
+
+// Arrays, option 1, required new type of value (IRV)
+// t5 is a pointer to the first element
+t0 = LOAD_LIT lit(11);
+t1 = LOAD_LIT lit(22);
+t2 = LOAD_LIT lit(33);
+t3 = LOAD_LIT lit(44);
+t4 = LOAD_LIT lit(55);
+
+t5 = ARRAY { t0, t1, t2, t3, t4 };
+
+
+// Arrays option 2
+t0 = BEGIN_ARRAY 5;
+     ARRAY_ELEMENT lit(11);
+     ARRAY_ELEMENT lit(22;
+     ARRAY_ELEMENT lit(33);
+     ARRAY_ELEMENT lit(44);
+     ARRAY_ELEMENT lit(55);
+
+// Arrays option 3
+t0 = BEGIN_ARRAY;
+     ARRAY_ELEMENT lit(11);
+     ARRAY_ELEMENT lit(22;
+     ARRAY_ELEMENT lit(33);
+     ARRAY_ELEMENT lit(44);
+     ARRAY_ELEMENT lit(55);
+
