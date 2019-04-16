@@ -52,7 +52,7 @@ namespace Zodiac
 #ifdef WIN32 
         platform_windows = true;
 #elif defined __linux__
-        platform_windows = true;
+        platform_linux = true;
 #elif
         assert(false);
 #endif
