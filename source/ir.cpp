@@ -38,6 +38,10 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
         {
             ir_builder_emit_global_declaration(ir_builder, module->global_declarations[i]);
+            if (ir_builder->result.error_count)
+            {
+                return ir_builder->result;
+            }
         }
 
         // Emit function bodies
@@ -192,6 +196,20 @@ namespace Zodiac
                 for (uint64_t i = 0; i < BUF_LENGTH(global_decl->block.decls); i++)
                 {
                     ir_builder_emit_global_declaration(ir_builder, global_decl->block.decls[i]);
+                }
+                break;
+            }
+
+            case AST_DECL_STATIC_ASSERT:
+            {
+                IR_Value* cond_value = ir_builder_emit_expression(ir_builder, global_decl->static_assert_expression);
+                assert(cond_value->type == Builtin::type_bool);
+                if (!cond_value->value.boolean)
+                {
+                    auto fp = global_decl->static_assert_expression->file_pos;
+                    fprintf(stderr, "Error:%s:%" PRIu64 ":%" PRIu64 ": Static assertion failed!\n\n",
+                            fp.file_name, fp.line, fp.line_relative_char_pos);
+                    ir_builder->result.error_count++;
                 }
                 break;
             }

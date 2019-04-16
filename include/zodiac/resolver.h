@@ -44,7 +44,7 @@ namespace Zodiac
                                                      AST_Scope* scope);
     static bool try_resolve_static_if_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope);
     static bool try_resolve_block_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope);
-
+    static bool try_resolve_static_assert_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope);
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,
                                       AST_Scope* scope);
     static bool try_resolve_return_statement(Resolver* resolver, AST_Statement* statement,

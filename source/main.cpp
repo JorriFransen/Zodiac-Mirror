@@ -109,6 +109,12 @@ int main(int argc, char** argv)
 
     IR_Module ir_module = ir_builder_emit_module(&ir_builder, parse_result.ast_module);
 
+    if (ir_module.error_count)
+    {
+        fprintf(stderr, "Exiting with error(s)\n");
+        return -1;
+    }
+
     IR_Validation_Result validation = ir_validate(&ir_builder);
 
     if (!validation.messages)

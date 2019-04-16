@@ -28,7 +28,6 @@ namespace Zodiac
         resolver->errors = nullptr;
 
         resolver->current_func_decl = nullptr;
-
     }
 
     void resolver_do_cycle(Resolver* resolver)
@@ -114,6 +113,12 @@ namespace Zodiac
                 case AST_DECL_BLOCK:
                 {
                     result &= try_resolve_block_declaration(resolver, declaration, scope);
+                    break;
+                }
+
+                case AST_DECL_STATIC_ASSERT:
+                {
+                    result &= try_resolve_static_assert_declaration(resolver, declaration, scope);
                     break;
                 }
 
@@ -318,7 +323,27 @@ namespace Zodiac
             result &= try_resolve_declaration(resolver, declaration->block.decls[i], scope);
         }
 
-        return scope;
+        return result;
+    }
+
+    static bool try_resolve_static_assert_declaration(Resolver* resolver, AST_Declaration* declaration,
+                                                      AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(declaration);
+        assert(declaration->kind == AST_DECL_STATIC_ASSERT);
+        assert(scope);
+
+        AST_Expression* assert_expr = declaration->static_assert_expression;
+
+        bool result = try_resolve_expression(resolver, assert_expr, scope);
+
+        if (result)
+        {
+            assert(assert_expr->is_const);
+        }
+
+        return result;
     }
 
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,

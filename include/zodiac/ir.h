@@ -159,6 +159,8 @@ namespace Zodiac
 
         BUF(Atom) foreign_table = nullptr;
         BUF(Atom) dynamic_lib_names = nullptr;
+
+        uint64_t error_count = 0;
     };
 
     struct _IR_Value_To_AST_Decl_Map_Entry_
