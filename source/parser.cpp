@@ -359,6 +359,8 @@ namespace Zodiac
             {
                 return nullptr;
             }
+
+            BUF_PUSH(block_decls, block_decl);
         }
 
         return ast_block_declaration_new(parser->context, ft.file_pos, block_decls);

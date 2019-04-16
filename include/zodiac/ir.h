@@ -16,6 +16,7 @@ namespace Zodiac
         IRV_BLOCK,
         IRV_ALLOCL,
 
+        IRV_BOOL_LITERAL,
         IRV_STRING_LITERAL,
         IRV_INT_LITERAL,
         IRV_CHAR_LITERAL,
@@ -34,6 +35,7 @@ namespace Zodiac
             int64_t s64;
             uint8_t u8;
             uint8_t* string;
+            bool boolean;
 
             void* static_array;
         } value;
@@ -191,6 +193,7 @@ namespace Zodiac
     void ir_builder_init(IR_Builder* ir_builder, Context* context);
 
     IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module);
+    void ir_builder_emit_global_declaration(IR_Builder* ir_builder, AST_Declaration* global_decl);
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement);
     void ir_builder_emit_assign_statement(IR_Builder* ir_builder, AST_Statement* statement);
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
@@ -237,6 +240,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_loada(IR_Builder* ir_builder, IR_Value* alloca_value);
     void ir_builder_emit_storep(IR_Builder* ir_builder, IR_Value* pointer_allocl, IR_Value* new_value);
 
+    IR_Value* ir_boolean_literal(IR_Builder* ir_builder, AST_Type* type, bool value);
     IR_Value* ir_string_literal(IR_Builder* ir_builder, AST_Type* type, Atom string);
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64);
     IR_Value* ir_character_literal(IR_Builder* ir_builder, AST_Type* type, char c);

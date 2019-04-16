@@ -37,86 +37,7 @@ namespace Zodiac
         // Emit global declarations
         for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
         {
-            AST_Declaration* global_decl = module->global_declarations[i];
-            assert(global_decl->location == AST_DECL_LOC_GLOBAL);
-
-            switch (global_decl->kind)
-            {
-                case AST_DECL_FUNC:
-                {
-                    IR_Value* func_value = ir_builder_begin_function(ir_builder,
-                                                                     global_decl->identifier->atom.data,
-                                                                     global_decl->function.return_type);
-                    if (global_decl->function.body_block)
-                    {
-                        IR_Value* entry_block = ir_builder_create_block(ir_builder, "entry", func_value);
-                        ir_builder_set_insert_block(ir_builder, entry_block);
-
-                        for (uint64_t i = 0; i < BUF_LENGTH(global_decl->function.args); i++)
-                        {
-                            AST_Declaration* arg_decl = global_decl->function.args[i];
-                            assert(arg_decl->kind == AST_DECL_MUTABLE);
-                            assert(arg_decl->location == AST_DECL_LOC_ARGUMENT);
-
-                            IR_Value* arg_value = ir_builder_emit_function_arg(ir_builder,
-                                                                            arg_decl->identifier->atom.data,
-                                                                            arg_decl->mutable_decl.type);
-                            ir_builder_push_value_and_decl(ir_builder, arg_value, arg_decl);
-                        }
-                    }
-                    else
-                    {
-                        func_value->function->flags |= IR_FUNC_FLAG_FOREIGN;
-                        func_value->function->foreign_index =
-                            ir_builder_emit_foreign(ir_builder, global_decl->identifier->atom);
-                    }
-                    ir_builder_end_function(ir_builder, func_value);
-
-                    _IR_Decl_To_Func_ decl_to_func_entry = { global_decl, func_value->function };
-                    ir_builder_push_value_and_decl(ir_builder, func_value, global_decl);
-                    break;
-                }
-
-                case AST_DECL_MUTABLE:
-                {
-                    assert(false);
-                    break;
-                }
-
-                case AST_DECL_CONSTANT_VAR:
-                {
-                    assert(false);
-                    break;
-                }
-
-                case AST_DECL_TYPE:
-                {
-                    assert(false);
-                    break;
-                }
-
-                case AST_DECL_DYN_LINK:
-                {
-                    bool found = false;
-                    for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.dynamic_lib_names); i++)
-                    {
-                        Atom ex_lib = ir_builder->result.dynamic_lib_names[i];
-                        if (ex_lib == global_decl->dyn_link_name)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found)
-                    {
-                        BUF_PUSH(ir_builder->result.dynamic_lib_names, global_decl->dyn_link_name);
-                    }
-                    break;
-                }
-
-                default: assert(false);
-            }
+            ir_builder_emit_global_declaration(ir_builder, module->global_declarations[i]);
         }
 
         // Emit function bodies
@@ -164,6 +85,119 @@ namespace Zodiac
         }
 
         return ir_builder->result;
+    }
+
+    void ir_builder_emit_global_declaration(IR_Builder* ir_builder, AST_Declaration* global_decl)
+    {
+        assert(ir_builder);
+        assert(global_decl);
+
+        assert(global_decl->location == AST_DECL_LOC_GLOBAL);
+
+        switch (global_decl->kind)
+        {
+            case AST_DECL_FUNC:
+            {
+                IR_Value* func_value = ir_builder_begin_function(ir_builder,
+                                                                    global_decl->identifier->atom.data,
+                                                                    global_decl->function.return_type);
+                if (global_decl->function.body_block)
+                {
+                    IR_Value* entry_block = ir_builder_create_block(ir_builder, "entry", func_value);
+                    ir_builder_set_insert_block(ir_builder, entry_block);
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(global_decl->function.args); i++)
+                    {
+                        AST_Declaration* arg_decl = global_decl->function.args[i];
+                        assert(arg_decl->kind == AST_DECL_MUTABLE);
+                        assert(arg_decl->location == AST_DECL_LOC_ARGUMENT);
+
+                        IR_Value* arg_value = ir_builder_emit_function_arg(ir_builder,
+                                                                        arg_decl->identifier->atom.data,
+                                                                        arg_decl->mutable_decl.type);
+                        ir_builder_push_value_and_decl(ir_builder, arg_value, arg_decl);
+                    }
+                }
+                else
+                {
+                    func_value->function->flags |= IR_FUNC_FLAG_FOREIGN;
+                    func_value->function->foreign_index =
+                        ir_builder_emit_foreign(ir_builder, global_decl->identifier->atom);
+                }
+                ir_builder_end_function(ir_builder, func_value);
+
+                _IR_Decl_To_Func_ decl_to_func_entry = { global_decl, func_value->function };
+                ir_builder_push_value_and_decl(ir_builder, func_value, global_decl);
+                break;
+            }
+
+            case AST_DECL_MUTABLE:
+            {
+                assert(false);
+                break;
+            }
+
+            case AST_DECL_CONSTANT_VAR:
+            {
+                assert(global_decl->constant_var.init_expression);
+                IR_Value* value = ir_builder_emit_expression(ir_builder, global_decl->constant_var.init_expression);
+                BUF_PUSH(ir_builder->result.global_constants, value);
+                ir_builder_push_value_and_decl(ir_builder, value, global_decl);
+                break;
+            }
+
+            case AST_DECL_TYPE:
+            {
+                assert(false);
+                break;
+            }
+
+            case AST_DECL_DYN_LINK:
+            {
+                bool found = false;
+                for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.dynamic_lib_names); i++)
+                {
+                    Atom ex_lib = ir_builder->result.dynamic_lib_names[i];
+                    if (ex_lib == global_decl->dyn_link_name)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    BUF_PUSH(ir_builder->result.dynamic_lib_names, global_decl->dyn_link_name);
+                }
+                break;
+            }
+
+            case AST_DECL_STATIC_IF:
+            {
+                IR_Value* cond_value = ir_builder_emit_expression(ir_builder, global_decl->static_if.cond_expr);
+                assert(cond_value->type == Builtin::type_bool);
+                if (cond_value->value.boolean)
+                {
+                    ir_builder_emit_global_declaration(ir_builder, global_decl->static_if.then_declaration);
+                }
+                else if (global_decl->static_if.else_declaration)
+                {
+                    ir_builder_emit_global_declaration(ir_builder, global_decl->static_if.else_declaration);
+                }
+                break;
+            }
+
+            case AST_DECL_BLOCK:
+            {
+                for (uint64_t i = 0; i < BUF_LENGTH(global_decl->block.decls); i++)
+                {
+                    ir_builder_emit_global_declaration(ir_builder, global_decl->block.decls[i]);
+                }
+                break;
+            }
+
+            default: assert(false);
+        }
     }
 
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement)
@@ -476,6 +510,13 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_BOOL_LITERAL:
+            {
+                IR_Value* literal = ir_boolean_literal(ir_builder, expression->type, expression->bool_literal.boolean);
+                return literal;
+                break;
+            }
+
             case AST_EXPR_STRING_LITERAL:
             {
                 IR_Value* literal = ir_string_literal(ir_builder, expression->type, expression->string_literal.atom);
@@ -518,7 +559,8 @@ namespace Zodiac
                 AST_Declaration* ident_decl = expression->identifier->declaration;
                 IR_Value* value = ir_builder_value_for_declaration(ir_builder, ident_decl);
                 if (value->kind == IRV_TEMPORARY ||
-                    value->kind == IRV_INT_LITERAL)
+                    value->kind == IRV_INT_LITERAL ||
+                    value->kind == IRV_BOOL_LITERAL)
                 {
                     // Do nothing else for now
                 }
@@ -1247,6 +1289,17 @@ namespace Zodiac
         ir_builder_emit_instruction(ir_builder, iri);
     }
 
+    IR_Value* ir_boolean_literal(IR_Builder* ir_builder, AST_Type* type, bool value)
+    {
+        assert(ir_builder);
+        assert(type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_BOOL_LITERAL, type);
+        result->value.boolean = value;
+        result->assigned = true;
+        return result;
+    }
+
     IR_Value* ir_string_literal(IR_Builder* ir_builder, AST_Type* type, Atom string)
     {
         assert(ir_builder);
@@ -1330,9 +1383,11 @@ namespace Zodiac
 
         if (kind == IRV_TEMPORARY)
         {
-            assert(ir_builder->current_function);
-            result->temp.index = BUF_LENGTH(ir_builder->current_function->local_temps);
-            BUF_PUSH(ir_builder->current_function->local_temps, result);
+            if (ir_builder->current_function)
+            {
+                result->temp.index = BUF_LENGTH(ir_builder->current_function->local_temps);
+                BUF_PUSH(ir_builder->current_function->local_temps, result);
+            }
         }
 
         return result;
@@ -1505,6 +1560,12 @@ namespace Zodiac
         {
             auto lib_atom = ir_builder->result.dynamic_lib_names[i];
             printf("#dynamic_link %s\n", lib_atom.data);
+        }
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.global_constants); i++)
+        {
+            IR_Value* constant = ir_builder->result.global_constants[i];
+            ir_print_value(constant);
         }
 
         printf("\n");
@@ -1821,6 +1882,12 @@ namespace Zodiac
             case IRV_TEMPORARY:
             {
                 printf("t(%" PRIu64 ")", value->temp.index);
+                break;
+            }
+
+            case IRV_BOOL_LITERAL:
+            {
+                printf("lit(%s)", value->value.boolean ? "true" : "false");
                 break;
             }
 
