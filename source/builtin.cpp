@@ -2,6 +2,14 @@
 
 namespace Zodiac
 {
+    AST_Type* Builtin::type_void = nullptr;
+    AST_Type* Builtin::type_int = nullptr;
+    AST_Type* Builtin::type_u8 = nullptr;
+    AST_Type* Builtin::type_bool = nullptr;
+
+    AST_Declaration* Builtin::decl_PLATFORM_WINDOWS = nullptr;
+    AST_Declaration* Builtin::decl_PLATFORM_LINUX = nullptr;
+
     void init_builtin_types(Context* context)
     {
         assert(context);
@@ -34,8 +42,55 @@ namespace Zodiac
         return type;
     }
 
-    AST_Type* Builtin::type_void = nullptr;
-    AST_Type* Builtin::type_int = nullptr;
-    AST_Type* Builtin::type_u8 = nullptr;
-    AST_Type* Builtin::type_bool = nullptr;
+    void init_builtin_decls(Context* context)
+    {
+        assert(context);
+
+        bool platform_windows = false;
+        bool platform_linux = false;
+
+#ifdef WIN32 
+        platform_windows = true;
+#elif LINUX
+        platform_windows = true;
+#endif
+
+        Builtin::decl_PLATFORM_WINDOWS = register_builtin_constant_bool(context,
+            "PLATFORM_WINDOWS", platform_windows);
+        Builtin::decl_PLATFORM_LINUX = register_builtin_constant_bool(context,
+            "PLATFORM_LINUX", platform_linux);
+
+    }
+
+    AST_Declaration* register_builtin_constant_bool(Context* context, const char* name, bool value)
+    {
+        assert(context);
+        assert(name);
+
+        File_Pos file_pos;
+        file_pos.char_pos = 0;
+        file_pos.line_relative_char_pos = 0;
+        file_pos.line = 0;
+        file_pos.file_name = "<builtin>";
+
+        Atom identifier_atom = atom_get(context->atom_table, name);
+        AST_Identifier* identifier = ast_identifier_new(context, identifier_atom, file_pos);
+
+        Atom type_spec_atom = atom_get(context->atom_table, "bool");
+        AST_Identifier* type_spec_ident = ast_identifier_new(context, type_spec_atom, file_pos);
+        AST_Type_Spec* type_spec = ast_type_spec_identifier_new(context, file_pos, type_spec_ident);
+
+        AST_Expression* init_expression = ast_boolean_literal_expression_new(context, file_pos,
+            value);
+        init_expression->type = Builtin::type_bool;
+
+        AST_Declaration* result = ast_constant_variable_declaration_new(context, file_pos,
+            identifier, type_spec, init_expression, AST_DECL_LOC_GLOBAL);
+        result->flags |= AST_DECL_FLAG_RESOLVED;
+        result->constant_var.type = Builtin::type_bool;
+
+        BUF_PUSH(context->builtin_decls, result);
+
+        return result;
+    }
 }

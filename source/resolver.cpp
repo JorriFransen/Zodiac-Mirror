@@ -29,15 +29,6 @@ namespace Zodiac
 
         resolver->current_func_decl = nullptr;
 
-        assert(module->module_scope);
-        AST_Scope* module_scope = module->module_scope;
-        assert(module_scope->declarations == nullptr);
-
-        for (uint64_t i = 0; i < BUF_LENGTH(context->builtin_decls); i++)
-        {
-            AST_Declaration* builtin_decl = context->builtin_decls[i];
-            BUF_PUSH(module_scope->declarations, builtin_decl);
-        }
     }
 
     void resolver_do_cycle(Resolver* resolver)

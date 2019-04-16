@@ -558,6 +558,7 @@ namespace Zodiac
             {
                 AST_Declaration* ident_decl = expression->identifier->declaration;
                 IR_Value* value = ir_builder_value_for_declaration(ir_builder, ident_decl);
+                assert(value);
                 if (value->kind == IRV_TEMPORARY ||
                     value->kind == IRV_INT_LITERAL ||
                     value->kind == IRV_BOOL_LITERAL)

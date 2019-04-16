@@ -18,6 +18,7 @@ namespace Zodiac
         context_init_keywords(context);
 
         init_builtin_types(context);
+        init_builtin_decls(context);
     }
 
 #define DEFINE_KW(string, kw_kind) \

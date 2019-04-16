@@ -98,6 +98,7 @@ int main(int argc, char** argv)
     if (!resolver.done)
     {
         resolver_report_errors(&resolver);
+        fprintf(stderr, "Exitting with resolve error(s)\n");
         return -1;
     }
 

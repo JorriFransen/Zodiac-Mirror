@@ -14,6 +14,16 @@ namespace Zodiac
         result->entry_point = nullptr;
         result->module_name = module_name;
 
+        for (uint64_t i = 0; i < BUF_LENGTH(context->builtin_decls); i++)
+        {
+            AST_Declaration* builtin_decl = context->builtin_decls[i];
+            BUF_PUSH(result->module_scope->declarations, builtin_decl);
+            if (builtin_decl->location == AST_DECL_LOC_GLOBAL)
+            {
+                BUF_PUSH(result->global_declarations, builtin_decl);
+            }
+        }
+
         return result;
     }
 
