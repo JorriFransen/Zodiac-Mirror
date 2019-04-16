@@ -223,6 +223,7 @@ namespace Zodiac
         AST_DECL_DYN_LINK,
         AST_DECL_STATIC_IF,
         AST_DECL_BLOCK,
+        AST_DECL_STATIC_ASSERT,
     };
 
     struct AST_Function_Declaration
@@ -306,6 +307,8 @@ namespace Zodiac
             {
                 BUF(AST_Declaration*) decls;
             } block;
+
+            AST_Expression* static_assert_expression;
         };
 
         void* gen_data = nullptr;
@@ -448,6 +451,8 @@ namespace Zodiac
     AST_Declaration* ast_static_if_declaration_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
                                                    AST_Declaration* then_declaration, AST_Declaration* else_declaration);
     AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos, BUF(AST_Declaration*) block_decls);
+    AST_Declaration* ast_static_assert_declaration_new(Context* context, File_Pos file_pos,
+        AST_Expression* assert_expr);
 
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos, AST_Declaration* declaration);
     AST_Statement* ast_block_statement_new(Context* context, File_Pos file_pos, BUF(AST_Statement*) block_statements,

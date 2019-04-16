@@ -114,7 +114,7 @@ namespace Zodiac
                 case AST_DECL_BLOCK:
                 {
                     result &= try_resolve_block_declaration(resolver, declaration, scope);
-                    break;;
+                    break;
                 }
 
                 default:

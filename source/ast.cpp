@@ -334,6 +334,17 @@ namespace Zodiac
         return result;
     }
 
+    AST_Declaration* ast_static_assert_declaration_new(Context* context, File_Pos file_pos,
+        AST_Expression* assert_expr)
+    {
+        assert(context);
+        assert(assert_expr);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_STATIC_ASSERT,
+            AST_DECL_LOC_GLOBAL, nullptr, nullptr, true);
+        result->static_assert_expression = assert_expr;
+        return result;
+    }
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos, AST_Declaration* declaration)
     {
         assert(context);

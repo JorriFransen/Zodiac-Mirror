@@ -121,6 +121,11 @@ namespace Zodiac
             return parse_block_declaration(parser, global, scope);
         }
 
+        if (is_token(parser, TOK_KW_STATIC_ASSERT))
+        {
+            return parse_static_assert_declaration(parser, global, scope);
+        }
+
         AST_Identifier* identifier = parse_identifier(parser);
         if (!identifier)
         {
@@ -364,6 +369,23 @@ namespace Zodiac
         }
 
         return ast_block_declaration_new(parser->context, ft.file_pos, block_decls);
+    }
+
+    static AST_Declaration* parse_static_assert_declaration(Parser* parser, bool global, AST_Scope* scope)
+    {
+        assert(parser);
+        assert(global);
+        assert(scope);
+
+        auto ft = current_token(parser);
+        expect_token(parser, TOK_KW_STATIC_ASSERT);
+
+        expect_token(parser, TOK_LPAREN);
+        AST_Expression* assert_expr = parse_expression(parser);
+        expect_token(parser, TOK_RPAREN);
+        expect_token(parser, TOK_SEMICOLON);
+
+        return ast_static_assert_declaration_new(parser->context, ft.file_pos, assert_expr);
     }
 
     static AST_Statement* parse_statement(Parser* parser, AST_Scope* scope)
