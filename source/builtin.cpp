@@ -53,9 +53,18 @@ namespace Zodiac
         platform_windows = true;
 #elif defined __linux__
         platform_windows = true;
+#elif
+        assert(false);
 #endif
 
-        assert(platform_windows || platform_linux);
+        if (platform_windows)
+        {
+            printf("Windows mode\n");
+        }
+        else if (platform_linux)
+        {
+            printf("Linux mode\n");
+        }
 
         Builtin::decl_PLATFORM_WINDOWS = register_builtin_constant_bool(context,
             "PLATFORM_WINDOWS", platform_windows);
