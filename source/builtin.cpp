@@ -51,9 +51,11 @@ namespace Zodiac
 
 #ifdef WIN32 
         platform_windows = true;
-#elif defined aLINUX
+#elif defined __linux__
         platform_windows = true;
 #endif
+
+        assert(platform_windows || platform_linux);
 
         Builtin::decl_PLATFORM_WINDOWS = register_builtin_constant_bool(context,
             "PLATFORM_WINDOWS", platform_windows);
