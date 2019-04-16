@@ -51,7 +51,7 @@ namespace Zodiac
 
 #ifdef WIN32 
         platform_windows = true;
-#elif LINUX
+#elif defined aLINUX
         platform_windows = true;
 #endif
 

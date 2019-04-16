@@ -3,7 +3,7 @@ static_if (PLATFORM_WINDOWS)
 {
     #dynamic_link "msvcrt.dll";
 }
-else
+else if (PLATFORM_LINUX)
 {
     #dynamic_link "libc.so.6";
 }
