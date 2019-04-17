@@ -221,7 +221,8 @@ namespace Zodiac
                 }
                 else
                 {
-                    AST_Declaration* decl = parse_declaration(parser, scope, false, nullptr, AST_DECL_LOC_ARGUMENT);
+                    AST_Declaration* decl = parse_declaration(parser, scope, false, nullptr,
+                                                              AST_DECL_LOC_ARGUMENT);
                     if (!decl)
                     {
                         return nullptr;
@@ -237,7 +238,8 @@ namespace Zodiac
             }
 
             AST_Statement* body_block = nullptr;
-            AST_Scope* argument_scope = ast_scope_new(parser->context, parser->result.ast_module->module_scope);
+            AST_Scope* argument_scope = ast_scope_new(parser->context,
+                                                      parser->result.ast_module->module_scope);
 
             if (is_token(parser, TOK_LBRACE))
             {
@@ -261,20 +263,31 @@ namespace Zodiac
             assert(import_module_ident);
             expect_token(parser, TOK_SEMICOLON);
 
-            return ast_import_declaration_new(parser->context, identifier->file_pos, identifier, import_module_ident);
+            return ast_import_declaration_new(parser->context, identifier->file_pos, identifier,
+                                              import_module_ident);
+        }
+        else if (match_token(parser, TOK_KW_STRUCT))
+        {
+            assert(!type_spec);
+
+            BUF(AST_Declaration*) aggregate_declarations = parse_aggregate(parser, scope);
+
+            return ast_struct_declaration_new(parser->context, identifier->file_pos, identifier,
+                                              aggregate_declarations);
         }
         else
         {
             AST_Expression* init_expression = parse_expression(parser);
             assert(expect_token(parser, TOK_SEMICOLON));
 
-            return ast_constant_variable_declaration_new(parser->context, identifier->file_pos, identifier, type_spec,
-                                                         init_expression, location);
+            return ast_constant_variable_declaration_new(parser->context, identifier->file_pos, identifier,
+                                                         type_spec, init_expression, location);
         }
     }
 
     static AST_Declaration* parse_mutable_declaration(Parser* parser, AST_Identifier* identifier,
-                                                      AST_Type_Spec* type_spec, AST_Declaration_Location location)
+                                                      AST_Type_Spec* type_spec,
+                                                      AST_Declaration_Location location)
     {
         assert(parser);
         assert(identifier);
@@ -396,6 +409,26 @@ namespace Zodiac
         expect_token(parser, TOK_SEMICOLON);
 
         return ast_static_assert_declaration_new(parser->context, ft.file_pos, assert_expr);
+    }
+
+    static BUF(AST_Declaration*) parse_aggregate(Parser* parser, AST_Scope* scope)
+    {
+        assert(parser);
+        assert(scope);
+
+        expect_token(parser, TOK_LBRACE);
+
+        BUF(AST_Declaration*) result = nullptr;
+
+        while (!match_token(parser, TOK_RBRACE))
+        {
+            AST_Declaration* member_decl = parse_declaration(parser, scope, false,
+                                                             AST_DECL_LOC_AGGREGATE_MEMBER);
+            expect_token(parser, TOK_SEMICOLON);
+            BUF_PUSH(result, member_decl);
+        }
+
+        return result;
     }
 
     static AST_Statement* parse_statement(Parser* parser, AST_Scope* scope)

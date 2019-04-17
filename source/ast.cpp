@@ -362,7 +362,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Declaration* ast_import_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
+    AST_Declaration* ast_import_declaration_new(Context* context, File_Pos file_pos,
+                                                AST_Identifier* identifier,
                                                 AST_Identifier* import_module_identifier)
     {
         assert(context);
@@ -375,7 +376,24 @@ namespace Zodiac
         return result;
     }
 
-    AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos, AST_Declaration* declaration)
+    AST_Declaration* ast_struct_declaration_new(Context* context, File_Pos file_pos,
+                                                AST_Identifier* identifier,
+                                                BUF(AST_Declaration*) member_decls)
+    {
+        assert(context);
+        assert(identifier);
+        assert(member_decls);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
+                                                      AST_DECL_LOC_GLOBAL, identifier, nullptr, true);
+        result->aggregate_type.kind = AST_AGG_DECL_STRUCT;
+        result->aggregate_type.aggregate_declarations = member_decls;
+
+        return result;
+    }
+
+    AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos,
+                                                 AST_Declaration* declaration)
     {
         assert(context);
         AST_Statement* result = arena_alloc(context->arena, AST_Statement);
@@ -386,7 +404,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Statement* ast_block_statement_new(Context* context, File_Pos file_pos, BUF(AST_Statement*) block_statements,
+    AST_Statement* ast_block_statement_new(Context* context, File_Pos file_pos,
+                                           BUF(AST_Statement*) block_statements,
                                            AST_Scope* block_scope)
     {
         assert(context);

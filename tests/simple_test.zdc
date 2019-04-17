@@ -2,6 +2,12 @@
 
 io :: import io;
 
+Vec2i :: struct
+{
+    x : int;
+    y : int;
+}
+
 main :: () -> int
 {
     loop();

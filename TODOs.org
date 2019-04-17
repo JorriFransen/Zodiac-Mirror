@@ -1,10 +1,22 @@
 
+ - FLOATS!!!
+ - bit size should be valid for all kinds of type
  - normal types are not pushed in the per module type table. (only pointer and array types?)
- - modules
- - structs 
+   
+* Modules [0/1]
+  - [ ] Access globals across modules (this might work already)
+   
+* Structs [0/2]
+  - [ ] Nested declarations
+  - [ ] Anonymous nested declarations
+    
+* Unions [0/2]
+  - [ ] Nested declarations
+  - [ ] Anonymous nested declarations
 
-* Pointers [1/4]
+* Pointers [2/5]
    - [X] Basic pointers
+   - [X] Index expressions on pointers
    - [ ] Pointer math
    - [ ] Member expressions on pointers
    - [ ] String type
@@ -23,14 +35,15 @@
    - [ ] break
    - [ ] defer
 
-* IR [1/12]
+* IR [1/13]
    - [X] Argument count should be an argument for function calls
    - [ ] Make assignment statements for array literals more efficient by not using an intermediary array
    - [ ] Handle pointer offsets the same way as we do for static arrays
-   - [ ] Cleanup the gendata situation
+   - [ ] Cleanup the gendata situation (???)
    - [ ] Cleanup lvalue expression generation
    - [ ] Use atoms where possible
    - [ ] Make block names unique with a counter
+   - [ ] Make value names unique with a counter
    - [ ] Free list for blocks (We don't have any free ones right now?
    - [ ] Manage stack frame memory
    - [ ] Prevent functions with the same name

@@ -147,6 +147,7 @@ namespace Zodiac
         DEFINE_KW("array_length", TOK_KW_ARRAY_LENGTH);
         DEFINE_KW("static_assert", TOK_KW_STATIC_ASSERT);
         DEFINE_KW("import", TOK_KW_IMPORT);
+        DEFINE_KW("struct", TOK_KW_STRUCT);
     }
 
 #undef DEFINE_KW

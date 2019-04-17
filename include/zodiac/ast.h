@@ -236,6 +236,7 @@ namespace Zodiac
         AST_DECL_BLOCK,
         AST_DECL_STATIC_ASSERT,
         AST_DECL_IMPORT,
+        AST_DECL_AGGREGATE_TYPE,
     };
 
     struct AST_Function_Declaration
@@ -274,6 +275,12 @@ namespace Zodiac
         AST_DECL_LOC_GLOBAL,
         AST_DECL_LOC_LOCAL,
         AST_DECL_LOC_ARGUMENT,
+        AST_DECL_LOC_AGGREGATE_MEMBER,
+    };
+
+    enum AST_Aggregate_Declaration_Kind
+    {
+        AST_AGG_DECL_STRUCT,
     };
 
     struct AST_Declaration
@@ -327,6 +334,12 @@ namespace Zodiac
                 AST_Identifier* module_identifier;
                 AST_Module* module;
             } import;
+
+            struct
+            {
+                AST_Aggregate_Declaration_Kind kind;
+                BUF(AST_Declaration*) aggregate_declarations;
+            } aggregate_type;
         };
 
         void* gen_data = nullptr;
@@ -468,21 +481,31 @@ namespace Zodiac
                                               AST_Identifier* identifier);
     AST_Declaration* ast_dyn_link_declaration_new(Context* context, File_Pos file_pos, Atom link_name,
                                                   AST_Declaration_Location location);
-    AST_Declaration* ast_static_if_declaration_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
-                                                   AST_Declaration* then_declaration, AST_Declaration* else_declaration);
-    AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos, BUF(AST_Declaration*) block_decls);
+    AST_Declaration* ast_static_if_declaration_new(Context* context, File_Pos file_pos,
+                                                   AST_Expression* cond_expr,
+                                                   AST_Declaration* then_declaration,
+                                                   AST_Declaration* else_declaration);
+    AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos,
+                                               BUF(AST_Declaration*) block_decls);
     AST_Declaration* ast_static_assert_declaration_new(Context* context, File_Pos file_pos,
                                                        AST_Expression* assert_expr);
-    AST_Declaration* ast_import_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
+    AST_Declaration* ast_import_declaration_new(Context* context, File_Pos file_pos,
+                                                AST_Identifier* identifier,
                                                 AST_Identifier* import_module_identifier);
+    AST_Declaration* ast_struct_declaration_new(Context* context, File_Pos file_pos,
+                                                AST_Identifier* identifier,
+                                                BUF(AST_Declaration*) member_decls);
 
-    AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos, AST_Declaration* declaration);
-    AST_Statement* ast_block_statement_new(Context* context, File_Pos file_pos, BUF(AST_Statement*) block_statements,
+    AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos,
+                                                 AST_Declaration* declaration);
+    AST_Statement* ast_block_statement_new(Context* context, File_Pos file_pos,
+                                           BUF(AST_Statement*) block_statements,
                                            AST_Scope* block_scope);
     AST_Statement* ast_return_statement_new(Context* context, File_Pos file_pos, AST_Expression* return_expr);
     AST_Statement* ast_if_statement_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
                                         AST_Statement* then_stmt, AST_Statement* else_stmt);
-    AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos, AST_Expression* lvalue_expression,
+    AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos,
+                                            AST_Expression* lvalue_expression,
                                             AST_Expression* expression);
     AST_Statement* ast_call_statement_new(Context* context, AST_Expression* call_expression);
     AST_Statement* ast_while_statement_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
