@@ -1,6 +1,10 @@
 #include "zodiac.h"
 
 #include "builtin.h"
+#include "lexer.h"
+#include "parser.h"
+#include "resolver.h"
+#include "ir.h"
 
 namespace Zodiac
 {
@@ -15,10 +19,107 @@ namespace Zodiac
         atom_table_init(context->atom_table);
 
         context->keywords =  nullptr;
+        context->compiled_modules = nullptr;
         context_init_keywords(context);
 
         init_builtin_types(context);
         init_builtin_decls(context);
+
+        init_module_path(context);
+    }
+
+    AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path, const Atom& module_name)
+    {
+        assert(context);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(context->compiled_modules); i++)
+        {
+            const Compiled_Module& cm = context->compiled_modules[i];
+            if (cm.module_path == module_path && cm.module_name == module_name)
+            {
+                return cm.module;
+            }
+        }
+
+        return zodiac_compile_module(context, module_path, module_name);
+    }
+
+    AST_Module* zodiac_compile_module(Context* context, const Atom& module_path, const Atom& module_name)
+    {
+        assert(context);
+
+        const char* module_string = read_file_string(module_path.data);
+        assert(module_string);
+
+        Lexer lexer;
+        init_lexer(&lexer, context);
+
+        Lex_Result lex_result = lex_file(&lexer, module_string, module_name.data);
+        if (BUF_LENGTH(lex_result.errors) != 0)
+        {
+            lexer_report_errors(&lexer);
+            return nullptr;
+        }
+
+        mem_free(module_string);
+
+        Parser parser;
+        parser_init(&parser, context);
+
+        Parse_Result parse_result = parse_module(&parser, lex_result.tokens, module_name.data);
+        if (BUF_LENGTH(parse_result.errors) != 0)
+        {
+            parser_report_errors(&parser);
+            return nullptr;
+        }
+
+        Resolver resolver;
+        resolver_init(&resolver, context, parse_result.ast_module);
+
+        while (!resolver.done)
+        {
+            resolver_do_cycle(&resolver);
+
+            if (!resolver.progressed_on_last_cycle)
+            {
+                break;
+            }
+        }
+
+        if (!resolver.done)
+        {
+            resolver_report_errors(&resolver);
+            return nullptr;
+        }
+
+        IR_Builder ir_builder;
+        ir_builder_init(&ir_builder, context);
+
+        IR_Module ir_module = ir_builder_emit_module(&ir_builder, parse_result.ast_module);
+
+        if (ir_module.error_count)
+        {
+            fprintf(stderr, "IR builder return with errors, exiting\n");
+            return nullptr;
+        }
+
+        IR_Validation_Result validation = ir_validate(&ir_builder);
+
+        if (!validation.messages)
+        {
+            fprintf(stderr, "Generated ir for file: %s:\n", module_path.data);
+            ir_builder_print_result(&ir_builder);
+        }
+        else
+        {
+            for (uint64_t i = 0; i < BUF_LENGTH(validation.messages); i++)
+            {
+                fprintf(stderr, "%s\n", validation.messages[i]);
+            }
+            return nullptr;
+        }
+
+        return parse_result.ast_module;
     }
 
 #define DEFINE_KW(string, kw_kind) \
@@ -44,7 +145,23 @@ namespace Zodiac
         DEFINE_KW("for", TOK_KW_FOR);
         DEFINE_KW("array_length", TOK_KW_ARRAY_LENGTH);
         DEFINE_KW("static_assert", TOK_KW_STATIC_ASSERT);
+        DEFINE_KW("import", TOK_KW_IMPORT);
     }
 
 #undef DEFINE_KW
+
+    static void init_module_path(Context* context)
+    {
+        assert(context);
+
+        const char* module_path = secure_getenv("ZODIAC_MODULE_PATH");
+        if (!module_path)
+        {
+            fprintf(stderr, "Zodiac module path not specified, exiting\n");
+            assert(false);
+        }
+
+        printf("ZODIAC_MODULE_PATH: %s\n", module_path);
+        context->module_search_path = atom_get(context->atom_table, module_path);
+    }
 }

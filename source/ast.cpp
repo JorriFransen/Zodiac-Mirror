@@ -13,6 +13,7 @@ namespace Zodiac
         result->module_scope = ast_scope_new(context, nullptr);
         result->entry_point = nullptr;
         result->module_name = module_name;
+        result->import_modules = nullptr;
 
         for (uint64_t i = 0; i < BUF_LENGTH(context->builtin_decls); i++)
         {
@@ -341,10 +342,24 @@ namespace Zodiac
         assert(assert_expr);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_STATIC_ASSERT,
-            AST_DECL_LOC_GLOBAL, nullptr, nullptr, true);
+                                                      AST_DECL_LOC_GLOBAL, nullptr, nullptr, true);
         result->static_assert_expression = assert_expr;
         return result;
     }
+
+    AST_Declaration* ast_import_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
+                                                AST_Identifier* import_module_identifier)
+    {
+        assert(context);
+        assert(identifier);
+        assert(import_module_identifier);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_IMPORT,
+                                                      AST_DECL_LOC_GLOBAL, identifier, nullptr, true);
+        result->import_module_identifier = import_module_identifier;
+        return result;
+    }
+
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos, AST_Declaration* declaration)
     {
         assert(context);

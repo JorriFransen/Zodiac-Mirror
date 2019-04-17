@@ -253,6 +253,16 @@ namespace Zodiac
                                                                 body_block, argument_scope);
             return result;
         }
+        else if (match_token(parser, TOK_KW_IMPORT))
+        {
+            assert(!type_spec);
+
+            AST_Identifier* import_module_ident = parse_identifier(parser);
+            assert(import_module_ident);
+            expect_token(parser, TOK_SEMICOLON);
+
+            return ast_import_declaration_new(parser->context, identifier->file_pos, identifier, import_module_ident);
+        }
         else
         {
             AST_Expression* init_expression = parse_expression(parser);

@@ -53,6 +53,7 @@ namespace Zodiac
         "TOK_KW_FOR",
         "TOK_KW_ARRAY_LENGTH",
         "TOK_KW_STATIC_ASSERT",
+        "TOK_KW_IMPORT",
 
         "TOK_COUNT",
     };

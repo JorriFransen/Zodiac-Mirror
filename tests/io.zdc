@@ -1,0 +1,25 @@
+
+static_if (PLATFORM_WINDOWS)
+{
+    #dynamic_link "msvcrt.dll";
+}
+else static_if (PLATFORM_LINUX)
+{
+    #dynamic_link "libc.so.6";
+}
+else
+{
+    static_assert(false);
+}
+
+#foreign putchar :: (x: int) -> int;
+#foreign puts :: (string: *u8) -> int;
+#foreign printf :: (format: *u8, ...) -> int;
+
+newline :: () -> void { putchar(10); }
+
+print_digit :: (digit: int) -> void
+{
+    putchar(digit + 48);
+    newline();
+}

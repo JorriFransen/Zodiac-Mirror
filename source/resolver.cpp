@@ -122,6 +122,12 @@ namespace Zodiac
                     break;
                 }
 
+                case AST_DECL_IMPORT:
+                {
+                    result &= try_resolve_import_declaration(resolver, declaration, scope);
+                    break;
+                }
+
                 default:
                     assert(false);
                     break;
@@ -344,6 +350,33 @@ namespace Zodiac
         }
 
         return result;
+    }
+
+    static bool try_resolve_import_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(declaration);
+        assert(declaration->kind == AST_DECL_IMPORT);
+        assert(scope);
+
+        auto at = resolver->context->atom_table;
+
+        Atom module_name = declaration->import_module_identifier->atom;
+        Atom module_file_name = atom_append(at, module_name, ".zdc");
+        Atom module_search_path = resolver->context->module_search_path;
+
+        Atom module_path = atom_append(at, module_search_path, module_file_name);
+
+        if (!file_exists(module_path.data))
+        {
+            resolver_report_error(resolver, declaration->file_pos, "Failed to find module: %s", module_name.data);
+            resolver_report_error(resolver, declaration->file_pos, "\tExpected path: %s", module_path.data);
+            return false;
+        }
+
+        resolver_add_import_to_module(resolver, resolver->module, module_path, module_name);
+
+        return true;
     }
 
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,
@@ -626,6 +659,11 @@ namespace Zodiac
             {
                 result = false;
             }
+        }
+
+        if (!result)
+        {
+            return false;
         }
 
         for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
@@ -981,6 +1019,34 @@ namespace Zodiac
 
         assert(false);
         return false;
+    }
+
+    void resolver_add_import_to_module(Resolver* resolver, AST_Module* module, const Atom& module_path,
+                                       const Atom& module_name)
+    {
+        assert(resolver);
+        assert(module);
+
+        assert(file_exists(module_path.data));
+
+        AST_Module* import_module = zodiac_compile_or_get_module(resolver->context, module_path, module_name);
+        assert(import_module);
+
+        bool found = false;
+
+        for (uint64_t i = 0; i < BUF_LENGTH(module->import_modules); i++)
+        {
+            if (module->import_modules[i] == import_module)
+            {
+                found = true;
+                break;;
+            }
+        }
+
+        if (!found)
+        {
+            BUF_PUSH(module->import_modules, import_module);
+        }
     }
 
     AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier)

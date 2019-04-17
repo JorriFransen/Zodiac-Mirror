@@ -22,6 +22,8 @@ namespace Zodiac
         AST_Scope* module_scope = nullptr;
         AST_Declaration* entry_point = nullptr;
         const char* module_name = nullptr;
+
+        BUF(AST_Module*) import_modules = nullptr;
     };
 
     struct AST_Identifier
@@ -224,6 +226,7 @@ namespace Zodiac
         AST_DECL_STATIC_IF,
         AST_DECL_BLOCK,
         AST_DECL_STATIC_ASSERT,
+        AST_DECL_IMPORT,
     };
 
     struct AST_Function_Declaration
@@ -309,6 +312,8 @@ namespace Zodiac
             } block;
 
             AST_Expression* static_assert_expression;
+
+            AST_Identifier* import_module_identifier;
         };
 
         void* gen_data = nullptr;
@@ -452,7 +457,9 @@ namespace Zodiac
                                                    AST_Declaration* then_declaration, AST_Declaration* else_declaration);
     AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos, BUF(AST_Declaration*) block_decls);
     AST_Declaration* ast_static_assert_declaration_new(Context* context, File_Pos file_pos,
-        AST_Expression* assert_expr);
+                                                       AST_Expression* assert_expr);
+    AST_Declaration* ast_import_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
+                                                AST_Identifier* import_module_identifier);
 
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos, AST_Declaration* declaration);
     AST_Statement* ast_block_statement_new(Context* context, File_Pos file_pos, BUF(AST_Statement*) block_statements,

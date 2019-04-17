@@ -45,6 +45,8 @@ namespace Zodiac
     static bool try_resolve_static_if_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope);
     static bool try_resolve_block_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope);
     static bool try_resolve_static_assert_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope);
+    static bool try_resolve_import_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope);
+
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,
                                       AST_Scope* scope);
     static bool try_resolve_return_statement(Resolver* resolver, AST_Statement* statement,
@@ -72,6 +74,9 @@ namespace Zodiac
 
     static bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec, AST_Type** type_dest,
                                       AST_Scope* scope);
+
+    void resolver_add_import_to_module(Resolver* resolver, AST_Module* module, const Atom& module_path,
+                                       const Atom& module_name);
 
     AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier);
 
