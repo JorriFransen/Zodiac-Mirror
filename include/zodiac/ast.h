@@ -24,6 +24,8 @@ namespace Zodiac
         const char* module_name = nullptr;
 
         BUF(AST_Module*) import_modules = nullptr;
+
+        void* gen_data = nullptr;
     };
 
     struct AST_Identifier
@@ -47,6 +49,7 @@ namespace Zodiac
         AST_EXPR_CHAR_LITERAL,
         AST_EXPR_COMPOUND_LITERAL,
         AST_EXPR_ARRAY_LENGTH,
+        AST_EXPR_DOT,
     };
 
     enum AST_Binop_Kind
@@ -105,7 +108,7 @@ namespace Zodiac
 
             struct
             {
-                AST_Identifier* identifier;
+                AST_Expression* ident_expression;
                 AST_Declaration* callee_declaration;
                 BUF(AST_Expression*) arg_expressions;
             } call;
@@ -145,6 +148,12 @@ namespace Zodiac
             {
                 AST_Expression* ident_expr;
             } array_length;
+
+            struct
+            {
+                AST_Expression* base_expression;
+                AST_Expression* member_expression;
+            } dot;
         };
     };
 
@@ -313,7 +322,11 @@ namespace Zodiac
 
             AST_Expression* static_assert_expression;
 
-            AST_Identifier* import_module_identifier;
+            struct
+            {
+                AST_Identifier* module_identifier;
+                AST_Module* module;
+            } import;
         };
 
         void* gen_data = nullptr;
@@ -420,7 +433,7 @@ namespace Zodiac
     AST_Expression* ast_unary_expression_new(Context* context, File_Pos file_pos,
                                              AST_Unop_Kind op, AST_Expression* operand);
     AST_Expression* ast_ident_expression_new(Context* context, File_Pos file_pos, AST_Identifier* identifier);
-    AST_Expression* ast_call_expression_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
+    AST_Expression* ast_call_expression_new(Context* context, File_Pos file_pos, AST_Expression* ident_expression,
                                             BUF(AST_Expression*) arg_exprs);
     AST_Expression* ast_subscript_expression_new(Context* context, File_Pos file_pos, AST_Expression* base_expression,
                                                  AST_Expression* index_expression);
@@ -431,6 +444,8 @@ namespace Zodiac
     AST_Expression* ast_compound_literal_expression_new(Context* context, File_Pos file_pos,
                                                         BUF(AST_Expression*) expressions);
     AST_Expression* ast_array_length_expression_new(Context* context, File_Pos file_pos, AST_Expression* ident_expr);
+    AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos, AST_Expression* base_expr,
+                                           AST_Expression* member_expr);
 
     AST_Declaration* ast_declaration_new(Context* context, File_Pos file_Pos, AST_Declaration_Kind kind,
                                          AST_Declaration_Location location,

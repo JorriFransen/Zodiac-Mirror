@@ -763,57 +763,104 @@ namespace Zodiac
         }
     }
 
-    static AST_Expression* parse_base_expression(Parser* parser)
+    static AST_Expression* parse_base_expression(Parser* parser, AST_Expression* base/*=nullptr*/)
     {
         assert(parser);
 
         AST_Expression* result = nullptr;
         auto ft = current_token(parser);
 
-        if (is_token(parser, TOK_IDENTIFIER))
+        if (!base)
         {
-            // Identifier, Call
-            AST_Identifier* identifier = parse_identifier(parser);
-            if (!identifier)
+            if (is_token(parser, TOK_IDENTIFIER))
             {
-                assert(false);
-            }
+                // Identifier, Call
+                AST_Identifier* identifier = parse_identifier(parser);
+                if (!identifier)
+                {
+                    assert(false);
+                }
 
-            if (is_token(parser, TOK_LPAREN))
+                if (is_token(parser, TOK_LPAREN))
+                {
+                    result = parse_call_expression(parser, identifier);
+                }
+                else
+                {
+                    result = ast_ident_expression_new(parser->context, identifier->file_pos, identifier);
+                }
+            }
+            else if (is_token(parser, TOK_KW_ARRAY_LENGTH))
             {
-                result = parse_call_expression(parser, identifier);
+                result = parse_array_length_expression(parser);
             }
             else
             {
-                result = ast_ident_expression_new(parser->context, identifier->file_pos, identifier);
+                // Paren expr
+                if (match_token(parser, TOK_LPAREN))
+                {
+                    result = parse_expression(parser);
+                    expect_token(parser, TOK_RPAREN);
+                }
+                else
+                {
+                    // Literal
+                    result = parse_literal_expression(parser);
+                }
             }
-        }
-        else if (is_token(parser, TOK_KW_ARRAY_LENGTH))
-        {
-            result = parse_array_length_expression(parser);
+
+            assert(result);
         }
         else
         {
-            // Paren expr
-            if (match_token(parser, TOK_LPAREN))
-            {
-                result = parse_expression(parser);
-                expect_token(parser, TOK_RPAREN);
-            }
-            else
-            {
-                // Literal
-                result = parse_literal_expression(parser);
-            }
+            result = base;
         }
 
         assert(result);
 
-        if (match_token(parser, TOK_LBRACK))
+        auto ct = current_token(parser);
+
+        bool done = false;
+
+        switch (ct.kind)
         {
-            AST_Expression* index_expr = parse_expression(parser);
-            expect_token(parser, TOK_RBRACK);
-            result = ast_subscript_expression_new(parser->context, ft.file_pos, result, index_expr);
+            case TOK_LBRACK:
+            {
+                expect_token(parser, TOK_LBRACK);
+                AST_Expression* index_expr = parse_expression(parser);
+                expect_token(parser, TOK_RBRACK);
+                result = ast_subscript_expression_new(parser->context, ft.file_pos, result, index_expr);
+                break;
+            }
+
+            case TOK_DOT:
+            {
+                expect_token(parser, TOK_DOT);
+                AST_Identifier* member_ident = parse_identifier(parser);
+                assert(member_ident);
+
+                AST_Expression* member_expr = ast_ident_expression_new(parser->context, member_ident->file_pos,
+                                                                       member_ident);
+                result = ast_dot_expression_new(parser->context, ft.file_pos, result, member_expr);
+                break;
+            }
+
+            case TOK_LPAREN:
+            {
+                result = parse_call_expression(parser, result);
+                break;
+            }
+
+            default:
+            {
+                done = true;
+                break;
+            }
+        }
+
+        if (!done)
+        {
+            result = parse_base_expression(parser, result);
         }
 
         return result;
@@ -915,10 +962,12 @@ namespace Zodiac
         return ast_array_length_expression_new(parser->context, ft.file_pos, ident_expr);
     }
 
-    static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier)
+    static AST_Expression* parse_call_expression(Parser* parser, AST_Expression* ident_expression)
     {
         assert(parser);
-        assert(identifier);
+        assert(ident_expression);
+        assert(ident_expression->kind == AST_EXPR_IDENTIFIER ||
+               ident_expression->kind == AST_EXPR_DOT);
 
         expect_token(parser, TOK_LPAREN);
 
@@ -939,7 +988,17 @@ namespace Zodiac
             BUF_PUSH(arg_exprs, arg_expr);
         }
 
-        return ast_call_expression_new(parser->context, identifier->file_pos, identifier, arg_exprs);
+        return ast_call_expression_new(parser->context, ident_expression->file_pos, ident_expression, arg_exprs);
+    }
+
+    static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier)
+    {
+        assert(parser);
+        assert(identifier);
+
+        AST_Expression* ident_expression = ast_ident_expression_new(parser->context, identifier->file_pos,
+                                                                    identifier);
+        return parse_call_expression(parser, ident_expression);
     }
 
     static AST_Type_Spec* parse_type_spec(Parser* parser)

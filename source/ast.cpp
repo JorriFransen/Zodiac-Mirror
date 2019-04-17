@@ -14,6 +14,7 @@ namespace Zodiac
         result->entry_point = nullptr;
         result->module_name = module_name;
         result->import_modules = nullptr;
+        result->gen_data = nullptr;
 
         for (uint64_t i = 0; i < BUF_LENGTH(context->builtin_decls); i++)
         {
@@ -106,15 +107,15 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_call_expression_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
+    AST_Expression* ast_call_expression_new(Context* context, File_Pos file_pos, AST_Expression* ident_expr,
         BUF(AST_Expression*) arg_exprs)
     {
         assert(context);
-        assert(identifier);
+        assert(ident_expr);
 
         auto result = ast_expression_new(context, file_pos, AST_EXPR_CALL);
 
-        result->call.identifier = identifier;
+        result->call.ident_expression = ident_expr;
         result->call.arg_expressions = arg_exprs;
 
         return result;
@@ -187,6 +188,20 @@ namespace Zodiac
 
         auto result = ast_expression_new(context, file_pos, AST_EXPR_ARRAY_LENGTH);
         result->array_length.ident_expr = ident_expr;
+        return result;
+    }
+
+    AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos, AST_Expression* base_expr,
+                                           AST_Expression* member_expr)
+    {
+        assert(context);
+        assert(base_expr);
+        assert(member_expr);
+
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_DOT);
+        result->dot.base_expression = base_expr;
+        result->dot.member_expression = member_expr;
+
         return result;
     }
 
@@ -356,7 +371,7 @@ namespace Zodiac
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_IMPORT,
                                                       AST_DECL_LOC_GLOBAL, identifier, nullptr, true);
-        result->import_module_identifier = import_module_identifier;
+        result->import.module_identifier = import_module_identifier;
         return result;
     }
 

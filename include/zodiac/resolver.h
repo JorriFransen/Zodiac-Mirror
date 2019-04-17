@@ -75,12 +75,14 @@ namespace Zodiac
     static bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec, AST_Type** type_dest,
                                       AST_Scope* scope);
 
-    void resolver_add_import_to_module(Resolver* resolver, AST_Module* module, const Atom& module_path,
-                                       const Atom& module_name);
+    AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module, const Atom& module_path,
+                                              const Atom& module_name);
 
     AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier);
 
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos, AST_Identifier* identifier);
+    static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos, AST_Module* module,
+                                             AST_Identifier* identifier);
     static void resolver_report_error(Resolver* resolver, File_Pos file_pos, const char* format, ...);
     void resolver_report_errors(Resolver* resolver);
 }

@@ -33,6 +33,7 @@ namespace Zodiac
         BUF(AST_Declaration*) builtin_decls = nullptr;
 
         BUF(Compiled_Module) compiled_modules = nullptr;
+        BUF(Atom) foreign_table = nullptr;
     };
 
     void context_init(Context* context, Arena* arena);

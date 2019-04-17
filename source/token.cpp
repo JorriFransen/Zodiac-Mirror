@@ -34,6 +34,7 @@ namespace Zodiac
         "TOK_RBRACK",     // ]
 
         "TOK_RARROW",     // ->
+        "TOK_DOT",        // .
         "TOK_ELLIPSIS",   // ...
 
         "TOK_IDENTIFIER",

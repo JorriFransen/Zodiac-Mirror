@@ -361,7 +361,7 @@ namespace Zodiac
 
         auto at = resolver->context->atom_table;
 
-        Atom module_name = declaration->import_module_identifier->atom;
+        Atom module_name = declaration->import.module_identifier->atom;
         Atom module_file_name = atom_append(at, module_name, ".zdc");
         Atom module_search_path = resolver->context->module_search_path;
 
@@ -374,7 +374,10 @@ namespace Zodiac
             return false;
         }
 
-        resolver_add_import_to_module(resolver, resolver->module, module_path, module_name);
+        AST_Module* import_module = resolver_add_import_to_module(resolver, resolver->module, module_path, module_name);
+        assert(import_module);
+
+        declaration->import.module = import_module;
 
         return true;
     }
@@ -637,34 +640,61 @@ namespace Zodiac
 
         bool result = true;
 
-        AST_Declaration* func_decl = find_declaration(scope, expression->call.identifier);
-        if (!func_decl &&
-            (expression->call.identifier->atom == resolver->current_func_decl->identifier->atom))
+        AST_Declaration* func_decl = nullptr;
+        AST_Expression* ident_expr = expression->call.ident_expression;
+        if (ident_expr->kind == AST_EXPR_IDENTIFIER)
         {
-            func_decl = resolver->current_func_decl;
-        }
-        else
-        {
-            if (!func_decl)
+            func_decl = find_declaration(scope, ident_expr->identifier);
+            if (!func_decl &&
+                (ident_expr->identifier->atom == resolver->current_func_decl->identifier->atom))
             {
-                report_undeclared_identifier(resolver, expression->call.identifier->file_pos,
-                                             expression->call.identifier);
-                result = false;
+                func_decl = resolver->current_func_decl;
             }
-            else if (func_decl->flags & AST_DECL_FLAG_RESOLVED)
+            else if (!func_decl)
             {
-                assert(func_decl->kind == AST_DECL_FUNC);
+                report_undeclared_identifier(resolver, ident_expr->identifier->file_pos,
+                                             ident_expr->identifier);
+                return false;
             }
             else
             {
-                result = false;
+                if (!(func_decl->flags & AST_DECL_FLAG_RESOLVED))
+                {
+                    result = false;
+                }
             }
         }
-
-        if (!result)
+        else
         {
-            return false;
+            assert(ident_expr->kind == AST_EXPR_DOT);
+            AST_Expression* base_expression = ident_expr->dot.base_expression;
+            AST_Expression* member_expression = ident_expr->dot.member_expression;
+            assert(base_expression->kind == AST_EXPR_IDENTIFIER);
+            assert(member_expression->kind == AST_EXPR_IDENTIFIER);
+
+            AST_Declaration* import_decl = find_declaration(scope, base_expression->identifier);
+            assert(import_decl);
+            assert(import_decl->kind == AST_DECL_IMPORT);
+            assert(import_decl->import.module);
+
+            AST_Module* import_module = import_decl->import.module;
+            func_decl = find_declaration(import_module->module_scope, member_expression->identifier);
+            if (!func_decl)
+            {
+                report_undeclared_identifier(resolver, ident_expr->file_pos, import_module,
+                                             member_expression->identifier);
+                return false;
+            }
+
+            if (!(func_decl->flags & AST_DECL_FLAG_RESOLVED))
+            {
+                result = false;
+            }
+
+            assert(func_decl->kind == AST_DECL_FUNC);
         }
+
+        assert(func_decl);
 
         for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
         {
@@ -679,9 +709,12 @@ namespace Zodiac
 
         if (!expression->type)
         {
-            resolver_report_error(resolver,expression->file_pos,
-                                  "Circular dependency when trying to infer return type of function '%s'",
-                                  expression->call.identifier->atom.data);
+            if (expression->call.ident_expression->kind == AST_EXPR_IDENTIFIER)
+            {
+                resolver_report_error(resolver,expression->file_pos,
+                                      "Circular dependency when trying to infer return type of function '%s'",
+                                      ident_expr->identifier->atom.data);
+            }
             result = false;
         }
 
@@ -983,7 +1016,8 @@ namespace Zodiac
                                                          scope);
                 if (base_result)
                 {
-                    AST_Type* pointer_type = ast_find_or_create_pointer_type(resolver->context, resolver->module, base_type);
+                    AST_Type* pointer_type = ast_find_or_create_pointer_type(resolver->context, resolver->module,
+                                                                             base_type);
                     assert(pointer_type);
                     *type_dest = pointer_type;
                     return true;
@@ -1021,8 +1055,8 @@ namespace Zodiac
         return false;
     }
 
-    void resolver_add_import_to_module(Resolver* resolver, AST_Module* module, const Atom& module_path,
-                                       const Atom& module_name)
+    AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module, const Atom& module_path,
+                                              const Atom& module_name)
     {
         assert(resolver);
         assert(module);
@@ -1047,6 +1081,8 @@ namespace Zodiac
         {
             BUF_PUSH(module->import_modules, import_module);
         }
+
+        return import_module;
     }
 
     AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier)
@@ -1081,6 +1117,19 @@ namespace Zodiac
 
         resolver_report_error(resolver, file_pos, "Reference to undeclared identifier: %s",
                               identifier->atom.data);
+    }
+
+    static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos, AST_Module* module,
+                                             AST_Identifier* identifier)
+    {
+        assert(resolver);
+        assert(module);
+        assert(identifier);
+
+        resolver->undeclared_decl_count++;
+
+        resolver_report_error(resolver, file_pos, "Reference to undeclared identifier '%s' in module '%s'",
+                              module->module_name, identifier->atom.data);
     }
 
     static void resolver_report_error(Resolver* resolver, File_Pos file_pos, const char* format, ...)

@@ -24,6 +24,7 @@ namespace Zodiac
 
     struct IR_Runner
     {
+        Context* context = nullptr;
         Arena arena = {};
         Stack<IR_Stack_Frame*> call_stack = {};
         Stack<IR_Value> arg_stack = {};
@@ -34,10 +35,10 @@ namespace Zodiac
         BUF(void*) loaded_foreign_symbols = nullptr;
     };
 
-    void ir_runner_init(IR_Runner* ir_runner);
-    void ir_runner_execute(IR_Runner* ir_runner, IR_Module* ir_module);
+    void ir_runner_init(Context* context, IR_Runner* ir_runner);
+    void ir_runner_execute(IR_Runner* ir_runner, AST_Module* ast_module, IR_Module* ir_module);
 
-    void ir_runner_load_dynamic_libs(IR_Runner* ir_runner, IR_Module* ir_module);
+    void ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* AST_Module, IR_Module* ir_module);
     void ir_runner_load_dynamic_lib(IR_Runner* ir_runner, Atom lib_name);
     void ir_runner_load_foreigns(IR_Runner* ir_runner, IR_Module* ir_module);
 

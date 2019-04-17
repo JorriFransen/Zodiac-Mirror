@@ -157,7 +157,6 @@ namespace Zodiac
         BUF(IR_Value*) string_literal_values = nullptr;
         Arena string_literal_arena = {};
 
-        BUF(Atom) foreign_table = nullptr;
         BUF(Atom) dynamic_lib_names = nullptr;
 
         uint64_t error_count = 0;

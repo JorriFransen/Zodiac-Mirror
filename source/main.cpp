@@ -131,9 +131,9 @@ int main(int argc, char** argv)
     }
 
     IR_Runner ir_runner;
-    ir_runner_init(&ir_runner);
+    ir_runner_init(context, &ir_runner);
 
-    ir_runner_execute(&ir_runner, &ir_module);
+    ir_runner_execute(&ir_runner, parse_result.ast_module, &ir_module);
 
     return 0;
 }

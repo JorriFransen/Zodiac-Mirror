@@ -151,11 +151,17 @@ namespace Zodiac
             {
                 File_Pos file_pos = lexer->current_file_pos;
                 lexer_consume_character(lexer);
-                assert(current_char(lexer) == '.');
-                lexer_consume_character(lexer);
-                assert(current_char(lexer) == '.');
-                lexer_consume_character(lexer);
-                lexer_push_token(lexer, TOK_ELLIPSIS, file_pos, 3);
+                if (current_char(lexer) == '.')
+                {
+                    lexer_consume_character(lexer);
+                    assert(current_char(lexer) == '.');
+                    lexer_consume_character(lexer);
+                    lexer_push_token(lexer, TOK_ELLIPSIS, file_pos, 3);
+                }
+                else
+                {
+                    lexer_push_token(lexer, TOK_DOT, file_pos, 1);
+                }
                 break;
             }
 

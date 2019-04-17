@@ -88,6 +88,8 @@ namespace Zodiac
             }
         }
 
+        assert(module->gen_data == nullptr);
+        module->gen_data = ir_builder;
         return ir_builder->result;
     }
 
@@ -211,6 +213,13 @@ namespace Zodiac
                             fp.file_name, fp.line, fp.line_relative_char_pos);
                     ir_builder->result.error_count++;
                 }
+                break;
+            }
+
+            case AST_DECL_IMPORT:
+            {
+                // assert(false);
+                // Do nothing for now?
                 break;
             }
 
@@ -772,6 +781,23 @@ namespace Zodiac
             if (entry.declaration == declaration)
             {
                 return entry.ir_value;
+            }
+        }
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->ast_module->import_modules); i++)
+        {
+            AST_Module* import_module = ir_builder->ast_module->import_modules[i];
+            assert(import_module->gen_data);
+
+            IR_Builder* import_ir_builder = (IR_Builder*)import_module->gen_data;
+
+            for (uint64_t j = 0; j < BUF_LENGTH(import_ir_builder->value_to_decl_map); j++)
+            {
+                auto entry = import_ir_builder->value_to_decl_map[j];
+                if (entry.declaration == declaration)
+                {
+                    return entry.ir_value;
+                }
             }
         }
 
@@ -1360,16 +1386,16 @@ namespace Zodiac
     {
         assert(ir_builder);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.foreign_table); i++)
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->context->foreign_table); i++)
         {
-            if (ir_builder->result.foreign_table[i] == atom)
+            if (ir_builder->context->foreign_table[i] == atom)
             {
                 return i;
             }
         }
 
-        BUF_PUSH(ir_builder->result.foreign_table, atom);
-        return BUF_LENGTH(ir_builder->result.foreign_table) - 1;
+        BUF_PUSH(ir_builder->context->foreign_table, atom);
+        return BUF_LENGTH(ir_builder->context->foreign_table) - 1;
     }
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, const char* name, AST_Type* return_type)

@@ -6,10 +6,12 @@
 
 namespace Zodiac
 {
-    void ir_runner_init(IR_Runner* ir_runner)
+    void ir_runner_init(Context* context, IR_Runner* ir_runner)
     {
+        assert(context);
         assert(ir_runner);
 
+        ir_runner->context = context;
         ir_runner->arena = arena_create(MB(4));
 
         stack_init(&ir_runner->call_stack, 8);
@@ -24,14 +26,15 @@ namespace Zodiac
         ir_runner->loaded_foreign_symbols = nullptr;
     }
 
-    void ir_runner_execute(IR_Runner* ir_runner, IR_Module* ir_module)
+    void ir_runner_execute(IR_Runner* ir_runner, AST_Module* ast_module, IR_Module* ir_module)
     {
         assert(ir_runner);
+        assert(ast_module);
         assert(ir_module);
 
         assert(ir_module->entry_function);
 
-        ir_runner_load_dynamic_libs(ir_runner, ir_module);
+        ir_runner_load_dynamic_libs(ir_runner, ast_module, ir_module);
         ir_runner_load_foreigns(ir_runner, ir_module);
 
         IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(ir_runner, ir_module->entry_function, 0);
@@ -47,7 +50,7 @@ namespace Zodiac
         printf("Arena size: %.2fMB\n", (double)arena_cap / MB(1));
     }
 
-    void ir_runner_load_dynamic_libs(IR_Runner* ir_runner, IR_Module* ir_module)
+    void ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* ast_module, IR_Module* ir_module)
     {
         assert(ir_runner);
         assert(ir_module);
@@ -55,6 +58,19 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(ir_module->dynamic_lib_names); i++)
         {
             ir_runner_load_dynamic_lib(ir_runner, ir_module->dynamic_lib_names[i]);
+        }
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ast_module->import_modules); i++)
+        {
+            AST_Module* import_ast_module = ast_module->import_modules[i];
+            assert(import_ast_module->gen_data);
+            IR_Builder* import_ir_builder = (IR_Builder*)import_ast_module->gen_data;
+            IR_Module* import_ir_module = &import_ir_builder->result;
+
+            for (uint64_t ni = 0; ni < BUF_LENGTH(import_ir_module->dynamic_lib_names); ni++)
+            {
+                ir_runner_load_dynamic_lib(ir_runner, import_ir_module->dynamic_lib_names[ni]);
+            }
         }
     }
 
@@ -88,9 +104,9 @@ namespace Zodiac
         assert(ir_runner);
         assert(ir_module);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(ir_module->foreign_table); i++)
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_runner->context->foreign_table); i++)
         {
-            const Atom& foreign_name = ir_module->foreign_table[i];
+            const Atom& foreign_name = ir_runner->context->foreign_table[i];
 
             bool found = false;
 

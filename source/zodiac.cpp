@@ -20,6 +20,7 @@ namespace Zodiac
 
         context->keywords =  nullptr;
         context->compiled_modules = nullptr;
+        context->foreign_table = nullptr;
         context_init_keywords(context);
 
         init_builtin_types(context);
@@ -92,10 +93,10 @@ namespace Zodiac
             return nullptr;
         }
 
-        IR_Builder ir_builder;
-        ir_builder_init(&ir_builder, context);
+        IR_Builder* ir_builder = arena_alloc(context->arena, IR_Builder);
+        ir_builder_init(ir_builder, context);
 
-        IR_Module ir_module = ir_builder_emit_module(&ir_builder, parse_result.ast_module);
+        IR_Module ir_module = ir_builder_emit_module(ir_builder, parse_result.ast_module);
 
         if (ir_module.error_count)
         {
@@ -103,12 +104,12 @@ namespace Zodiac
             return nullptr;
         }
 
-        IR_Validation_Result validation = ir_validate(&ir_builder);
+        IR_Validation_Result validation = ir_validate(ir_builder);
 
         if (!validation.messages)
         {
             fprintf(stderr, "Generated ir for file: %s:\n", module_path.data);
-            ir_builder_print_result(&ir_builder);
+            ir_builder_print_result(ir_builder);
         }
         else
         {
