@@ -3,6 +3,7 @@
 #include "builtin.h"
 #include "lexer.h"
 #include "parser.h"
+#include "platform.h"
 #include "resolver.h"
 #include "ir.h"
 
@@ -156,7 +157,7 @@ namespace Zodiac
     {
         assert(context);
 
-        const char* module_path = secure_getenv("ZODIAC_MODULE_PATH");
+        const char* module_path = platform_get_environment_var("ZODIAC_MODULE_PATH");
         if (!module_path)
         {
             fprintf(stderr, "Zodiac module path not specified, exiting\n");

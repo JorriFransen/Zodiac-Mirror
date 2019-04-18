@@ -673,7 +673,10 @@ namespace Zodiac
             assert(member_expression->kind == AST_EXPR_IDENTIFIER);
 
             AST_Declaration* import_decl = find_declaration(scope, base_expression->identifier);
-            assert(import_decl);
+            if (!import_decl)
+            {
+                return nullptr;
+            }
             assert(import_decl->kind == AST_DECL_IMPORT);
             assert(import_decl->import.module);
 
