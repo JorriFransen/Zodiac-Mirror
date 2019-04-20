@@ -223,6 +223,12 @@ namespace Zodiac
                 break;
             }
 
+            case AST_DECL_AGGREGATE_TYPE:
+            {
+                // Do nothing for now?
+                break;
+            }
+
             default: assert(false);
         }
     }

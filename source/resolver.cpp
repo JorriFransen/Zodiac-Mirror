@@ -128,6 +128,12 @@ namespace Zodiac
                     break;
                 }
 
+                case AST_DECL_AGGREGATE_TYPE:
+                {
+                    result &= try_resolve_aggregate_type_declaration(resolver, declaration, scope);
+                    break;
+                }
+
                 default:
                     assert(false);
                     break;
@@ -347,6 +353,42 @@ namespace Zodiac
         if (result)
         {
             assert(assert_expr->is_const);
+        }
+
+        return result;
+    }
+
+    static bool try_resolve_aggregate_type_declaration(Resolver* resolver,
+        AST_Declaration* declaration, AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(declaration);
+        assert(declaration->kind == AST_DECL_AGGREGATE_TYPE);
+        assert(scope);
+
+        bool result = true;
+
+        assert(declaration->identifier);
+
+        assert(!find_declaration(scope, declaration->identifier));
+
+        for (uint64_t i = 0; i < BUF_LENGTH(declaration->aggregate_type.aggregate_declarations); i++)
+        {
+            AST_Declaration* member_decl = declaration->aggregate_type.aggregate_declarations[i];
+            assert(member_decl->kind == AST_DECL_MUTABLE);
+            assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
+            result &= try_resolve_declaration(resolver, member_decl, scope);
+        }
+
+        if (result && !declaration->aggregate_type.type)
+        {
+            declaration->aggregate_type.type = create_struct_type(resolver, declaration->identifier,
+                declaration->aggregate_type.aggregate_declarations);
+        }
+
+        if (result)
+        {
+            assert(declaration->aggregate_type.type);
         }
 
         return result;
@@ -612,6 +654,12 @@ namespace Zodiac
             case AST_EXPR_ARRAY_LENGTH:
             {
                 result &= try_resolve_array_length_expression(resolver, expression, scope);
+                break;
+            }
+
+            case AST_EXPR_DOT:
+            {
+                result &= try_resolve_dot_expression(resolver, expression, scope);
                 break;
             }
 
@@ -939,6 +987,33 @@ namespace Zodiac
         return result;
     }
 
+    static bool try_resolve_dot_expression(Resolver* resolver, AST_Expression* expression,
+        AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(expression);
+        assert(expression->kind == AST_EXPR_DOT);
+        assert(scope);
+
+        bool result = true;
+
+        AST_Expression*  base_expression = expression->dot.base_expression;
+        AST_Expression* member_expression = expression->dot.member_expression;
+        assert(base_expression->kind == AST_EXPR_IDENTIFIER);
+        assert(member_expression->kind == AST_EXPR_IDENTIFIER);
+
+        result &= try_resolve_expression(resolver, base_expression, scope);
+
+        if (result)
+        {
+            assert(base_expression->type->kind == AST_TYPE_STRUCT);
+        }
+
+        assert(false);
+
+        return result;
+    }
+
     static bool try_resolve_identifier(Resolver* resolver, AST_Identifier* identifier, AST_Scope* scope)
     {
         assert(resolver);
@@ -1001,12 +1076,31 @@ namespace Zodiac
                     return false;
                 }
 
-                assert(type_decl->kind == AST_DECL_TYPE);
-                AST_Type* type = type_decl->type.type;
-                if (type)
+                switch (type_decl->kind)
                 {
-                    *type_dest = type;
-                    return true;
+                    case AST_DECL_TYPE:
+                    {
+                        AST_Type* type = type_decl->type.type;
+                        if (type)
+                        {
+                            *type_dest = type;
+                            return true;
+                        }
+                        break;
+                    }
+
+                    case AST_DECL_AGGREGATE_TYPE:
+                    {
+                        AST_Type* type = type_decl->aggregate_type.type;
+                        if (type)
+                        {
+                            *type_dest = type;
+                            return true;
+                        }
+                        break;
+                    }
+
+                    default: assert(false);
                 }
 
                 return false;
@@ -1086,6 +1180,28 @@ namespace Zodiac
         }
 
         return import_module;
+    }
+
+    AST_Type* create_struct_type(Resolver* resolver, AST_Identifier* identifier,
+        BUF(AST_Declaration*) member_decls)
+    {
+        assert(resolver);
+        assert(identifier);
+        assert(member_decls);
+
+        BUF(AST_Type*) member_types = nullptr;
+        for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+        {
+            AST_Declaration* decl = member_decls[i];
+            assert(decl->kind == AST_DECL_MUTABLE);
+            assert(decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
+            assert(decl->mutable_decl.type);
+            BUF_PUSH(member_types, decl->mutable_decl.type);
+        }
+
+        AST_Type* struct_type = ast_type_struct_new(resolver->context, member_types);
+
+        return struct_type;
     }
 
     AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier)

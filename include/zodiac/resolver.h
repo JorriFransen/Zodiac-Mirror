@@ -46,6 +46,7 @@ namespace Zodiac
     static bool try_resolve_block_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope);
     static bool try_resolve_static_assert_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope);
     static bool try_resolve_import_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope);
+    static bool try_resolve_aggregate_type_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope);
 
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,
                                       AST_Scope* scope);
@@ -69,6 +70,8 @@ namespace Zodiac
                                               AST_Scope* scope);
     static bool try_resolve_unary_expression(Resolver* resolver, AST_Expression* expression,
                                              AST_Scope* scope);
+    static bool try_resolve_dot_expression(Resolver* resolver, AST_Expression* expression,
+        AST_Scope* scope);
 
     static bool try_resolve_identifier(Resolver* resolver, AST_Identifier* identifier, AST_Scope* scope);
 
@@ -77,6 +80,9 @@ namespace Zodiac
 
     AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module, const Atom& module_path,
                                               const Atom& module_name);
+
+    AST_Type* create_struct_type(Resolver* resolver, AST_Identifier* identifier,
+        BUF(AST_Declaration*) member_decls);
 
     AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier);
 

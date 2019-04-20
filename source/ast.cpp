@@ -387,6 +387,7 @@ namespace Zodiac
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
                                                       AST_DECL_LOC_GLOBAL, identifier, nullptr, true);
         result->aggregate_type.kind = AST_AGG_DECL_STRUCT;
+        result->aggregate_type.type = nullptr;
         result->aggregate_type.aggregate_declarations = member_decls;
 
         return result;
@@ -567,6 +568,17 @@ namespace Zodiac
         AST_Type* result = ast_type_new(context, AST_TYPE_STATIC_ARRAY, AST_TYPE_FLAG_NONE);
         result->static_array.base = base_type;
         result->static_array.count = count;
+
+        return result;
+    }
+
+    AST_Type* ast_type_struct_new(Context* context, BUF(AST_Type*) member_types)
+    {
+        assert(context);
+        assert(member_types);
+
+        AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE);
+        result->aggregate_type.members = member_types;
 
         return result;
     }

@@ -2,14 +2,18 @@
 
 io :: import io;
 
-// Vec2i :: struct
-// {
-    // x : int;
-    // y : int;
-// }
+Vec2i :: struct
+{
+    x : int;
+    y : int;
+}
 
 main :: () -> int
 {
+    vec2 : Vec2i;
+    vec2.x = 1;
+    vec2.y = 2;
+
     loop();
     array_test();
 }

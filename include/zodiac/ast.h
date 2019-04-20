@@ -338,6 +338,7 @@ namespace Zodiac
             struct
             {
                 AST_Aggregate_Declaration_Kind kind;
+                AST_Type* type = nullptr;
                 BUF(AST_Declaration*) aggregate_declarations;
             } aggregate_type;
         };
@@ -350,6 +351,7 @@ namespace Zodiac
         AST_TYPE_BASE,
         AST_TYPE_POINTER,
         AST_TYPE_STATIC_ARRAY,
+        AST_TYPE_STRUCT,
     };
 
     typedef uint64_t AST_Type_Flags;
@@ -365,6 +367,8 @@ namespace Zodiac
     {
         AST_Type_Kind kind;
         AST_Type_Flags flags = AST_TYPE_FLAG_NONE;
+
+        uint64_t bit_size = 0;
 
         union
         {
@@ -383,6 +387,11 @@ namespace Zodiac
                uint64_t count;
                 AST_Type* base;
             } static_array;
+
+            struct 
+            {
+                BUF(AST_Type*) members;
+            } aggregate_type;
         };
     };
 
@@ -518,6 +527,7 @@ namespace Zodiac
     AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size);
     AST_Type* ast_type_pointer_new(Context* context, AST_Type* base_type);
     AST_Type* ast_type_static_array_new(Context* context, AST_Type* base_type, uint64_t count);
+    AST_Type* ast_type_struct_new(Context* context, BUF(AST_Type*) member_types);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind);
     AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos, AST_Identifier* identifier);
