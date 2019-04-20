@@ -701,10 +701,25 @@ namespace Zodiac
                 void* result_pointer = ((uint8_t*)base_pointer) +
                     (index * (element_type->base.bit_size / 8));
 
-                IR_Value* result_pointer_value = ir_runner_get_local_temporary(runner, iri->result->temp.index);
+                IR_Value* result_pointer_value = ir_runner_get_local_temporary(runner,
+                                                                               iri->result->temp.index);
                 assert(iri->result->type->kind == AST_TYPE_POINTER);
                 result_pointer_value->type = iri->result->type;
                 result_pointer_value->value.s64 = (int64_t)result_pointer;
+                break;
+            }
+
+            case IR_OP_AGGREGATE_OFFSET_POINTER:
+            {
+                assert(iri->arg1);
+                assert(iri->arg1->kind == IRV_ALLOCL);
+                assert(iri->arg1->type->kind == AST_TYPE_STRUCT);
+
+                assert(iri->arg2);
+                assert(iri->arg2->kind == IRV_INT_LITERAL);
+                assert(iri->arg2->type == Builtin::type_int);
+
+                assert(false);
                 break;
             }
 

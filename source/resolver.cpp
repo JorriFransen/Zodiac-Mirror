@@ -723,7 +723,7 @@ namespace Zodiac
             AST_Declaration* import_decl = find_declaration(scope, base_expression->identifier);
             if (!import_decl)
             {
-                return nullptr;
+                return false;
             }
             assert(import_decl->kind == AST_DECL_IMPORT);
             assert(import_decl->import.module);
@@ -1009,7 +1009,31 @@ namespace Zodiac
             assert(base_expression->type->kind == AST_TYPE_STRUCT);
         }
 
-        assert(false);
+        AST_Type* type = nullptr;
+
+        bool found = false;
+        for (uint64_t i = 0; i < BUF_LENGTH(base_expression->type->aggregate_type.member_declarations); i++)
+        {
+            AST_Declaration* member_decl = base_expression->type->aggregate_type.member_declarations[i];
+            if (member_decl->identifier->atom == member_expression->identifier->atom)
+            {
+                found = true;
+                assert(member_decl->kind == AST_DECL_MUTABLE);
+                assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
+                assert(member_decl->aggregate_type.type);
+
+                type = member_decl->aggregate_type.type;
+            }
+        }
+
+        if (!found)
+        {
+            result = false;
+        }
+        else if (result && !expression->type)
+        {
+            expression->type = type;
+        }
 
         return result;
     }
@@ -1189,17 +1213,15 @@ namespace Zodiac
         assert(identifier);
         assert(member_decls);
 
-        BUF(AST_Type*) member_types = nullptr;
         for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
         {
             AST_Declaration* decl = member_decls[i];
             assert(decl->kind == AST_DECL_MUTABLE);
             assert(decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
             assert(decl->mutable_decl.type);
-            BUF_PUSH(member_types, decl->mutable_decl.type);
         }
 
-        AST_Type* struct_type = ast_type_struct_new(resolver->context, member_types);
+        AST_Type* struct_type = ast_type_struct_new(resolver->context, member_decls);
 
         return struct_type;
     }

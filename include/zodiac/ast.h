@@ -390,7 +390,7 @@ namespace Zodiac
 
             struct 
             {
-                BUF(AST_Type*) members;
+                BUF(AST_Declaration*) member_declarations;
             } aggregate_type;
         };
     };
@@ -527,7 +527,7 @@ namespace Zodiac
     AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size);
     AST_Type* ast_type_pointer_new(Context* context, AST_Type* base_type);
     AST_Type* ast_type_static_array_new(Context* context, AST_Type* base_type, uint64_t count);
-    AST_Type* ast_type_struct_new(Context* context, BUF(AST_Type*) member_types);
+    AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind);
     AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos, AST_Identifier* identifier);

@@ -572,13 +572,13 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type* ast_type_struct_new(Context* context, BUF(AST_Type*) member_types)
+    AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations)
     {
         assert(context);
-        assert(member_types);
+        assert(member_declarations);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE);
-        result->aggregate_type.members = member_types;
+        result->aggregate_type.member_declarations = member_declarations;
 
         return result;
     }
