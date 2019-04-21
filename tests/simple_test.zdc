@@ -10,88 +10,99 @@ Vec2i :: struct
 
 main :: () -> int
 {
-    vec2 : Vec2i;
-    vec2.x = 1;
-    vec2.y = 2;
+    pos : Vec2i;
+    pos.x = 1;
+    pos.y = 2;
 
-    io.printf("vec2: %lu,%lu\n", vec2.x, vec2.y);
+    size : Vec2i;
+    size.x = 3;
+    size.y = pos.y;
 
-    loop();
-    array_test();
+    io.printf("pos: %lu,%lu\n", pos.x, pos.y);
+    io.printf("size: %lu,%lu\n\n", size.x, size.y);
+
+    pos = size;
+    size.x = 88;
+
+    io.printf("pos: %lu,%lu\n", pos.x, pos.y);
+    io.printf("size: %lu,%lu\n\n", size.x, size.y);
+
+    // loop();
+    // array_test();
 }
 
-array_test :: () -> void
-{
-    io.printf("array_test()\n");
+// array_test :: () -> void
+// {
+//     io.printf("array_test()\n");
 
-    int_array : [5]int = { 255, 256, 33, 44, 555 };
-    io.printf("Array length: %lu\n", array_length(int_array));
+//     int_array : [5]int = { 255, 256, 33, 44, 555 };
+//     io.printf("Array length: %lu\n", array_length(int_array));
 
-    for (i := 0; i < array_length(int_array); i = i + 1)
-    {
-        io.printf("int_array[%ld] = %ld\n", i, int_array[i]);
-    }
+//     for (i := 0; i < array_length(int_array); i = i + 1)
+//     {
+//         io.printf("int_array[%ld] = %ld\n", i, int_array[i]);
+//     }
 
-    int_array[3] = 444;
+//     int_array[3] = 444;
 
-    io.printf("\n");
+//     io.printf("\n");
 
-    for (i := 0; i < array_length(int_array); i = i + 1)
-    {
-        io.printf("int_array[%ld] = %ld\n", i, int_array[i]);
-    }
+//     for (i := 0; i < array_length(int_array); i = i + 1)
+//     {
+//         io.printf("int_array[%ld] = %ld\n", i, int_array[i]);
+//     }
 
-    int_array_3_ptr := *int_array[3];
-    <int_array_3_ptr = 888;
+//     int_array_3_ptr := *int_array[3];
+//     <int_array_3_ptr = 888;
 
-    io.printf("\n");
+//     io.printf("\n");
 
-    for (i := 0; i < array_length(int_array); i = i + 1)
-    {
-        io.printf("int_array[%ld] = %ld\n", i, int_array[i]);
-    }
+//     for (i := 0; i < array_length(int_array); i = i + 1)
+//     {
+//         io.printf("int_array[%ld] = %ld\n", i, int_array[i]);
+//     }
 
-    int_array = { 5, 4, 3, 2, 1 };
+//     int_array = { 5, 4, 3, 2, 1 };
 
-    io.printf("\n");
+//     io.printf("\n");
 
-    for (i := 0; i < array_length(int_array); i = i + 1)
-    {
-        io.printf("int_array[%ld] = %ld\n", i, int_array[i]);
-    }
-}
+//     for (i := 0; i < array_length(int_array); i = i + 1)
+//     {
+//         io.printf("int_array[%ld] = %ld\n", i, int_array[i]);
+//     }
+// }
 
-loop :: () -> void
-{
-    i := 0;
-    while (i < 10)
-    {
-        io.print_digit(i);
-        i = i + 1;
-    }
+// loop :: () -> void
+// {
+//     i := 0;
+//     while (i < 10)
+//     {
+//         io.print_digit(i);
+//         i = i + 1;
+//     }
 
-    i = i - 1;
+//     i = i - 1;
 
-    while (i >= 0)
-    {
-        io.print_digit(i);
-        i = i - 1;
-    }
+//     while (i >= 0)
+//     {
+//         io.print_digit(i);
+//         i = i - 1;
+//     }
 
-    for (j := 0; j < 5; j = j + 1)
-    {
-        io.print_digit(j);
-    }
+//     for (j := 0; j < 5; j = j + 1)
+//     {
+//         io.print_digit(j);
+//     }
 
-    for (y := 0; y < 10; y = y + 1)
-    {
-        for (x := 0; x < 10; x = x + 1)
-        {
-            io.printf("%ld,%ld  ", x, y);
-        }
+//     for (y := 0; y < 10; y = y + 1)
+//     {
+//         for (x := 0; x < 10; x = x + 1)
+//         {
+//             io.printf("%ld,%ld  ", x, y);
+//         }
 
-        io.printf("\n");
-    }
+//         io.printf("\n");
+//     }
 
-    io.putchar('\n');
-}
+//     io.putchar('\n');
+// }

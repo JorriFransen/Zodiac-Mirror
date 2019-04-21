@@ -421,7 +421,7 @@ namespace Zodiac
                 }
                 else assert(false);
                 assert(element_type);
-                assert(element_type->base.bit_size % 8 == 0);
+                assert(element_type->bit_size % 8 == 0);
 
                 IR_Value* base_value = ir_runner_get_local_temporary(runner, iri->arg1->temp.index);
 
@@ -433,11 +433,11 @@ namespace Zodiac
 
                 assert(iri->result->type == element_type);
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result->temp.index);
-                auto offset = index_value->value.s64 * (element_type->base.bit_size / 8);
+                auto offset = index_value->value.s64 * (element_type->bit_size / 8);
 
                 uint8_t* source_pointer = base_pointer + offset;
                 assert(element_type->kind == AST_TYPE_BASE);
-                switch (element_type->base.bit_size)
+                switch (element_type->bit_size)
                 {
                     case 8:
                     {
@@ -499,10 +499,29 @@ namespace Zodiac
                     AST_Type* array_type = iri->arg1->type;
 
                     auto byte_count = array_type->static_array.count *
-                        (array_type->static_array.base->base.bit_size / 8);
+                        (array_type->static_array.base->bit_size / 8);
 
                     memcpy(dest_allocl_value->value.static_array, source_allocl_value->value.static_array,
                            byte_count);
+                }
+                else if (iri->arg1->type->kind == AST_TYPE_STRUCT)
+                {
+                    assert(iri->arg1->kind == IRV_ALLOCL);
+                    assert(iri->arg2->kind == IRV_TEMPORARY);
+
+                    IR_Value* dest_allocl_value = ir_runner_get_local_temporary(runner, iri->arg1->allocl.index);
+                    IR_Value* source_temp_value = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
+
+                    assert(dest_allocl_value->type->kind == AST_TYPE_STRUCT);
+                    assert(source_temp_value->type->kind == AST_TYPE_STRUCT);
+
+                    AST_Type* struct_type = dest_allocl_value->type;
+                    uint64_t struct_byte_size = struct_type->bit_size / 8;
+                    assert(struct_byte_size);
+
+                    memcpy(dest_allocl_value->value.struct_pointer,
+                           source_temp_value->value.struct_pointer,
+                           struct_byte_size);
                 }
                 else
                 {
@@ -526,6 +545,8 @@ namespace Zodiac
                 IR_Value* dest_value = ir_runner_get_local_temporary(runner, result_value_index);
 
                 dest_value->value.s64 = source_value->value.s64;
+                assert(iri->result->type);
+                dest_value->type = iri->result->type;
                 break;
             }
 
@@ -594,7 +615,7 @@ namespace Zodiac
                 assert(pointer_value);
                 assert(source_value);
                 assert(dest_type);
-                switch (dest_type->base.bit_size)
+                switch (dest_type->bit_size)
                 {
                     case 8:
                     {
@@ -610,6 +631,33 @@ namespace Zodiac
 
                     default: assert(false);
                 }
+                break;
+            }
+
+            case IR_OP_LOADP:
+            {
+                assert(iri->arg1);
+                assert(iri->arg1->kind == IRV_TEMPORARY);
+                assert(iri->arg1->type->kind == AST_TYPE_POINTER);
+
+                assert(iri->result);
+                assert(iri->result->type == iri->arg1->type->pointer.base);
+
+                IR_Value* pointer_value = ir_runner_get_local_temporary(runner, iri->arg1->temp.index);
+                IR_Value* dest_value = ir_runner_get_local_temporary(runner, iri->result->temp.index);
+                AST_Type* dest_type = iri->result->type;
+
+                switch (dest_type->bit_size)
+                {
+                    case 64:
+                    {
+                        dest_value->value.s64 = *(pointer_value->value.string);
+                        break;
+                    }
+
+                    default: assert(false);
+                }
+
                 break;
             }
 
@@ -699,7 +747,7 @@ namespace Zodiac
                 IR_Value* base_pointer_value = ir_runner_get_local_temporary(runner, iri->arg1->allocl.index);
                 void* base_pointer = (uint8_t*)base_pointer_value->value.static_array;
                 void* result_pointer = ((uint8_t*)base_pointer) +
-                    (index * (element_type->base.bit_size / 8));
+                    (index * (element_type->bit_size / 8));
 
                 IR_Value* result_pointer_value = ir_runner_get_local_temporary(runner,
                                                                                iri->result->temp.index);
@@ -719,7 +767,30 @@ namespace Zodiac
                 assert(iri->arg2->kind == IRV_INT_LITERAL);
                 assert(iri->arg2->type == Builtin::type_int);
 
-                assert(false);
+                AST_Type* struct_type = iri->arg1->type;
+                IR_Value* struct_pointer_value = ir_runner_get_local_temporary(runner, iri->arg1->allocl.index);
+                uint64_t member_offset = 0;
+                uint64_t member_index = iri->arg2->value.s64;
+                bool found = false;
+                assert(BUF_LENGTH(struct_type->aggregate_type.member_declarations) > member_index);
+                for (uint64_t i = 0; i < BUF_LENGTH(struct_type->aggregate_type.member_declarations); i++)
+                {
+                    AST_Declaration* member_decl = struct_type->aggregate_type.member_declarations[i];
+                    AST_Type* member_type = member_decl->mutable_decl.type;
+                    if (i == member_index)
+                    {
+                        found = true;
+                        break;
+                    }
+                    member_offset += member_type->bit_size;
+                }
+                assert(found);
+
+                void* result_pointer = ((uint8_t*)struct_pointer_value->value.struct_pointer) + (member_offset / 8);
+                IR_Value* result_pointer_value = ir_runner_get_local_temporary(runner, iri->result->temp.index);
+                assert(iri->result->type->kind == AST_TYPE_POINTER);
+                result_pointer_value->type = iri->result->type;
+                result_pointer_value->value.s64 = (int64_t)result_pointer;
                 break;
             }
 
@@ -744,15 +815,26 @@ namespace Zodiac
             IR_Value* code_temp = function->local_temps[i];
             IR_Value new_temp = {};
             new_temp.kind = IRV_TEMPORARY;
+            new_temp.type = code_temp->type;
 
             if (code_temp->kind == IRV_ALLOCL &&
                 code_temp->type->kind == AST_TYPE_STATIC_ARRAY)
             {
                 AST_Type* array_type = code_temp->type;
                 uint64_t array_byte_size = array_type->static_array.count *
-                    (array_type->static_array.base->base.bit_size / 8);
+                    (array_type->static_array.base->bit_size / 8);
+                assert(array_byte_size == array_type->bit_size / 8);
                 new_temp.value.static_array = arena_alloc_array(&result->arena, uint8_t, array_byte_size);
             }
+            else if (code_temp->kind == IRV_ALLOCL &&
+                     code_temp->type->kind == AST_TYPE_STRUCT)
+            {
+                AST_Type* struct_type = code_temp->type;
+                uint64_t struct_byte_size = struct_type->bit_size / 8;
+                assert(struct_byte_size);
+                new_temp.value.struct_pointer = arena_alloc_array(&result->arena, uint8_t, struct_byte_size);
+            }
+            assert(new_temp.type);
             BUF_PUSH(result->temps, new_temp);
         }
 

@@ -12,6 +12,8 @@ namespace Zodiac
         static AST_Type* type_u8;
         static AST_Type* type_bool;
 
+        static uint64_t pointer_size;
+
         static AST_Declaration* decl_PLATFORM_WINDOWS;
         static AST_Declaration* decl_PLATFORM_LINUX;
     };

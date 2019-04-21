@@ -7,6 +7,8 @@ namespace Zodiac
     AST_Type* Builtin::type_u8 = nullptr;
     AST_Type* Builtin::type_bool = nullptr;
 
+    uint64_t Builtin::pointer_size = 0;
+
     AST_Declaration* Builtin::decl_PLATFORM_WINDOWS = nullptr;
     AST_Declaration* Builtin::decl_PLATFORM_LINUX = nullptr;
 
@@ -22,6 +24,8 @@ namespace Zodiac
         AST_Type_Flags unsigned_int_flags = AST_TYPE_FLAG_INT;
         Builtin::type_u8 = register_builtin_type(context, unsigned_int_flags, 8, "u8");
         Builtin::type_bool = register_builtin_type(context, unsigned_int_flags, 64, "bool");
+
+        Builtin::pointer_size = Builtin::type_int->bit_size;
     }
 
     AST_Type* register_builtin_type(Context* context, AST_Type_Flags flags, uint64_t size, const char* name)

@@ -460,7 +460,7 @@ namespace Zodiac
 
 
                 IR_Value* element_byte_size_lit = ir_integer_literal(ir_builder, Builtin::type_int,
-                                                                    element_type->base.bit_size / 8);
+                                                                    element_type->bit_size / 8);
                 IR_Value* element_byte_size = ir_builder_emit_load_lit(ir_builder, element_byte_size_lit);
 
                 IR_Value* offset_value = ir_builder_emit_mul(ir_builder, element_byte_size, index_value);
@@ -794,7 +794,7 @@ namespace Zodiac
 
                 IR_Value* index_value = ir_builder_emit_expression(ir_builder, expression->subscript.index_expression);
                 IR_Value* element_byte_size_lit = ir_integer_literal(ir_builder, Builtin::type_int,
-                                                                    element_type->base.bit_size / 8);
+                                                                    element_type->bit_size / 8);
                 IR_Value* element_byte_size = ir_builder_emit_load_lit(ir_builder, element_byte_size_lit);
                 IR_Value* offset_value = ir_builder_emit_mul(ir_builder, index_value, element_byte_size);
                 offset_value->type = base_pointer_value->type;

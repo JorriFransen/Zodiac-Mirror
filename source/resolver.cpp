@@ -1213,16 +1213,23 @@ namespace Zodiac
         assert(identifier);
         assert(member_decls);
 
+        uint64_t bit_size = 0;
+
         for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
         {
             AST_Declaration* decl = member_decls[i];
             assert(decl->kind == AST_DECL_MUTABLE);
             assert(decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
             assert(decl->mutable_decl.type);
+
+            AST_Type* member_type = decl->mutable_decl.type;
+            assert(member_type->bit_size);
+            bit_size += member_type->bit_size;
         }
 
-        AST_Type* struct_type = ast_type_struct_new(resolver->context, member_decls);
+        AST_Type* struct_type = ast_type_struct_new(resolver->context, member_decls, bit_size);
 
+        assert(struct_type->bit_size);
         return struct_type;
     }
 

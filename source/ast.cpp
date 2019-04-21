@@ -1,5 +1,7 @@
 #include "ast.h"
 
+#include "builtin.h"
+
 namespace Zodiac
 {
     AST_Module* ast_module_new(Context* context, const char* module_name)
@@ -527,13 +529,14 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags)
+    AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags, uint64_t bit_size)
     {
         assert(context);
 
         AST_Type* result = arena_alloc(context->arena, AST_Type);
         result->kind = kind;
         result->flags = type_flags;
+        result->bit_size = bit_size;
 
         return result;
     }
@@ -543,8 +546,7 @@ namespace Zodiac
         assert(context);
         assert(bit_size % 8 == 0);
 
-        AST_Type* result = ast_type_new(context, AST_TYPE_BASE, type_flags);
-        result->base.bit_size = bit_size;
+        AST_Type* result = ast_type_new(context, AST_TYPE_BASE, type_flags, bit_size);
 
         return result;
     }
@@ -554,7 +556,7 @@ namespace Zodiac
         assert(context);
         assert(base_type);
 
-        AST_Type* result = ast_type_new(context, AST_TYPE_POINTER, AST_TYPE_FLAG_NONE);
+        AST_Type* result = ast_type_new(context, AST_TYPE_POINTER, AST_TYPE_FLAG_NONE, Builtin::pointer_size);
         result->pointer.base = base_type;
 
         return result;
@@ -565,19 +567,22 @@ namespace Zodiac
         assert(context);
         assert(base_type);
 
-        AST_Type* result = ast_type_new(context, AST_TYPE_STATIC_ARRAY, AST_TYPE_FLAG_NONE);
+        assert(base_type->bit_size);
+
+        AST_Type* result = ast_type_new(context, AST_TYPE_STATIC_ARRAY, AST_TYPE_FLAG_NONE,
+                                        base_type->bit_size * count);
         result->static_array.base = base_type;
         result->static_array.count = count;
 
         return result;
     }
 
-    AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations)
+    AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations, uint64_t bit_size)
     {
         assert(context);
         assert(member_declarations);
 
-        AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE);
+        AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE, bit_size);
         result->aggregate_type.member_declarations = member_declarations;
 
         return result;

@@ -38,6 +38,7 @@ namespace Zodiac
             bool boolean;
 
             void* static_array;
+            void* struct_pointer;
         } value;
 
         union
