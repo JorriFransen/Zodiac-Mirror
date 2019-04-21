@@ -780,6 +780,10 @@ namespace Zodiac
                     {
                         base_pointer = ir_builder_emit_loadl(ir_builder, base_pointer);
                     }
+                    else if (base_pointer->kind == IRV_ARGUMENT)
+                    {
+                        base_pointer = ir_builder_emit_loada(ir_builder, base_pointer);
+                    }
                     base_pointer = ir_builder_emit_loadp(ir_builder, base_pointer, struct_type);
                 }
                 IR_Value* value_pointer = ir_builder_emit_aggregate_offset_pointer(ir_builder, base_pointer,
