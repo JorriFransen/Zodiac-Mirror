@@ -5,58 +5,63 @@
 
 namespace Zodiac
 {
+
+#define DEFINE_TOKEN_KINDS      \
+    DEFINE_TOKEN(TOK_INVALID),  \
+    DEFINE_TOKEN(TOK_PLUS),       /* + */ \
+    DEFINE_TOKEN(TOK_MINUS),      /* - */ \
+    DEFINE_TOKEN(TOK_MUL),        /* * */ \
+    DEFINE_TOKEN(TOK_DIV),        /* / */ \
+    DEFINE_TOKEN(TOK_EQ),         /* = */ \
+    DEFINE_TOKEN(TOK_LT),         /* < */ \
+    DEFINE_TOKEN(TOK_LTEQ),       /* <= */ \
+    DEFINE_TOKEN(TOK_GT),         /* > */ \
+    DEFINE_TOKEN(TOK_GTEQ),       /* >= */ \
+    DEFINE_TOKEN(TOK_POUND),      /* # */ \
+    DEFINE_TOKEN(TOK_COLON),      /* : */ \
+    DEFINE_TOKEN(TOK_SEMICOLON),  /* ; */ \
+    DEFINE_TOKEN(TOK_COMMA),      /* , */ \
+    DEFINE_TOKEN(TOK_LPAREN),     /* ( */ \
+    DEFINE_TOKEN(TOK_RPAREN),     /* ) */ \
+    DEFINE_TOKEN(TOK_LBRACE),     /* { */ \
+    DEFINE_TOKEN(TOK_RBRACE),     /* } */ \
+    DEFINE_TOKEN(TOK_LBRACK),     /* [ */ \
+    DEFINE_TOKEN(TOK_RBRACK),     /* ] */ \
+    DEFINE_TOKEN(TOK_RARROW),     /* -> */ \
+    DEFINE_TOKEN(TOK_DOT),        /* . */ \
+    DEFINE_TOKEN(TOK_ELLIPSIS),   /* ... */ \
+    DEFINE_TOKEN(TOK_IDENTIFIER), \
+    DEFINE_TOKEN(TOK_INTEGER), \
+    DEFINE_TOKEN(TOK_CHAR_LIT), \
+    DEFINE_TOKEN(TOK_STRING_LIT), \
+    DEFINE_TOKEN(TOK_KW_TRUE), \
+    DEFINE_TOKEN(TOK_KW_FALSE), \
+    DEFINE_TOKEN(TOK_KW_RETURN), \
+    DEFINE_TOKEN(TOK_KW_STATIC_IF), \
+    DEFINE_TOKEN(TOK_KW_IF), \
+    DEFINE_TOKEN(TOK_KW_ELSE), \
+    DEFINE_TOKEN(TOK_KW_FOREIGN), \
+    DEFINE_TOKEN(TOK_KW_DYN_LINK), \
+    DEFINE_TOKEN(TOK_KW_WHILE), \
+    DEFINE_TOKEN(TOK_KW_FOR), \
+    DEFINE_TOKEN(TOK_KW_ARRAY_LENGTH), \
+    DEFINE_TOKEN(TOK_KW_STATIC_ASSERT), \
+    DEFINE_TOKEN(TOK_KW_IMPORT), \
+    DEFINE_TOKEN(TOK_KW_STRUCT), \
+    DEFINE_TOKEN(TOK_COUNT), \
+
     enum Token_Kind
     {
-        TOK_INVALID,
+#define DEFINE_TOKEN(x) x
+        DEFINE_TOKEN_KINDS
+#undef DEFINE_TOKEN
+    };
 
-        TOK_PLUS,       // +
-        TOK_MINUS,      // -
-        TOK_MUL,        // *
-        TOK_DIV,        // /
-        TOK_EQ,         // =
-        TOK_LT,         // <
-        TOK_LTEQ,       // <=
-        TOK_GT,         // >
-        TOK_GTEQ,       // >=
-
-        TOK_POUND,      // #
-
-        TOK_COLON,      // :
-        TOK_SEMICOLON,  // ;
-        TOK_COMMA,      // ,
-
-        TOK_LPAREN,     // (
-        TOK_RPAREN,     // )
-        TOK_LBRACE,     // {
-        TOK_RBRACE,     // }
-        TOK_LBRACK,     // [
-        TOK_RBRACK,     // ]
-
-        TOK_RARROW,     // ->
-        TOK_DOT,        // .
-        TOK_ELLIPSIS,   // ...
-
-        TOK_IDENTIFIER,
-        TOK_INTEGER,
-        TOK_CHAR_LIT,
-        TOK_STRING_LIT,
-
-        TOK_KW_TRUE,
-        TOK_KW_FALSE,
-        TOK_KW_RETURN,
-        TOK_KW_STATIC_IF,
-        TOK_KW_IF,
-        TOK_KW_ELSE,
-        TOK_KW_FOREIGN,
-        TOK_KW_DYN_LINK,
-        TOK_KW_WHILE,
-        TOK_KW_FOR,
-        TOK_KW_ARRAY_LENGTH,
-        TOK_KW_STATIC_ASSERT,
-        TOK_KW_IMPORT,
-        TOK_KW_STRUCT,
-
-        TOK_COUNT,
+    static const char* _token_kind_strings[] =
+    {
+#define DEFINE_TOKEN(x) #x
+        DEFINE_TOKEN_KINDS
+#undef DEFINE_TOKEN
     };
 
     struct Token
