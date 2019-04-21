@@ -1012,17 +1012,28 @@ namespace Zodiac
 
         result &= try_resolve_expression(resolver, base_expression, scope);
 
+        AST_Type* struct_type = nullptr;
+
         if (result)
         {
-            assert(base_expression->type->kind == AST_TYPE_STRUCT);
+            if (base_expression->type->kind == AST_TYPE_STRUCT)
+            {
+                struct_type = base_expression->type;
+            }
+            else if (base_expression->type->kind == AST_TYPE_POINTER)
+            {
+                assert(base_expression->type->pointer.base->kind == AST_TYPE_STRUCT);
+                struct_type = base_expression->type->pointer.base;
+            }
+            else assert(false);
         }
 
         AST_Type* type = nullptr;
 
         bool found = false;
-        for (uint64_t i = 0; i < BUF_LENGTH(base_expression->type->aggregate_type.member_declarations); i++)
+        for (uint64_t i = 0; i < BUF_LENGTH(struct_type->aggregate_type.member_declarations); i++)
         {
-            AST_Declaration* member_decl = base_expression->type->aggregate_type.member_declarations[i];
+            AST_Declaration* member_decl = struct_type->aggregate_type.member_declarations[i];
             if (member_decl->identifier->atom == member_expression->identifier->atom)
             {
                 found = true;

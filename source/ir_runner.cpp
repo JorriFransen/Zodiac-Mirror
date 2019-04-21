@@ -647,15 +647,24 @@ namespace Zodiac
                 IR_Value* dest_value = ir_runner_get_local_temporary(runner, iri->result->temp.index);
                 AST_Type* dest_type = iri->result->type;
 
-                switch (dest_type->bit_size)
+                if (dest_type->kind == AST_TYPE_STRUCT)
                 {
-                    case 64:
+                    // memcpy(dest_value->value.struct_pointer, pointer_value->value.struct_pointer,
+                    //        dest_type->bit_size / 8);
+                    dest_value->value.struct_pointer = pointer_value->value.struct_pointer;
+                }
+                else
+                {
+                    switch (dest_type->bit_size)
                     {
-                        dest_value->value.s64 = *(pointer_value->value.string);
-                        break;
-                    }
+                        case 64:
+                        {
+                            dest_value->value.s64 = *(pointer_value->value.string);
+                            break;
+                        }
 
-                    default: assert(false);
+                        default: assert(false);
+                    }
                 }
 
                 break;
@@ -695,7 +704,15 @@ namespace Zodiac
                 auto source_index = iri->arg1->allocl.index;
                 IR_Value* source = ir_runner_get_local_temporary(runner, source_index);
 
-                dest->value.s64 = (int64_t)&source->value.s64;
+                if (iri->arg1->type->kind == AST_TYPE_STRUCT)
+                {
+                    dest->value.struct_pointer = source->value.struct_pointer;
+                }
+                else
+                {
+                    dest->value.s64 = (int64_t)&source->value.s64;
+                }
+
                 break;
             }
 
@@ -760,15 +777,32 @@ namespace Zodiac
             case IR_OP_AGGREGATE_OFFSET_POINTER:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_ALLOCL);
+                assert(iri->arg1->kind == IRV_ALLOCL ||
+                       iri->arg1->kind == IRV_ARGUMENT ||
+                       iri->arg1->kind == IRV_TEMPORARY);
                 assert(iri->arg1->type->kind == AST_TYPE_STRUCT);
 
                 assert(iri->arg2);
                 assert(iri->arg2->kind == IRV_INT_LITERAL);
                 assert(iri->arg2->type == Builtin::type_int);
 
+                IR_Value* struct_pointer_value = nullptr;
+
+                if (iri->arg1->kind == IRV_ALLOCL)
+                {
+                    struct_pointer_value = ir_runner_get_local_temporary(runner, iri->arg1->allocl.index);
+                }
+                else if (iri->arg1->kind == IRV_ARGUMENT)
+                {
+                    IR_Stack_Frame* stack_frame = ir_runner_top_stack_frame(runner);
+                    struct_pointer_value = &stack_frame->args[iri->arg1->argument.index];
+                }
+                else if (iri->arg1->kind == IRV_TEMPORARY)
+                {
+                    struct_pointer_value = ir_runner_get_local_temporary(runner, iri->arg1->temp.index);
+                }
+
                 AST_Type* struct_type = iri->arg1->type;
-                IR_Value* struct_pointer_value = ir_runner_get_local_temporary(runner, iri->arg1->allocl.index);
                 uint64_t member_offset = 0;
                 uint64_t member_index = iri->arg2->value.s64;
                 bool found = false;
@@ -790,7 +824,7 @@ namespace Zodiac
                 IR_Value* result_pointer_value = ir_runner_get_local_temporary(runner, iri->result->temp.index);
                 assert(iri->result->type->kind == AST_TYPE_POINTER);
                 result_pointer_value->type = iri->result->type;
-                result_pointer_value->value.s64 = (int64_t)result_pointer;
+                result_pointer_value->value.struct_pointer = result_pointer;
                 break;
             }
 
@@ -817,6 +851,7 @@ namespace Zodiac
             new_temp.kind = IRV_TEMPORARY;
             new_temp.type = code_temp->type;
 
+            // TODO: A lot of this can probably be merged together,
             if (code_temp->kind == IRV_ALLOCL &&
                 code_temp->type->kind == AST_TYPE_STATIC_ARRAY)
             {
@@ -827,6 +862,14 @@ namespace Zodiac
                 new_temp.value.static_array = arena_alloc_array(&result->arena, uint8_t, array_byte_size);
             }
             else if (code_temp->kind == IRV_ALLOCL &&
+                     code_temp->type->kind == AST_TYPE_STRUCT)
+            {
+                AST_Type* struct_type = code_temp->type;
+                uint64_t struct_byte_size = struct_type->bit_size / 8;
+                assert(struct_byte_size);
+                new_temp.value.struct_pointer = arena_alloc_array(&result->arena, uint8_t, struct_byte_size);
+            }
+            else if (code_temp->kind == IRV_TEMPORARY &&
                      code_temp->type->kind == AST_TYPE_STRUCT)
             {
                 AST_Type* struct_type = code_temp->type;

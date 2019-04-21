@@ -209,17 +209,20 @@ namespace Zodiac
 
     IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, const char* name, AST_Type* return_type);
     void ir_builder_end_function(IR_Builder* ir_builder, IR_Value* func_value);
-    IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name, IR_Function* function = nullptr);
+    IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name,
+                                      IR_Function* function = nullptr);
     IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name, IR_Value* function);
 
     void ir_builder_append_block(IR_Builder* ir_builder, IR_Function* function, IR_Block* block);
     void ir_builder_set_insert_block(IR_Builder* ir_builder, IR_Block* block);
     void ir_builder_set_insert_block(IR_Builder* ir_builder, IR_Value* block_value);
 
-    IR_Value* ir_builder_emit_array_offset_pointer(IR_Builder* ir_builder, IR_Value* array_allocl, uint64_t offset);
+    IR_Value* ir_builder_emit_array_offset_pointer(IR_Builder* ir_builder, IR_Value* array_allocl,
+                                                   uint64_t offset);
     IR_Value* ir_builder_emit_array_offset_pointer(IR_Builder* ir_builder, IR_Value* array_allocl,
                                                    IR_Value* offset_value);
-    IR_Value* ir_builder_emit_aggregate_offset_pointer(IR_Builder* ir_builder, IR_Value* struct_allocl, uint64_t offset);
+    IR_Value* ir_builder_emit_aggregate_offset_pointer(IR_Builder* ir_builder, IR_Value* struct_value,
+                                                       uint64_t offset);
 
     void ir_builder_emit_instruction(IR_Builder* ir_builder, IR_Instruction* iri);
 
