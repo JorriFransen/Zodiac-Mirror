@@ -30,7 +30,10 @@ namespace Zodiac
         }
 #elif defined __linux__
         result = getenv(name);
-        result = (char*)normalize_path(result);
+        if (result)
+        {
+            result = (char*)normalize_path(result);
+        }
 #endif
 
         return result;

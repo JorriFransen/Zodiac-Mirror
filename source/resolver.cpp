@@ -965,7 +965,15 @@ namespace Zodiac
                 case AST_UNOP_ADDROF:
                 {
                     assert(operand_expr->kind == AST_EXPR_IDENTIFIER ||
-                           operand_expr->kind == AST_EXPR_SUBSCRIPT);
+                           operand_expr->kind == AST_EXPR_SUBSCRIPT ||
+                            operand_expr->kind == AST_EXPR_DOT);
+
+                    if (operand_expr->kind == AST_EXPR_DOT)
+                    {
+                        assert(operand_expr->dot.base_expression->kind == AST_EXPR_IDENTIFIER);
+                        assert(operand_expr->dot.base_expression->type->kind == AST_TYPE_STRUCT);
+                        assert(operand_expr->dot.member_expression->kind == AST_EXPR_IDENTIFIER);
+                    }
                     expression->type = ast_find_or_create_pointer_type(resolver->context,
                                                                        resolver->module,
                                                                        operand_expr->type);

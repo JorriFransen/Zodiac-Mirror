@@ -24,12 +24,20 @@ main :: () -> int
     pos = size;
     size.x = 88;
 
+    size_y_ptr := *size.y;
+    <size_y_ptr = 99;
+
     io.printf("pos: %lu,%lu\n", pos.x, pos.y);
     io.printf("size: %lu,%lu\n\n", size.x, size.y);
 
     // loop();
     // array_test();
 }
+
+// print_vec :: (name: *u8, vec: Vec2i) -> void
+// {
+//     io.printf("%s: %lu, %lu\n", name, vec.x, vec.y);
+// }
 
 // array_test :: () -> void
 // {

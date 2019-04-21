@@ -769,7 +769,8 @@ namespace Zodiac
 
         if (expression->kind == AST_EXPR_IDENTIFIER)
         {
-            IR_Value* expression_value = ir_builder_value_for_declaration(ir_builder, expression->identifier->declaration);
+            IR_Value* expression_value = ir_builder_value_for_declaration(ir_builder,
+                                                                          expression->identifier->declaration);
             assert(expression_value);
 
             AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context, ir_builder->ast_module,
@@ -811,6 +812,42 @@ namespace Zodiac
                 IR_Value* index_value = ir_builder_emit_expression(ir_builder, expression->subscript.index_expression);
                 return ir_builder_emit_array_offset_pointer(ir_builder, array_allocl, index_value);
             }
+        }
+        else if (expression->kind == AST_EXPR_DOT)
+        {
+            AST_Expression* base_expression = expression->dot.base_expression;
+            AST_Expression* member_expression = expression->dot.member_expression;
+
+            assert(base_expression->kind == AST_EXPR_IDENTIFIER);
+            assert(base_expression->type->kind == AST_TYPE_STRUCT);
+
+            assert(member_expression->kind == AST_EXPR_IDENTIFIER);
+
+            AST_Type* struct_type = base_expression->type;
+
+            uint64_t member_index = 0;
+            bool found = false;
+            for (uint64_t i = 0; i < BUF_LENGTH(struct_type->aggregate_type.member_declarations); i++)
+            {
+                AST_Declaration* member_decl = struct_type->aggregate_type.member_declarations[i];
+                if (member_expression->identifier->atom == member_decl->identifier->atom)
+                {
+                    member_index = i;
+                    found = true;
+                    break;
+                }
+            }
+
+            assert(found);
+
+            IR_Value* struct_allocl = ir_builder_value_for_declaration(ir_builder,
+                                                                       base_expression->identifier->declaration);
+
+            return ir_builder_emit_aggregate_offset_pointer(ir_builder, struct_allocl, member_index);
+        }
+        else
+        {
+            assert(false);
         }
 
         assert(false);
