@@ -704,22 +704,41 @@ namespace Zodiac
 
             case AST_EXPR_COMPOUND_LITERAL:
             {
-                AST_Type* array_type = expression->type;
-                assert(array_type->kind == AST_TYPE_STATIC_ARRAY);
-
-                IR_Value* result_value = ir_builder_emit_allocl(ir_builder, array_type, "array_compound_lit");
-
-                for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions); i++)
+                if (expression->type->kind == AST_TYPE_STATIC_ARRAY)
                 {
-                    AST_Expression* element_expression = expression->compound_literal.expressions[i];
-                    IR_Value* element_value = ir_builder_emit_expression(ir_builder, element_expression);
+                    AST_Type* array_type = expression->type;
+                    IR_Value* result_value = ir_builder_emit_allocl(ir_builder, array_type, "array_compound_lit");
 
-                    IR_Value* pointer_value = ir_builder_emit_array_offset_pointer(ir_builder, result_value, i);
+                    for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions); i++)
+                    {
+                        AST_Expression* element_expression = expression->compound_literal.expressions[i];
+                        IR_Value* element_value = ir_builder_emit_expression(ir_builder, element_expression);
 
-                    ir_builder_emit_storep(ir_builder, pointer_value, element_value);
+                        IR_Value* pointer_value = ir_builder_emit_array_offset_pointer(ir_builder, result_value, i);
+
+                        ir_builder_emit_storep(ir_builder, pointer_value, element_value);
+                    }
+
+                    return result_value;
                 }
+                else if (expression->type->kind == AST_TYPE_STRUCT)
+                {
+                    AST_Type* struct_type = expression->type;
+                    IR_Value* result_value = ir_builder_emit_allocl(ir_builder, struct_type, "struct_compound_lit");
 
-                return result_value;
+                    for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions); i++)
+                    {
+                        AST_Expression* member_expression = expression->compound_literal.expressions[i];
+                        IR_Value* member_value = ir_builder_emit_expression(ir_builder, member_expression);
+
+                        IR_Value* pointer_value = ir_builder_emit_aggregate_offset_pointer(ir_builder, result_value, i);
+                        ir_builder_emit_storep(ir_builder, pointer_value, member_value);
+                    }
+
+                    return result_value;
+                }
+                else assert(false);
+
                 break;
             }
 

@@ -55,14 +55,16 @@ namespace Zodiac
     static bool try_resolve_if_statement(Resolver* resolver, AST_Statement* statement,
                                          AST_Scope* scope);
 
-    static bool try_resolve_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope);
+    static bool try_resolve_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope,
+                                       AST_Type* suggested_type = nullptr);
     static bool try_resolve_call_expression(Resolver* resolver, AST_Expression* expression,
                                             AST_Scope* scope);
     static bool try_resolve_boolean_literal_expression(Resolver* resolver, AST_Expression* expression);
     static bool try_resolve_string_literal_expression(Resolver* resolver, AST_Expression* expression);
     static bool try_resolve_integer_literal_expression(Resolver* resolver, AST_Expression* expression);
     static bool try_resolve_character_literal_expression(Resolver* resolver, AST_Expression* expression);
-    static bool try_resolve_compound_literal_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope);
+    static bool try_resolve_compound_literal_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope,
+                                                        AST_Type* suggested_type = nullptr);
     static bool try_resolve_array_length_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope);
     static bool try_resolve_identifier_expression(Resolver* resolver, AST_Expression* expression,
                                                   AST_Scope* scope);

@@ -491,6 +491,7 @@ namespace Zodiac
             {
                 if (iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY)
                 {
+                    assert(iri->arg1->kind == IRV_ALLOCL);
                     assert(iri->arg2->kind == IRV_ALLOCL);
                     assert(iri->arg1->type == iri->arg2->type);
 
@@ -507,20 +508,30 @@ namespace Zodiac
                 else if (iri->arg1->type->kind == AST_TYPE_STRUCT)
                 {
                     assert(iri->arg1->kind == IRV_ALLOCL);
-                    assert(iri->arg2->kind == IRV_TEMPORARY);
+                    assert(iri->arg2->kind == IRV_TEMPORARY ||
+                           iri->arg2->kind == IRV_ALLOCL);
 
                     IR_Value* dest_allocl_value = ir_runner_get_local_temporary(runner, iri->arg1->allocl.index);
-                    IR_Value* source_temp_value = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
+
+                    IR_Value* source_value = nullptr;
+                    if (iri->arg2->kind == IRV_TEMPORARY)
+                    {
+                        source_value = ir_runner_get_local_temporary(runner, iri->arg2->temp.index);
+                    }
+                    else if (iri->arg2->kind == IRV_ALLOCL)
+                    {
+                        source_value=  ir_runner_get_local_temporary(runner, iri->arg2->allocl.index);
+                    }
 
                     assert(dest_allocl_value->type->kind == AST_TYPE_STRUCT);
-                    assert(source_temp_value->type->kind == AST_TYPE_STRUCT);
+                    assert(source_value->type->kind == AST_TYPE_STRUCT);
 
                     AST_Type* struct_type = dest_allocl_value->type;
                     uint64_t struct_byte_size = struct_type->bit_size / 8;
                     assert(struct_byte_size);
 
                     memcpy(dest_allocl_value->value.struct_pointer,
-                           source_temp_value->value.struct_pointer,
+                           source_value->value.struct_pointer,
                            struct_byte_size);
                 }
                 else

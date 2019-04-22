@@ -246,19 +246,32 @@ namespace Zodiac
                                             &declaration->mutable_decl.type, scope);
         }
 
-        if (declaration->mutable_decl.init_expression)
+        AST_Expression* init_expr = declaration->mutable_decl.init_expression;
+
+        if (init_expr)
         {
-            result &= try_resolve_expression(resolver, declaration->mutable_decl.init_expression, scope);
+            AST_Type* suggested_type = nullptr;
+            if (declaration->mutable_decl.type &&
+                declaration->mutable_decl.type->kind == AST_TYPE_STRUCT)
+            {
+                suggested_type = declaration->mutable_decl.type;
+            }
+            result &= try_resolve_expression(resolver, init_expr, scope, suggested_type);
 
             if (result && !declaration->mutable_decl.type_spec)
             {
-                declaration->mutable_decl.type = declaration->mutable_decl.init_expression->type;
+                declaration->mutable_decl.type = init_expr->type;
             }
         }
 
         if (result)
         {
             assert(declaration->location != AST_DECL_LOC_INVALID);
+            assert(declaration->mutable_decl.type);
+            if (init_expr)
+            {
+                assert(declaration->mutable_decl.type == init_expr->type);
+            }
         }
         return result;
     }
@@ -467,8 +480,15 @@ namespace Zodiac
             {
                 result &= try_resolve_expression(resolver, statement->assign.lvalue_expression,
                                                  scope);
+                AST_Type* suggested_type = nullptr;
+                if (result &&
+                    statement->assign.lvalue_expression->type->kind == AST_TYPE_STRUCT &&
+                    statement->assign.expression->kind == AST_EXPR_COMPOUND_LITERAL)
+                {
+                    suggested_type = statement->assign.lvalue_expression->type;
+                }
                 result &= try_resolve_expression(resolver, statement->assign.expression,
-                                                 scope);
+                                                 scope, suggested_type);
                 if (result && statement->assign.lvalue_expression->kind == AST_EXPR_IDENTIFIER)
                 {
                     assert(statement->assign.lvalue_expression->identifier->declaration->mutable_decl.type ==
@@ -566,13 +586,19 @@ namespace Zodiac
         return result;
     }
 
-    static bool try_resolve_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope)
+    static bool try_resolve_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope,
+                                       AST_Type* suggested_type/*=nullptr*/)
     {
         assert(resolver);
         assert(expression);
         assert(scope);
 
         bool result = true;
+
+        if (suggested_type)
+        {
+            assert(expression->kind == AST_EXPR_COMPOUND_LITERAL);
+        }
 
         switch (expression->kind)
         {
@@ -647,7 +673,7 @@ namespace Zodiac
 
             case AST_EXPR_COMPOUND_LITERAL:
             {
-                result &= try_resolve_compound_literal_expression(resolver, expression, scope);
+                result &= try_resolve_compound_literal_expression(resolver, expression, scope, suggested_type);
                 break;
             }
 
@@ -837,7 +863,8 @@ namespace Zodiac
         return true;
     }
 
-    static bool try_resolve_compound_literal_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope)
+    static bool try_resolve_compound_literal_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope,
+                                                        AST_Type* suggested_type/*=nullptr*/)
     {
         assert(resolver);
         assert(expression);
@@ -868,8 +895,44 @@ namespace Zodiac
 
         assert(same_type);
 
-        expression->type = ast_find_or_create_array_type(resolver->context, resolver->module, first_type,
-                                                         BUF_LENGTH(expression->compound_literal.expressions));
+        if (suggested_type && suggested_type->kind == AST_TYPE_STRUCT)
+        {
+            if (BUF_LENGTH(suggested_type->aggregate_type.member_declarations) !=
+                BUF_LENGTH(expression->compound_literal.expressions))
+            {
+                return result = false;
+            }
+            else
+            {
+                bool match = true;
+                for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions); i++)
+                {
+                    AST_Expression* expr = expression->compound_literal.expressions[i];
+                    assert(expr->type);
+                    AST_Declaration* struct_member_decl = suggested_type->aggregate_type.member_declarations[i];
+
+                    if (expr->type != struct_member_decl->mutable_decl.type)
+                    {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match)
+                {
+                    expression->type = suggested_type;
+                }
+                else
+                {
+                    result = false;
+                }
+            }
+        }
+        else
+        {
+            expression->type = ast_find_or_create_array_type(resolver->context, resolver->module, first_type,
+                                                             BUF_LENGTH(expression->compound_literal.expressions));
+        }
 
         return result;
     }
