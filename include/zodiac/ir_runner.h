@@ -43,6 +43,7 @@ namespace Zodiac
     void ir_runner_load_foreigns(IR_Runner* ir_runner, IR_Module* ir_module);
 
     IR_Value* ir_runner_get_local_temporary(IR_Runner* ir_runner, uint64_t temp_index);
+    IR_Value* ir_runner_get_local_temporary(IR_Runner* ir_runner, IR_Value* code_value);
 
     IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, IR_Function* function, uint64_t num_args);
     void ir_runner_execute_block(IR_Runner* runner, IR_Block* block);

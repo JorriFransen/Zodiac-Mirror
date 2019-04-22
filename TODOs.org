@@ -1,6 +1,5 @@
 
  - FLOATS!!!
- - bit size should be valid for all kinds of type
  - normal types are not pushed in the per module type table. (only pointer and array types?)
    
 * Modules [0/1]
@@ -14,11 +13,12 @@
   - [ ] Nested declarations
   - [ ] Anonymous nested declarations
 
-* Pointers [2/5]
+* Enums [/]
+* Pointers [3/5]
    - [X] Basic pointers
    - [X] Index expressions on pointers
    - [ ] Pointer math
-   - [ ] Member expressions on pointers
+   - [X] Member expressions on pointers
    - [ ] String type
      
 * Foreign functions [5/5]
