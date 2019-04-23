@@ -735,8 +735,10 @@ namespace Zodiac
             case IR_OP_ARRAY_OFFSET_POINTER:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_ALLOCL);
-                assert(iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY);
+                assert(iri->arg1->kind == IRV_ALLOCL ||
+                       iri->arg1->kind == IRV_TEMPORARY);
+                assert(iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY ||
+                       iri->arg1->type->kind == AST_TYPE_POINTER);
 
                 assert(iri->arg2);
                 assert(iri->arg2->kind == IRV_INT_LITERAL ||
@@ -758,13 +760,25 @@ namespace Zodiac
                     index = index_value->value.s64;
                 }
 
-                AST_Type* element_type = iri->arg1->type->static_array.base;
                 IR_Value* base_pointer_value = ir_runner_get_local_temporary(runner, iri->arg1);
-                void* base_pointer = (uint8_t*)base_pointer_value->value.static_array;
+                AST_Type* element_type = nullptr;
+                void* base_pointer = nullptr;
+                if (iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY)
+                {
+                    element_type = iri->arg1->type->static_array.base;
+                    base_pointer = (uint8_t*)base_pointer_value->value.static_array;
+                }
+                else if (iri->arg1->type->kind == AST_TYPE_POINTER)
+                {
+                    element_type = iri->arg1->type->pointer.base;
+                    base_pointer = (uint8_t*)base_pointer_value->value.string;
+                }
+                else assert(false);
                 void* result_pointer = ((uint8_t*)base_pointer) +
                     (index * (element_type->bit_size / 8));
 
-                IR_Value* result_pointer_value = ir_runner_get_local_temporary(runner, iri->result);
+                IR_Value* result_pointer_value = ir_runner_get_local_temporary(runner,
+                                                                               iri->result);
                 assert(iri->result->type->kind == AST_TYPE_POINTER);
                 result_pointer_value->type = iri->result->type;
                 result_pointer_value->value.s64 = (int64_t)result_pointer;
