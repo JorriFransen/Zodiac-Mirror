@@ -1,0 +1,9 @@
+
+io :: import io;
+
+main :: () -> int
+{
+    x : float = 3.14;
+
+    return 0;
+}

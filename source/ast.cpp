@@ -155,7 +155,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos, uint64_t value)
+    AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos,
+                                                       uint64_t value)
     {
         assert(context);
 
@@ -166,7 +167,20 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_character_literal_expression_new(Context* context, File_Pos file_pos, char value)
+    AST_Expression* ast_float_literal_expression_new(Context* context, File_Pos file_pos,
+                                                     double value)
+    {
+        assert(context);
+
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_FLOAT_LITERAL);
+
+        result->float_literal.r64 = value;
+
+        return result;
+    }
+
+    AST_Expression* ast_character_literal_expression_new(Context* context, File_Pos file_pos,
+                                                         char value)
     {
         assert(context);
 
@@ -175,7 +189,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_compound_literal_expression_new(Context* context, File_Pos file_pos, BUF(AST_Expression*) expressions)
+    AST_Expression* ast_compound_literal_expression_new(Context* context, File_Pos file_pos,
+                                                        BUF(AST_Expression*) expressions)
     {
         assert(context);
         auto result = ast_expression_new(context, file_pos, AST_EXPR_COMPOUND_LITERAL);
@@ -183,7 +198,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_array_length_expression_new(Context* context, File_Pos file_pos, AST_Expression* ident_expr)
+    AST_Expression* ast_array_length_expression_new(Context* context, File_Pos file_pos,
+                                                    AST_Expression* ident_expr)
     {
         assert(context);
         assert(ident_expr);
@@ -193,7 +209,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos, AST_Expression* base_expr,
+    AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos,
+                                           AST_Expression* base_expr,
                                            AST_Expression* member_expr)
     {
         assert(context);
@@ -207,7 +224,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Declaration* ast_declaration_new(Context* context, File_Pos file_pos, AST_Declaration_Kind kind,
+    AST_Declaration* ast_declaration_new(Context* context, File_Pos file_pos,
+                                         AST_Declaration_Kind kind,
                                          AST_Declaration_Location location,
                                          AST_Identifier* identifier, AST_Directive* directive,
                                          bool constant)
@@ -238,7 +256,8 @@ namespace Zodiac
         assert(identifier);
         assert(argument_scope);
 
-        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_FUNC, AST_DECL_LOC_GLOBAL,
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_FUNC,
+                                                      AST_DECL_LOC_GLOBAL,
                                                       identifier, nullptr, true);
 
         result->function.args = args;
@@ -260,8 +279,10 @@ namespace Zodiac
         return result;
     }
 
-    AST_Declaration* ast_mutable_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
-                                                 AST_Type_Spec* type_spec, AST_Expression* init_expr,
+    AST_Declaration* ast_mutable_declaration_new(Context* context, File_Pos file_pos,
+                                                 AST_Identifier* identifier,
+                                                 AST_Type_Spec* type_spec,
+                                                 AST_Expression* init_expr,
                                                  AST_Declaration_Location location)
     {
         assert(context);
@@ -269,7 +290,8 @@ namespace Zodiac
         assert(type_spec || init_expr);
         assert(location != AST_DECL_LOC_INVALID);
 
-        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_MUTABLE, location,
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_MUTABLE,
+                                                      location,
                                                       identifier, nullptr, false);
 
         result->mutable_decl.type_spec = type_spec;
@@ -278,15 +300,18 @@ namespace Zodiac
         return result;
     }
 
-    AST_Declaration* ast_constant_variable_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
-                                                           AST_Type_Spec* type_spec, AST_Expression* init_expr,
+    AST_Declaration* ast_constant_variable_declaration_new(Context* context, File_Pos file_pos,
+                                                           AST_Identifier* identifier,
+                                                           AST_Type_Spec* type_spec,
+                                                           AST_Expression* init_expr,
                                                            AST_Declaration_Location location)
     {
         assert(context);
         assert(identifier);
         assert(init_expr);
 
-        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_CONSTANT_VAR, location,
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_CONSTANT_VAR,
+                                                      location,
                                                       identifier, nullptr, true);
 
         result->constant_var.type_spec = type_spec;
@@ -302,7 +327,8 @@ namespace Zodiac
         assert(type);
         assert(identifier);
 
-        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_TYPE, AST_DECL_LOC_INVALID,
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_TYPE,
+                                                      AST_DECL_LOC_INVALID,
                                                       identifier, nullptr, true);
 
         result->type.type = type;
@@ -310,12 +336,14 @@ namespace Zodiac
         return result;
     }
 
-    AST_Declaration* ast_dyn_link_declaration_new(Context* context, File_Pos file_pos, Atom link_name,
+    AST_Declaration* ast_dyn_link_declaration_new(Context* context, File_Pos file_pos,
+                                                  Atom link_name,
                                                   AST_Declaration_Location location)
     {
         assert(context);
 
-        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_DYN_LINK, location,
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_DYN_LINK,
+                                                      location,
                                                       nullptr, nullptr, false);
 
         result->dyn_link_name = link_name;
@@ -323,14 +351,17 @@ namespace Zodiac
         return result;
     }
 
-    AST_Declaration* ast_static_if_declaration_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
-                                                   AST_Declaration* then_declaration, AST_Declaration* else_declaration)
+    AST_Declaration* ast_static_if_declaration_new(Context* context, File_Pos file_pos,
+                                                   AST_Expression* cond_expr,
+                                                   AST_Declaration* then_declaration,
+                                                   AST_Declaration* else_declaration)
     {
         assert(context);
         assert(cond_expr);
         assert(then_declaration);
 
-        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_STATIC_IF, AST_DECL_LOC_GLOBAL,
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_STATIC_IF,
+                                                      AST_DECL_LOC_GLOBAL,
                                                       nullptr, nullptr, true);
 
         result->static_if.cond_expr = cond_expr;
@@ -340,11 +371,13 @@ namespace Zodiac
         return result;
     }
 
-    AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos, BUF(AST_Declaration*) block_decls)
+    AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos,
+                                               BUF(AST_Declaration*) block_decls)
     {
         assert(context);
 
-        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_BLOCK, AST_DECL_LOC_GLOBAL,
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_BLOCK,
+                                                      AST_DECL_LOC_GLOBAL,
                                                       nullptr, nullptr, false);
 
         result->block.decls = block_decls;
@@ -373,7 +406,8 @@ namespace Zodiac
         assert(import_module_identifier);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_IMPORT,
-                                                      AST_DECL_LOC_GLOBAL, identifier, nullptr, true);
+                                                      AST_DECL_LOC_GLOBAL, identifier,
+                                                      nullptr, true);
         result->import.module_identifier = import_module_identifier;
         return result;
     }
@@ -387,7 +421,8 @@ namespace Zodiac
         assert(member_decls);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
-                                                      AST_DECL_LOC_GLOBAL, identifier, nullptr, true);
+                                                      AST_DECL_LOC_GLOBAL, identifier,
+                                                      nullptr, true);
         result->aggregate_type.kind = AST_AGG_DECL_STRUCT;
         result->aggregate_type.type = nullptr;
         result->aggregate_type.aggregate_declarations = member_decls;
@@ -425,7 +460,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Statement* ast_return_statement_new(Context* context, File_Pos file_pos, AST_Expression* return_expr)
+    AST_Statement* ast_return_statement_new(Context* context, File_Pos file_pos,
+                                            AST_Expression* return_expr)
     {
         assert(context);
 
@@ -438,7 +474,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Statement* ast_if_statement_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
+    AST_Statement* ast_if_statement_new(Context* context, File_Pos file_pos,
+                                        AST_Expression* cond_expr,
                                         AST_Statement* then_stmt, AST_Statement* else_stmt)
     {
         assert(context);
@@ -456,7 +493,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos, AST_Expression* lvalue_expr,
+    AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos,
+                                            AST_Expression* lvalue_expr,
                                             AST_Expression* expression)
     {
         assert(context);
@@ -488,7 +526,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Statement* ast_while_statement_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
+    AST_Statement* ast_while_statement_new(Context* context, File_Pos file_pos,
+                                           AST_Expression* cond_expr,
         AST_Statement* body_stmt)
     {
         assert(context);
@@ -529,7 +568,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags, uint64_t bit_size)
+    AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
+                           uint64_t bit_size)
     {
         assert(context);
 
@@ -556,7 +596,8 @@ namespace Zodiac
         assert(context);
         assert(base_type);
 
-        AST_Type* result = ast_type_new(context, AST_TYPE_POINTER, AST_TYPE_FLAG_NONE, Builtin::pointer_size);
+        AST_Type* result = ast_type_new(context, AST_TYPE_POINTER, AST_TYPE_FLAG_NONE,
+                                        Builtin::pointer_size);
         result->pointer.base = base_type;
 
         return result;
@@ -577,7 +618,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations, uint64_t bit_size)
+    AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations,
+                                  uint64_t bit_size)
     {
         assert(context);
         assert(member_declarations);
@@ -599,7 +641,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos, AST_Identifier* identifier)
+    AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos,
+                                                AST_Identifier* identifier)
     {
         assert(context);
         assert(identifier);
@@ -610,7 +653,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type_Spec* ast_type_spec_pointer_new(Context* context, File_Pos file_pos, AST_Type_Spec* base_type_spec)
+    AST_Type_Spec* ast_type_spec_pointer_new(Context* context, File_Pos file_pos,
+                                             AST_Type_Spec* base_type_spec)
     {
         assert(context);
         assert(base_type_spec);
@@ -621,7 +665,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type_Spec* ast_type_spec_static_array_new(Context* context, File_Pos file_pos, AST_Expression* count_expr,
+    AST_Type_Spec* ast_type_spec_static_array_new(Context* context, File_Pos file_pos,
+                                                  AST_Expression* count_expr,
                                                   AST_Type_Spec* base_type_spec)
     {
         assert(context);
@@ -646,7 +691,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Module* module, AST_Type* base_type)
+    AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Module* module,
+                                              AST_Type* base_type)
     {
         assert(context);
         assert(module);
@@ -669,7 +715,8 @@ namespace Zodiac
         return pointer_type;
     }
 
-    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module, AST_Type* base_type, AST_Expression* count_expr)
+    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module,
+                                            AST_Type* base_type, AST_Expression* count_expr)
     {
         assert(context);
         assert(module);
@@ -677,10 +724,12 @@ namespace Zodiac
         assert(count_expr);
         assert(count_expr->kind == AST_EXPR_INTEGER_LITERAL);
 
-        return ast_find_or_create_array_type(context, module, base_type, count_expr->integer_literal.u64);
+        return ast_find_or_create_array_type(context, module, base_type,
+                                             count_expr->integer_literal.u64);
     }
 
-    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module, AST_Type* base_type, uint64_t count)
+    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module,
+                                            AST_Type* base_type, uint64_t count)
     {
         assert(context);
         assert(module);

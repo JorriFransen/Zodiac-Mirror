@@ -862,7 +862,8 @@ namespace Zodiac
                 expect_token(parser, TOK_LBRACK);
                 AST_Expression* index_expr = parse_expression(parser);
                 expect_token(parser, TOK_RBRACK);
-                result = ast_subscript_expression_new(parser->context, ft.file_pos, result, index_expr);
+                result = ast_subscript_expression_new(parser->context, ft.file_pos, result,
+                                                      index_expr);
                 break;
             }
 
@@ -872,9 +873,11 @@ namespace Zodiac
                 AST_Identifier* member_ident = parse_identifier(parser);
                 assert(member_ident);
 
-                AST_Expression* member_expr = ast_ident_expression_new(parser->context, member_ident->file_pos,
+                AST_Expression* member_expr = ast_ident_expression_new(parser->context,
+                                                                       member_ident->file_pos,
                                                                        member_ident);
-                result = ast_dot_expression_new(parser->context, ft.file_pos, result, member_expr);
+                result = ast_dot_expression_new(parser->context, ft.file_pos, result,
+                                                member_expr);
                 break;
             }
 
@@ -933,6 +936,14 @@ namespace Zodiac
                 consume_token(parser);
                 uint64_t value = atom_to_u64(ct.atom);
                 return ast_integer_literal_expression_new(parser->context, ct.file_pos, value);
+                break;
+            }
+
+            case TOK_FLOAT:
+            {
+                consume_token(parser);
+                double value = atom_to_double(ct.atom);
+                return ast_float_literal_expression_new(parser->context, ct.file_pos, value);
                 break;
             }
 

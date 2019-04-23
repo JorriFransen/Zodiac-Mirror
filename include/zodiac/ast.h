@@ -46,6 +46,7 @@ namespace Zodiac
         AST_EXPR_BOOL_LITERAL,
         AST_EXPR_STRING_LITERAL,
         AST_EXPR_INTEGER_LITERAL,
+        AST_EXPR_FLOAT_LITERAL,
         AST_EXPR_CHAR_LITERAL,
         AST_EXPR_COMPOUND_LITERAL,
         AST_EXPR_ARRAY_LENGTH,
@@ -133,6 +134,11 @@ namespace Zodiac
             {
                 uint64_t u64;
             } integer_literal;
+
+            struct
+            {
+                double r64;
+            } float_literal;
 
             struct
             {
@@ -361,6 +367,7 @@ namespace Zodiac
         AST_TYPE_FLAG_INT    = 0x01,
         AST_TYPE_FLAG_SIGNED = 0x02,
         AST_TYPE_FLAG_VOID   = 0x04,
+        AST_TYPE_FLAG_FLOAT  = 0x08,
     };
 
     struct AST_Type
@@ -444,27 +451,41 @@ namespace Zodiac
     AST_Identifier* ast_identifier_new(Context* context, Atom atom, File_Pos file_pos);
     AST_Directive* ast_directive_new(Context* context, AST_Directive_Kind kind, File_Pos file_pos);
 
-    AST_Expression* ast_expression_new(Context* context, File_Pos file_pos, AST_Expression_Kind kind);
+    AST_Expression* ast_expression_new(Context* context, File_Pos file_pos,
+                                       AST_Expression_Kind kind);
     AST_Expression* ast_binary_expression_new(Context* context, File_Pos file_pos,
-                                              AST_Expression* lhs, AST_Binop_Kind op, AST_Expression* rhs);
+                                              AST_Expression* lhs, AST_Binop_Kind op,
+                                              AST_Expression* rhs);
     AST_Expression* ast_unary_expression_new(Context* context, File_Pos file_pos,
                                              AST_Unop_Kind op, AST_Expression* operand);
-    AST_Expression* ast_ident_expression_new(Context* context, File_Pos file_pos, AST_Identifier* identifier);
-    AST_Expression* ast_call_expression_new(Context* context, File_Pos file_pos, AST_Expression* ident_expression,
+    AST_Expression* ast_ident_expression_new(Context* context, File_Pos file_pos,
+                                             AST_Identifier* identifier);
+    AST_Expression* ast_call_expression_new(Context* context, File_Pos file_pos,
+                                            AST_Expression* ident_expression,
                                             BUF(AST_Expression*) arg_exprs);
-    AST_Expression* ast_subscript_expression_new(Context* context, File_Pos file_pos, AST_Expression* base_expression,
+    AST_Expression* ast_subscript_expression_new(Context* context, File_Pos file_pos,
+                                                 AST_Expression* base_expression,
                                                  AST_Expression* index_expression);
-    AST_Expression* ast_boolean_literal_expression_new(Context* context, File_Pos file_Pos, bool value);
-    AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos, Atom value);
-    AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos, uint64_t value);
-    AST_Expression* ast_character_literal_expression_new(Context* context, File_Pos file_pos, char value);
+    AST_Expression* ast_boolean_literal_expression_new(Context* context, File_Pos file_Pos,
+                                                       bool value);
+    AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos,
+                                                      Atom value);
+    AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos,
+                                                       uint64_t value);
+    AST_Expression* ast_float_literal_expression_new(Context* context, File_Pos file_pos,
+                                                     double value);
+    AST_Expression* ast_character_literal_expression_new(Context* context, File_Pos file_pos,
+                                                         char value);
     AST_Expression* ast_compound_literal_expression_new(Context* context, File_Pos file_pos,
                                                         BUF(AST_Expression*) expressions);
-    AST_Expression* ast_array_length_expression_new(Context* context, File_Pos file_pos, AST_Expression* ident_expr);
-    AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos, AST_Expression* base_expr,
+    AST_Expression* ast_array_length_expression_new(Context* context, File_Pos file_pos,
+                                                    AST_Expression* ident_expr);
+    AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos,
+                                           AST_Expression* base_expr,
                                            AST_Expression* member_expr);
 
-    AST_Declaration* ast_declaration_new(Context* context, File_Pos file_Pos, AST_Declaration_Kind kind,
+    AST_Declaration* ast_declaration_new(Context* context, File_Pos file_Pos,
+                                         AST_Declaration_Kind kind,
                                          AST_Declaration_Location location,
                                          AST_Identifier* identifier, AST_Directive* directive,
                                          bool constant);
@@ -475,15 +496,20 @@ namespace Zodiac
                                                   AST_Type_Spec* return_type_spec,
                                                   AST_Statement* body_block,
                                                   AST_Scope* argument_scope);
-    AST_Declaration* ast_mutable_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
-                                                 AST_Type_Spec* type_spec, AST_Expression* init_expr,
+    AST_Declaration* ast_mutable_declaration_new(Context* context, File_Pos file_pos,
+                                                 AST_Identifier* identifier,
+                                                 AST_Type_Spec* type_spec,
+                                                 AST_Expression* init_expr,
                                                  AST_Declaration_Location location);
-    AST_Declaration* ast_constant_variable_declaration_new(Context* context, File_Pos file_pos, AST_Identifier* identifier,
-                                                           AST_Type_Spec* type_spec, AST_Expression* init_expr,
+    AST_Declaration* ast_constant_variable_declaration_new(Context* context, File_Pos file_pos,
+                                                           AST_Identifier* identifier,
+                                                           AST_Type_Spec* type_spec,
+                                                           AST_Expression* init_expr,
                                                            AST_Declaration_Location location);
     AST_Declaration* ast_type_declaration_new(Context* context, File_Pos file_pos, AST_Type* type,
                                               AST_Identifier* identifier);
-    AST_Declaration* ast_dyn_link_declaration_new(Context* context, File_Pos file_pos, Atom link_name,
+    AST_Declaration* ast_dyn_link_declaration_new(Context* context, File_Pos file_pos,
+                                                  Atom link_name,
                                                   AST_Declaration_Location location);
     AST_Declaration* ast_static_if_declaration_new(Context* context, File_Pos file_pos,
                                                    AST_Expression* cond_expr,
@@ -505,35 +531,46 @@ namespace Zodiac
     AST_Statement* ast_block_statement_new(Context* context, File_Pos file_pos,
                                            BUF(AST_Statement*) block_statements,
                                            AST_Scope* block_scope);
-    AST_Statement* ast_return_statement_new(Context* context, File_Pos file_pos, AST_Expression* return_expr);
-    AST_Statement* ast_if_statement_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
+    AST_Statement* ast_return_statement_new(Context* context, File_Pos file_pos,
+                                            AST_Expression* return_expr);
+    AST_Statement* ast_if_statement_new(Context* context, File_Pos file_pos,
+                                        AST_Expression* cond_expr,
                                         AST_Statement* then_stmt, AST_Statement* else_stmt);
     AST_Statement* ast_assign_statement_new(Context* context, File_Pos file_pos,
                                             AST_Expression* lvalue_expression,
                                             AST_Expression* expression);
     AST_Statement* ast_call_statement_new(Context* context, AST_Expression* call_expression);
-    AST_Statement* ast_while_statement_new(Context* context, File_Pos file_pos, AST_Expression* cond_expr,
+    AST_Statement* ast_while_statement_new(Context* context, File_Pos file_pos,
+                                           AST_Expression* cond_expr,
                                            AST_Statement* body_stmt);
     AST_Statement* ast_for_statement_new(Context* context, File_Pos file_pos, AST_Scope* scope,
                                          AST_Statement* init_stmt, AST_Expression* cond_expr,
                                          AST_Statement* step_stmt, AST_Statement* body_stmt);
 
-    AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags, uint64_t bit_size);
+    AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
+                           uint64_t bit_size);
     AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size);
     AST_Type* ast_type_pointer_new(Context* context, AST_Type* base_type);
     AST_Type* ast_type_static_array_new(Context* context, AST_Type* base_type, uint64_t count);
-    AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations, uint64_t bit_size);
+    AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations,
+                                  uint64_t bit_size);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind);
-    AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos, AST_Identifier* identifier);
-    AST_Type_Spec* ast_type_spec_pointer_new(Context* context, File_Pos file_pos, AST_Type_Spec* base_type_spec);
-    AST_Type_Spec* ast_type_spec_static_array_new(Context* context, File_Pos file_pos, AST_Expression* count_expr,
+    AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos,
+                                                AST_Identifier* identifier);
+    AST_Type_Spec* ast_type_spec_pointer_new(Context* context, File_Pos file_pos,
+                                             AST_Type_Spec* base_type_spec);
+    AST_Type_Spec* ast_type_spec_static_array_new(Context* context, File_Pos file_pos,
+                                                  AST_Expression* count_expr,
                                                   AST_Type_Spec* base_type_spec);
 
     AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope);
 
-    AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Module* module, AST_Type* base_type);
-    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module, AST_Type* base_type,
+    AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Module* module,
+                                              AST_Type* base_type);
+    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module,
+                                            AST_Type* base_type,
                                             AST_Expression* count_expr);
-    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module, AST_Type* base_type, uint64_t count);
+    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module,
+                                            AST_Type* base_type, uint64_t count);
 }

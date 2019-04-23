@@ -175,7 +175,7 @@ namespace Zodiac
                 }
                 else if (char_is_num(current_char(lexer)))
                 {
-                    lex_integer(lexer);
+                    lex_integer_or_float(lexer);
                 }
                 else
                 {
@@ -209,7 +209,7 @@ namespace Zodiac
         lexer_push_token(lexer, TOK_IDENTIFIER, ident_file_pos, ident_length);
     }
 
-    static void lex_integer(Lexer* lexer)
+    static void lex_integer_or_float(Lexer* lexer)
     {
         assert(lexer);
         assert(char_is_num(current_char(lexer)));
@@ -217,13 +217,24 @@ namespace Zodiac
         File_Pos file_pos = lexer->current_file_pos;
         uint64_t integer_length = 0;
 
+        bool found_dot = false;
+
         while (char_is_num(current_char(lexer)))
         {
             lexer_consume_character(lexer);
             integer_length++;
+
+            if (current_char(lexer) == '.')
+            {
+                assert(!found_dot);
+                found_dot = true;
+                lexer_consume_character(lexer);
+                integer_length++;
+            }
         }
 
-        lexer_push_token(lexer, TOK_INTEGER, file_pos, integer_length);
+        Token_Kind kind = found_dot ? TOK_FLOAT : TOK_INTEGER;
+        lexer_push_token(lexer, kind, file_pos, integer_length);
     }
 
     static void lexer_consume_character(Lexer* lexer)

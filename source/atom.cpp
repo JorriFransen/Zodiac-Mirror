@@ -86,6 +86,21 @@ namespace Zodiac
         return result;
     }
 
+    double atom_to_double(const Atom& atom)
+    {
+        assert(atom.data);
+        assert(atom.length > 0);
+
+        char* end_ptr;
+        double result = strtod(atom.data, &end_ptr);
+        if (result == 0.0 && end_ptr != atom.data + (atom.length))
+        {
+            assert(false);
+        }
+
+        return result; 
+    }
+
     bool operator==(const Atom& lhs, const Atom& rhs)
     {
         return lhs.length == rhs.length && lhs.data == rhs.data;

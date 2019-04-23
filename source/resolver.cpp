@@ -665,6 +665,12 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_FLOAT_LITERAL:
+            {
+                result &= try_resolve_float_literal_expression(resolver, expression);
+                break;
+            }
+
             case AST_EXPR_CHAR_LITERAL:
             {
                 result &= try_resolve_character_literal_expression(resolver, expression);
@@ -673,7 +679,8 @@ namespace Zodiac
 
             case AST_EXPR_COMPOUND_LITERAL:
             {
-                result &= try_resolve_compound_literal_expression(resolver, expression, scope, suggested_type);
+                result &= try_resolve_compound_literal_expression(resolver, expression, scope,
+                                                                  suggested_type);
                 break;
             }
 
@@ -843,6 +850,23 @@ namespace Zodiac
         {
             expression->type = Builtin::type_int;
         }
+        expression->is_const = true;
+
+        return true;
+    }
+
+    static bool try_resolve_float_literal_expression(Resolver* resolver,
+                                                     AST_Expression* expression)
+    {
+        assert(resolver);
+        assert(expression);
+        assert(expression->kind == AST_EXPR_FLOAT_LITERAL);
+
+        if (!expression->type)
+        {
+            expression->type = Builtin::type_float;
+        }
+
         expression->is_const = true;
 
         return true;
