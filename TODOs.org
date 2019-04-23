@@ -35,12 +35,12 @@
    - [ ] break
    - [ ] defer
 
-* IR [1/14]
+* IR [2/14]
    - [X] Argument count should be an argument for function calls
+   - [X] Handle pointer offsets the same way as we do for static arrays
    - [ ] Make assignment statements for array literals more efficient by not using an intermediary array
    - [ ] Make assignement statements (and decls with init expr) with struct compound
           literals more efficient by not using an intermediary
-   - [ ] Handle pointer offsets the same way as we do for static arrays
    - [ ] Cleanup the gendata situation (???)
    - [ ] Cleanup lvalue expression generation
    - [ ] Use atoms where possible

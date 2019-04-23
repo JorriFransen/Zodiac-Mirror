@@ -2178,7 +2178,7 @@ namespace Zodiac
 
             case IRV_STRING_LITERAL:
             {
-                printf("lit(\"%s\")", value->value.string);
+                ir_print_string_literal((const char*)value->value.string);
                 break;
             }
 
@@ -2220,5 +2220,35 @@ namespace Zodiac
 
             default: assert(false);
         }
+    }
+
+    void ir_print_string_literal(const char* string)
+    {
+        assert(string);
+
+        printf("lit(\"");
+
+        auto string_length = strlen(string);
+
+        for (uint64_t i = 0; i < string_length; i++)
+        {
+            char c = string[i];
+            switch (c)
+            {
+                case '\n':
+                {
+                    printf("\\n");
+                    break;
+                }
+
+                default:
+                {
+                    printf("%c", string[i]);
+                    break;
+                }
+            }
+        }
+
+        printf("\")");
     }
 }
