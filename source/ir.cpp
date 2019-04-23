@@ -457,16 +457,9 @@ namespace Zodiac
                     base_expression->identifier->declaration);
                 assert(pointer_alloc->kind == IRV_ALLOCL);
                 IR_Value* base_pointer_value = ir_builder_emit_loadl(ir_builder, pointer_alloc);
-
-
-                IR_Value* element_byte_size_lit = ir_integer_literal(ir_builder, Builtin::type_int,
-                                                                    element_type->bit_size / 8);
-                IR_Value* element_byte_size = ir_builder_emit_load_lit(ir_builder, element_byte_size_lit);
-
-                IR_Value* offset_value = ir_builder_emit_mul(ir_builder, element_byte_size, index_value);
-                offset_value->type = base_pointer_value->type;
-
-                IR_Value* target_addr = ir_builder_emit_add(ir_builder, base_pointer_value, offset_value);
+                IR_Value* target_addr = ir_builder_emit_array_offset_pointer(ir_builder,
+                                                                             base_pointer_value,
+                                                                             index_value);
 
                 ir_builder_emit_storep(ir_builder, target_addr, new_value);
             }
