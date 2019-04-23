@@ -524,7 +524,7 @@ namespace Zodiac
                 IR_Value* dest_value = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value* source_value = ir_runner_get_local_temporary(runner, iri->arg2);
 
-                if (iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY)
+                if (dest_value->type->kind == AST_TYPE_STATIC_ARRAY)
                 {
                     assert(iri->arg1->kind == IRV_ALLOCL);
                     assert(iri->arg2->kind == IRV_ALLOCL);
@@ -538,7 +538,7 @@ namespace Zodiac
                     memcpy(dest_value->value.static_array, source_value->value.static_array,
                            byte_count);
                 }
-                else if (iri->arg1->type->kind == AST_TYPE_STRUCT)
+                else if (dest_value->type->kind == AST_TYPE_STRUCT)
                 {
                     assert(iri->arg1->kind == IRV_ALLOCL);
                     assert(iri->arg2->kind == IRV_TEMPORARY ||
@@ -602,13 +602,23 @@ namespace Zodiac
                 IR_Value* pointer_value = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value* source_value = ir_runner_get_local_temporary(runner, iri->arg2);
                 void* pointer = (void*)pointer_value->value.s64;
-                AST_Type* dest_type = dest_type = iri->arg1->type->pointer.base;
+                AST_Type* dest_type = iri->arg1->type->pointer.base;
+                AST_Type* pointer_type = pointer_value->type;
+                AST_Type* pointer_base_type = pointer_type->pointer.base;
+                assert(dest_type == pointer_base_type);
 
-                assert(pointer);
-                assert(source_value);
-                assert(dest_type);
-                switch (dest_type->bit_size)
+                if (pointer_base_type->kind == AST_TYPE_STRUCT)
                 {
+                    uint64_t struct_byte_size = pointer_base_type->bit_size / 8;
+                    assert(struct_byte_size);
+
+                    memcpy(pointer, source_value->value.struct_pointer,
+                           struct_byte_size);
+                }
+                else
+                {
+                    switch (dest_type->bit_size)
+                    {
                     case 8:
                     {
                         *((uint8_t*)pointer) = source_value->value.u8;
@@ -622,7 +632,9 @@ namespace Zodiac
                     }
 
                     default: assert(false);
+                    }
                 }
+
                 break;
             }
 

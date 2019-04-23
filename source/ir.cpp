@@ -856,34 +856,24 @@ namespace Zodiac
         else if (expression->kind == AST_EXPR_SUBSCRIPT)
         {
             AST_Expression* base_expr = expression->subscript.base_expression;
+            AST_Expression* index_expr = expression->subscript.index_expression;
             if (base_expr->type->kind == AST_TYPE_POINTER)
             {
-                AST_Type* element_type = base_expr->type->pointer.base;
-                assert(base_expr->kind == AST_EXPR_IDENTIFIER);
-                auto base_decl = base_expr->identifier->declaration;
-                IR_Value* base_pointer_allocl = ir_builder_value_for_declaration(ir_builder,
-                                                                                base_decl);
-                IR_Value* base_pointer_value = ir_builder_emit_loadl(ir_builder, base_pointer_allocl);
-
+                IR_Value* base_pointer = ir_builder_emit_expression(ir_builder,
+                                                                    base_expr);
                 IR_Value* index_value = ir_builder_emit_expression(ir_builder,
-                                                                   expression->subscript.index_expression);
-                IR_Value* element_byte_size_lit = ir_integer_literal(ir_builder, Builtin::type_int,
-                                                                    element_type->bit_size / 8);
-                IR_Value* element_byte_size = ir_builder_emit_load_lit(ir_builder, element_byte_size_lit);
-                IR_Value* offset_value = ir_builder_emit_mul(ir_builder, index_value, element_byte_size);
-                offset_value->type = base_pointer_value->type;
-
-                IR_Value* result_value = ir_builder_emit_add(ir_builder, base_pointer_value, offset_value);
-                return result_value;
+                                                                   index_expr);
+                return ir_builder_emit_array_offset_pointer(ir_builder, base_pointer, index_value);
             }
             else
             {
                 assert(base_expr->kind == AST_EXPR_IDENTIFIER);
+                AST_Declaration* ident_decl = base_expr->identifier->declaration;
                 IR_Value* array_allocl = ir_builder_value_for_declaration(ir_builder,
-                                                                          base_expr->identifier->declaration);
+                                                                          ident_decl);
                 assert(base_expr->type->kind == AST_TYPE_STATIC_ARRAY);
                 IR_Value* index_value = ir_builder_emit_expression(ir_builder,
-                                                                   expression->subscript.index_expression);
+                                                                   index_expr);
                 return ir_builder_emit_array_offset_pointer(ir_builder, array_allocl, index_value);
             }
         }
@@ -901,9 +891,10 @@ namespace Zodiac
 
             uint64_t member_index = 0;
             bool found = false;
-            for (uint64_t i = 0; i < BUF_LENGTH(struct_type->aggregate_type.member_declarations); i++)
+            auto member_decls = struct_type->aggregate_type.member_declarations;
+            for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
             {
-                AST_Declaration* member_decl = struct_type->aggregate_type.member_declarations[i];
+                AST_Declaration* member_decl = member_decls[i];
                 if (member_expression->identifier->atom == member_decl->identifier->atom)
                 {
                     member_index = i;
@@ -918,7 +909,8 @@ namespace Zodiac
             IR_Value* struct_allocl = ir_builder_value_for_declaration(ir_builder,
                                                                        base_decl);
 
-            return ir_builder_emit_aggregate_offset_pointer(ir_builder, struct_allocl, member_index);
+            return ir_builder_emit_aggregate_offset_pointer(ir_builder, struct_allocl,
+                                                            member_index);
         }
         else
         {
@@ -935,7 +927,9 @@ namespace Zodiac
         assert(expression);
         assert(expression->kind == AST_EXPR_IDENTIFIER);
 
-        IR_Value* expression_value = ir_builder_value_for_declaration(ir_builder, expression->identifier->declaration);
+        AST_Declaration* ident_decl = expression->identifier->declaration;
+        IR_Value* expression_value = ir_builder_value_for_declaration(ir_builder,
+                                                                      ident_decl);
         assert(expression_value);
 
         AST_Type* operand_type = expression->type;
@@ -945,7 +939,8 @@ namespace Zodiac
 
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
 
-        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_DEREF, expression_value, nullptr, result_value);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_DEREF, expression_value,
+                                                 nullptr, result_value);
         ir_builder_emit_instruction(ir_builder, iri);
 
         return result_value;
@@ -1121,13 +1116,23 @@ namespace Zodiac
     {
         assert(ir_builder);
         assert(array_allocl);
-        assert(array_allocl->type->kind == AST_TYPE_STATIC_ARRAY);
+        assert(array_allocl->type->kind == AST_TYPE_STATIC_ARRAY ||
+               array_allocl->type->kind == AST_TYPE_POINTER);
         assert(offset_value);
         assert(offset_value->kind == IRV_TEMPORARY);
         assert(offset_value->type == Builtin::type_int);
 
-        AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context, ir_builder->ast_module,
-                                                                array_allocl->type->static_array.base);
+        AST_Type* result_type = nullptr;
+        if (array_allocl->type->kind == AST_TYPE_STATIC_ARRAY)
+        {
+            result_type = ast_find_or_create_pointer_type(ir_builder->context, ir_builder->ast_module,
+                                                          array_allocl->type->static_array.base);
+        }
+        else
+        {
+            result_type = array_allocl->type;
+        }
+
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ARRAY_OFFSET_POINTER, array_allocl,
                                                  offset_value, result_value);
@@ -1537,7 +1542,8 @@ namespace Zodiac
         assert(pointer_allocl->type->kind == AST_TYPE_POINTER);
         assert(new_value->kind == IRV_TEMPORARY ||
                new_value->kind == IRV_ARGUMENT ||
-               new_value->kind == IRV_INT_LITERAL);
+               new_value->kind == IRV_INT_LITERAL ||
+               new_value->kind == IRV_ALLOCL);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_STOREP, pointer_allocl, new_value, nullptr);
         ir_builder_emit_instruction(ir_builder, iri);
