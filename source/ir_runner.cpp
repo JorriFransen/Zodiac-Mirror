@@ -37,7 +37,8 @@ namespace Zodiac
         ir_runner_load_dynamic_libs(ir_runner, ast_module, ir_module);
         ir_runner_load_foreigns(ir_runner, ir_module);
 
-        IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(ir_runner, ir_module->entry_function, 0);
+        IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(ir_runner,
+                                                                    ir_module->entry_function, 0);
 
         printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value.value.s64);
         uint64_t arena_cap = 0;
@@ -185,7 +186,8 @@ namespace Zodiac
         return result;
     }
 
-    IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, IR_Function* function, uint64_t num_args)
+    IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, IR_Function* function,
+                                            uint64_t num_args)
     {
         assert(runner);
         assert(function);
@@ -268,7 +270,18 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
-                dest->value.s64 = arg1->value.s64 + arg2->value.s64;
+                AST_Type* type = arg1->type;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    dest->value.s64 = arg1->value.s64 + arg2->value.s64;
+                }
+                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    dest->value.r64 = arg1->value.r64 + arg2->value.r64;
+                }
+                else assert(false);
+
                 break;
             }
 
@@ -285,7 +298,18 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
-                dest->value.s64 = arg1->value.s64 - arg2->value.s64;
+                AST_Type* type = arg1->type;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    dest->value.s64 = arg1->value.s64 - arg2->value.s64;
+                }
+                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    dest->value.r64 = arg1->value.r64 - arg2->value.r64;
+                }
+                else assert(false);
+
                 break;
             }
 
@@ -302,7 +326,18 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
-                dest->value.s64 = arg1->value.s64 * arg2->value.s64;
+                AST_Type* type = arg1->type;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    dest->value.s64 = arg1->value.s64 * arg2->value.s64;
+                }
+                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    dest->value.r64 = arg1->value.r64 * arg2->value.r64;
+                }
+                else assert(false);
+
                 break;
             }
 
@@ -319,7 +354,18 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
-                dest->value.s64 = arg1->value.s64 / arg2->value.s64;
+                AST_Type* type = arg1->type;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    dest->value.s64 = arg1->value.s64 / arg2->value.s64;
+                }
+                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    dest->value.r64 = arg1->value.r64 / arg2->value.r64;
+                }
+                else assert(false);
+
                 break;
             }
 
@@ -329,7 +375,17 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
-                dest->value.s64 = arg1->value.s64 < arg2->value.s64;
+                AST_Type* type = arg1->type;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    dest->value.s64 = arg1->value.s64 < arg2->value.s64;
+                }
+                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    dest->value.r64 = arg1->value.r64 < arg2->value.r64;
+                }
+                else assert(false);
                 break;
             }
 
@@ -339,7 +395,17 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
-                dest->value.s64 = arg1->value.s64 <= arg2->value.s64;
+                AST_Type* type = arg1->type;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    dest->value.s64 = arg1->value.s64 <= arg2->value.s64;
+                }
+                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    dest->value.r64 = arg1->value.r64 <= arg2->value.r64;
+                }
+                else assert(false);
                 break;
             }
 
@@ -349,7 +415,17 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
-                dest->value.s64 = arg1->value.s64 > arg2->value.s64;
+                AST_Type* type = arg1->type;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    dest->value.s64 = arg1->value.s64 > arg2->value.s64;
+                }
+                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    dest->value.r64 = arg1->value.r64 > arg2->value.r64;
+                }
+                else assert(false);
                 break;
             }
 
@@ -359,7 +435,17 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
-                dest->value.s64 = arg1->value.s64 >= arg2->value.s64;
+                AST_Type* type = arg1->type;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    dest->value.s64 = arg1->value.s64 >= arg2->value.s64;
+                }
+                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    dest->value.r64 = arg1->value.r64 >= arg2->value.r64;
+                }
+                else assert(false);
                 break;
             }
 
@@ -441,7 +527,10 @@ namespace Zodiac
 
 					if (temp->type->kind == AST_TYPE_STRUCT)
 					{
-						assert(false);
+                        uint64_t struct_byte_size = temp->type->bit_size / 8;
+                        assert(struct_byte_size);
+                        memcpy(current_stack_frame->return_value.value.struct_pointer,
+                               temp->value.struct_pointer, struct_byte_size);
 					}
 					else
 					{
@@ -678,7 +767,7 @@ namespace Zodiac
                     {
                         case 64:
                         {
-                            dest_value->value.s64 = *(pointer_value->value.string);
+                            dest_value->value.s64 = *((int64_t*)pointer_value->value.string);
                             break;
                         }
 
@@ -872,7 +961,8 @@ namespace Zodiac
                 uint64_t array_byte_size = array_type->static_array.count *
                     (array_type->static_array.base->bit_size / 8);
                 assert(array_byte_size == array_type->bit_size / 8);
-                new_temp.value.static_array = arena_alloc_array(&result->arena, uint8_t, array_byte_size);
+                new_temp.value.static_array = arena_alloc_array(&result->arena, uint8_t,
+                                                                array_byte_size);
             }
             else if (code_temp->kind == IRV_ALLOCL &&
                      code_temp->type->kind == AST_TYPE_STRUCT)
@@ -880,7 +970,8 @@ namespace Zodiac
                 AST_Type* struct_type = code_temp->type;
                 uint64_t struct_byte_size = struct_type->bit_size / 8;
                 assert(struct_byte_size);
-                new_temp.value.struct_pointer = arena_alloc_array(&result->arena, uint8_t, struct_byte_size);
+                new_temp.value.struct_pointer = arena_alloc_array(&result->arena, uint8_t,
+                                                                  struct_byte_size);
             }
             else if (code_temp->kind == IRV_TEMPORARY &&
                      code_temp->type->kind == AST_TYPE_STRUCT)
@@ -888,10 +979,24 @@ namespace Zodiac
                 AST_Type* struct_type = code_temp->type;
                 uint64_t struct_byte_size = struct_type->bit_size / 8;
                 assert(struct_byte_size);
-                new_temp.value.struct_pointer = arena_alloc_array(&result->arena, uint8_t, struct_byte_size);
+                new_temp.value.struct_pointer = arena_alloc_array(&result->arena, uint8_t,
+                                                                  struct_byte_size);
             }
             assert(new_temp.type);
             BUF_PUSH(result->temps, new_temp);
+
+            if (function->return_type &&
+                function->return_type->kind == AST_TYPE_STRUCT)
+            {
+                result->return_value.type = function->return_type;
+                auto parent_stack_frame = ir_runner_top_stack_frame(ir_runner);
+                auto parent_arena = parent_stack_frame->arena;
+                uint64_t struct_byte_size = function->return_type->bit_size / 8;
+                assert(struct_byte_size);
+                result->return_value.value.struct_pointer = arena_alloc_array(&parent_arena,
+                                                                               uint8_t,
+                                                                               struct_byte_size);
+            }
         }
 
         return result;
