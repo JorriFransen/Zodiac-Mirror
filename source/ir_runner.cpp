@@ -392,7 +392,7 @@ namespace Zodiac
 
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
 
-                result_value->value.s64 = callee_stack_frame->return_value.value.s64;
+				result_value->value = callee_stack_frame->return_value.value;
                 break;
             }
 
@@ -438,7 +438,15 @@ namespace Zodiac
                     IR_Value* temp = ir_runner_get_local_temporary(runner, iri->arg1);
 
                     auto current_stack_frame = ir_runner_top_stack_frame(runner);
-                    current_stack_frame->return_value = *temp;
+
+					if (temp->type->kind == AST_TYPE_STRUCT)
+					{
+						assert(false);
+					}
+					else
+					{
+						current_stack_frame->return_value = *temp;
+					}
                 }
 
                 ir_runner_pop_stack_frame(runner);
@@ -885,13 +893,6 @@ namespace Zodiac
             assert(new_temp.type);
             BUF_PUSH(result->temps, new_temp);
         }
-
-        // for (uint64_t i = 0; i < function->next_temp_index + 1; i++)
-        // {
-        //     IR_Value new_temp = {};
-        //     new_temp.kind = IRV_TEMPORARY;
-        //     BUF_PUSH(result->temps, new_temp);
-        // }
 
         return result;
     }
