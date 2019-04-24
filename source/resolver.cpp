@@ -480,6 +480,12 @@ namespace Zodiac
             {
                 result &= try_resolve_expression(resolver, statement->assign.lvalue_expression,
                                                  scope);
+                if (result && statement->assign.lvalue_expression->is_const)
+                {
+                    resolver_report_error(resolver, statement->file_pos, "Cannot assign to constant expression");
+                    return false;
+                }
+
                 AST_Type* suggested_type = nullptr;
                 if (result &&
                     statement->assign.lvalue_expression->type->kind == AST_TYPE_STRUCT &&
@@ -997,9 +1003,21 @@ namespace Zodiac
         if (result)
         {
             assert(ident->declaration);
-            assert(ident->declaration->mutable_decl.type);
-            expression->type = ident->declaration->mutable_decl.type;
+            AST_Declaration* decl = ident->declaration;
+            if (decl->kind == AST_DECL_MUTABLE)
+            {
+                expression->type = ident->declaration->mutable_decl.type;
+            }
+            else if (decl->kind == AST_DECL_CONSTANT_VAR)
+            {
+                expression->type = ident->declaration->constant_var.type;
+                expression->is_const = true;
+            }
+            else assert(false);
+
+            assert(expression->type);
         }
+
 
         return result;
     }

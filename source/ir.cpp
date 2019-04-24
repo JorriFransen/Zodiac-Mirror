@@ -595,63 +595,36 @@ namespace Zodiac
 
             case AST_EXPR_BOOL_LITERAL:
             {
-                IR_Value* literal = ir_boolean_literal(ir_builder, expression->type,
-                                                       expression->bool_literal.boolean);
-                return literal;
+                return ir_boolean_literal(ir_builder, expression->type,
+                                          expression->bool_literal.boolean);
                 break;
             }
 
             case AST_EXPR_STRING_LITERAL:
             {
-                IR_Value* literal = ir_string_literal(ir_builder, expression->type,
-                                                      expression->string_literal.atom);
-
-                IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
-                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal,
-                                                         nullptr, result);
-                ir_builder_emit_instruction(ir_builder, iri);
-
-                return result;
+                return ir_string_literal(ir_builder, expression->type,
+                                         expression->string_literal.atom);
                 break;
             }
 
             case AST_EXPR_INTEGER_LITERAL:
             {
-                IR_Value* literal = ir_integer_literal(ir_builder, expression->type,
-                                                       (int64_t)expression->integer_literal.u64);
-
-                IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
-                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal,
-                                                         nullptr, result);
-                ir_builder_emit_instruction(ir_builder, iri);
-
-                return result;
+                return ir_integer_literal(ir_builder, expression->type,
+                                          (int64_t)expression->integer_literal.u64);
                 break;
             }
 
             case AST_EXPR_FLOAT_LITERAL:
             {
-                IR_Value* literal = ir_float_literal(ir_builder, expression->type,
-                                                     expression->float_literal.r64);
-                IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
-                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal,
-                                                         nullptr, result);
-                ir_builder_emit_instruction(ir_builder, iri);
-                return result;
+                return ir_float_literal(ir_builder, expression->type,
+                                        expression->float_literal.r64);
                 break;
             }
 
             case AST_EXPR_CHAR_LITERAL:
             {
-                IR_Value* literal = ir_character_literal(ir_builder, expression->type,
-                                                         expression->character_literal.c);
-
-                IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
-                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal,
-                                                         nullptr, result);
-                ir_builder_emit_instruction(ir_builder, iri);
-
-                return result;
+                return ir_character_literal(ir_builder, expression->type,
+                                            expression->character_literal.c);
                 break;
             }
 
@@ -1148,7 +1121,7 @@ namespace Zodiac
         assert(array_allocl->type->kind == AST_TYPE_STATIC_ARRAY ||
                array_allocl->type->kind == AST_TYPE_POINTER);
         assert(offset_value);
-        assert(offset_value->kind == IRV_TEMPORARY);
+        assert(offset_value->kind == IRV_TEMPORARY || IRV_INT_LITERAL);
         assert(offset_value->type == Builtin::type_int);
 
         AST_Type* result_type = nullptr;
@@ -1510,7 +1483,11 @@ namespace Zodiac
         assert(allocl_value->kind == IRV_ALLOCL);
         assert(new_value->kind == IRV_TEMPORARY ||
                new_value->kind == IRV_ARGUMENT ||
-               new_value->kind == IRV_ALLOCL);
+               new_value->kind == IRV_ALLOCL ||
+               new_value->kind == IRV_INT_LITERAL ||
+               new_value->kind == IRV_STRING_LITERAL ||
+               new_value->kind == IRV_CHAR_LITERAL ||
+               new_value->kind == IRV_FLOAT_LITERAL);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_STOREL, allocl_value, new_value,
                                                  nullptr);
@@ -1572,7 +1549,9 @@ namespace Zodiac
         assert(new_value->kind == IRV_TEMPORARY ||
                new_value->kind == IRV_ARGUMENT ||
                new_value->kind == IRV_INT_LITERAL ||
-               new_value->kind == IRV_ALLOCL);
+               new_value->kind == IRV_ALLOCL ||
+               new_value->kind == IRV_CHAR_LITERAL ||
+               new_value->kind == IRV_FLOAT_LITERAL);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_STOREP, pointer_allocl, new_value, nullptr);
         ir_builder_emit_instruction(ir_builder, iri);

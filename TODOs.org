@@ -2,7 +2,7 @@
  - normal types are not pushed in the per module type table. (only pointer and array types?)
    
 * Modules [0/1]
-  - [ ] Access globals across modules (this might work already)
+  - [ ] Access globals across modules 
    
 * Structs [0/2]
   - [ ] Nested declarations

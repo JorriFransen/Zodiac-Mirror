@@ -179,6 +179,15 @@ namespace Zodiac
                 break;
             }
 
+            case IRV_INT_LITERAL:
+            case IRV_STRING_LITERAL:
+            case IRV_CHAR_LITERAL:
+            case IRV_FLOAT_LITERAL:
+            {
+                result = code_value;
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -260,9 +269,11 @@ namespace Zodiac
             case IR_OP_ADD:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_TEMPORARY);
+                assert(iri->arg1->kind == IRV_TEMPORARY ||
+                       iri->arg1->kind == IRV_INT_LITERAL);
                 assert(iri->arg2);
-                assert(iri->arg2->kind == IRV_TEMPORARY);
+                assert(iri->arg2->kind == IRV_TEMPORARY ||
+                       iri->arg2->kind == IRV_INT_LITERAL);
                 assert(iri->result);
                 assert(iri->result->kind == IRV_TEMPORARY);
 
@@ -288,9 +299,9 @@ namespace Zodiac
             case IR_OP_SUB:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_TEMPORARY);
+                assert(iri->arg1->kind == IRV_TEMPORARY || iri->arg1->kind == IRV_INT_LITERAL);
                 assert(iri->arg2);
-                assert(iri->arg2->kind == IRV_TEMPORARY);
+                assert(iri->arg2->kind == IRV_TEMPORARY || iri->arg2->kind == IRV_INT_LITERAL);
                 assert(iri->result);
                 assert(iri->result->kind == IRV_TEMPORARY);
 
@@ -452,12 +463,12 @@ namespace Zodiac
             case IR_OP_PUSH_CALL_ARG:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_TEMPORARY);
+                assert(iri->arg1->kind == IRV_TEMPORARY ||
+                       iri->arg1->kind == IRV_INT_LITERAL ||
+                        iri->arg1->kind == IRV_STRING_LITERAL);
 
-                IR_Stack_Frame* stack_frame = stack_top(runner->call_stack);
-
-                auto temp_index = iri->arg1->temp.index;
-                IR_Value arg_value = stack_frame->temps[temp_index];
+                IR_Value* value = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value arg_value = *value;
                 stack_push(runner->arg_stack, arg_value);
                 break;
             }
@@ -520,7 +531,6 @@ namespace Zodiac
             {
                 if (iri->arg1)
                 {
-                    assert(iri->arg1->kind == IRV_TEMPORARY);
                     IR_Value* temp = ir_runner_get_local_temporary(runner, iri->arg1);
 
                     auto current_stack_frame = ir_runner_top_stack_frame(runner);
@@ -564,7 +574,6 @@ namespace Zodiac
 
                 uint8_t* base_pointer = base_value->value.string;
 
-                assert(iri->arg2->kind == IRV_TEMPORARY);
                 IR_Value* index_value = ir_runner_get_local_temporary(runner, iri->arg2);
                 assert(iri->arg2->type == Builtin::type_int);
 
