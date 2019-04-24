@@ -279,4 +279,5 @@ namespace Zodiac
     void ir_print_instruction(IR_Instruction* instruction);
     void ir_print_value(IR_Value* value);
     void ir_print_string_literal(const char* string);
+    void ir_print_character(char c);
 }

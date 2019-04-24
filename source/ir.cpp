@@ -2190,7 +2190,9 @@ namespace Zodiac
 
             case IRV_CHAR_LITERAL:
             {
-                printf("lit('%c')", value->value.u8);
+                printf("lit('");
+                ir_print_character(value->value.u8);
+                printf("')");
                 break;
             }
 
@@ -2232,23 +2234,27 @@ namespace Zodiac
 
         for (uint64_t i = 0; i < string_length; i++)
         {
-            char c = string[i];
-            switch (c)
-            {
-                case '\n':
-                {
-                    printf("\\n");
-                    break;
-                }
-
-                default:
-                {
-                    printf("%c", string[i]);
-                    break;
-                }
-            }
+            ir_print_character(string[i]);
         }
 
         printf("\")");
+    }
+
+    void ir_print_character(char c)
+    {
+        switch (c)
+        {
+            case '\n':
+            {
+                printf("\\n");
+                break;
+            }
+
+            default:
+            {
+                printf("%c", c);
+                break;
+            }
+        }
     }
 }
