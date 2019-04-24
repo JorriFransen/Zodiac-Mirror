@@ -512,9 +512,11 @@ namespace Zodiac
                 struct_value = ir_builder_emit_loadp(ir_builder, struct_value, struct_type);
             }
 
-            IR_Value* target_pointer = ir_builder_emit_aggregate_offset_pointer(ir_builder, struct_value,
+            IR_Value* target_pointer = ir_builder_emit_aggregate_offset_pointer(ir_builder,
+                                                                                struct_value,
                                                                                 member_index);
-            IR_Value* new_value = ir_builder_emit_expression(ir_builder, statement->assign.expression);
+            IR_Value* new_value = ir_builder_emit_expression(ir_builder,
+                                                             statement->assign.expression);
             ir_builder_emit_storep(ir_builder, target_pointer, new_value);
         }
         else assert(false);
@@ -529,8 +531,10 @@ namespace Zodiac
         {
             case AST_EXPR_BINARY:
             {
-                IR_Value* lhs_value = ir_builder_emit_expression(ir_builder, expression->binary.lhs);
-                IR_Value* rhs_value = ir_builder_emit_expression(ir_builder, expression->binary.rhs);
+                IR_Value* lhs_value = ir_builder_emit_expression(ir_builder,
+                                                                 expression->binary.lhs);
+                IR_Value* rhs_value = ir_builder_emit_expression(ir_builder,
+                                                                 expression->binary.rhs);
 
                 switch (expression->binary.op)
                 {
@@ -591,17 +595,20 @@ namespace Zodiac
 
             case AST_EXPR_BOOL_LITERAL:
             {
-                IR_Value* literal = ir_boolean_literal(ir_builder, expression->type, expression->bool_literal.boolean);
+                IR_Value* literal = ir_boolean_literal(ir_builder, expression->type,
+                                                       expression->bool_literal.boolean);
                 return literal;
                 break;
             }
 
             case AST_EXPR_STRING_LITERAL:
             {
-                IR_Value* literal = ir_string_literal(ir_builder, expression->type, expression->string_literal.atom);
+                IR_Value* literal = ir_string_literal(ir_builder, expression->type,
+                                                      expression->string_literal.atom);
 
                 IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
-                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal, nullptr, result);
+                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal,
+                                                         nullptr, result);
                 ir_builder_emit_instruction(ir_builder, iri);
 
                 return result;
@@ -614,19 +621,34 @@ namespace Zodiac
                                                        (int64_t)expression->integer_literal.u64);
 
                 IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
-                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal, nullptr, result);
+                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal,
+                                                         nullptr, result);
                 ir_builder_emit_instruction(ir_builder, iri);
 
                 return result;
                 break;
             }
 
+            case AST_EXPR_FLOAT_LITERAL:
+            {
+                IR_Value* literal = ir_float_literal(ir_builder, expression->type,
+                                                     expression->float_literal.r64);
+                IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
+                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal,
+                                                         nullptr, result);
+                ir_builder_emit_instruction(ir_builder, iri);
+                return result;
+                break;
+            }
+
             case AST_EXPR_CHAR_LITERAL:
             {
-                IR_Value* literal = ir_character_literal(ir_builder, expression->type, expression->character_literal.c);
+                IR_Value* literal = ir_character_literal(ir_builder, expression->type,
+                                                         expression->character_literal.c);
 
                 IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
-                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal, nullptr, result);
+                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal,
+                                                         nullptr, result);
                 ir_builder_emit_instruction(ir_builder, iri);
 
                 return result;
@@ -678,20 +700,22 @@ namespace Zodiac
                     ir_builder_emit_call_arg(ir_builder, arg_value, is_foreign);
                 }
 
+                uint64_t num_args = BUF_LENGTH(expression->call.arg_expressions);
                 IR_Value* num_args_lit = ir_integer_literal(ir_builder, Builtin::type_int,
-                                                            BUF_LENGTH(expression->call.arg_expressions));
+                                                            num_args);
                 return ir_builder_emit_call(ir_builder, callee_value, num_args_lit);
                 break;
             }
 
             case AST_EXPR_SUBSCRIPT:
             {
+                AST_Expression* base_expr = expression->subscript.base_expression;
+                AST_Expression* index_expr = expression->subscript.index_expression;
                 IR_Value* index_value = ir_builder_emit_expression(ir_builder,
-                                                                   expression->subscript.index_expression);
+                                                                   index_expr);
                 IR_Value* base_value = ir_builder_emit_expression(ir_builder,
-                                                                  expression->subscript.base_expression);
+                                                                  base_expr);
                 return ir_builder_emit_subscript(ir_builder, base_value, index_value);
-                assert(false);
                 break;
             }
 
@@ -700,14 +724,18 @@ namespace Zodiac
                 if (expression->type->kind == AST_TYPE_STATIC_ARRAY)
                 {
                     AST_Type* array_type = expression->type;
-                    IR_Value* result_value = ir_builder_emit_allocl(ir_builder, array_type, "array_compound_lit");
+                    IR_Value* result_value = ir_builder_emit_allocl(ir_builder, array_type,
+                                                                    "array_compound_lit");
 
-                    for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions); i++)
+                    auto compound_exprs = expression->compound_literal.expressions;
+                    for (uint64_t i = 0; i < BUF_LENGTH(compound_exprs); i++)
                     {
-                        AST_Expression* element_expression = expression->compound_literal.expressions[i];
-                        IR_Value* element_value = ir_builder_emit_expression(ir_builder, element_expression);
+                        AST_Expression* element_expression = compound_exprs[i];
+                        IR_Value* element_value = ir_builder_emit_expression(ir_builder,
+                                                                             element_expression);
 
-                        IR_Value* pointer_value = ir_builder_emit_array_offset_pointer(ir_builder, result_value, i);
+                        IR_Value* pointer_value =
+                            ir_builder_emit_array_offset_pointer(ir_builder, result_value, i);
 
                         ir_builder_emit_storep(ir_builder, pointer_value, element_value);
                     }
@@ -717,14 +745,19 @@ namespace Zodiac
                 else if (expression->type->kind == AST_TYPE_STRUCT)
                 {
                     AST_Type* struct_type = expression->type;
-                    IR_Value* result_value = ir_builder_emit_allocl(ir_builder, struct_type, "struct_compound_lit");
+                    IR_Value* result_value = ir_builder_emit_allocl(ir_builder, struct_type,
+                                                                    "struct_compound_lit");
 
-                    for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions); i++)
+                    auto compound_exprs = expression->compound_literal.expressions;
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(compound_exprs); i++)
                     {
-                        AST_Expression* member_expression = expression->compound_literal.expressions[i];
-                        IR_Value* member_value = ir_builder_emit_expression(ir_builder, member_expression);
+                        AST_Expression* member_expression = compound_exprs[i];
+                        IR_Value* member_value = ir_builder_emit_expression(ir_builder,
+                                                                            member_expression);
 
-                        IR_Value* pointer_value = ir_builder_emit_aggregate_offset_pointer(ir_builder, result_value, i);
+                        IR_Value* pointer_value =
+                            ir_builder_emit_aggregate_offset_pointer(ir_builder, result_value, i);
                         ir_builder_emit_storep(ir_builder, pointer_value, member_value);
                     }
 
@@ -770,9 +803,10 @@ namespace Zodiac
 
                 uint64_t member_index = 0;
                 AST_Type* member_type = nullptr;
-                for (uint64_t i = 0; i < BUF_LENGTH(struct_type->aggregate_type.member_declarations); i++)
+                auto member_decls = struct_type->aggregate_type.member_declarations;
+                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
                 {
-                    AST_Declaration* member_decl = struct_type->aggregate_type.member_declarations[i];
+                    AST_Declaration* member_decl = member_decls[i];
                     if (member_decl->identifier->atom == member_expression->identifier->atom)
                     {
                         member_index = i;
@@ -798,7 +832,8 @@ namespace Zodiac
                     }
                     base_pointer = ir_builder_emit_loadp(ir_builder, base_pointer, struct_type);
                 }
-                IR_Value* value_pointer = ir_builder_emit_aggregate_offset_pointer(ir_builder, base_pointer,
+                IR_Value* value_pointer = ir_builder_emit_aggregate_offset_pointer(ir_builder,
+                                                                                   base_pointer,
                                                                                    member_index);
                 return ir_builder_emit_loadp(ir_builder, value_pointer, member_type);
                 break;
@@ -817,7 +852,8 @@ namespace Zodiac
         assert(literal->kind == IRV_INT_LITERAL);
 
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, literal->type);
-        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal, nullptr, result_value);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOAD_LIT, literal, nullptr,
+                                                 result_value);
         ir_builder_emit_instruction(ir_builder, iri);
 
         return result_value;
@@ -1594,6 +1630,18 @@ namespace Zodiac
         return result;
     }
 
+    IR_Value* ir_float_literal(IR_Builder* ir_builder, AST_Type* type, double r64)
+    {
+        assert(ir_builder);
+        assert(type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_FLOAT_LITERAL, type);
+        result->value.r64 = r64;
+        result->assigned = true;
+
+        return result;
+    }
+
     IR_Value* ir_character_literal(IR_Builder* ir_builder, AST_Type* type, char c)
     {
         assert(ir_builder);
@@ -2185,6 +2233,12 @@ namespace Zodiac
             case IRV_INT_LITERAL:
             {
                 printf("lit(%" PRId64 ")", value->value.s64);
+                break;
+            }
+
+            case IRV_FLOAT_LITERAL:
+            {
+                printf("lit(%f)", value->value.r64);
                 break;
             }
 

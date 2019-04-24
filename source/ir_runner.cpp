@@ -387,7 +387,8 @@ namespace Zodiac
 
                 IR_Function* function = iri->arg1->function;
                 auto num_args = iri->arg2->value.s64;
-                IR_Stack_Frame* callee_stack_frame = ir_runner_call_function(runner, function, num_args);
+                IR_Stack_Frame* callee_stack_frame = ir_runner_call_function(runner, function,
+                                                                             num_args);
 
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
 
@@ -398,12 +399,17 @@ namespace Zodiac
             case IR_OP_PUSH_EX_CALL_ARG:
             {
                 IR_Value* arg_value = ir_runner_get_local_temporary(runner, iri->arg1);
-                if (iri->arg1->type->kind == AST_TYPE_POINTER)
+                if (iri->arg1->type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    dcArgDouble(runner->dyn_vm, arg_value->value.r64);
+                }
+                else if (iri->arg1->type->kind == AST_TYPE_POINTER)
                 {
                     dcArgPointer(runner->dyn_vm, arg_value->value.string);
                 }
                 else
                 {
+                    assert(iri->arg1->type->flags & AST_TYPE_FLAG_INT);
                     dcArgLongLong(runner->dyn_vm, arg_value->value.s64);
                 }
                 break;
@@ -418,7 +424,8 @@ namespace Zodiac
                 assert(iri->result);
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
                 assert(result_value);
-                result_value->value.s64 = dcCallInt(runner->dyn_vm, runner->loaded_foreign_symbols[foreign_index]);
+                result_value->value.s64 = dcCallInt(runner->dyn_vm,
+                                                    runner->loaded_foreign_symbols[foreign_index]);
                 dcReset(runner->dyn_vm);
                 break;
             }
@@ -683,6 +690,7 @@ namespace Zodiac
                 {
                     case IRV_STRING_LITERAL:
                     case IRV_INT_LITERAL:
+                    case IRV_FLOAT_LITERAL:
                     case IRV_CHAR_LITERAL:
                     {
                         dest->value = iri->arg1->value;

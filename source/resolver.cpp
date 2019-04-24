@@ -1115,6 +1115,11 @@ namespace Zodiac
             else assert(false);
         }
 
+        if (!struct_type)
+        {
+            return false;
+        }
+
         AST_Type* type = nullptr;
 
         bool found = false;

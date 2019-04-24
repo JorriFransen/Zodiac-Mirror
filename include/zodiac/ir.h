@@ -19,6 +19,7 @@ namespace Zodiac
         IRV_BOOL_LITERAL,
         IRV_STRING_LITERAL,
         IRV_INT_LITERAL,
+        IRV_FLOAT_LITERAL,
         IRV_CHAR_LITERAL,
         IRV_ARRAY_LITERAL,
     };
@@ -34,6 +35,7 @@ namespace Zodiac
         {
             int64_t s64;
             uint8_t u8;
+            double r64;
             uint8_t* string;
             bool boolean;
 
@@ -252,6 +254,7 @@ namespace Zodiac
     IR_Value* ir_boolean_literal(IR_Builder* ir_builder, AST_Type* type, bool value);
     IR_Value* ir_string_literal(IR_Builder* ir_builder, AST_Type* type, Atom string);
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64);
+    IR_Value* ir_float_literal(IR_Builder* ir_builder, AST_Type* type, double r64);
     IR_Value* ir_character_literal(IR_Builder* ir_builder, AST_Type* type, char c);
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);
 
