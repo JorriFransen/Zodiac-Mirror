@@ -174,6 +174,7 @@ namespace Zodiac
             {
                 return nullptr;
             }
+            match_token(parser, TOK_SEMICOLON);
         }
 
         assert(result);
@@ -424,7 +425,6 @@ namespace Zodiac
         {
             AST_Declaration* member_decl = parse_declaration(parser, scope, false,
                                                              AST_DECL_LOC_AGGREGATE_MEMBER);
-            expect_token(parser, TOK_SEMICOLON);
             BUF_PUSH(result, member_decl);
         }
 
@@ -484,14 +484,8 @@ namespace Zodiac
                 return  nullptr;
             }
 
-            if (expect_token(parser, TOK_SEMICOLON))
-            {
-                return ast_declaration_statement_new(parser->context, ft.file_pos, decl);
-            }
-            else
-            {
-                return nullptr;
-            }
+            match_token(parser, TOK_SEMICOLON);
+            return ast_declaration_statement_new(parser->context, ft.file_pos, decl);
         }
         else if (match_token(parser, TOK_EQ))
         {

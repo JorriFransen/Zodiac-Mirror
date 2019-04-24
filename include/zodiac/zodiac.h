@@ -16,11 +16,20 @@ namespace Zodiac
     struct AST_Type;
     struct AST_Declaration;
 
+    struct IR_Module;
+    struct IR_Value;
+
     struct Compiled_Module
     {
         Atom module_name;
         Atom module_path;
         AST_Module* module;
+    };
+
+    struct Global_Variable
+    {
+        IR_Module* module = nullptr;
+        IR_Value* value = nullptr;
     };
 
     struct Context
@@ -34,6 +43,7 @@ namespace Zodiac
 
         BUF(Compiled_Module) compiled_modules = nullptr;
         BUF(Atom) foreign_table = nullptr;
+        BUF(Global_Variable) global_table = nullptr;
     };
 
     void context_init(Context* context, Arena* arena);

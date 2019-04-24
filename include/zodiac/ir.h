@@ -250,6 +250,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_loada(IR_Builder* ir_builder, IR_Value* alloca_value);
     void ir_builder_emit_storep(IR_Builder* ir_builder, IR_Value* pointer_allocl, IR_Value* new_value);
     IR_Value* ir_builder_emit_loadp(IR_Builder* ir_builder, IR_Value* pointer, AST_Type* type);
+    IR_Value* ir_builder_emit_global(IR_Builder* ir_builder, AST_Declaration* global_decl);
 
     IR_Value* ir_boolean_literal(IR_Builder* ir_builder, AST_Type* type, bool value);
     IR_Value* ir_string_literal(IR_Builder* ir_builder, AST_Type* type, Atom string);

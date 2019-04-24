@@ -139,7 +139,8 @@ namespace Zodiac
 
             case AST_DECL_MUTABLE:
             {
-                assert(false);
+                IR_Value* value = ir_builder_emit_global(ir_builder, global_decl);
+                ir_builder_push_value_and_decl(ir_builder, value, global_decl);
                 break;
             }
 
@@ -1460,8 +1461,8 @@ namespace Zodiac
         assert(type);
         assert(name);
 
-        assert(type->kind == AST_TYPE_POINTER ||
-               type->flags | AST_TYPE_FLAG_INT);
+        // assert(type->kind == AST_TYPE_POINTER ||
+        //        type->flags & AST_TYPE_FLAG_INT);
 
         IR_Value* allocl_value = ir_value_allocl_new(ir_builder, type, name);
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ALLOCL, nullptr, nullptr,
@@ -1571,6 +1572,25 @@ namespace Zodiac
         ir_builder_emit_instruction(ir_builder, iri);
 
         return result_value;
+    }
+
+    IR_Value* ir_builder_emit_global(IR_Builder* ir_builder, AST_Declaration* global_decl)
+    {
+        assert(ir_builder);
+        assert(global_decl);
+        assert(global_decl->kind == AST_DECL_MUTABLE);
+
+        IR_Value* global_value = ir_value_new(ir_builder, IRV_GLOBAL, global_decl->mutable_decl.type);
+
+        if (global_decl->mutable_decl.init_expression)
+        {
+            assert(!ir_builder->insert_block);
+            ir_builder->insert_block = ir_builder->context->global_init_block->block;
+            IR_Value* init_value = ir_builder_emit_expression(global_decl->mutable_decl.init_expression);
+            ir_builder_emit_storeg(ir_builder, global_value, init_value);
+            ir_builder->insert_block = nullptr;
+        }
+        return global_value;
     }
 
     IR_Value* ir_boolean_literal(IR_Builder* ir_builder, AST_Type* type, bool value)
