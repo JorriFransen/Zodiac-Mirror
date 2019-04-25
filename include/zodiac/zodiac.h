@@ -43,6 +43,8 @@ namespace Zodiac
 
         BUF(Compiled_Module) compiled_modules = nullptr;
         BUF(Atom) foreign_table = nullptr;
+
+        IR_Value* global_init_block = nullptr;
         BUF(Global_Variable) global_table = nullptr;
     };
 

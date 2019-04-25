@@ -18,5 +18,14 @@ main :: () -> int
 
     io.printf("DAY_MONDAY: %ld\n", DAY_MONDAY);
 
+    io.printf("global_int: %lu\n", global_int);
+    global_int = 5;
+    io.printf("global_int: %lu\n", global_int);
+
+    global_int_ptr := *global_int;
+    <global_int_ptr = 6;
+    io.printf("<global_int_ptr: %lu\n", <global_int_ptr);
+    io.printf("global_int: %lu\n", global_int);
+
     return 0;
 }

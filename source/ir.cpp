@@ -18,6 +18,12 @@ namespace Zodiac
         ir_builder->result.string_literal_arena = arena_create(MB(1));
         ir_builder->current_function = nullptr;
         ir_builder->insert_block = nullptr;
+
+        if (!ir_builder->context->global_init_block)
+        {
+            ir_builder->context->global_init_block = ir_builder_create_block(ir_builder,
+                                                                             "global_init_block");
+        }
     }
 
     struct _IR_Decl_To_Func_
@@ -418,6 +424,12 @@ namespace Zodiac
                     break;
                 }
 
+                case IRV_GLOBAL:
+                {
+                    ir_builder_emit_storeg(ir_builder, target_alloc, new_value);
+                    break;
+                }
+
                 default: assert(false);
             }
         }
@@ -647,6 +659,10 @@ namespace Zodiac
                 else if (value->kind == IRV_ARGUMENT)
                 {
                     value = ir_builder_emit_loada(ir_builder, value);
+                }
+                else if (value->kind == IRV_GLOBAL)
+                {
+                    value = ir_builder_emit_loadg(ir_builder, value);
                 }
                 else assert(false);
 
@@ -1175,7 +1191,7 @@ namespace Zodiac
         assert(ir_builder);
         assert(iri);
 
-        assert(ir_builder->current_function);
+        // assert(ir_builder->current_function);
         assert(ir_builder->insert_block);
 
         assert(iri->next == nullptr);
@@ -1580,17 +1596,44 @@ namespace Zodiac
         assert(global_decl);
         assert(global_decl->kind == AST_DECL_MUTABLE);
 
-        IR_Value* global_value = ir_value_new(ir_builder, IRV_GLOBAL, global_decl->mutable_decl.type);
+        IR_Value* global_value = ir_value_global_new(ir_builder, global_decl->mutable_decl.type,
+                                                     global_decl->identifier->atom.data);
+        global_value->assigned = true;
 
         if (global_decl->mutable_decl.init_expression)
         {
             assert(!ir_builder->insert_block);
             ir_builder->insert_block = ir_builder->context->global_init_block->block;
-            IR_Value* init_value = ir_builder_emit_expression(global_decl->mutable_decl.init_expression);
+            IR_Value* init_value = ir_builder_emit_expression(ir_builder, global_decl->mutable_decl.init_expression);
             ir_builder_emit_storeg(ir_builder, global_value, init_value);
             ir_builder->insert_block = nullptr;
         }
         return global_value;
+    }
+
+    void ir_builder_emit_storeg(IR_Builder* ir_builder, IR_Value* global_value, IR_Value* new_value)
+    {
+        assert(ir_builder);
+        assert(global_value);
+        assert(global_value->kind == IRV_GLOBAL);
+        assert(new_value);
+
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_STOREG, global_value, new_value,
+                                                 nullptr);
+        ir_builder_emit_instruction(ir_builder, iri);
+    }
+
+    IR_Value* ir_builder_emit_loadg(IR_Builder* ir_builder, IR_Value* global_value)
+    {
+        assert(ir_builder);
+        assert(global_value);
+        assert(global_value->kind == IRV_GLOBAL);
+
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, global_value->type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_LOADG, global_value, nullptr,
+                                                 result_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+        return result_value;
     }
 
     IR_Value* ir_boolean_literal(IR_Builder* ir_builder, AST_Type* type, bool value)
@@ -1745,6 +1788,21 @@ namespace Zodiac
         assert(ir_builder->current_function);
         result->allocl.index = BUF_LENGTH(ir_builder->current_function->local_temps);
         BUF_PUSH(ir_builder->current_function->local_temps, result);
+        return result;
+    }
+
+    IR_Value* ir_value_global_new(IR_Builder* ir_builder, AST_Type* type, const char* name)
+    {
+        assert(ir_builder);
+        assert(type);
+        assert(name);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_GLOBAL, type);
+        result->global.name = name;
+
+        result->global.index = BUF_LENGTH(ir_builder->context->global_table);
+        Global_Variable global_var = { &ir_builder->result, result };
+        BUF_PUSH(ir_builder->context->global_table, global_var);
         return result;
     }
 
@@ -2159,6 +2217,22 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_STOREG:
+            {
+                printf("STOREG ");
+                ir_print_value(instruction->arg2);
+                printf(" INTO ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_LOADG:
+            {
+                printf("LOADG ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
             case IR_OP_LOAD_LIT:
             {
                 printf("LOAD_LIT ");
@@ -2270,6 +2344,12 @@ namespace Zodiac
             case IRV_ALLOCL:
             {
                 printf("allocl(%s)", value->allocl.name);
+                break;
+            }
+
+            case IRV_GLOBAL:
+            {
+                printf("global(%s)", value->global.name);
                 break;
             }
 

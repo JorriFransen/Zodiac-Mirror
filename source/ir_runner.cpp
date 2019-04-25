@@ -37,6 +37,8 @@ namespace Zodiac
         ir_runner_load_dynamic_libs(ir_runner, ast_module, ir_module);
         ir_runner_load_foreigns(ir_runner, ir_module);
 
+        ir_runner_execute_block(ir_runner, ir_runner->context->global_init_block->block);
+
         IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(ir_runner,
                                                                     ir_module->entry_function, 0);
 
@@ -176,6 +178,13 @@ namespace Zodiac
             case IRV_ALLOCL:
             {
                 result = ir_runner_get_local_temporary(ir_runner, code_value->allocl.index);
+                break;
+            }
+
+            case IRV_GLOBAL:
+            {
+                assert(BUF_LENGTH(ir_runner->context->global_table) > code_value->global.index);
+                result = ir_runner->context->global_table[code_value->global.index].value;
                 break;
             }
 
@@ -787,6 +796,63 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_STOREG:
+            {
+                IR_Value* dest_value = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value* source_value = ir_runner_get_local_temporary(runner, iri->arg2);
+
+                if (dest_value->type->kind == AST_TYPE_STATIC_ARRAY)
+                {
+                    assert(false); // Not tested
+                    assert(iri->arg1->kind == IRV_ALLOCL);
+                    assert(iri->arg2->kind == IRV_ALLOCL);
+                    assert(iri->arg1->type == iri->arg2->type);
+
+                    AST_Type* array_type = iri->arg1->type;
+
+                    auto byte_count = array_type->static_array.count *
+                        (array_type->static_array.base->bit_size / 8);
+
+                    memcpy(dest_value->value.static_array, source_value->value.static_array,
+                           byte_count);
+                }
+                else if (dest_value->type->kind == AST_TYPE_STRUCT)
+                {
+                    assert(false); // Not tested
+                    assert(iri->arg1->kind == IRV_ALLOCL);
+                    assert(iri->arg2->kind == IRV_TEMPORARY ||
+                           iri->arg2->kind == IRV_ALLOCL);
+
+                    assert(dest_value->type->kind == AST_TYPE_STRUCT);
+                    assert(source_value->type->kind == AST_TYPE_STRUCT);
+
+                    AST_Type* struct_type = dest_value->type;
+                    uint64_t struct_byte_size = struct_type->bit_size / 8;
+                    assert(struct_byte_size);
+
+                    memcpy(dest_value->value.struct_pointer,
+                           source_value->value.struct_pointer,
+                           struct_byte_size);
+                }
+                else
+                {
+                    dest_value->value = source_value->value;
+                }
+                break;
+                break;
+            }
+
+            case IR_OP_LOADG:
+            {
+                IR_Value* source_value = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value* dest_value = ir_runner_get_local_temporary(runner, iri->result);
+
+                dest_value->value = source_value->value;
+                assert(iri->result->type);
+                dest_value->type = iri->result->type;
+                break;
+            }
+
             case IR_OP_LOAD_LIT:
             {
                 assert(iri->arg1);
@@ -811,7 +877,8 @@ namespace Zodiac
             case IR_OP_ADDROF:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_ALLOCL);
+                assert(iri->arg1->kind == IRV_ALLOCL ||
+                       iri->arg1->kind == IRV_GLOBAL);
                 assert(iri->result);
                 assert(iri->result->kind == IRV_TEMPORARY);
 
