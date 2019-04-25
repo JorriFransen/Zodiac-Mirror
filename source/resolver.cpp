@@ -134,6 +134,12 @@ namespace Zodiac
                     break;
                 }
 
+                case AST_DECL_ENUM_TYPE:
+                {
+                    result &= try_resolve_enum_type_declaration(resolver, declaration, scope);
+                    break;
+                }
+
                 default:
                     assert(false);
                     break;
@@ -435,6 +441,16 @@ namespace Zodiac
         declaration->import.module = import_module;
 
         return true;
+    }
+
+    static bool try_resolve_enum_type_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(declaration);
+        assert(declaration->kind == AST_DECL_ENUM_TYPE);
+        assert(scope);
+
+        assert(false);
     }
 
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,

@@ -276,6 +276,12 @@ namespace Zodiac
             return ast_struct_declaration_new(parser->context, identifier->file_pos, identifier,
                                               aggregate_declarations);
         }
+        else if (match_token(parser, TOK_KW_ENUM))
+        {
+            BUF(AST_Enum_Member_Decl*) member_decls = parse_enum_aggregate(parser, scope);
+            return ast_enum_declaration_new(parser->context, identifier->file_pos, identifier,
+                                            member_decls);
+        }
         else
         {
             AST_Expression* init_expression = parse_expression(parser);
@@ -425,6 +431,32 @@ namespace Zodiac
         {
             AST_Declaration* member_decl = parse_declaration(parser, scope, false,
                                                              AST_DECL_LOC_AGGREGATE_MEMBER);
+            BUF_PUSH(result, member_decl);
+        }
+
+        return result;
+    }
+
+    static BUF(AST_Enum_Member_Decl*) parse_enum_aggregate(Parser* parser, AST_Scope* scope)
+    {
+        assert(parser);
+        assert(scope);
+
+        expect_token(parser, TOK_LBRACE);
+
+        BUF(AST_Enum_Member_Decl*) result = nullptr;
+
+        while (!match_token(parser, TOK_RBRACE))
+        {
+            AST_Identifier* identifier = parse_identifier(parser);
+            if (!identifier)
+            {
+                return nullptr;
+            }
+            expect_token(parser, TOK_SEMICOLON);
+
+            AST_Enum_Member_Decl* member_decl = ast_enum_member_decl_new(parser->context, identifier->file_pos,
+                                                                         identifier, nullptr);
             BUF_PUSH(result, member_decl);
         }
 

@@ -12,6 +12,17 @@ DAY_SATURDAY  :: 6;
 DAY_SUNDAY    :: 7;
 
 
+Day :: enum
+{
+    MONDAY;
+    TUESDAY;
+    WEDNESDAY;
+    THURSDAY;
+    FRIDAY;
+    SATURDAY;
+    SUNDAY;
+}
+
 main :: () -> int
 {
     io.printf("enum test()\n");

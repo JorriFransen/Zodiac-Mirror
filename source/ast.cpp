@@ -430,6 +430,45 @@ namespace Zodiac
         return result;
     }
 
+    AST_Declaration* ast_enum_declaration_new(Context* context, File_Pos file_pos,
+                                              AST_Identifier* identifier,
+                                              BUF(AST_Enum_Member_Decl*) member_decls)
+    {
+        assert(context);
+        assert(identifier);
+        assert(member_decls);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_ENUM_TYPE,
+                                                      AST_DECL_LOC_GLOBAL, identifier,
+                                                      nullptr, true);
+
+        result->enum_decl.members = member_decls;
+
+        return result;
+    }
+
+    AST_Enum_Member_Decl* ast_enum_member_decl_new(Context* context, File_Pos file_pos,
+                                                   AST_Identifier* identifier,
+                                                   AST_Expression* value_expression)
+    {
+        assert(context);
+        assert(identifier);
+
+        if (value_expression)
+        {
+            assert(value_expression->kind == AST_EXPR_IDENTIFIER ||
+                   value_expression->kind == AST_EXPR_INTEGER_LITERAL);
+            assert(false);
+        }
+
+        AST_Enum_Member_Decl* emd = arena_alloc(context->arena, AST_Enum_Member_Decl);
+        emd->file_pos = file_pos;
+        emd->identifier = identifier;
+        emd->value_expression = value_expression;
+
+        return emd;
+    }
+
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos,
                                                  AST_Declaration* declaration)
     {

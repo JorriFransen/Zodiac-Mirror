@@ -243,6 +243,7 @@ namespace Zodiac
         AST_DECL_STATIC_ASSERT,
         AST_DECL_IMPORT,
         AST_DECL_AGGREGATE_TYPE,
+        AST_DECL_ENUM_TYPE,
     };
 
     struct AST_Function_Declaration
@@ -287,6 +288,13 @@ namespace Zodiac
     enum AST_Aggregate_Declaration_Kind
     {
         AST_AGG_DECL_STRUCT,
+    };
+
+    struct AST_Enum_Member_Decl
+    {
+        File_Pos file_pos = {};
+        AST_Identifier* identifier = nullptr;
+        AST_Expression* value_expression = nullptr;
     };
 
     struct AST_Declaration
@@ -347,6 +355,12 @@ namespace Zodiac
                 AST_Type* type = nullptr;
                 BUF(AST_Declaration*) aggregate_declarations;
             } aggregate_type;
+
+            struct
+            {
+                BUF(AST_Enum_Member_Decl*) members;
+            } enum_decl;
+
         };
 
         void* gen_data = nullptr;
@@ -525,6 +539,12 @@ namespace Zodiac
     AST_Declaration* ast_struct_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
                                                 BUF(AST_Declaration*) member_decls);
+    AST_Declaration* ast_enum_declaration_new(Context* context, File_Pos file_pos,
+                                              AST_Identifier* identifier,
+                                              BUF(AST_Enum_Member_Decl*) member_decl);
+    AST_Enum_Member_Decl* ast_enum_member_decl_new(Context* context, File_Pos file_pos,
+                                                   AST_Identifier* identifier,
+                                                   AST_Expression* value_expression);
 
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos,
                                                  AST_Declaration* declaration);
