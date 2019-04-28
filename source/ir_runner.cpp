@@ -403,7 +403,7 @@ namespace Zodiac
                 }
                 else if (type->flags & AST_TYPE_FLAG_FLOAT)
                 {
-                    dest->value.r64 = arg1->value.r64 < arg2->value.r64;
+                    dest->value.s64 = arg1->value.r64 < arg2->value.r64;
                 }
                 else assert(false);
                 break;
@@ -423,7 +423,7 @@ namespace Zodiac
                 }
                 else if (type->flags & AST_TYPE_FLAG_FLOAT)
                 {
-                    dest->value.r64 = arg1->value.r64 <= arg2->value.r64;
+                    dest->value.s64 = arg1->value.r64 <= arg2->value.r64;
                 }
                 else assert(false);
                 break;
@@ -443,7 +443,7 @@ namespace Zodiac
                 }
                 else if (type->flags & AST_TYPE_FLAG_FLOAT)
                 {
-                    dest->value.r64 = arg1->value.r64 > arg2->value.r64;
+                    dest->value.s64 = arg1->value.r64 > arg2->value.r64;
                 }
                 else assert(false);
                 break;
@@ -463,7 +463,31 @@ namespace Zodiac
                 }
                 else if (type->flags & AST_TYPE_FLAG_FLOAT)
                 {
-                    dest->value.r64 = arg1->value.r64 >= arg2->value.r64;
+                    dest->value.s64 = arg1->value.r64 >= arg2->value.r64;
+                }
+                else assert(false);
+                break;
+            }
+
+            case IR_OP_EQ:
+            {
+                IR_Value* arg1 = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
+                IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
+
+                AST_Type* type = arg1->type;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    dest->value.s64 = arg1->value.s64 == arg2->value.s64;
+                }
+                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    dest->value.s64 = arg1->value.r64 == arg2->value.r64;
+                }
+                else if (type->kind == AST_TYPE_ENUM)
+                {
+                    dest->value.s64 = arg1->value.s64 == arg2->value.s64;
                 }
                 else assert(false);
                 break;
@@ -984,10 +1008,11 @@ namespace Zodiac
                 uint64_t member_offset = 0;
                 uint64_t member_index = iri->arg2->value.s64;
                 bool found = false;
-                assert(BUF_LENGTH(struct_type->aggregate_type.member_declarations) > member_index);
-                for (uint64_t i = 0; i < BUF_LENGTH(struct_type->aggregate_type.member_declarations); i++)
+                auto member_decls = struct_type->aggregate_type.member_declarations;
+                assert(BUF_LENGTH(member_decls) > member_index);
+                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
                 {
-                    AST_Declaration* member_decl = struct_type->aggregate_type.member_declarations[i];
+                    AST_Declaration* member_decl = member_decls[i];
                     AST_Type* member_type = member_decl->mutable_decl.type;
                     if (i == member_index)
                     {
@@ -998,8 +1023,10 @@ namespace Zodiac
                 }
                 assert(found);
 
-                void* result_pointer = ((uint8_t*)struct_pointer_value->value.struct_pointer) + (member_offset / 8);
-                IR_Value* result_pointer_value = ir_runner_get_local_temporary(runner, iri->result);
+                void* result_pointer = ((uint8_t*)struct_pointer_value->value.struct_pointer) +
+                                        (member_offset / 8);
+                IR_Value* result_pointer_value = ir_runner_get_local_temporary(runner,
+                                                                               iri->result);
                 assert(iri->result->type->kind == AST_TYPE_POINTER);
                 result_pointer_value->type = iri->result->type;
                 result_pointer_value->value.struct_pointer = result_pointer;

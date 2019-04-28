@@ -28,5 +28,6 @@ namespace Zodiac
     double atom_to_double(const Atom& atom);
 
     bool operator==(const Atom& lhs, const Atom& rhs);
+    bool operator!=(const Atom& lhs, const Atom& rhs);
 
 }

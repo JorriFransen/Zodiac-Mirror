@@ -443,6 +443,7 @@ namespace Zodiac
                                                       nullptr, true);
 
         result->enum_decl.members = member_decls;
+        result->enum_decl.type = nullptr;
 
         return result;
     }
@@ -665,6 +666,23 @@ namespace Zodiac
 
         AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE, bit_size);
         result->aggregate_type.member_declarations = member_declarations;
+
+        return result;
+    }
+
+    AST_Type* ast_type_enum_new(Context* context, BUF(AST_Enum_Member_Decl*) member_decls,
+                                AST_Type* base_type)
+    {
+        assert(context);
+        assert(member_decls);
+        assert(base_type);
+        assert(base_type->bit_size);
+        assert(base_type->flags & AST_TYPE_FLAG_INT);
+
+        AST_Type* result = ast_type_new(context, AST_TYPE_ENUM, AST_TYPE_FLAG_NONE,
+                                        base_type->bit_size);
+        result->enum_type.member_declarations = member_decls;
+        result->enum_type.base_type = base_type;
 
         return result;
     }

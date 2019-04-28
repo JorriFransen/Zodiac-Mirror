@@ -38,5 +38,50 @@ main :: () -> int
     io.printf("<global_int_ptr: %lu\n", <global_int_ptr);
     io.printf("global_int: %lu\n", global_int);
 
+    day : Day;
+    day = Day.MONDAY;
+
+    day2 := Day.WEDNESDAY;
+
+    print_day(day);
+    print_day(day2);
+    print_day(Day.SUNDAY);
+
     return 0;
+}
+
+print_day :: (day : Day) -> void
+{
+    if (day == Day.MONDAY)
+    {
+        io.printf("MONDAY\n");
+    }
+    else if (day == Day.TUESDAY)
+    {
+        io.printf("TUESDAY\n");
+    }
+    else if (day == Day.WEDNESDAY)
+    {
+        io.printf("WEDNESDAY\n");
+    }
+    else if (day == Day.THURSDAY)
+    {
+        io.printf("THURSDAY\n");
+    }
+    else if (day == Day.FRIDAY)
+    {
+        io.printf("FRIDAY\n");
+    }
+    else if (day == Day.SATURDAY)
+    {
+        io.printf("SATURDAY\n");
+    }
+    else if (day == Day.SUNDAY)
+    {
+        io.printf("SUNDAY\n");
+    }
+    else
+    {
+        io.printf("???\n");
+    }
 }

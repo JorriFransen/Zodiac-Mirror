@@ -110,12 +110,15 @@ namespace Zodiac
         {
             case AST_DECL_FUNC:
             {
+                AST_Identifier* ident = global_decl->identifier;
+                AST_Type* return_type = global_decl->function.return_type;
                 IR_Value* func_value = ir_builder_begin_function(ir_builder,
-                                                                    global_decl->identifier->atom.data,
-                                                                    global_decl->function.return_type);
+                                                                    ident->atom.data,
+                                                                    return_type);
                 if (global_decl->function.body_block)
                 {
-                    IR_Value* entry_block = ir_builder_create_block(ir_builder, "entry", func_value);
+                    IR_Value* entry_block = ir_builder_create_block(ir_builder, "entry",
+                                                                    func_value);
                     ir_builder_set_insert_block(ir_builder, entry_block);
 
                     for (uint64_t i = 0; i < BUF_LENGTH(global_decl->function.args); i++)
@@ -124,9 +127,11 @@ namespace Zodiac
                         assert(arg_decl->kind == AST_DECL_MUTABLE);
                         assert(arg_decl->location == AST_DECL_LOC_ARGUMENT);
 
+                        AST_Identifier* arg_ident = arg_decl->identifier;
+                        AST_Type* arg_type = arg_decl->mutable_decl.type;
                         IR_Value* arg_value = ir_builder_emit_function_arg(ir_builder,
-                                                                        arg_decl->identifier->atom.data,
-                                                                        arg_decl->mutable_decl.type);
+                                                                        arg_ident->atom.data,
+                                                                        arg_type);
                         ir_builder_push_value_and_decl(ir_builder, arg_value, arg_decl);
                     }
                 }
@@ -152,8 +157,8 @@ namespace Zodiac
 
             case AST_DECL_CONSTANT_VAR:
             {
-                assert(global_decl->constant_var.init_expression);
-                IR_Value* value = ir_builder_emit_expression(ir_builder, global_decl->constant_var.init_expression);
+                AST_Expression* init_expr = global_decl->constant_var.init_expression;
+                IR_Value* value = ir_builder_emit_expression(ir_builder, init_expr);
                 BUF_PUSH(ir_builder->result.global_constants, value);
                 ir_builder_push_value_and_decl(ir_builder, value, global_decl);
                 break;
@@ -187,15 +192,18 @@ namespace Zodiac
 
             case AST_DECL_STATIC_IF:
             {
-                IR_Value* cond_value = ir_builder_emit_expression(ir_builder, global_decl->static_if.cond_expr);
+                AST_Expression* cond_expr = global_decl->static_if.cond_expr;
+                IR_Value* cond_value = ir_builder_emit_expression(ir_builder, cond_expr);
                 assert(cond_value->type == Builtin::type_bool);
                 if (cond_value->value.boolean)
                 {
-                    ir_builder_emit_global_declaration(ir_builder, global_decl->static_if.then_declaration);
+                    ir_builder_emit_global_declaration(ir_builder,
+                                                       global_decl->static_if.then_declaration);
                 }
                 else if (global_decl->static_if.else_declaration)
                 {
-                    ir_builder_emit_global_declaration(ir_builder, global_decl->static_if.else_declaration);
+                    ir_builder_emit_global_declaration(ir_builder,
+                                                       global_decl->static_if.else_declaration);
                 }
                 break;
             }
@@ -211,12 +219,14 @@ namespace Zodiac
 
             case AST_DECL_STATIC_ASSERT:
             {
-                IR_Value* cond_value = ir_builder_emit_expression(ir_builder, global_decl->static_assert_expression);
+                AST_Expression* assert_expr = global_decl->static_assert_expression;
+                IR_Value* cond_value = ir_builder_emit_expression(ir_builder, assert_expr);
                 assert(cond_value->type == Builtin::type_bool);
                 if (!cond_value->value.boolean)
                 {
                     auto fp = global_decl->static_assert_expression->file_pos;
-                    fprintf(stderr, "Error:%s:%" PRIu64 ":%" PRIu64 ": Static assertion failed!\n\n",
+                    fprintf(stderr,
+                            "Error:%s:%" PRIu64 ":%" PRIu64 ": Static assertion failed!\n\n",
                             fp.file_name, fp.line, fp.line_relative_char_pos);
                     ir_builder->result.error_count++;
                 }
@@ -233,6 +243,11 @@ namespace Zodiac
             case AST_DECL_AGGREGATE_TYPE:
             {
                 // Do nothing for now?
+                break;
+            }
+
+            case AST_DECL_ENUM_TYPE:
+            {
                 break;
             }
 
@@ -346,14 +361,18 @@ namespace Zodiac
             case AST_STMT_WHILE:
             {
                 IR_Function* cur_func = ir_builder->current_function;
-                IR_Value* while_cond_block_value = ir_builder_create_block(ir_builder, "while_cond", cur_func);
-                IR_Value* while_body_block_value = ir_builder_create_block(ir_builder, "while_body", cur_func);
-                IR_Value* post_while_block_value = ir_builder_create_block(ir_builder, "post_while");
+                IR_Value* while_cond_block_value = ir_builder_create_block(ir_builder,
+                                                                           "while_cond", cur_func);
+                IR_Value* while_body_block_value = ir_builder_create_block(ir_builder,
+                                                                           "while_body", cur_func);
+                IR_Value* post_while_block_value = ir_builder_create_block(ir_builder,
+                                                                           "post_while");
 
                 ir_builder_emit_jmp(ir_builder, while_cond_block_value);
 
                 ir_builder_set_insert_block(ir_builder, while_cond_block_value);
-                IR_Value* cond_value = ir_builder_emit_expression(ir_builder, statement->while_stmt.cond_expr);
+                IR_Value* cond_value = ir_builder_emit_expression(ir_builder,
+                                                                  statement->while_stmt.cond_expr);
                 ir_builder_emit_jmp_if(ir_builder, cond_value, while_body_block_value);
                 ir_builder_emit_jmp(ir_builder, post_while_block_value);
 
@@ -369,8 +388,10 @@ namespace Zodiac
             case AST_STMT_FOR:
             {
                 IR_Function* cur_func = ir_builder->current_function;
-                IR_Value* for_cond_block_value = ir_builder_create_block(ir_builder, "for_cond", cur_func);
-                IR_Value* for_body_block_value = ir_builder_create_block(ir_builder, "for_body", cur_func);
+                IR_Value* for_cond_block_value = ir_builder_create_block(ir_builder, "for_cond",
+                                                                         cur_func);
+                IR_Value* for_body_block_value = ir_builder_create_block(ir_builder, "for_body",
+                                                                         cur_func);
                 IR_Value* post_for_block_value = ir_builder_create_block(ir_builder, "post_for");
 
                 ir_builder_emit_statement(ir_builder, statement->for_stmt.init_stmt);
@@ -575,6 +596,9 @@ namespace Zodiac
                     case AST_BINOP_GTEQ:
                         return ir_builder_emit_gteq(ir_builder, lhs_value, rhs_value);
 
+                    case AST_BINOP_EQ:
+                        return ir_builder_emit_eq(ir_builder, lhs_value, rhs_value);
+
                     default: assert(false);
                 }
             }
@@ -771,61 +795,7 @@ namespace Zodiac
 
             case AST_EXPR_DOT:
             {
-                AST_Expression* base_expression = expression->dot.base_expression;
-                assert(base_expression->kind == AST_EXPR_IDENTIFIER);
-                AST_Expression* member_expression = expression->dot.member_expression;
-                assert(member_expression->kind == AST_EXPR_IDENTIFIER);
-
-                AST_Type* struct_type = nullptr;
-                bool is_pointer = false;
-                if (base_expression->type->kind == AST_TYPE_STRUCT)
-                {
-                    struct_type = base_expression->type;
-                }
-                else if (base_expression->type->kind == AST_TYPE_POINTER)
-                {
-                    struct_type = base_expression->type->pointer.base;
-                    is_pointer = true;
-                }
-                else assert(false);
-
-                assert(struct_type->kind == AST_TYPE_STRUCT);
-
-                uint64_t member_index = 0;
-                AST_Type* member_type = nullptr;
-                auto member_decls = struct_type->aggregate_type.member_declarations;
-                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
-                {
-                    AST_Declaration* member_decl = member_decls[i];
-                    if (member_decl->identifier->atom == member_expression->identifier->atom)
-                    {
-                        member_index = i;
-                        member_type = member_decl->mutable_decl.type;
-                        break;
-                    }
-                }
-
-                assert(member_type);
-
-                auto base_decl = base_expression->identifier->declaration;
-                IR_Value* base_pointer = ir_builder_value_for_declaration(ir_builder,
-                                                                          base_decl);
-                if (is_pointer)
-                {
-                    if (base_pointer->kind == IRV_ALLOCL)
-                    {
-                        base_pointer = ir_builder_emit_loadl(ir_builder, base_pointer);
-                    }
-                    else if (base_pointer->kind == IRV_ARGUMENT)
-                    {
-                        base_pointer = ir_builder_emit_loada(ir_builder, base_pointer);
-                    }
-                    base_pointer = ir_builder_emit_loadp(ir_builder, base_pointer, struct_type);
-                }
-                IR_Value* value_pointer = ir_builder_emit_aggregate_offset_pointer(ir_builder,
-                                                                                   base_pointer,
-                                                                                   member_index);
-                return ir_builder_emit_loadp(ir_builder, value_pointer, member_type);
+                return ir_builder_emit_dot_expression(ir_builder, expression);
                 break;
             }
 
@@ -833,6 +803,91 @@ namespace Zodiac
         }
 
         return nullptr;
+    }
+
+    IR_Value* ir_builder_emit_dot_expression(IR_Builder* ir_builder, AST_Expression* expression)
+    {
+        assert(ir_builder);
+        assert(expression);
+        assert(expression->kind == AST_EXPR_DOT);
+
+        AST_Expression* base_expression = expression->dot.base_expression;
+        assert(base_expression->kind == AST_EXPR_IDENTIFIER);
+        AST_Expression* member_expression = expression->dot.member_expression;
+        assert(member_expression->kind == AST_EXPR_IDENTIFIER);
+
+        if (base_expression->type->kind == AST_TYPE_ENUM)
+        {
+            AST_Type* enum_type = base_expression->type;
+            AST_Enum_Member_Decl* member = nullptr;
+
+            for (uint64_t i = 0; i < BUF_LENGTH(enum_type->enum_type.member_declarations); i++)
+            {
+                AST_Enum_Member_Decl* member_decl = enum_type->enum_type.member_declarations[i];
+                if (member_decl->identifier->atom == member_expression->identifier->atom)
+                {
+                    member = member_decl;
+                    break;
+                }
+            }
+
+            assert(member);
+            return ir_integer_literal(ir_builder, enum_type->enum_type.base_type,
+                                      member->index_value);
+        }
+        else
+        {
+            AST_Type* struct_type = nullptr;
+            bool is_pointer = false;
+            if (base_expression->type->kind == AST_TYPE_STRUCT)
+            {
+                struct_type = base_expression->type;
+            }
+            else if (base_expression->type->kind == AST_TYPE_POINTER)
+            {
+                struct_type = base_expression->type->pointer.base;
+                is_pointer = true;
+            }
+            else assert(false);
+
+            assert(struct_type->kind == AST_TYPE_STRUCT);
+
+            uint64_t member_index = 0;
+            AST_Type* member_type = nullptr;
+            auto member_decls = struct_type->aggregate_type.member_declarations;
+            for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+            {
+                AST_Declaration* member_decl = member_decls[i];
+                if (member_decl->identifier->atom == member_expression->identifier->atom)
+                {
+                    member_index = i;
+                    member_type = member_decl->mutable_decl.type;
+                    break;
+                }
+            }
+
+            assert(member_type);
+
+            auto base_decl = base_expression->identifier->declaration;
+            IR_Value* base_pointer = ir_builder_value_for_declaration(ir_builder,
+                                                                        base_decl);
+            if (is_pointer)
+            {
+                if (base_pointer->kind == IRV_ALLOCL)
+                {
+                    base_pointer = ir_builder_emit_loadl(ir_builder, base_pointer);
+                }
+                else if (base_pointer->kind == IRV_ARGUMENT)
+                {
+                    base_pointer = ir_builder_emit_loada(ir_builder, base_pointer);
+                }
+                base_pointer = ir_builder_emit_loadp(ir_builder, base_pointer, struct_type);
+            }
+            IR_Value* value_pointer = ir_builder_emit_aggregate_offset_pointer(ir_builder,
+                                                                                base_pointer,
+                                                                                member_index);
+            return ir_builder_emit_loadp(ir_builder, value_pointer, member_type);
+        }
     }
 
     IR_Value* ir_builder_emit_load_lit(IR_Builder* ir_builder, IR_Value* literal)
@@ -1358,6 +1413,29 @@ namespace Zodiac
         return result;
     }
 
+    IR_Value* ir_builder_emit_eq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        if (lhs->type == rhs->type ||
+            (lhs->type->kind == AST_TYPE_ENUM && (lhs->type->enum_type.base_type == rhs->type)))
+        {
+            IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
+            IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_EQ, lhs, rhs, result);
+
+            ir_builder_emit_instruction(ir_builder, iri);
+
+            return result;
+        }
+        else if (lhs->type->kind == AST_TYPE_ENUM)
+        {
+            assert(false);
+        }
+        else assert(false);
+    }
+
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val)
     {
         assert(ir_builder);
@@ -1369,7 +1447,8 @@ namespace Zodiac
         ir_builder_emit_instruction(ir_builder, iri);
     }
 
-    void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value, bool is_foreign/*=false*/)
+    void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value,
+                                  bool is_foreign/*=false*/)
     {
         assert(ir_builder);
         assert(arg_value);
@@ -2093,6 +2172,14 @@ namespace Zodiac
             {
                 ir_print_value(instruction->arg1);
                 printf(" >= ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_EQ:
+            {
+                ir_print_value(instruction->arg1);
+                printf(" == ");
                 ir_print_value(instruction->arg2);
                 break;
             }

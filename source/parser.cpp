@@ -1127,7 +1127,8 @@ namespace Zodiac
 
         auto ct = current_token(parser);
 
-        return ct.kind == TOK_LT ||
+        return ct.kind == TOK_EQEQ ||
+               ct.kind == TOK_LT ||
                ct.kind == TOK_LTEQ ||
                ct.kind == TOK_GT ||
                ct.kind == TOK_GTEQ;
@@ -1215,6 +1216,10 @@ namespace Zodiac
 
             case TOK_GTEQ:
                 result = AST_BINOP_GTEQ;
+                break;
+
+            case TOK_EQEQ:
+                result = AST_BINOP_EQ;
                 break;
 
             default: assert(false);

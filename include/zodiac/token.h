@@ -13,6 +13,7 @@ namespace Zodiac
     DEFINE_TOKEN(TOK_MUL),        /* * */ \
     DEFINE_TOKEN(TOK_DIV),        /* / */ \
     DEFINE_TOKEN(TOK_EQ),         /* = */ \
+    DEFINE_TOKEN(TOK_EQEQ),       /* == */ \
     DEFINE_TOKEN(TOK_LT),         /* < */ \
     DEFINE_TOKEN(TOK_LTEQ),       /* <= */ \
     DEFINE_TOKEN(TOK_GT),         /* > */ \

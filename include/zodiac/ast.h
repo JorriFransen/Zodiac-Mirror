@@ -60,6 +60,7 @@ namespace Zodiac
         AST_BINOP_MUL,
         AST_BINOP_DIV,
 
+        AST_BINOP_EQ,
         AST_BINOP_LT,
         AST_BINOP_LTEQ,
         AST_BINOP_GT,
@@ -295,6 +296,7 @@ namespace Zodiac
         File_Pos file_pos = {};
         AST_Identifier* identifier = nullptr;
         AST_Expression* value_expression = nullptr;
+        uint64_t index_value;
     };
 
     struct AST_Declaration
@@ -359,6 +361,7 @@ namespace Zodiac
             struct
             {
                 BUF(AST_Enum_Member_Decl*) members;
+                AST_Type* type = nullptr;
             } enum_decl;
 
         };
@@ -372,6 +375,7 @@ namespace Zodiac
         AST_TYPE_POINTER,
         AST_TYPE_STATIC_ARRAY,
         AST_TYPE_STRUCT,
+        AST_TYPE_ENUM,
     };
 
     typedef uint64_t AST_Type_Flags;
@@ -408,6 +412,12 @@ namespace Zodiac
             {
                 BUF(AST_Declaration*) member_declarations;
             } aggregate_type;
+
+            struct
+            {
+                BUF(AST_Enum_Member_Decl*) member_declarations;
+                AST_Type* base_type;
+            } enum_type;
         };
     };
 
@@ -574,6 +584,8 @@ namespace Zodiac
     AST_Type* ast_type_static_array_new(Context* context, AST_Type* base_type, uint64_t count);
     AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations,
                                   uint64_t bit_size);
+    AST_Type* ast_type_enum_new(Context* context, BUF(AST_Enum_Member_Decl*) member_decls,
+                                AST_Type* base_type);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind);
     AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos,

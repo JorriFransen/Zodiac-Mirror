@@ -105,4 +105,10 @@ namespace Zodiac
     {
         return lhs.length == rhs.length && lhs.data == rhs.data;
     }
+
+    bool operator!=(const Atom& lhs, const Atom& rhs)
+    {
+        return !operator==(lhs, rhs);
+    }
+
 }
