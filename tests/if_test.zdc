@@ -1,0 +1,19 @@
+
+io :: import io;
+
+main :: () -> void
+{
+    c := io.getchar();
+    if (c == 49)
+    {
+       io.printf("You choose number one\n");
+    }
+    else if (c == 50)
+    {
+       io.printf("You choose number two\n");
+    }
+    else
+    {
+        io.printf("Invalid option\n");
+    }
+}

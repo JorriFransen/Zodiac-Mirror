@@ -13,6 +13,7 @@ else
 }
 
 #foreign putchar :: (x: int) -> int;
+#foreign getchar :: () -> int;
 #foreign puts :: (string: *u8) -> int;
 #foreign printf :: (format: *u8, ...) -> int;
 

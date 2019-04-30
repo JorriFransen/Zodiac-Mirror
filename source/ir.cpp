@@ -141,6 +141,7 @@ namespace Zodiac
                     func_value->function->foreign_index =
                         ir_builder_emit_foreign(ir_builder, global_decl->identifier->atom);
                 }
+
                 ir_builder_end_function(ir_builder, func_value);
 
                 _IR_Decl_To_Func_ decl_to_func_entry = { global_decl, func_value->function };
@@ -341,8 +342,12 @@ namespace Zodiac
                     }
                 }
 
-                ir_builder_append_block(ir_builder, cur_func, post_if_block_val->block);
-                ir_builder_set_insert_block(ir_builder, post_if_block_val);
+                if (ir_builder->insert_block == else_block_val->block)
+                {
+                    ir_builder_append_block(ir_builder, cur_func, post_if_block_val->block);
+                    ir_builder_set_insert_block(ir_builder, post_if_block_val);
+                }
+
                 break;
             }
 
