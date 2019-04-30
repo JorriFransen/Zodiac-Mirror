@@ -12,6 +12,14 @@ main :: () -> void
     {
        io.printf("You choose number two\n");
     }
+    else if (c == 51)
+    {
+        io.printf("You choose number three\n");
+    }
+    else if (c == 52)
+    {
+        io.printf("you choose number four\n");
+    }
     else
     {
         io.printf("Invalid option\n");

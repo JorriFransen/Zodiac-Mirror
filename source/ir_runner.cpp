@@ -539,7 +539,9 @@ namespace Zodiac
                 }
                 else
                 {
-                    assert(iri->arg1->type->flags & AST_TYPE_FLAG_INT);
+                    assert(iri->arg1->type->flags & AST_TYPE_FLAG_INT ||
+                           (iri->arg1->type->kind == AST_TYPE_ENUM &&
+                            iri->arg1->type->enum_type.base_type->flags & AST_TYPE_FLAG_INT));
                     dcArgLongLong(runner->dyn_vm, arg_value->value.s64);
                 }
                 break;

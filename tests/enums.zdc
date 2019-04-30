@@ -25,26 +25,31 @@ Day :: enum
 
 main :: () -> int
 {
-    io.printf("enum test()\n");
+    // io.printf("enum test()\n");
 
-    io.printf("DAY_MONDAY: %ld\n", DAY_MONDAY);
+    // io.printf("DAY_MONDAY: %ld\n", DAY_MONDAY);
 
-    io.printf("global_int: %lu\n", global_int);
-    global_int = 5;
-    io.printf("global_int: %lu\n", global_int);
+    // io.printf("global_int: %lu\n", global_int);
+    // global_int = 5;
+    // io.printf("global_int: %lu\n", global_int);
 
-    global_int_ptr := *global_int;
-    <global_int_ptr = 6;
-    io.printf("<global_int_ptr: %lu\n", <global_int_ptr);
-    io.printf("global_int: %lu\n", global_int);
+    // global_int_ptr := *global_int;
+    // <global_int_ptr = 6;
+    // io.printf("<global_int_ptr: %lu\n", <global_int_ptr);
+    // io.printf("global_int: %lu\n", global_int);
 
     day : Day;
-    day = Day.MONDAY;
+    day = Day.WEDNESDAY;
 
-    day2 := Day.WEDNESDAY;
+    day2 := Day.FRIDAY;
+    // day2 : Day;
+    // day2 = Day.WEDNESDAY;
 
-    print_day(day);
+    io.printf("day: %lu\n", day);
+    io.printf("day2: %lu\n", day2);
+
     print_day(day2);
+    print_day(day);
     print_day(Day.SUNDAY);
 
     return 0;
@@ -52,31 +57,66 @@ main :: () -> int
 
 print_day :: (day : Day) -> void
 {
-    if (day == Day.MONDAY)
+    io.printf("__print_day: %lu\n", day);
+
+    // if (day == Day.MONDAY)
+    // {
+    //     io.printf("MONDAY\n");
+    // }
+    // else if (day == Day.TUESDAY)
+    // {
+    //     io.printf("TUESDAY\n");
+    // }
+    // else if (day == Day.WEDNESDAY)
+    // {
+    //     io.printf("WEDNESDAY\n");
+    // }
+    // else if (day == Day.THURSDAY)
+    // {
+    //     io.printf("THURSDAY\n");
+    // }
+    // else if (day == Day.FRIDAY)
+    // {
+    //     io.printf("FRIDAY\n");
+    // }
+    // else if (day == Day.SATURDAY)
+    // {
+    //     io.printf("SATURDAY\n");
+    // }
+    // else if (day == Day.SUNDAY)
+    // {
+    //     io.printf("SUNDAY\n");
+    // }
+    // else
+    // {
+    //     io.printf("???\n");
+    // }
+
+    if (day == 0)
     {
         io.printf("MONDAY\n");
     }
-    else if (day == Day.TUESDAY)
+    else if (day == 1)
     {
         io.printf("TUESDAY\n");
     }
-    else if (day == Day.WEDNESDAY)
+    else if (day == 2)
     {
         io.printf("WEDNESDAY\n");
     }
-    else if (day == Day.THURSDAY)
+    else if (day == 3)
     {
         io.printf("THURSDAY\n");
     }
-    else if (day == Day.FRIDAY)
+    else if (day == 4)
     {
         io.printf("FRIDAY\n");
     }
-    else if (day == Day.SATURDAY)
+    else if (day == 5)
     {
         io.printf("SATURDAY\n");
     }
-    else if (day == Day.SUNDAY)
+    else if (day == 6)
     {
         io.printf("SUNDAY\n");
     }
