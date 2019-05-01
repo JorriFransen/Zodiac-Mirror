@@ -71,6 +71,19 @@ namespace Zodiac
         return atom_append(atom_table, lhs, rhs.data, rhs.length);
     }
 
+    const Atom& atom_append(Atom_Table* atom_table, const Atom& lhs, uint64_t u64)
+    {
+        assert(atom_table);
+
+        uint64_t new_length = snprintf(nullptr, 0, "%s%lu", lhs.data, u64);
+        char* tmp_result = (char*)mem_alloc(new_length + 1);
+        snprintf(tmp_result, new_length + 1, "%s%lu", lhs.data, u64);
+
+        const Atom& result = atom_get(atom_table, tmp_result);
+        mem_free(tmp_result);
+        return result;
+    }
+
     uint64_t atom_to_u64(const Atom& atom)
     {
         uint64_t base = 10;

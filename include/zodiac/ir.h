@@ -132,7 +132,7 @@ namespace Zodiac
 
     struct IR_Block
     {
-        const char* name = nullptr;
+        Atom name = {};
         IR_Instruction* first_instruction = nullptr;
         IR_Instruction* last_instruction = nullptr;
 
@@ -162,6 +162,8 @@ namespace Zodiac
 
         bool is_entry = false;
         uint64_t foreign_index = 0;
+
+        uint64_t next_duplicate_name_index = 1;
     };
 
     struct IR_Module
@@ -223,6 +225,9 @@ namespace Zodiac
 
     IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, const char* name, AST_Type* return_type);
     void ir_builder_end_function(IR_Builder* ir_builder, IR_Value* func_value);
+    void ir_builder_patch_empty_block_jumps(IR_Builder* ir_builder, IR_Function* function);
+    void ir_builder_patch_block_jumps(IR_Builder* ir_builder, IR_Function* function,
+                                     IR_Block* orig_block, IR_Block* target_block);
     IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name,
                                       IR_Function* function = nullptr);
     IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name, IR_Value* function);

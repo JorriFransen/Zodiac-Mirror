@@ -121,19 +121,20 @@ int main(int argc, char** argv)
     {
         fprintf(stderr, "Generated ir for file: %s:\n", file_name);
         ir_builder_print_result(&ir_builder);
+
+        IR_Runner ir_runner;
+        ir_runner_init(context, &ir_runner);
+
+        ir_runner_execute(&ir_runner, parse_result.ast_module, &ir_module);
     }
     else
     {
+        ir_builder_print_result(&ir_builder);
         for (uint64_t i = 0; i < BUF_LENGTH(validation.messages); i++)
         {
             fprintf(stderr, "%s\n", validation.messages[i]);
         }
     }
-
-    IR_Runner ir_runner;
-    ir_runner_init(context, &ir_runner);
-
-    ir_runner_execute(&ir_runner, parse_result.ast_module, &ir_module);
 
     return 0;
 }

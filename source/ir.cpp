@@ -85,6 +85,8 @@ namespace Zodiac
                     }
 
                     ir_builder->current_function = nullptr;
+
+                    ir_builder_patch_empty_block_jumps(ir_builder, func);
                 }
                 else
                 {
@@ -342,11 +344,13 @@ namespace Zodiac
                     }
                 }
 
-                if (ir_builder->insert_block == else_block_val->block)
-                {
-                    ir_builder_append_block(ir_builder, cur_func, post_if_block_val->block);
-                    ir_builder_set_insert_block(ir_builder, post_if_block_val);
-                }
+                // if (ir_builder->insert_block == else_block_val->block)
+                // {
+                //     ir_builder_append_block(ir_builder, cur_func, post_if_block_val->block);
+                //     ir_builder_set_insert_block(ir_builder, post_if_block_val);
+                // }
+                ir_builder_append_block(ir_builder, cur_func, post_if_block_val->block);
+                ir_builder_set_insert_block(ir_builder, post_if_block_val);
 
                 break;
             }
@@ -1096,13 +1100,101 @@ namespace Zodiac
         ir_builder->insert_block = nullptr;
     }
 
+    void ir_builder_patch_empty_block_jumps(IR_Builder* ir_builder, IR_Function* function)
+    {
+        assert(ir_builder);
+        assert(function);
+
+        auto block = function->first_block;
+        IR_Block* previous_block = nullptr;
+        while (block)
+        {
+            auto next_block = block->next;
+            auto pb = block;
+
+            if (!block->first_instruction)
+            {
+                assert(!block->last_instruction);
+                assert(block != function->last_block);
+
+                IR_Block* target_block = block->next;
+                while (target_block && !target_block->first_instruction)
+                {
+                    target_block = target_block->next;
+                }
+                assert(target_block && target_block->first_instruction);
+
+                ir_builder_patch_block_jumps(ir_builder, function, block, target_block);
+
+                // TODO: Freelist the empty block
+                if (previous_block)
+                {
+                    previous_block->next = block->next;
+                    block->next->previous = previous_block;
+                    pb = previous_block;
+                }
+                else
+                {
+                    function->first_block = next_block;
+                    next_block->previous = nullptr;
+                    pb = nullptr;
+                }
+            }
+
+            previous_block = pb;
+            block = next_block;
+        }
+    }
+
+    void ir_builder_patch_block_jumps(IR_Builder* ir_builder, IR_Function* function,
+                                     IR_Block* orig_block, IR_Block* target_block)
+    {
+        assert(ir_builder);
+        assert(function);
+        assert(orig_block);
+        assert(target_block);
+
+        auto block = function->first_block;
+        while (block)
+        {
+            if (block != orig_block)
+            {
+                auto iri = block->first_instruction;
+                while (iri)
+                {
+                    IR_Value* dest_block_val = nullptr;
+                    if (iri->op == IR_OP_JMP)
+                    {
+                        dest_block_val = iri->arg1;
+                    }
+                    else if (iri->op == IR_OP_JMP_IF)
+                    {
+                        dest_block_val = iri->arg2;
+                    }
+
+                    if (dest_block_val && dest_block_val->block == orig_block)
+                    {
+                        dest_block_val->block = target_block;
+                    }
+
+                    iri = iri->next;
+                }
+            }
+            else
+            {
+                assert(!block->first_instruction);
+            }
+            block = block->next;
+        }
+    }
+
     IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name, IR_Function* function/*= nullptr*/)
     {
         assert(ir_builder);
         assert(name);
 
         IR_Block* block = arena_alloc(&ir_builder->arena, IR_Block);
-        block->name = name;
+        block->name = atom_get(ir_builder->context->atom_table, name);
         block->first_instruction = nullptr;
         block->last_instruction = nullptr;
 
@@ -1134,6 +1226,25 @@ namespace Zodiac
         assert(block);
 
         assert(block->next == nullptr);
+
+        auto ib = function->first_block;
+        while (ib)
+        {
+            if (ib == block)
+            {
+                assert(false);
+            }
+
+            if (ib->name == block->name)
+            {
+                Atom new_name = atom_append(ir_builder->context->atom_table, block->name,
+                                            function->next_duplicate_name_index++);
+                block->name = new_name;
+                break;
+            }
+
+            ib = ib->next;
+        }
 
         if (function->first_block)
         {
@@ -2086,7 +2197,7 @@ namespace Zodiac
     {
         assert(block);
 
-        printf("\t%s:\n", block->name);
+        printf("\t%s:\n", block->name.data);
 
         IR_Instruction* instruction = block->first_instruction;
 
@@ -2429,7 +2540,7 @@ namespace Zodiac
 
             case IRV_BLOCK:
             {
-                printf("block(%s)", value->block->name);
+                printf("block(%s)", value->block->name.data);
                 break;
             }
 
