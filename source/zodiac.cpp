@@ -150,6 +150,9 @@ namespace Zodiac
         DEFINE_KW("import", TOK_KW_IMPORT);
         DEFINE_KW("struct", TOK_KW_STRUCT);
         DEFINE_KW("enum", TOK_KW_ENUM);
+        DEFINE_KW("switch", TOK_KW_SWITCH);
+        DEFINE_KW("case", TOK_KW_CASE);
+        DEFINE_KW("default", TOK_KW_DEFAULT);
     }
 
 #undef DEFINE_KW

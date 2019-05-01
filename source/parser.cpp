@@ -493,6 +493,10 @@ namespace Zodiac
                 return parse_for_statement(parser, scope);
                 break;
 
+            case TOK_KW_SWITCH:
+                return parse_switch_statement(parser, scope);
+                break;
+
             default: break;
         }
 
@@ -690,6 +694,66 @@ namespace Zodiac
                                      for_decl_statement, for_cond_expr, for_step_stmt,
                                      for_body_statement);
 
+    }
+
+    static AST_Statement* parse_switch_statement(Parser* parser, AST_Scope* scope)
+    {
+        assert(parser);
+        assert(scope);
+
+        auto ft = current_token(parser);
+        expect_token(parser, TOK_KW_SWITCH);
+
+        expect_token(parser, TOK_LPAREN);
+        AST_Expression* switch_expr = parse_expression(parser);
+        expect_token(parser, TOK_RPAREN);
+
+        BUF(AST_Switch_Case) cases = nullptr;
+
+        expect_token(parser, TOK_LBRACE);
+
+
+        while (is_token(parser, TOK_KW_CASE) || is_token(parser, TOK_KW_DEFAULT))
+        {
+            auto ct = current_token(parser);
+
+            if (match_token(parser, TOK_KW_CASE))
+            {
+                AST_Expression* case_expr = parse_expression(parser);
+                assert(case_expr);
+                expect_token(parser, TOK_COLON);
+
+                AST_Statement* case_stmt = parse_statement(parser, scope);
+                assert(case_stmt);
+
+                AST_Switch_Case switch_case = {};
+                switch_case.file_pos = ct.file_pos;
+                switch_case.is_default = false;
+                switch_case.expr = case_expr;
+                switch_case.stmt = case_stmt;
+
+                BUF_PUSH(cases, switch_case);
+            }
+            else if (match_token(parser, TOK_KW_DEFAULT))
+            {
+                expect_token(parser, TOK_COLON);
+
+                AST_Statement* case_stmt = parse_statement(parser, scope);
+
+                AST_Switch_Case switch_case = {};
+                switch_case.file_pos = ct.file_pos;
+                switch_case.is_default = true;
+                switch_case.expr = nullptr;
+                switch_case.stmt = case_stmt;
+
+                BUF_PUSH(cases, switch_case);
+            }
+            else assert(false);
+        }
+
+        expect_token(parser, TOK_RBRACE);
+
+        return ast_switch_statement_new(parser->context, ft.file_pos, switch_expr, cases);
     }
 
     static AST_Expression* parse_expression(Parser* parser)

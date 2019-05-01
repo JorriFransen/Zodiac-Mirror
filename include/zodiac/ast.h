@@ -174,6 +174,7 @@ namespace Zodiac
         AST_STMT_CALL,
         AST_STMT_WHILE,
         AST_STMT_FOR,
+        AST_STMT_SWITCH,
     };
 
     typedef uint64_t _AST_STMT_FLAGS_;
@@ -181,6 +182,14 @@ namespace Zodiac
     {
         AST_STMT_FLAG_NONE      = 0x00,
         AST_STMT_FLAG_GENERATED = 0x01,
+    };
+
+    struct AST_Switch_Case
+    {
+        File_Pos file_pos = {};
+        bool is_default = false;
+        AST_Expression* expr = nullptr;
+        AST_Statement* stmt = nullptr;;
     };
 
     struct AST_Statement
@@ -229,6 +238,12 @@ namespace Zodiac
                 AST_Statement* step_stmt;
                 AST_Statement* body_stmt;
             } for_stmt;
+
+            struct
+            {
+                AST_Expression* switch_expression;
+                BUF(AST_Switch_Case) cases;
+            } switch_stmt;
         };
     };
 
@@ -576,6 +591,8 @@ namespace Zodiac
     AST_Statement* ast_for_statement_new(Context* context, File_Pos file_pos, AST_Scope* scope,
                                          AST_Statement* init_stmt, AST_Expression* cond_expr,
                                          AST_Statement* step_stmt, AST_Statement* body_stmt);
+    AST_Statement* ast_switch_statement_new(Context* context, File_Pos file_pos,
+                                            AST_Expression* switch_expr, BUF(AST_Switch_Case) cases);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
                            uint64_t bit_size);

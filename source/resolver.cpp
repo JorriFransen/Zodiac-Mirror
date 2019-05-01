@@ -586,6 +586,42 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_SWITCH:
+            {
+                AST_Expression* switch_expr = statement->switch_stmt.switch_expression;
+                result &= try_resolve_expression(resolver, switch_expr, scope);
+                if (result)
+                {
+                    auto switch_type = switch_expr->type;
+                    assert(switch_type->flags & AST_TYPE_FLAG_INT ||
+                           (switch_type->kind == AST_TYPE_ENUM) && switch_type->enum_type.base_type->flags & AST_TYPE_FLAG_INT);
+                }
+
+                bool found_default = false;
+
+                auto cases = statement->switch_stmt.cases;
+                for (uint64_t i = 0; i < BUF_LENGTH(cases); i++)
+                {
+                    const AST_Switch_Case& switch_case = cases[i];
+                    if (switch_case.is_default)
+                    {
+                        assert(!found_default);
+                        found_default = true;
+                    }
+                    else
+                    {
+                        result &= try_resolve_expression(resolver, switch_case.expr, scope);
+                        if (result)
+                        {
+                            assert(switch_case.expr->is_const);
+                        }
+                    }
+
+                    result &= try_resolve_statement(resolver, switch_case.stmt, scope);
+                }
+                break;
+            }
+
             default:
                 assert(false);
                 result = false;
@@ -1275,6 +1311,8 @@ namespace Zodiac
             {
                 return false;
             }
+
+            expression->is_const = true;
         }
 
         assert(type);

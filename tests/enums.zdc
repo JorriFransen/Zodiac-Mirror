@@ -52,36 +52,53 @@ main :: () -> int
 
 print_day :: (day : Day) -> void
 {
-    if (day == Day.MONDAY)
+    switch (day)
     {
-        io.printf("MONDAY\n");
+        case Day.MONDAY:
+            io.printf("Day.WEDNESDAY\n");
+
+        case Day.TUESDAY:
+        {
+            io.printf("Day.TUESDAY\n");
+        }
+
+        case Day.WEDNESDAY:
+            io.printf("Day.WEDNESDAY\n");
+
+        default:
+            io.printf("Day.???\n");
     }
-    else if (day == Day.TUESDAY)
-    {
-        io.printf("TUESDAY\n");
-    }
-    else if (day == Day.WEDNESDAY)
-    {
-        io.printf("WEDNESDAY\n");
-    }
-    else if (day == Day.THURSDAY)
-    {
-        io.printf("THURSDAY\n");
-    }
-    else if (day == Day.FRIDAY)
-    {
-        io.printf("FRIDAY\n");
-    }
-    else if (day == Day.SATURDAY)
-    {
-        io.printf("SATURDAY\n");
-    }
-    else if (day == Day.SUNDAY)
-    {
-        io.printf("SUNDAY\n");
-    }
-    else
-    {
-        io.printf("???\n");
-    }
+
+    // if (day == Day.MONDAY)
+    // {
+    //     io.printf("MONDAY\n");
+    // }
+    // else if (day == Day.TUESDAY)
+    // {
+    //     io.printf("TUESDAY\n");
+    // }
+    // else if (day == Day.WEDNESDAY)
+    // {
+    //     io.printf("WEDNESDAY\n");
+    // }
+    // else if (day == Day.THURSDAY)
+    // {
+    //     io.printf("THURSDAY\n");
+    // }
+    // else if (day == Day.FRIDAY)
+    // {
+    //     io.printf("FRIDAY\n");
+    // }
+    // else if (day == Day.SATURDAY)
+    // {
+    //     io.printf("SATURDAY\n");
+    // }
+    // else if (day == Day.SUNDAY)
+    // {
+    //     io.printf("SUNDAY\n");
+    // }
+    // else
+    // {
+    //     io.printf("???\n");
+    // }
 }

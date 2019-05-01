@@ -608,6 +608,23 @@ namespace Zodiac
         return result;
     }
 
+    AST_Statement* ast_switch_statement_new(Context* context, File_Pos file_pos,
+                                            AST_Expression* switch_expr, BUF(AST_Switch_Case) cases)
+    {
+        assert(context);
+        assert(switch_expr);
+        assert(cases);
+
+        AST_Statement* result = arena_alloc(context->arena, AST_Statement);
+        result->kind = AST_STMT_SWITCH;
+        result->file_pos = file_pos;
+
+        result->switch_stmt.switch_expression = switch_expr;
+        result->switch_stmt.cases = cases;
+
+        return result;
+    }
+
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
                            uint64_t bit_size)
     {
