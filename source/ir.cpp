@@ -86,7 +86,7 @@ namespace Zodiac
 
                     ir_builder->current_function = nullptr;
 
-                    ir_builder_patch_empty_block_jumps(ir_builder, func);
+					ir_builder_patch_empty_block_jumps(ir_builder, func);
                 }
                 else
                 {
@@ -257,9 +257,8 @@ namespace Zodiac
             default: assert(false);
         }
     }
-
-    void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement)
-    {
+ void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement)
+{
         assert(ir_builder);
         assert(statement);
 
@@ -421,6 +420,12 @@ namespace Zodiac
                 break;
             }
 
+			case AST_STMT_SWITCH:
+			{
+				ir_builder_emit_switch_statement(ir_builder, statement);
+				break;
+			}
+
             default: assert(false);
         }
     }
@@ -564,6 +569,88 @@ namespace Zodiac
         }
         else assert(false);
     }
+
+	struct _IR_Case
+	{
+		IR_Value* case_val = nullptr;
+		IR_Value* case_block = nullptr;
+	};
+
+	void ir_builder_emit_switch_statement(IR_Builder* ir_builder, AST_Statement* statement)
+	{
+		assert(ir_builder);
+		assert(statement);
+		assert(statement->kind == AST_STMT_SWITCH);
+
+
+		IR_Function* cur_func = ir_builder->current_function;
+
+		IR_Value* cond_value = ir_builder_emit_expression(ir_builder,
+			statement->switch_stmt.switch_expression);
+
+		IR_Block* switch_block = ir_builder->insert_block;
+		IR_Value* post_switch_block_val = ir_builder_create_block(ir_builder, "post_switch");
+
+		BUF(_IR_Case) cases = nullptr;
+
+		bool found_default = false;
+		IR_Value* default_block_val = nullptr;
+
+		for (uint64_t i = 0; i < BUF_LENGTH(statement->switch_stmt.cases); i++)
+		{
+			const AST_Switch_Case& switch_case = statement->switch_stmt.cases[i];
+			_IR_Case ir_case = {};
+			if (switch_case.is_default)
+			{
+				found_default = true;
+				ir_case.case_block = ir_builder_create_block(ir_builder, "default_case");
+				default_block_val = ir_case.case_block;
+			}
+			else
+			{
+				assert(switch_case.expr);
+
+				ir_builder_set_insert_block(ir_builder, switch_block);
+
+				ir_case.case_val = ir_builder_emit_expression(ir_builder, switch_case.expr);
+				ir_case.case_block = ir_builder_create_block(ir_builder, "case");
+
+				IR_Value* case_cond_val = ir_builder_emit_eq(ir_builder, cond_value, ir_case.case_val);
+				ir_builder_emit_jmp_if(ir_builder, case_cond_val, ir_case.case_block);
+			}
+
+			ir_builder_set_insert_block(ir_builder, ir_case.case_block);
+			ir_builder_emit_statement(ir_builder, switch_case.stmt);
+			ir_builder_emit_jmp(ir_builder, post_switch_block_val);
+
+			BUF_PUSH(cases, ir_case);
+		}
+
+		ir_builder_set_insert_block(ir_builder, switch_block);
+
+		if (found_default)
+		{
+			assert(default_block_val);
+			ir_builder_emit_jmp(ir_builder, default_block_val);
+		}
+		else
+		{
+			ir_builder_emit_jmp(ir_builder, post_switch_block_val);
+		}
+
+		for (uint64_t i = 0; i < BUF_LENGTH(cases); i++)
+		{
+			const _IR_Case& ir_case = cases[i];
+
+			ir_builder_append_block(ir_builder, cur_func, ir_case.case_block->block);
+		}
+
+		// TODO: temp memory
+		BUF_FREE(cases);
+
+		ir_builder_append_block(ir_builder, cur_func, post_switch_block_val->block);
+		ir_builder_set_insert_block(ir_builder, post_switch_block_val);
+	}
 
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression)
     {
@@ -1545,11 +1632,9 @@ namespace Zodiac
 
             return result;
         }
-        else if (lhs->type->kind == AST_TYPE_ENUM)
-        {
-            assert(false);
-        }
         else assert(false);
+
+		return nullptr;
     }
 
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val)

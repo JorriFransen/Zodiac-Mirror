@@ -1,6 +1,7 @@
 #include "atom.h"
 
 #include <cassert>
+#include <inttypes.h>
 #include <string.h>
 
 namespace Zodiac
@@ -75,9 +76,9 @@ namespace Zodiac
     {
         assert(atom_table);
 
-        uint64_t new_length = snprintf(nullptr, 0, "%s%lu", lhs.data, u64);
+        uint64_t new_length = snprintf(nullptr, 0, "%s%" PRIu64, lhs.data, u64);
         char* tmp_result = (char*)mem_alloc(new_length + 1);
-        snprintf(tmp_result, new_length + 1, "%s%lu", lhs.data, u64);
+        snprintf(tmp_result, new_length + 1, "%s%I64u", lhs.data, u64);
 
         const Atom& result = atom_get(atom_table, tmp_result);
         mem_free(tmp_result);
