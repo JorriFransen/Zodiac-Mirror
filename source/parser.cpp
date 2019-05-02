@@ -497,6 +497,14 @@ namespace Zodiac
                 return parse_switch_statement(parser, scope);
                 break;
 
+			case TOK_KW_FALLTHROUGH:
+			{
+				expect_token(parser, TOK_KW_FALLTHROUGH);
+				expect_token(parser, TOK_SEMICOLON);
+				return ast_fallthrough_statement_new(parser->context, ft.file_pos);
+				break;
+			}
+
             default: break;
         }
 
