@@ -719,9 +719,20 @@ namespace Zodiac
 
             if (match_token(parser, TOK_KW_CASE))
             {
-                AST_Expression* case_expr = parse_expression(parser);
-                assert(case_expr);
-                expect_token(parser, TOK_COLON);
+                BUF(AST_Expression*) case_expressions = nullptr;
+                while (!match_token(parser, TOK_COLON))
+                {
+                    AST_Expression* case_expr = parse_expression(parser);
+                    assert(case_expr);
+
+                    BUF_PUSH(case_expressions, case_expr);
+
+                    if (!is_token(parser, TOK_COLON))
+                    {
+                        expect_token(parser, TOK_COMMA);
+                    }
+                }
+
 
                 AST_Statement* case_stmt = parse_statement(parser, scope);
                 assert(case_stmt);
@@ -729,7 +740,7 @@ namespace Zodiac
                 AST_Switch_Case switch_case = {};
                 switch_case.file_pos = ct.file_pos;
                 switch_case.is_default = false;
-                switch_case.expr = case_expr;
+                switch_case.case_expressions = case_expressions;
                 switch_case.stmt = case_stmt;
 
                 BUF_PUSH(cases, switch_case);
@@ -743,7 +754,7 @@ namespace Zodiac
                 AST_Switch_Case switch_case = {};
                 switch_case.file_pos = ct.file_pos;
                 switch_case.is_default = true;
-                switch_case.expr = nullptr;
+                switch_case.case_expressions = nullptr;
                 switch_case.stmt = case_stmt;
 
                 BUF_PUSH(cases, switch_case);

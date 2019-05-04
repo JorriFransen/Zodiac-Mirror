@@ -188,8 +188,8 @@ namespace Zodiac
     {
         File_Pos file_pos = {};
         bool is_default = false;
-        AST_Expression* expr = nullptr;
-        AST_Statement* stmt = nullptr;;
+        BUF(AST_Expression*) case_expressions = nullptr;
+        AST_Statement* stmt = nullptr;
     };
 
     struct AST_Statement

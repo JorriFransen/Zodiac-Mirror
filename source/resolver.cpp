@@ -610,10 +610,14 @@ namespace Zodiac
                     }
                     else
                     {
-                        result &= try_resolve_expression(resolver, switch_case.expr, scope);
-                        if (result)
+                        for (uint64_t i = 0; i < BUF_LENGTH(switch_case.case_expressions); i++)
                         {
-                            assert(switch_case.expr->is_const);
+                            AST_Expression* case_expr = switch_case.case_expressions[i];
+                            result &= try_resolve_expression(resolver, case_expr, scope);
+                            if (result)
+                            {
+                                assert(case_expr->is_const);
+                            }
                         }
                     }
 

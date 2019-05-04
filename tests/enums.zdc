@@ -43,6 +43,7 @@ main :: () -> int
 
     day2 := Day.FRIDAY;
 
+    io.printf("day: %lu\n", day);
     print_day(day);
     print_day(day2);
     print_day(Day.SUNDAY);
@@ -55,9 +56,9 @@ print_day :: (day : Day) -> void
     switch (day)
     {
         case Day.MONDAY:
-            io.printf("Day.WEDNESDAY\n");
+            io.printf("Day.MONDAY\n");
 
-        case Day.TUESDAY, Day.TUESDAY:
+        case Day.TUESDAY, Day.WEDNESDAY:
         {
             io.printf("Day.TUESDAY or Day.WEDNESDAY\n");
         }

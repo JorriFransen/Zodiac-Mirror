@@ -572,7 +572,6 @@ namespace Zodiac
 
 	struct _IR_Case
 	{
-		IR_Value* case_val = nullptr;
 		IR_Value* case_block = nullptr;
 	};
 
@@ -608,15 +607,19 @@ namespace Zodiac
 			}
 			else
 			{
-				assert(switch_case.expr);
+				assert(switch_case.case_expressions);
 
 				ir_builder_set_insert_block(ir_builder, switch_block);
 
-				ir_case.case_val = ir_builder_emit_expression(ir_builder, switch_case.expr);
 				ir_case.case_block = ir_builder_create_block(ir_builder, "case");
 
-				IR_Value* case_cond_val = ir_builder_emit_eq(ir_builder, cond_value, ir_case.case_val);
-				ir_builder_emit_jmp_if(ir_builder, case_cond_val, ir_case.case_block);
+                for (uint64_t i = 0; i < BUF_LENGTH(switch_case.case_expressions); i++)
+                {
+                    auto case_expression = switch_case.case_expressions[i];
+                    auto case_value = ir_builder_emit_expression(ir_builder, case_expression);
+                    IR_Value* case_cond_val = ir_builder_emit_eq(ir_builder, cond_value, case_value);
+                    ir_builder_emit_jmp_if(ir_builder, case_cond_val, ir_case.case_block);
+                }
 			}
 
 			ir_builder_set_insert_block(ir_builder, ir_case.case_block);
