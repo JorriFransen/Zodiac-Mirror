@@ -622,6 +622,12 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_FALLTHROUGH:
+            {
+                assert(false);
+                break;
+            }
+
             default:
                 assert(false);
                 result = false;

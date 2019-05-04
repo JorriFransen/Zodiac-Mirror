@@ -625,6 +625,18 @@ namespace Zodiac
         return result;
     }
 
+    AST_Statement* ast_fallthrough_statement_new(Context* context, File_Pos file_pos)
+    {
+        assert(context);
+
+
+        AST_Statement* result = arena_alloc(context->arena, AST_Statement);
+        result->kind = AST_STMT_FALLTHROUGH;
+        result->file_pos = file_pos;
+
+        return result;
+    }
+
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
                            uint64_t bit_size)
     {

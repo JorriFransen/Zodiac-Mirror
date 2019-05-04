@@ -47,7 +47,8 @@ namespace Zodiac
                                                        AST_Type_Spec* type_spec, AST_Scope* scope,
                                                        AST_Declaration_Location location);
     static AST_Declaration* parse_mutable_declaration(Parser* parser, AST_Identifier* identifier,
-                                                      AST_Type_Spec* type_spec, AST_Declaration_Location location);
+                                                      AST_Type_Spec* type_spec,
+                                                      AST_Declaration_Location location);
     static AST_Declaration* parse_link_declaration(Parser* parser, bool global, AST_Scope* scope,
                                                    AST_Directive* directive);
     static AST_Declaration* parse_static_if_declaration(Parser* parser, bool global, AST_Scope* scope);
