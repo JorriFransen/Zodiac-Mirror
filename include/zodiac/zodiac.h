@@ -54,5 +54,5 @@ namespace Zodiac
     AST_Module* zodiac_compile_module(Context* context, const Atom& module_path, const Atom& module_name);
 
     static void context_init_keywords(Context* context);
-    static void init_module_path(Context* context);
+    static bool init_module_path(Context* context);
 }

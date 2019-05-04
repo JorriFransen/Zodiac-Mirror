@@ -27,10 +27,11 @@ namespace Zodiac
         init_builtin_types(context);
         init_builtin_decls(context);
 
-        init_module_path(context);
+        return init_module_path(context);
     }
 
-    AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path, const Atom& module_name)
+    AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path,
+		    const Atom& module_name)
     {
         assert(context);
 
@@ -158,7 +159,7 @@ namespace Zodiac
 
 #undef DEFINE_KW
 
-    static void init_module_path(Context* context)
+    static bool init_module_path(Context* context)
     {
         assert(context);
 
@@ -166,10 +167,12 @@ namespace Zodiac
         if (!module_path)
         {
             fprintf(stderr, "Zodiac module path not specified, exiting\n");
-            assert(false);
+	    return false;
         }
 
         printf("ZODIAC_MODULE_PATH: %s\n", module_path);
         context->module_search_path = atom_get(context->atom_table, module_path);
+
+	return true;
     }
 }
