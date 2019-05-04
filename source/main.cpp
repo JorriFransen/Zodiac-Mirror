@@ -22,7 +22,10 @@ int main(int argc, char** argv)
 {
     Arena arena = arena_create(MB(2));
     Context _context;
-    context_init(&_context, &arena);
+    if (!context_init(&_context, &arena))
+    {
+        return -1;
+    }
     auto context = &_context;
 
     if (argc != 2)

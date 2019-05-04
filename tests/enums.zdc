@@ -57,17 +57,16 @@ print_day :: (day : Day) -> void
         case Day.MONDAY:
             io.printf("Day.WEDNESDAY\n");
 
-        case Day.TUESDAY:
+        case Day.TUESDAY, Day.TUESDAY:
         {
-            io.printf("Day.TUESDAY\n");
+            io.printf("Day.TUESDAY or Day.WEDNESDAY\n");
         }
 
-        case Day.WEDNESDAY:
-        {
-            io.printf("Day.WEDNESDAY\n");
-            fallthrough;
-        }
-            
+        // case Day.WEDNESDAY:
+        // {
+        //     io.printf("Day.WEDNESDAY\n");
+        // }
+
         case Day.THURSDAY:
             io.printf("Day.THURSDAY\n");
 

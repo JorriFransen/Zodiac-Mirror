@@ -9,7 +9,7 @@
 
 namespace Zodiac
 {
-    void context_init(Context* context, Arena* arena)
+    bool context_init(Context* context, Arena* arena)
     {
         assert(context);
         assert(arena);
@@ -154,7 +154,6 @@ namespace Zodiac
         DEFINE_KW("switch", TOK_KW_SWITCH);
         DEFINE_KW("case", TOK_KW_CASE);
         DEFINE_KW("default", TOK_KW_DEFAULT);
-		DEFINE_KW("fallthrough", TOK_KW_FALLTHROUGH);
     }
 
 #undef DEFINE_KW

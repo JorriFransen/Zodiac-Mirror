@@ -48,7 +48,7 @@ namespace Zodiac
         BUF(Global_Variable) global_table = nullptr;
     };
 
-    void context_init(Context* context, Arena* arena);
+    bool context_init(Context* context, Arena* arena);
 
     AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path, const Atom& module_name);
     AST_Module* zodiac_compile_module(Context* context, const Atom& module_path, const Atom& module_name);

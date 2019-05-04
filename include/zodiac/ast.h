@@ -175,7 +175,6 @@ namespace Zodiac
         AST_STMT_WHILE,
         AST_STMT_FOR,
         AST_STMT_SWITCH,
-        AST_STMT_FALLTHROUGH,
     };
 
     typedef uint64_t _AST_STMT_FLAGS_;
@@ -594,7 +593,6 @@ namespace Zodiac
                                          AST_Statement* step_stmt, AST_Statement* body_stmt);
     AST_Statement* ast_switch_statement_new(Context* context, File_Pos file_pos,
                                             AST_Expression* switch_expr, BUF(AST_Switch_Case) cases);
-    AST_Statement* ast_fallthrough_statement_new(Context* context, File_Pos file_pos);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
                            uint64_t bit_size);
