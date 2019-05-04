@@ -607,7 +607,7 @@ namespace Zodiac
 			}
 			else
 			{
-				assert(switch_case.case_expressions);
+				assert(switch_case.case_expressions || switch_case.range_expressions);
 
 				ir_builder_set_insert_block(ir_builder, switch_block);
 
@@ -618,6 +618,24 @@ namespace Zodiac
                     auto case_expression = switch_case.case_expressions[i];
                     auto case_value = ir_builder_emit_expression(ir_builder, case_expression);
                     IR_Value* case_cond_val = ir_builder_emit_eq(ir_builder, cond_value, case_value);
+                    ir_builder_emit_jmp_if(ir_builder, case_cond_val, ir_case.case_block);
+                }
+
+                for (uint64_t i = 0; i < BUF_LENGTH(switch_case.range_expressions); i += 2)
+                {
+                    auto min_expr = switch_case.range_expressions[i];
+                    auto max_expr = switch_case.range_expressions[i + 1];
+
+                    assert(min_expr->type->flags & AST_TYPE_FLAG_INT);
+                    assert(max_expr->type->flags & AST_TYPE_FLAG_INT);
+
+                    IR_Value* min_value = ir_builder_emit_expression(ir_builder, min_expr);
+                    IR_Value* max_value = ir_builder_emit_expression(ir_builder, max_expr);
+
+                    IR_Value* lhs_value = ir_builder_emit_gteq(ir_builder, cond_value, min_value);
+                    IR_Value* rhs_value = ir_builder_emit_lteq(ir_builder, cond_value, max_value);
+
+                    IR_Value* case_cond_val = ir_builder_emit_and_and(ir_builder, lhs_value, rhs_value);
                     ir_builder_emit_jmp_if(ir_builder, case_cond_val, ir_case.case_block);
                 }
 			}
@@ -1640,6 +1658,22 @@ namespace Zodiac
 		return nullptr;
     }
 
+    IR_Value* ir_builder_emit_and_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        assert(lhs->type == rhs->type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_AND_AND, lhs, rhs, result);
+
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result;
+    }
+
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val)
     {
         assert(ir_builder);
@@ -2384,6 +2418,14 @@ namespace Zodiac
             {
                 ir_print_value(instruction->arg1);
                 printf(" == ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_AND_AND:
+            {
+                ir_print_value(instruction->arg1);
+                printf(" && ");
                 ir_print_value(instruction->arg2);
                 break;
             }

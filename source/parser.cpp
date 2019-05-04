@@ -720,19 +720,33 @@ namespace Zodiac
             if (match_token(parser, TOK_KW_CASE))
             {
                 BUF(AST_Expression*) case_expressions = nullptr;
+                BUF(AST_Expression*) range_expressions = nullptr;
+
                 while (!match_token(parser, TOK_COLON))
                 {
                     AST_Expression* case_expr = parse_expression(parser);
                     assert(case_expr);
 
-                    BUF_PUSH(case_expressions, case_expr);
-
-                    if (!is_token(parser, TOK_COLON))
+                    if (match_token(parser, TOK_DOUBLE_DOT))
                     {
-                        expect_token(parser, TOK_COMMA);
+                        BUF_PUSH(range_expressions, case_expr);
+
+                        AST_Expression* rhs = parse_expression(parser);
+                        assert(rhs);
+                        BUF_PUSH(range_expressions, rhs);
+                    }
+                    else
+                    {
+                        BUF_PUSH(case_expressions, case_expr);
+
+                        if (!is_token(parser, TOK_COLON))
+                        {
+                            expect_token(parser, TOK_COMMA);
+                        }
                     }
                 }
 
+                assert(BUF_LENGTH(range_expressions) % 2 == 0);
 
                 AST_Statement* case_stmt = parse_statement(parser, scope);
                 assert(case_stmt);
@@ -741,6 +755,7 @@ namespace Zodiac
                 switch_case.file_pos = ct.file_pos;
                 switch_case.is_default = false;
                 switch_case.case_expressions = case_expressions;
+                switch_case.range_expressions = range_expressions;
                 switch_case.stmt = case_stmt;
 
                 BUF_PUSH(cases, switch_case);
@@ -770,6 +785,7 @@ namespace Zodiac
     static AST_Expression* parse_expression(Parser* parser)
     {
         assert(parser);
+
 
         return parse_ternary_expression(parser);
     }

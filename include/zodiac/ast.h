@@ -189,6 +189,7 @@ namespace Zodiac
         File_Pos file_pos = {};
         bool is_default = false;
         BUF(AST_Expression*) case_expressions = nullptr;
+        BUF(AST_Expression*) range_expressions = nullptr;
         AST_Statement* stmt = nullptr;
     };
 

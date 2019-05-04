@@ -43,6 +43,7 @@ namespace Zodiac
     static void lexer_consume_line(Lexer* lexer);
     static void lexer_consume_whitespace(Lexer* lexer);
     static char current_char(Lexer* lexer);
+    static char next_char(Lexer* lexer);
 
     static Atom lexer_replace_escape_chars(Lexer* lexer, File_Pos file_pos, uint64_t token_length);
     static Token lexer_maybe_convert_token_to_keyword(Lexer* lexer, Token token);

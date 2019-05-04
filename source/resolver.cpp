@@ -614,9 +614,26 @@ namespace Zodiac
                         {
                             AST_Expression* case_expr = switch_case.case_expressions[i];
                             result &= try_resolve_expression(resolver, case_expr, scope);
+                            if (!result)
+                            {
+                                break;
+                            }
+                            assert(case_expr->is_const);
+                        }
+
+                        for (uint64_t i = 0; i < BUF_LENGTH(switch_case.range_expressions); i += 2)
+                        {
+                            AST_Expression* min = switch_case.range_expressions[i];
+                            AST_Expression* max = switch_case.range_expressions[i + 1];
+
+                            result &= try_resolve_expression(resolver, min, scope);
+                            result &= try_resolve_expression(resolver, max, scope);
+
                             if (result)
                             {
-                                assert(case_expr->is_const);
+                                assert(min->is_const);
+                                assert(max->is_const);
+                                assert(min->type == max->type);
                             }
                         }
                     }
@@ -1157,6 +1174,11 @@ namespace Zodiac
                 expression->type = rhs->type;
             }
             else assert(false);
+
+            if (lhs->is_const && rhs->is_const)
+            {
+                expression->is_const = true;
+            }
         }
 
         return result;

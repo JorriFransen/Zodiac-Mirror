@@ -87,6 +87,7 @@ namespace Zodiac
         IR_OP_GT,
         IR_OP_GTEQ,
         IR_OP_EQ,
+        IR_OP_AND_AND,
 
         IR_OP_PUSH_CALL_ARG,
         IR_OP_CALL,
@@ -256,6 +257,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_gt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_gteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_eq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
+    IR_Value* ir_builder_emit_and_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val);
     void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value, bool is_foreign = false);
     IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value, IR_Value* num_args);

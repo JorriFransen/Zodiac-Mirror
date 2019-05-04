@@ -154,9 +154,15 @@ namespace Zodiac
                 if (current_char(lexer) == '.')
                 {
                     lexer_consume_character(lexer);
-                    assert(current_char(lexer) == '.');
-                    lexer_consume_character(lexer);
-                    lexer_push_token(lexer, TOK_ELLIPSIS, file_pos, 3);
+                    if (current_char(lexer) == '.')
+                    {
+                        lexer_consume_character(lexer);
+                        lexer_push_token(lexer, TOK_ELLIPSIS, file_pos, 3);
+                    }
+                    else
+                    {
+                        lexer_push_token(lexer, TOK_DOUBLE_DOT, file_pos, 2);
+                    }
                 }
                 else
                 {
@@ -178,7 +184,7 @@ namespace Zodiac
                     lex_integer_or_float(lexer);
                 }
                 else
-                {
+               {
                     auto cc = current_char(lexer);
                     lexer_report_error(lexer, "Unexpected character: '%c' (%d)", cc, cc);
                 }
@@ -224,7 +230,7 @@ namespace Zodiac
             lexer_consume_character(lexer);
             integer_length++;
 
-            if (current_char(lexer) == '.')
+            if ((current_char(lexer) == '.') && !(next_char(lexer) == '.'))
             {
                 assert(!found_dot);
                 found_dot = true;
@@ -287,6 +293,19 @@ namespace Zodiac
         if (cur_char_pos < lexer->file_size)
         {
             return lexer->file_data[lexer->current_file_pos.char_pos];
+        }
+
+        return EOF;
+    }
+
+    static char next_char(Lexer* lexer)
+    {
+        assert(lexer);
+
+        auto index = lexer->current_file_pos.char_pos + 1;
+        if (index < lexer->file_size)
+        {
+            return lexer->file_data[index];
         }
 
         return EOF;
