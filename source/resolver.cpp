@@ -206,7 +206,8 @@ namespace Zodiac
         {
             assert(declaration->function.body_block->block.scope->parent == arg_scope);
             result &= try_resolve_statement(resolver, declaration->function.body_block,
-                                            declaration->function.body_block->block.scope);
+                                            declaration->function.body_block->block.scope,
+                                            nullptr);
 
             if (!declaration->function.return_type_spec &&
                 !declaration->function.return_type &&
@@ -491,7 +492,7 @@ namespace Zodiac
     }
 
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,
-                                      AST_Scope* scope)
+                                      AST_Scope* scope, AST_Statement* break_context)
     {
         assert(resolver);
         assert(statement);
@@ -518,14 +519,15 @@ namespace Zodiac
                 for (uint64_t i = 0; i < BUF_LENGTH(statement->block.statements); i++)
                 {
                     AST_Statement* stmt = statement->block.statements[i];
-                    result &= try_resolve_statement(resolver, stmt, statement->block.scope);
+                    result &= try_resolve_statement(resolver, stmt, statement->block.scope,
+                                                    break_context);
                 }
                 break;
             }
 
             case AST_STMT_IF:
             {
-                result &= try_resolve_if_statement(resolver, statement, scope);
+                result &= try_resolve_if_statement(resolver, statement, scope, break_context);
                 break;
             }
 
@@ -572,17 +574,21 @@ namespace Zodiac
             case AST_STMT_WHILE:
             {
                 result &= try_resolve_expression(resolver, statement->while_stmt.cond_expr, scope);
-                result &= try_resolve_statement(resolver, statement->while_stmt.body_stmt, scope);
+                result &= try_resolve_statement(resolver, statement->while_stmt.body_stmt, scope,
+                                                statement);
                 break;
             }
 
             case AST_STMT_FOR:
             {
                 AST_Scope* for_scope = statement->for_stmt.scope;
-                result &= try_resolve_statement(resolver, statement->for_stmt.init_stmt, for_scope);
+                result &= try_resolve_statement(resolver, statement->for_stmt.init_stmt, for_scope,
+                                                break_context);
                 result &= try_resolve_expression(resolver, statement->for_stmt.cond_expr, for_scope);
-                result &= try_resolve_statement(resolver, statement->for_stmt.step_stmt, for_scope);
-                result &= try_resolve_statement(resolver, statement->for_stmt.body_stmt, for_scope);
+                result &= try_resolve_statement(resolver, statement->for_stmt.step_stmt, for_scope,
+                                                break_context);
+                result &= try_resolve_statement(resolver, statement->for_stmt.body_stmt, for_scope,
+                                                statement);
                 break;
             }
 
@@ -638,8 +644,14 @@ namespace Zodiac
                         }
                     }
 
-                    result &= try_resolve_statement(resolver, switch_case.stmt, scope);
+                    result &= try_resolve_statement(resolver, switch_case.stmt, scope, break_context);
                 }
+                break;
+            }
+
+            case AST_STMT_BREAK:
+            {
+                assert(break_context);
                 break;
             }
 
@@ -688,7 +700,7 @@ namespace Zodiac
     }
 
     static bool try_resolve_if_statement(Resolver* resolver, AST_Statement* statement,
-                                         AST_Scope* scope)
+                                         AST_Scope* scope, AST_Statement* break_context)
     {
         assert(resolver);
         assert(statement);
@@ -698,11 +710,13 @@ namespace Zodiac
         bool result = true;
 
         result &= try_resolve_expression(resolver, statement->if_stmt.if_expression, scope);
-        result &= try_resolve_statement(resolver, statement->if_stmt.then_statement, scope);
+        result &= try_resolve_statement(resolver, statement->if_stmt.then_statement, scope,
+                                        break_context);
 
         if (statement->if_stmt.else_statement)
         {
-            result &= try_resolve_statement(resolver, statement->if_stmt.else_statement, scope);
+            result &= try_resolve_statement(resolver, statement->if_stmt.else_statement, scope,
+                break_context);
         }
 
         return result;

@@ -154,6 +154,7 @@ namespace Zodiac
         DEFINE_KW("switch", TOK_KW_SWITCH);
         DEFINE_KW("case", TOK_KW_CASE);
         DEFINE_KW("default", TOK_KW_DEFAULT);
+        DEFINE_KW("break", TOK_KW_BREAK);
     }
 
 #undef DEFINE_KW

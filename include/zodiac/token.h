@@ -55,6 +55,7 @@ namespace Zodiac
     DEFINE_TOKEN(TOK_KW_SWITCH), \
     DEFINE_TOKEN(TOK_KW_CASE), \
     DEFINE_TOKEN(TOK_KW_DEFAULT), \
+    DEFINE_TOKEN(TOK_KW_BREAK), \
     DEFINE_TOKEN(TOK_COUNT), \
 
     enum Token_Kind

@@ -497,6 +497,15 @@ namespace Zodiac
                 return parse_switch_statement(parser, scope);
                 break;
 
+            case TOK_KW_BREAK:
+            {
+                consume_token(parser);
+                auto break_stmt = ast_break_statement_new(parser->context, ft.file_pos);
+                expect_token(parser, TOK_SEMICOLON);
+                return break_stmt;
+                break;
+            }
+
             default: break;
         }
 

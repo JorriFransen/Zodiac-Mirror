@@ -65,7 +65,7 @@ namespace Zodiac
                     ir_builder->current_function = func;
                     ir_builder_set_insert_block(ir_builder, entry_block);
 
-                    ir_builder_emit_statement(ir_builder, decl->function.body_block);
+                    ir_builder_emit_statement(ir_builder, decl->function.body_block, nullptr);
 
                     auto insert_block = ir_builder->insert_block;
                     auto first_instruction = insert_block->first_instruction;
@@ -257,8 +257,10 @@ namespace Zodiac
             default: assert(false);
         }
     }
- void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement)
-{
+
+    void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement,
+                                   IR_Value* break_block)
+    {
         assert(ir_builder);
         assert(statement);
 
@@ -298,7 +300,7 @@ namespace Zodiac
                 for (uint64_t i = 0; i < BUF_LENGTH(statement->block.statements); i++)
                 {
                     AST_Statement* block_member_stmt = statement->block.statements[i];
-                    ir_builder_emit_statement(ir_builder, block_member_stmt);
+                    ir_builder_emit_statement(ir_builder, block_member_stmt, break_block);
                 }
                 break;
             }
@@ -326,7 +328,7 @@ namespace Zodiac
 
                 ir_builder_set_insert_block(ir_builder, then_block_val);
                 assert(statement->if_stmt.then_statement);
-                ir_builder_emit_statement(ir_builder, statement->if_stmt.then_statement);
+                ir_builder_emit_statement(ir_builder, statement->if_stmt.then_statement, break_block);
                 if (!ir_instruction_is_terminator(then_block_val->block->last_instruction->op))
                 {
                     ir_builder_emit_jmp(ir_builder, post_if_block_val);
@@ -336,7 +338,7 @@ namespace Zodiac
                 {
                     ir_builder_append_block(ir_builder, cur_func, else_block_val->block);
                     ir_builder_set_insert_block(ir_builder, else_block_val);
-                    ir_builder_emit_statement(ir_builder, statement->if_stmt.else_statement);
+                    ir_builder_emit_statement(ir_builder, statement->if_stmt.else_statement, break_block);
                     if (!ir_instruction_is_terminator(else_block_val->block->last_instruction->op))
                     {
                         ir_builder_emit_jmp(ir_builder, post_if_block_val);
@@ -385,7 +387,8 @@ namespace Zodiac
                 ir_builder_emit_jmp(ir_builder, post_while_block_value);
 
                 ir_builder_set_insert_block(ir_builder, while_body_block_value);
-                ir_builder_emit_statement(ir_builder, statement->while_stmt.body_stmt);
+                ir_builder_emit_statement(ir_builder, statement->while_stmt.body_stmt,
+                                          post_while_block_value);
                 ir_builder_emit_jmp(ir_builder, while_cond_block_value);
 
                 ir_builder_append_block(ir_builder, cur_func, post_while_block_value->block);
@@ -402,7 +405,8 @@ namespace Zodiac
                                                                          cur_func);
                 IR_Value* post_for_block_value = ir_builder_create_block(ir_builder, "post_for");
 
-                ir_builder_emit_statement(ir_builder, statement->for_stmt.init_stmt);
+
+                ir_builder_emit_statement(ir_builder, statement->for_stmt.init_stmt, break_block);
                 ir_builder_emit_jmp(ir_builder, for_cond_block_value);
 
                 ir_builder_set_insert_block(ir_builder, for_cond_block_value);
@@ -411,8 +415,9 @@ namespace Zodiac
                 ir_builder_emit_jmp(ir_builder, post_for_block_value);
 
                 ir_builder_set_insert_block(ir_builder, for_body_block_value);
-                ir_builder_emit_statement(ir_builder, statement->for_stmt.body_stmt);
-                ir_builder_emit_statement(ir_builder, statement->for_stmt.step_stmt);
+                ir_builder_emit_statement(ir_builder, statement->for_stmt.body_stmt,
+                                          post_for_block_value);
+                ir_builder_emit_statement(ir_builder, statement->for_stmt.step_stmt, break_block);
                 ir_builder_emit_jmp(ir_builder, for_cond_block_value);
 
                 ir_builder_append_block(ir_builder, cur_func, post_for_block_value->block);
@@ -422,9 +427,16 @@ namespace Zodiac
 
 			case AST_STMT_SWITCH:
 			{
-				ir_builder_emit_switch_statement(ir_builder, statement);
+				ir_builder_emit_switch_statement(ir_builder, statement, break_block);
 				break;
 			}
+
+            case AST_STMT_BREAK:
+            {
+                assert(break_block);
+                ir_builder_emit_jmp(ir_builder, break_block);
+                break;
+            }
 
             default: assert(false);
         }
@@ -575,7 +587,8 @@ namespace Zodiac
 		IR_Value* case_block = nullptr;
 	};
 
-	void ir_builder_emit_switch_statement(IR_Builder* ir_builder, AST_Statement* statement)
+	void ir_builder_emit_switch_statement(IR_Builder* ir_builder, AST_Statement* statement,
+                                          IR_Value* break_block)
 	{
 		assert(ir_builder);
 		assert(statement);
@@ -641,7 +654,7 @@ namespace Zodiac
 			}
 
 			ir_builder_set_insert_block(ir_builder, ir_case.case_block);
-			ir_builder_emit_statement(ir_builder, switch_case.stmt);
+			ir_builder_emit_statement(ir_builder, switch_case.stmt, break_block);
 			ir_builder_emit_jmp(ir_builder, post_switch_block_val);
 
 			BUF_PUSH(cases, ir_case);

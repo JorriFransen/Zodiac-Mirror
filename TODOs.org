@@ -13,7 +13,8 @@
   - [ ] Nested declarations
   - [ ] Anonymous nested declarations
 
-* Enums [2/5]
+* Enums [0/4]
+  - [ ] Enums!
   - [ ] Assigning custom values
   - [ ] Continue counting after custom values
   - [ ] Allow custom values to be an identifier representing another member
@@ -25,11 +26,11 @@
    - [X] Member expressions on pointers
    - [ ] String type
      
-* Statements [3/5]
+* Statements [4/5]
    - [X] While
    - [X] For
    - [X] Switch
-   - [ ] break
+   - [X] break
    - [ ] defer
 
 * IR [2/14]

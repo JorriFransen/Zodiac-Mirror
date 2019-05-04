@@ -214,9 +214,11 @@ namespace Zodiac
 
     IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module);
     void ir_builder_emit_global_declaration(IR_Builder* ir_builder, AST_Declaration* global_decl);
-    void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement);
+    void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement,
+                                   IR_Value* break_block);
     void ir_builder_emit_assign_statement(IR_Builder* ir_builder, AST_Statement* statement);
-	void ir_builder_emit_switch_statement(IR_Builder* ir_builder, AST_Statement* statement);
+	void ir_builder_emit_switch_statement(IR_Builder* ir_builder, AST_Statement* statement,
+                                          IR_Value* break_block);
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_dot_expression(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_load_lit(IR_Builder* ir_builder, IR_Value* literal);
