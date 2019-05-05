@@ -1,16 +1,11 @@
 
-#dynamic_link "libc.so.6";
-// #dynamic_link "msvcrt.dll";
+io :: import io;
 
-#foreign putchar :: (c: int) -> int;
-#foreign getchar :: () -> int;
-#foreign puts :: (string: *u8) -> int;
-
-newline :: () -> void { putchar(10); }
+newline :: () -> void { io.putchar(10); }
 
 print_digit :: (digit: int) -> void
 {
-    putchar(digit + 48);
+    io.putchar(digit + 48);
     newline();
 }
 
@@ -35,22 +30,22 @@ pointer_test :: () -> void
     print_digit(x);
 
     c : u8 = 'c';
-    putchar(c);
+    io.putchar(c);
     newline();
 
     hello_zodiac := "Hello zodiac!";
-    puts(hello_zodiac);
+    io.puts(hello_zodiac);
 
-    putchar(hello_zodiac[1]);
+    io.putchar(hello_zodiac[1]);
     newline();
 
     hello_zodiac[4] = 'x';
 
-    puts(hello_zodiac);
+    io.puts(hello_zodiac);
 
     z_ptr := *hello_zodiac[5];
     <z_ptr = 'z';
-    puts(hello_zodiac);
+    io.puts(hello_zodiac);
 
     return 0;
 }
