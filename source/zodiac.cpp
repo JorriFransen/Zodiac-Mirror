@@ -138,6 +138,7 @@ namespace Zodiac
 
         DEFINE_KW("true", TOK_KW_TRUE);
         DEFINE_KW("false", TOK_KW_FALSE);
+        DEFINE_KW("null", TOK_KW_NULL);
         DEFINE_KW("return", TOK_KW_RETURN);
         DEFINE_KW("static_if", TOK_KW_STATIC_IF);
         DEFINE_KW("if", TOK_KW_IF);
@@ -155,6 +156,7 @@ namespace Zodiac
         DEFINE_KW("case", TOK_KW_CASE);
         DEFINE_KW("default", TOK_KW_DEFAULT);
         DEFINE_KW("break", TOK_KW_BREAK);
+		DEFINE_KW("typedef", TOK_KW_TYPEDEF);
     }
 
 #undef DEFINE_KW

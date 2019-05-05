@@ -57,6 +57,8 @@ namespace Zodiac
                                                        AST_Scope* scope);
     static bool try_resolve_enum_type_declaration(Resolver* resolver, AST_Declaration* declaration,
                                                   AST_Scope* scope);
+	static bool try_resolve_typedef_declaration(Resolver* resolver, AST_Declaration* declaration,
+		                                        AST_Scope* scope);
 
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,
                                       AST_Scope* scope, AST_Statement* break_context);
@@ -72,6 +74,8 @@ namespace Zodiac
                                             AST_Scope* scope);
     static bool try_resolve_boolean_literal_expression(Resolver* resolver,
                                                        AST_Expression* expression);
+    static bool try_resolve_null_literal_expression(Resolver* resolver,
+                                                    AST_Expression* expression);
     static bool try_resolve_string_literal_expression(Resolver* resolver,
                                                       AST_Expression* expression);
     static bool try_resolve_integer_literal_expression(Resolver* resolver,

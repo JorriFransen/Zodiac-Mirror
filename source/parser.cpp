@@ -267,6 +267,17 @@ namespace Zodiac
             return ast_import_declaration_new(parser->context, identifier->file_pos, identifier,
                                               import_module_ident);
         }
+		else if (match_token(parser, TOK_KW_TYPEDEF))
+		{
+			assert(!type_spec);
+
+			AST_Type_Spec* type_spec = parse_type_spec(parser);
+			assert(type_spec);
+			expect_token(parser, TOK_SEMICOLON);
+
+			return ast_typedef_declaration_new(parser->context, identifier->file_pos, identifier,
+				                               type_spec);
+		}
         else if (match_token(parser, TOK_KW_STRUCT))
         {
             assert(!type_spec);
@@ -1049,6 +1060,13 @@ namespace Zodiac
                 return ast_boolean_literal_expression_new(parser->context, ct.file_pos, false);
                 break;
             }
+
+			case TOK_KW_NULL:
+			{
+				consume_token(parser);
+				return ast_null_literal_expression_new(parser->context, ct.file_pos);
+				break;
+			}
 
             case TOK_STRING_LIT:
             {

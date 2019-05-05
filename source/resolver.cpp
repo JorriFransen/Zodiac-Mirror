@@ -140,6 +140,12 @@ namespace Zodiac
                     break;
                 }
 
+				case AST_DECL_TYPEDEF:
+				{
+					result &= try_resolve_typedef_declaration(resolver, declaration, scope);
+					break;
+				}
+
                 default:
                     assert(false);
                     break;
@@ -277,7 +283,11 @@ namespace Zodiac
             assert(declaration->mutable_decl.type);
             if (init_expr)
             {
-                assert(declaration->mutable_decl.type == init_expr->type);
+				if (!(declaration->mutable_decl.type == init_expr->type))
+				{
+					assert(declaration->mutable_decl.type->kind == AST_TYPE_POINTER &&
+						init_expr->kind == AST_EXPR_NULL_LITERAL);
+				}
             }
         }
         return result;
@@ -315,7 +325,11 @@ namespace Zodiac
 
         if (specified_type)
         {
-            assert(specified_type == declaration->constant_var.init_expression->type);
+			if (!(specified_type == declaration->constant_var.init_expression->type))
+			{
+				assert(specified_type->kind == AST_TYPE_POINTER &&
+					declaration->constant_var.init_expression->kind == AST_EXPR_NULL_LITERAL);
+			}
         }
 
         declaration->constant_var.type = declaration->constant_var.init_expression->type;
@@ -490,6 +504,25 @@ namespace Zodiac
 
         return result;
     }
+
+	static bool try_resolve_typedef_declaration(Resolver* resolver, AST_Declaration* declaration,
+		                                        AST_Scope* scope)
+	{
+		assert(resolver);
+		assert(declaration);
+		assert(declaration->kind == AST_DECL_TYPEDEF);
+		assert(scope);
+
+		AST_Type* type = nullptr;
+		bool result = try_resolve_type_spec(resolver, declaration->typedef_decl.type_spec,
+			                                &type, scope);
+		if (result && type)
+		{
+			declaration->typedef_decl.type = type;
+		}
+
+		return result;
+	}
 
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,
                                       AST_Scope* scope, AST_Statement* break_context)
@@ -786,9 +819,14 @@ namespace Zodiac
             case AST_EXPR_BOOL_LITERAL:
             {
                 result &= try_resolve_boolean_literal_expression(resolver, expression);
-                if (result)
                 break;
             }
+
+			case AST_EXPR_NULL_LITERAL:
+			{
+                result &= try_resolve_null_literal_expression(resolver, expression);
+				break;
+			}
 
             case AST_EXPR_STRING_LITERAL:
             {
@@ -957,6 +995,22 @@ namespace Zodiac
         if (!expression->type)
         {
             expression->type = Builtin::type_bool;
+        }
+        expression->is_const = true;
+
+        return true;
+    }
+
+    static bool try_resolve_null_literal_expression(Resolver* resolver,
+                                                    AST_Expression* expression)
+    {
+        assert(resolver);
+        assert(expression);
+
+        if (!expression->type)
+        {
+            expression->type = ast_find_or_create_pointer_type(resolver->context, resolver->module,
+                                                               Builtin::type_void);
         }
         expression->is_const = true;
 
@@ -1459,16 +1513,27 @@ namespace Zodiac
                         break;
                     }
 
-                case AST_DECL_ENUM_TYPE:
-                {
-                    AST_Type* type = type_decl->enum_decl.type;
-                    if (type)
-                    {
-                        *type_dest = type;
-                        return true;
-                    }
-                    break;
-                }
+					case AST_DECL_ENUM_TYPE:
+					{
+						AST_Type* type = type_decl->enum_decl.type;
+						if (type)
+						{
+							*type_dest = type;
+							return true;
+						}
+						break;
+					}
+
+					case AST_DECL_TYPEDEF:
+					{
+						AST_Type* type = type_decl->typedef_decl.type;
+						if (type)
+						{
+							*type_dest = type;
+							return true;
+						}
+						break;
+					}
 
                     default: assert(false);
                 }

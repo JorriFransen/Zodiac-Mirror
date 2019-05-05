@@ -193,6 +193,7 @@ namespace Zodiac
             case IRV_CHAR_LITERAL:
             case IRV_FLOAT_LITERAL:
             case IRV_BOOL_LITERAL:
+			case IRV_NULL_LITERAL:
             {
                 result = code_value;
                 break;

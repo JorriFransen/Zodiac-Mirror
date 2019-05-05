@@ -2,20 +2,38 @@
 static_if (PLATFORM_WINDOWS)
 {
     #dynamic_link "msvcrt.dll";
+    #foreign _fdopen :: (fd: int, mode: *u8) -> *FILE;
+    fdopen :: (fd: int, mode: *u8) -> *FILE { return _fdopen(fd, mode); }
+    
 }
 else static_if (PLATFORM_LINUX)
 {
     #dynamic_link "libc.so.6";
+    #foreign fdopen :: (fd: int, mode: *u8) -> *FILE;
 }
 else
 {
     static_assert(false);
 }
 
+FILE :: typedef *void;
+
+stdin  : *FILE = null;
+stdout : *FILE = null;
+stderr : *FILE = null;
+
 #foreign putchar :: (x: int) -> int;
 #foreign getchar :: () -> int;
 #foreign puts :: (string: *u8) -> int;
 #foreign printf :: (format: *u8, ...) -> int;
+
+
+open_std_handles :: () -> void
+{
+    stdin = fdopen(0, "r");
+    stdout = fdopen(1, "w");
+    stderr = fdopen(2, "w");
+}
 
 newline :: () -> void { putchar(10); }
 

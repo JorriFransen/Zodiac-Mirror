@@ -44,6 +44,7 @@ namespace Zodiac
         AST_EXPR_CALL,
         AST_EXPR_SUBSCRIPT,
         AST_EXPR_BOOL_LITERAL,
+        AST_EXPR_NULL_LITERAL,
         AST_EXPR_STRING_LITERAL,
         AST_EXPR_INTEGER_LITERAL,
         AST_EXPR_FLOAT_LITERAL,
@@ -262,6 +263,7 @@ namespace Zodiac
         AST_DECL_IMPORT,
         AST_DECL_AGGREGATE_TYPE,
         AST_DECL_ENUM_TYPE,
+		AST_DECL_TYPEDEF,
     };
 
     struct AST_Function_Declaration
@@ -380,6 +382,12 @@ namespace Zodiac
                 BUF(AST_Enum_Member_Decl*) members;
                 AST_Type* type = nullptr;
             } enum_decl;
+
+			struct
+			{
+				AST_Type_Spec* type_spec;
+				AST_Type* type;
+			} typedef_decl;
 
         };
 
@@ -509,6 +517,7 @@ namespace Zodiac
                                                  AST_Expression* index_expression);
     AST_Expression* ast_boolean_literal_expression_new(Context* context, File_Pos file_Pos,
                                                        bool value);
+    AST_Expression* ast_null_literal_expression_new(Context* context, File_Pos file_pos);
     AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos,
                                                       Atom value);
     AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos,
@@ -572,6 +581,9 @@ namespace Zodiac
     AST_Enum_Member_Decl* ast_enum_member_decl_new(Context* context, File_Pos file_pos,
                                                    AST_Identifier* identifier,
                                                    AST_Expression* value_expression);
+	AST_Declaration* ast_typedef_declaration_new(Context* context, File_Pos file_pos,
+		                                         AST_Identifier* identifier,
+		                                         AST_Type_Spec* type_spec);
 
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos,
                                                  AST_Declaration* declaration);

@@ -254,6 +254,11 @@ namespace Zodiac
                 break;
             }
 
+			case AST_DECL_TYPEDEF:
+			{
+				break;
+			}
+
             default: assert(false);
         }
     }
@@ -766,6 +771,11 @@ namespace Zodiac
                                           expression->bool_literal.boolean);
                 break;
             }
+
+			case AST_EXPR_NULL_LITERAL:
+			{
+				return ir_null_literal(ir_builder, expression->type);
+			}
 
             case AST_EXPR_STRING_LITERAL:
             {
@@ -1977,6 +1987,17 @@ namespace Zodiac
         return result;
     }
 
+	IR_Value* ir_null_literal(IR_Builder* ir_builder, AST_Type* type)
+	{
+		assert(ir_builder);
+		assert(type);
+
+		IR_Value* result = ir_value_new(ir_builder, IRV_NULL_LITERAL, type);
+		result->value.string = nullptr;
+		result->assigned = true;
+		return result;
+	}
+
     IR_Value* ir_string_literal(IR_Builder* ir_builder, AST_Type* type, Atom string)
     {
         assert(ir_builder);
@@ -2642,6 +2663,12 @@ namespace Zodiac
                 printf("lit(%s)", value->value.boolean ? "true" : "false");
                 break;
             }
+
+			case IRV_NULL_LITERAL:
+			{
+				printf("lit(null)");
+				break;
+			}
 
             case IRV_STRING_LITERAL:
             {

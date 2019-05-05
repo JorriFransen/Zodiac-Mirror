@@ -146,6 +146,13 @@ namespace Zodiac
         return result;
     }
 
+    AST_Expression* ast_null_literal_expression_new(Context* context, File_Pos file_pos)
+    {
+        assert(context);
+
+        return ast_expression_new(context, file_pos, AST_EXPR_NULL_LITERAL);
+    }
+
     AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos, Atom value)
     {
         assert(context);
@@ -469,6 +476,24 @@ namespace Zodiac
 
         return emd;
     }
+
+	AST_Declaration* ast_typedef_declaration_new(Context* context, File_Pos file_pos,
+			                                     AST_Identifier* identifier,
+			                                     AST_Type_Spec* type_spec)
+	{
+		assert(context);
+		assert(identifier);
+		assert(type_spec);
+
+		AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_TYPEDEF,
+			                                          AST_DECL_LOC_GLOBAL, identifier,
+			                                          nullptr, true);
+
+		result->typedef_decl.type_spec = type_spec;
+		result->typedef_decl.type = nullptr;
+
+		return result;
+	}
 
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos,
                                                  AST_Declaration* declaration)
