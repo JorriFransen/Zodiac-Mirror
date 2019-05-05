@@ -13,8 +13,8 @@
   - [ ] Nested declarations
   - [ ] Anonymous nested declarations
 
-* Enums [0/4]
-  - [ ] Enums!
+* Enums [1/4]
+  - [x] Enums!
   - [ ] Assigning custom values
   - [ ] Continue counting after custom values
   - [ ] Allow custom values to be an identifier representing another member
@@ -33,7 +33,7 @@
    - [X] break
    - [ ] defer
 
-* IR [2/14]
+* IR [3/14]
    - [X] Argument count should be an argument for function calls
    - [X] Handle pointer offsets the same way as we do for static arrays
    - [ ] Make assignment statements for array literals more efficient by not using an intermediary array
@@ -42,7 +42,7 @@
    - [ ] Cleanup the gendata situation (???)
    - [ ] Cleanup lvalue expression generation
    - [ ] Use atoms where possible
-   - [ ] Make block names unique with a counter
+   - [x] Make block names unique with a counter
    - [ ] Make value names unique with a counter
    - [ ] Free list for blocks (We don't have any free ones right now?
    - [ ] Manage stack frame memory
