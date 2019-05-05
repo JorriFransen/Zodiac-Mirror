@@ -4,7 +4,6 @@ static_if (PLATFORM_WINDOWS)
     #dynamic_link "msvcrt.dll";
     #foreign _fdopen :: (fd: int, mode: *u8) -> *FILE;
     fdopen :: (fd: int, mode: *u8) -> *FILE { return _fdopen(fd, mode); }
-    
 }
 else static_if (PLATFORM_LINUX)
 {

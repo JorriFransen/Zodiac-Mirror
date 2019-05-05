@@ -1,6 +1,7 @@
 #include "resolver.h"
 
 #include "builtin.h"
+#include "const_interpreter.h"
 #include "types.h"
 
 #include <string.h>
@@ -345,12 +346,20 @@ namespace Zodiac
         assert(scope);
 
         bool result = try_resolve_expression(resolver, declaration->static_if.cond_expr, scope);
-        result &= try_resolve_declaration(resolver, declaration->static_if.then_declaration, scope);
 
-        if (declaration->static_if.else_declaration)
+        if (result)
         {
-            result &= try_resolve_declaration(resolver, declaration->static_if.else_declaration, scope);
+            bool cond_value = const_interpret_bool_expression(declaration->static_if.cond_expr, scope);
+            if (cond_value)
+            {
+                result &= try_resolve_declaration(resolver, declaration->static_if.then_declaration, scope);
+            }
+            else if (declaration->static_if.else_declaration)
+            {
+                result &= try_resolve_declaration(resolver, declaration->static_if.else_declaration, scope);
+            }
         }
+
 
         return result;
     }
