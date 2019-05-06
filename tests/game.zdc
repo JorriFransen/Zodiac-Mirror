@@ -1,6 +1,7 @@
 
 io :: import io;
 glfw :: import glfw;
+gl :: import gl;
 
 main :: () -> int
 {
@@ -21,7 +22,16 @@ main :: () -> int
 
     while (!glfw.glfwWindowShouldClose(window))
     {
-        glfw.glfwSwapBuffers(window);
         glfw.glfwPollEvents();
+
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT);
+        gl.glBegin(gl.GL_TRIANGLE);
+        gl.glVertex3f(0.0, 0.0, 0.0);
+        gl.glVertex3f(0.5, 0.0, 0.0);
+        gl.glVertex3f(0.25, 0.5, 0.0);
+        gl.glEnd();
+        gl.glFlush();
+
+        glfw.glfwSwapBuffers(window);
     }
 }

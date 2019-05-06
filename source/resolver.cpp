@@ -1453,7 +1453,12 @@ namespace Zodiac
             AST_Module* import_module = base_decl->import.module;
             AST_Declaration* var_decl = find_declaration(import_module->module_scope,
                                          member_expression->identifier);
-            assert(var_decl);
+            if (!var_decl)
+            {
+                report_undeclared_identifier(resolver, member_expression->file_pos,
+                                             import_module, member_expression->identifier);
+                return false;
+            }
             assert(var_decl->flags & AST_DECL_FLAG_RESOLVED);
 
             if (var_decl->kind == AST_DECL_MUTABLE)

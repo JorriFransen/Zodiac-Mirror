@@ -10,6 +10,7 @@ namespace Zodiac
         static AST_Type* type_void;
         static AST_Type* type_int;
         static AST_Type* type_u8;
+        static AST_Type* type_u32;
         static AST_Type* type_bool;
         static AST_Type* type_float;
 
