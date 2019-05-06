@@ -140,6 +140,10 @@ namespace Zodiac
                 else
                 {
                     func_value->function->flags |= IR_FUNC_FLAG_FOREIGN;
+                    if (global_decl->function.is_vararg)
+                    {
+                        func_value->function->flags |= IR_FUNC_FLAG_VARARG;
+                    }
                     func_value->function->foreign_index =
                         ir_builder_emit_foreign(ir_builder, global_decl->identifier->atom);
                 }
@@ -956,7 +960,15 @@ namespace Zodiac
         AST_Expression* member_expression = expression->dot.member_expression;
         assert(member_expression->kind == AST_EXPR_IDENTIFIER);
 
-        if (base_expression->type->kind == AST_TYPE_ENUM)
+        if (!base_expression->type)
+        {
+            assert(base_expression->identifier->declaration);
+            auto base_decl = base_expression->identifier->declaration;
+            assert(base_decl->kind == AST_DECL_IMPORT);
+
+            return ir_builder_emit_expression(ir_builder, member_expression);
+        }
+        else if (base_expression->type->kind == AST_TYPE_ENUM)
         {
             AST_Type* enum_type = base_expression->type;
             AST_Enum_Member_Decl* member = nullptr;
@@ -1740,7 +1752,7 @@ namespace Zodiac
         IR_Value* arg_1 = func_value;
         if (func_value->function->flags & IR_FUNC_FLAG_FOREIGN)
         {
-            arg_1 = ir_integer_literal(ir_builder, Builtin::type_int, func_value->function->foreign_index);
+            // arg_1 = ir_integer_literal(ir_builder, Builtin::type_int, func_value->function->foreign_index);
             op = IR_OP_CALL_EX;
         }
         IR_Instruction* iri = ir_instruction_new(ir_builder, op, arg_1,

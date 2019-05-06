@@ -147,6 +147,7 @@ namespace Zodiac
     {
         IR_FUNC_FLAG_NONE    = 0x00,
         IR_FUNC_FLAG_FOREIGN = 0x01,
+        IR_FUNC_FLAG_VARARG  = 0x02,
     };
 
     struct IR_Function

@@ -25,7 +25,7 @@ stderr : *FILE = null;
 #foreign getchar :: () -> int;
 #foreign puts :: (string: *u8) -> int;
 #foreign printf :: (format: *u8, ...) -> int;
-
+#foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
 
 open_std_handles :: () -> void
 {

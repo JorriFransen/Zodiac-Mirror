@@ -575,15 +575,32 @@ namespace Zodiac
 
             case IR_OP_CALL_EX:
             {
-                dcMode(runner->dyn_vm, DC_CALL_C_DEFAULT);
-                uint64_t foreign_index = iri->arg1->value.s64;
+                IR_Value* func = iri->arg1;
+                assert(func->kind == IRV_FUNCTION);
+                uint64_t foreign_index = func->function->foreign_index;
                 assert(BUF_LENGTH(runner->loaded_foreign_symbols) > foreign_index);
+
+                DCint mode = DC_CALL_C_DEFAULT;
+                // if (func->function->flags & IR_FUNC_FLAG_VARARG)
+                // {
+                //     mode = DC_CALL_C_ELLIPSIS;
+                // }
+                dcMode(runner->dyn_vm, mode);
 
                 assert(iri->result);
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
                 assert(result_value);
-                result_value->value.s64 = dcCallInt(runner->dyn_vm,
-                                                    runner->loaded_foreign_symbols[foreign_index]);
+                if (iri->result->type->flags & AST_TYPE_FLAG_INT)
+                {
+                    result_value->value.s64 = dcCallInt(runner->dyn_vm,
+                                                        runner->loaded_foreign_symbols[foreign_index]);
+                }
+                else if (iri->result->type->kind == AST_TYPE_POINTER)
+                {
+                    result_value->value.string = (uint8_t*)dcCallPointer(runner->dyn_vm,
+                                                               runner->loaded_foreign_symbols[foreign_index]);
+                }
+                else assert(false);
                 dcReset(runner->dyn_vm);
                 break;
             }

@@ -1213,9 +1213,14 @@ namespace Zodiac
                 expression->type = ident->declaration->enum_decl.type;
                 expression->is_const = true;
             }
+            else if (decl->kind == AST_DECL_IMPORT)
+            {
+                expression->type = nullptr;
+                expression->is_const = true;
+            }
             else assert(false);
 
-            assert(expression->type);
+            assert(expression->type || decl->kind == AST_DECL_IMPORT);
         }
 
 
@@ -1330,102 +1335,128 @@ namespace Zodiac
         assert(base_expression->kind == AST_EXPR_IDENTIFIER);
         assert(member_expression->kind == AST_EXPR_IDENTIFIER);
 
-        result &= try_resolve_expression(resolver, base_expression, scope);
-        if (!result)
+        AST_Declaration* base_decl = find_declaration(scope, base_expression->identifier);
+        assert(base_decl);
+        if (base_decl->kind != AST_DECL_IMPORT)
         {
-            report_undeclared_identifier(resolver, base_expression->file_pos,
-                                         base_expression->identifier);
-            return false;
+            result &= try_resolve_expression(resolver, base_expression, scope);
+            if (!result)
+            {
+                report_undeclared_identifier(resolver, base_expression->file_pos,
+                                            base_expression->identifier);
+                return false;
+            }
+
+            AST_Type* struct_type = nullptr;
+            AST_Type* enum_type = nullptr;
+
+            if (result)
+            {
+                if (base_expression->type->kind == AST_TYPE_STRUCT)
+                {
+                    struct_type = base_expression->type;
+                }
+                else if (base_expression->type->kind == AST_TYPE_POINTER)
+                {
+                    assert(base_expression->type->pointer.base->kind == AST_TYPE_STRUCT);
+                    struct_type = base_expression->type->pointer.base;
+                }
+                else if (base_decl->kind == AST_DECL_ENUM_TYPE)
+                {
+                    enum_type = base_expression->type;
+                }
+                else assert(false);
+            }
+
+            if (!(struct_type || enum_type))
+            {
+                return false;
+            }
+
+            AST_Type* type = nullptr;
+
+            if (struct_type)
+            {
+                assert(!enum_type);
+
+                bool found = false;
+                auto member_decls = struct_type->aggregate_type.member_declarations;
+                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+                {
+                    AST_Declaration* member_decl = member_decls[i];
+                    if (member_decl->identifier->atom == member_expression->identifier->atom)
+                    {
+                        found = true;
+                        assert(member_decl->kind == AST_DECL_MUTABLE);
+                        assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
+                        assert(member_decl->aggregate_type.type);
+
+                        type = member_decl->aggregate_type.type;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    return false;
+                }
+            }
+            else if (enum_type)
+            {
+                assert(!struct_type);
+
+                bool found = false;
+                auto member_decls = enum_type->enum_type.member_declarations;
+                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+                {
+                    AST_Enum_Member_Decl* member_decl = member_decls[i];
+                    if (member_decl->identifier->atom == member_expression->identifier->atom)
+                    {
+                        found = true;
+                        type = enum_type->enum_type.base_type;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    return false;
+                }
+
+                expression->is_const = true;
+            }
+
+            assert(type);
+
+            if (result && !expression->type)
+            {
+                expression->type = type;
+            }
+
+            return result;
         }
-        AST_Declaration* base_decl = base_expression->identifier->declaration;
-
-        AST_Type* struct_type = nullptr;
-        AST_Type* enum_type = nullptr;
-
-        if (result)
+        else
         {
-            if (base_expression->type->kind == AST_TYPE_STRUCT)
+            assert(base_decl->kind == AST_DECL_IMPORT);
+            assert(base_decl->import.module);
+
+            base_expression->identifier->declaration = base_decl;
+            AST_Module* import_module = base_decl->import.module;
+            AST_Declaration* var_decl = find_declaration(import_module->module_scope,
+                                         member_expression->identifier);
+            assert(var_decl);
+            assert(var_decl->flags & AST_DECL_FLAG_RESOLVED);
+
+            if (var_decl->kind == AST_DECL_MUTABLE)
             {
-                struct_type = base_expression->type;
-            }
-            else if (base_expression->type->kind == AST_TYPE_POINTER)
-            {
-                assert(base_expression->type->pointer.base->kind == AST_TYPE_STRUCT);
-                struct_type = base_expression->type->pointer.base;
-            }
-            else if (base_decl->kind == AST_DECL_ENUM_TYPE)
-            {
-                enum_type = base_expression->type;
+                expression->type = var_decl->mutable_decl.type;
             }
             else assert(false);
+
+            result &= try_resolve_identifier(resolver, member_expression->identifier,
+                                             import_module->module_scope);
+            return result;
         }
-
-        if (!(struct_type || enum_type))
-        {
-            return false;
-        }
-
-        AST_Type* type = nullptr;
-
-        if (struct_type)
-        {
-            assert(!enum_type);
-
-            bool found = false;
-            auto member_decls = struct_type->aggregate_type.member_declarations;
-            for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
-            {
-                AST_Declaration* member_decl = member_decls[i];
-                if (member_decl->identifier->atom == member_expression->identifier->atom)
-                {
-                    found = true;
-                    assert(member_decl->kind == AST_DECL_MUTABLE);
-                    assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
-                    assert(member_decl->aggregate_type.type);
-
-                    type = member_decl->aggregate_type.type;
-                    break;
-                }
-            }
-
-            if (!found)
-            {
-                return false;
-            }
-        }
-        else if (enum_type)
-        {
-            assert(!struct_type);
-
-            bool found = false;
-            auto member_decls = enum_type->enum_type.member_declarations;
-            for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
-            {
-                AST_Enum_Member_Decl* member_decl = member_decls[i];
-                if (member_decl->identifier->atom == member_expression->identifier->atom)
-                {
-                    found = true;
-                    type = enum_type->enum_type.base_type;
-                    break;
-                }
-            }
-
-            if (!found)
-            {
-                return false;
-            }
-
-            expression->is_const = true;
-        }
-
-        assert(type);
-
-        if (result && !expression->type)
-        {
-            expression->type = type;
-        }
-
-        return result;
     }
 
     static bool try_resolve_identifier(Resolver* resolver, AST_Identifier* identifier,
@@ -1467,6 +1498,10 @@ namespace Zodiac
             {
                 return false;
             }
+        }
+        else if (decl->kind == AST_DECL_IMPORT)
+        {
+            // Do nothing for now.
         }
         else assert(false);
 
