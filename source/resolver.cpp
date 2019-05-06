@@ -1313,6 +1313,15 @@ namespace Zodiac
                     break;
                 }
 
+                case AST_UNOP_NOT:
+                {
+                    assert(operand_expr->type == Builtin::type_bool ||
+                           (operand_expr->type->flags & AST_TYPE_FLAG_INT) ||
+                           operand_expr->type->kind == AST_TYPE_POINTER);
+                    expression->type = Builtin::type_bool;
+                    break;
+                }
+
                 default: assert(false);
             }
         }
@@ -1667,7 +1676,7 @@ namespace Zodiac
     {
         assert(resolver);
         assert(identifier);
-        assert(member_decls);
+        // assert(member_decls);
 
         uint64_t bit_size = 0;
 
@@ -1685,7 +1694,7 @@ namespace Zodiac
 
         AST_Type* struct_type = ast_type_struct_new(resolver->context, member_decls, bit_size);
 
-        assert(struct_type->bit_size);
+        assert(struct_type->bit_size || BUF_LENGTH(member_decls) == 0);
         return struct_type;
     }
 
@@ -1747,7 +1756,7 @@ namespace Zodiac
         resolver->undeclared_decl_count++;
 
         resolver_report_error(resolver, file_pos, "Reference to undeclared identifier '%s' in module '%s'",
-                              module->module_name, identifier->atom.data);
+                              identifier->atom.data, module->module_name);
     }
 
     static void resolver_report_error(Resolver* resolver, File_Pos file_pos, const char* format, ...)

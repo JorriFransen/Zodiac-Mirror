@@ -1,0 +1,27 @@
+
+io :: import io;
+glfw :: import glfw;
+
+main :: () -> int
+{
+    io.printf("zodiac game\n");
+
+    if (!glfw.glfwInit())
+    {
+        io.printf("glfwInit failed\n");
+        return 9;
+    }
+
+    window := glfw.glfwCreateWindow(640, 480, "Triangles!!!", null, null);
+    if (!window)
+    {
+        io.printf("glfwCreateWindow failed\n");
+        return 9;
+    }
+
+    while (!glfw.glfwWindowShouldClose(window))
+    {
+        glfw.glfwSwapBuffers(window);
+        glfw.glfwPollEvents();
+    }
+}

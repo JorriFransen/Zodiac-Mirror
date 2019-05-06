@@ -425,7 +425,7 @@ namespace Zodiac
     {
         assert(context);
         assert(identifier);
-        assert(member_decls);
+        // assert(member_decls);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
                                                       AST_DECL_LOC_GLOBAL, identifier,
@@ -715,7 +715,7 @@ namespace Zodiac
                                   uint64_t bit_size)
     {
         assert(context);
-        assert(member_declarations);
+        // assert(member_declarations);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE, bit_size);
         result->aggregate_type.member_declarations = member_declarations;

@@ -1,0 +1,14 @@
+
+#dynamic_link "libglfw.so.3.3";
+
+GLFWmonitor :: struct {}
+GLFWwindow :: struct {}
+
+#foreign glfwInit :: () -> int;
+
+#foreign
+glfwCreateWindow :: (width: int, height: int, title: *u8, monitor: *GLFWmonitor, share: *GLFWwindow) -> *GLFWwindow;
+
+#foreign glfwWindowShouldClose :: (window: *GLFWwindow) -> int;
+#foreign glfwSwapBuffers :: (window: *GLFWwindow) -> void;
+#foreign glfwPollEvents :: () -> void;

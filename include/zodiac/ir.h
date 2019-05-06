@@ -89,6 +89,7 @@ namespace Zodiac
         IR_OP_GTEQ,
         IR_OP_EQ,
         IR_OP_AND_AND,
+        IR_OP_NOT,
 
         IR_OP_PUSH_CALL_ARG,
         IR_OP_CALL,
@@ -226,6 +227,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_load_lit(IR_Builder* ir_builder, IR_Value* literal);
     IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression);
+    IR_Value* ir_builder_emit_not(IR_Builder* ir_builder, AST_Expression* expression);
 
     IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder, AST_Declaration* declaration);
 

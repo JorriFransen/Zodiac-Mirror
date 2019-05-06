@@ -764,6 +764,12 @@ namespace Zodiac
                         break;
                     }
 
+                    case AST_UNOP_NOT:
+                    {
+                        return ir_builder_emit_not(ir_builder, expression->unary.operand);
+                        break;
+                    }
+
                     default: assert(false);
                 }
                 break;
@@ -1166,6 +1172,24 @@ namespace Zodiac
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_DEREF, expression_value,
+                                                 nullptr, result_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result_value;
+    }
+
+    IR_Value* ir_builder_emit_not(IR_Builder* ir_builder, AST_Expression* expression)
+    {
+        assert(ir_builder);
+        assert(expression);
+        assert(expression->type == Builtin::type_bool ||
+               (expression->type->flags & AST_TYPE_FLAG_INT) ||
+               expression->type->kind == AST_TYPE_POINTER);
+
+        IR_Value* operand_val = ir_builder_emit_expression(ir_builder, expression);
+
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_NOT, operand_val,
                                                  nullptr, result_value);
         ir_builder_emit_instruction(ir_builder, iri);
 
@@ -2473,6 +2497,13 @@ namespace Zodiac
                 ir_print_value(instruction->arg1);
                 printf(" && ");
                 ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_NOT:
+            {
+                printf("!");
+                ir_print_value(instruction->arg1);
                 break;
             }
 

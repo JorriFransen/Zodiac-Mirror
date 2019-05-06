@@ -90,7 +90,17 @@ namespace Zodiac
             }
         }
 
-        DLLib* lib = dlLoadLibrary(lib_name.data);
+        const char* lib_path = lib_name.data;
+
+        auto context = ir_runner->context;
+        auto import_atom = atom_append(context->atom_table, context->module_search_path, lib_name);
+        if (file_exists(import_atom.data))
+        {
+            lib_path = import_atom.data;
+        }
+
+        assert(lib_path);
+        DLLib* lib = dlLoadLibrary(lib_path);
         if (!lib)
         {
             fprintf(stderr, "Could not find library: %s\n", lib_name.data);
@@ -600,6 +610,11 @@ namespace Zodiac
                     result_value->value.string = (uint8_t*)dcCallPointer(runner->dyn_vm,
                                                                runner->loaded_foreign_symbols[foreign_index]);
                 }
+                else if (iri->result->type == Builtin::type_void)
+                {
+                    dcCallVoid(runner->dyn_vm,
+                               runner->loaded_foreign_symbols[foreign_index]);
+                }
                 else assert(false);
                 dcReset(runner->dyn_vm);
                 break;
@@ -978,6 +993,29 @@ namespace Zodiac
 
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
                 dest->value.s64 = *source_ptr;
+
+                break;
+            }
+
+            case IR_OP_NOT:
+            {
+                assert(iri->arg1);
+
+                IR_Value* operand_val = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value* result_val = ir_runner_get_local_temporary(runner, iri->result);
+                if (iri->arg1->type == Builtin::type_bool)
+                {
+                    result_val->value.boolean = !operand_val->value.boolean;
+                }
+                else if (iri->arg1->type->flags & AST_TYPE_FLAG_INT)
+                {
+                    result_val->value.boolean = !operand_val->value.s64;
+                }
+                else if (iri->arg1->type->kind == AST_TYPE_POINTER)
+                {
+                    result_val->value.boolean = !operand_val->value.string;
+                }
+                else assert(false);
 
                 break;
             }
