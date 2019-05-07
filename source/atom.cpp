@@ -129,7 +129,22 @@ namespace Zodiac
             assert(false);
         }
 
-        return result; 
+        return result;
+    }
+
+    float atom_to_float(const Atom& atom)
+    {
+        assert(atom.data);
+        assert(atom.length > 0);
+
+        char* end_ptr;
+        float result = strtof(atom.data, &end_ptr);
+        if (result == 0.0 && end_ptr != atom.data + (atom.length))
+        {
+            assert(false);
+        }
+
+        return result;
     }
 
     bool operator==(const Atom& lhs, const Atom& rhs)

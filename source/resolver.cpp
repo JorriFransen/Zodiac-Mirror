@@ -286,8 +286,10 @@ namespace Zodiac
             {
 				if (!(declaration->mutable_decl.type == init_expr->type))
 				{
-					assert(declaration->mutable_decl.type->kind == AST_TYPE_POINTER &&
-						init_expr->kind == AST_EXPR_NULL_LITERAL);
+					assert((declaration->mutable_decl.type->kind == AST_TYPE_POINTER &&
+                            init_expr->kind == AST_EXPR_NULL_LITERAL) ||
+                           declaration->mutable_decl.type == Builtin::type_double &&
+                           init_expr->type == Builtin::type_float);
 				}
             }
         }
@@ -1128,12 +1130,9 @@ namespace Zodiac
                 }
 
                 same_type = first_type == expr->type;
-
-                assert(same_type);
             }
         }
 
-        assert(same_type);
 
         if (suggested_type && suggested_type->kind == AST_TYPE_STRUCT)
         {
@@ -1151,10 +1150,13 @@ namespace Zodiac
                     assert(expr->type);
                     AST_Declaration* struct_member_decl = suggested_type->aggregate_type.member_declarations[i];
 
-                    if (expr->type != struct_member_decl->mutable_decl.type)
+                    if (expr->type != struct_member_decl->mutable_decl.type &&
+                        !(expr->type == Builtin::type_float && struct_member_decl->mutable_decl.type == Builtin::type_double))
                     {
                         match = false;
-                        break;
+                        resolver_report_error(resolver, expr->file_pos,
+                                              "Type of compound member does not match type of struct member: %s",
+                                              struct_member_decl->identifier->atom.data);
                     }
                 }
 
@@ -1170,6 +1172,7 @@ namespace Zodiac
         }
         else
         {
+            assert(same_type);
             expression->type = ast_find_or_create_array_type(resolver->context, resolver->module, first_type,
                                                              BUF_LENGTH(expression->compound_literal.expressions));
         }
@@ -1345,7 +1348,7 @@ namespace Zodiac
     }
 
     static bool try_resolve_dot_expression(Resolver* resolver, AST_Expression* expression,
-        AST_Scope* scope)
+                                           AST_Scope* scope)
     {
         assert(resolver);
         assert(expression);
@@ -1360,7 +1363,10 @@ namespace Zodiac
         assert(member_expression->kind == AST_EXPR_IDENTIFIER);
 
         AST_Declaration* base_decl = find_declaration(scope, base_expression->identifier);
-        assert(base_decl);
+        if (!base_decl)
+        {
+            return false;
+        }
         if (base_decl->kind != AST_DECL_IMPORT)
         {
             result &= try_resolve_expression(resolver, base_expression, scope);

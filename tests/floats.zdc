@@ -1,34 +1,34 @@
 
 io :: import io;
 
-Vec2 :: struct
-{
-    x : float;
-    y : float;
-}
+// Vec2 :: struct
+// {
+//     x : float;
+//     y : float;
+// }
 
 main :: () -> int
 {
-    x : float = 3.14;
+    x : double = 3.14;
     io.printf("x: %f\n", x);
 
-    a : Vec2 = { 1.0, 2.0 };
-    b : Vec2 = { 3.3, 4.4 };
+    // a : Vec2 = { 1.0, 2.0 };
+    // b : Vec2 = { 3.3, 4.4 };
 
-    c := add(a, b);
-    // c : Vec2;
-    // c.x = a.x + b.x;
-    // c.y = a.y + b.y;
+    // c := add(a, b);
+    // // c : Vec2;
+    // // c.x = a.x + b.x;
+    // // c.y = a.y + b.y;
 
-    io.printf("c.x: %f\n", c.x);
-    io.printf("c: %f,%f\n", c.x, c.y);
+    // io.printf("c.x: %f\n", c.x);
+    // io.printf("c: %f,%f\n", c.x, c.y);
 
     return 0;
 }
 
-add :: (a: Vec2, b: Vec2) -> Vec2
-{
-    result : Vec2 = { a.x + b.x, a.y + b.y };
-    // result : Vec2 = { 9.9, 8.8 };
-    return result;
-}
+// add :: (a: Vec2, b: Vec2) -> Vec2
+// {
+//     result : Vec2 = { a.x + b.x, a.y + b.y };
+//     // result : Vec2 = { 9.9, 8.8 };
+//     return result;
+// }

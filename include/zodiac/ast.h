@@ -66,6 +66,7 @@ namespace Zodiac
         AST_BINOP_LTEQ,
         AST_BINOP_GT,
         AST_BINOP_GTEQ,
+        AST_BINOP_NEQ,
     };
 
     enum AST_Unop_Kind
@@ -141,6 +142,7 @@ namespace Zodiac
             struct
             {
                 double r64;
+                float r32;
             } float_literal;
 
             struct
@@ -524,7 +526,7 @@ namespace Zodiac
     AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos,
                                                        uint64_t value);
     AST_Expression* ast_float_literal_expression_new(Context* context, File_Pos file_pos,
-                                                     double value);
+                                                     double r64, float r32);
     AST_Expression* ast_character_literal_expression_new(Context* context, File_Pos file_pos,
                                                          char value);
     AST_Expression* ast_compound_literal_expression_new(Context* context, File_Pos file_pos,

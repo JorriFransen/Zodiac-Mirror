@@ -28,6 +28,7 @@ namespace Zodiac
 
     uint64_t atom_to_u64(const Atom& atom, uint64_t base = 10);
     double atom_to_double(const Atom& atom);
+    float atom_to_float(const Atom& atom);
 
     bool operator==(const Atom& lhs, const Atom& rhs);
     bool operator!=(const Atom& lhs, const Atom& rhs);

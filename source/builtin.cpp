@@ -9,6 +9,7 @@ namespace Zodiac
     AST_Type* Builtin::type_s32 = nullptr;
     AST_Type* Builtin::type_bool = nullptr;
     AST_Type* Builtin::type_float = nullptr;
+    AST_Type* Builtin::type_double = nullptr;
 
     uint64_t Builtin::pointer_size = 0;
 
@@ -31,6 +32,7 @@ namespace Zodiac
         Builtin::type_bool = register_builtin_type(context, unsigned_int_flags, 64, "bool");
 
         Builtin::type_float = register_builtin_type(context, AST_TYPE_FLAG_FLOAT, 32, "float");
+        Builtin::type_double = register_builtin_type(context, AST_TYPE_FLAG_FLOAT, 64, "double");
 
         Builtin::pointer_size = Builtin::type_int->bit_size;
     }

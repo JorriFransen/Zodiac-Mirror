@@ -1097,8 +1097,9 @@ namespace Zodiac
             case TOK_FLOAT:
             {
                 consume_token(parser);
-                double value = atom_to_double(ct.atom);
-                return ast_float_literal_expression_new(parser->context, ct.file_pos, value);
+                double r64 = atom_to_double(ct.atom);
+                float r32 = atom_to_float(ct.atom);
+                return ast_float_literal_expression_new(parser->context, ct.file_pos, r64, r32);
                 break;
             }
 
@@ -1260,7 +1261,8 @@ namespace Zodiac
                ct.kind == TOK_LT ||
                ct.kind == TOK_LTEQ ||
                ct.kind == TOK_GT ||
-               ct.kind == TOK_GTEQ;
+               ct.kind == TOK_GTEQ ||
+               ct.kind == TOK_NEQ;
     }
 
     static bool is_unary_op(Parser* parser)
@@ -1350,6 +1352,10 @@ namespace Zodiac
 
             case TOK_EQEQ:
                 result = AST_BINOP_EQ;
+                break;
+
+            case TOK_NEQ:
+                result = AST_BINOP_NEQ;
                 break;
 
             default: assert(false);

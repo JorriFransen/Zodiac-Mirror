@@ -37,6 +37,8 @@ namespace Zodiac
         {
             int64_t s64;
             uint8_t u8;
+            uint32_t u32;
+            float r32;
             double r64;
             uint8_t* string;
             bool boolean;
@@ -88,6 +90,7 @@ namespace Zodiac
         IR_OP_GT,
         IR_OP_GTEQ,
         IR_OP_EQ,
+        IR_OP_NEQ,
         IR_OP_AND_AND,
         IR_OP_NOT,
 
@@ -263,6 +266,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_gt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_gteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_eq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
+    IR_Value* ir_builder_emit_neq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_and_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val);
     void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value, bool is_foreign = false);
@@ -285,7 +289,7 @@ namespace Zodiac
 	IR_Value* ir_null_literal(IR_Builder* ir_builder, AST_Type* type);
     IR_Value* ir_string_literal(IR_Builder* ir_builder, AST_Type* type, Atom string);
     IR_Value* ir_integer_literal(IR_Builder* ir_builder, AST_Type* type, uint64_t s64);
-    IR_Value* ir_float_literal(IR_Builder* ir_builder, AST_Type* type, double r64);
+    IR_Value* ir_float_literal(IR_Builder* ir_builder, AST_Type* type, double r64, float r32);
     IR_Value* ir_character_literal(IR_Builder* ir_builder, AST_Type* type, char c);
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);
 

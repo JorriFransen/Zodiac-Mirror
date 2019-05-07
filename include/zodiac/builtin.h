@@ -14,6 +14,7 @@ namespace Zodiac
         static AST_Type* type_s32;
         static AST_Type* type_bool;
         static AST_Type* type_float;
+        static AST_Type* type_double;
 
         static uint64_t pointer_size;
 

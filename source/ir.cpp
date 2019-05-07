@@ -738,6 +738,9 @@ namespace Zodiac
                     case AST_BINOP_EQ:
                         return ir_builder_emit_eq(ir_builder, lhs_value, rhs_value);
 
+                    case AST_BINOP_NEQ:
+                        return ir_builder_emit_neq(ir_builder, lhs_value, rhs_value);
+
                     default: assert(false);
                 }
             }
@@ -804,7 +807,8 @@ namespace Zodiac
             case AST_EXPR_FLOAT_LITERAL:
             {
                 return ir_float_literal(ir_builder, expression->type,
-                                        expression->float_literal.r64);
+                                        expression->float_literal.r64,
+                                        expression->float_literal.r32);
                 break;
             }
 
@@ -1717,6 +1721,27 @@ namespace Zodiac
 		return nullptr;
     }
 
+    IR_Value* ir_builder_emit_neq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        if (lhs->type == rhs->type ||
+            (lhs->type->kind == AST_TYPE_ENUM && (lhs->type->enum_type.base_type == rhs->type)))
+        {
+            IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
+            IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_NEQ, lhs, rhs, result);
+
+            ir_builder_emit_instruction(ir_builder, iri);
+
+            return result;
+        }
+        else assert(false);
+
+		return nullptr;
+    }
+
     IR_Value* ir_builder_emit_and_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
     {
         assert(ir_builder);
@@ -2060,13 +2085,21 @@ namespace Zodiac
         return result;
     }
 
-    IR_Value* ir_float_literal(IR_Builder* ir_builder, AST_Type* type, double r64)
+    IR_Value* ir_float_literal(IR_Builder* ir_builder, AST_Type* type, double r64, float r32)
     {
         assert(ir_builder);
         assert(type);
 
         IR_Value* result = ir_value_new(ir_builder, IRV_FLOAT_LITERAL, type);
-        result->value.r64 = r64;
+        if (type == Builtin::type_double)
+        {
+            result->value.r64 = r64;
+        }
+        else if (type == Builtin::type_float)
+        {
+            result->value.r32 = r32;
+        }
+        else assert(false);
         result->assigned = true;
 
         return result;
@@ -2489,6 +2522,14 @@ namespace Zodiac
             {
                 ir_print_value(instruction->arg1);
                 printf(" == ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_NEQ:
+            {
+                ir_print_value(instruction->arg1);
+                printf(" != ");
                 ir_print_value(instruction->arg2);
                 break;
             }

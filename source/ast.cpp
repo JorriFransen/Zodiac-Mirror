@@ -175,13 +175,14 @@ namespace Zodiac
     }
 
     AST_Expression* ast_float_literal_expression_new(Context* context, File_Pos file_pos,
-                                                     double value)
+                                                     double r64, float r32)
     {
         assert(context);
 
         auto result = ast_expression_new(context, file_pos, AST_EXPR_FLOAT_LITERAL);
 
-        result->float_literal.r64 = value;
+        result->float_literal.r64 = r64;
+        result->float_literal.r32 = r32;
 
         return result;
     }

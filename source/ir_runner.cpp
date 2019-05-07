@@ -308,9 +308,13 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.s64 + arg2->value.s64;
                 }
-                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                else if (type == Builtin::type_double)
                 {
                     dest->value.r64 = arg1->value.r64 + arg2->value.r64;
+                }
+                else if (type == Builtin::type_float)
+                {
+                    dest->value.r32 = arg1->value.r32 + arg2->value.r32;
                 }
                 else assert(false);
 
@@ -336,7 +340,7 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.s64 - arg2->value.s64;
                 }
-                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                else if (type == Builtin::type_double)
                 {
                     dest->value.r64 = arg1->value.r64 - arg2->value.r64;
                 }
@@ -364,7 +368,7 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.s64 * arg2->value.s64;
                 }
-                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                else if (type == Builtin::type_double)
                 {
                     dest->value.r64 = arg1->value.r64 * arg2->value.r64;
                 }
@@ -392,7 +396,7 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.s64 / arg2->value.s64;
                 }
-                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                else if (type == Builtin::type_double)
                 {
                     dest->value.r64 = arg1->value.r64 / arg2->value.r64;
                 }
@@ -413,7 +417,7 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.s64 < arg2->value.s64;
                 }
-                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                else if (type == Builtin::type_double)
                 {
                     dest->value.s64 = arg1->value.r64 < arg2->value.r64;
                 }
@@ -433,7 +437,7 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.s64 <= arg2->value.s64;
                 }
-                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                else if (type == Builtin::type_double)
                 {
                     dest->value.s64 = arg1->value.r64 <= arg2->value.r64;
                 }
@@ -453,7 +457,7 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.s64 > arg2->value.s64;
                 }
-                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                else if (type == Builtin::type_double)
                 {
                     dest->value.s64 = arg1->value.r64 > arg2->value.r64;
                 }
@@ -473,7 +477,7 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.s64 >= arg2->value.s64;
                 }
-                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                else if (type == Builtin::type_double)
                 {
                     dest->value.s64 = arg1->value.r64 >= arg2->value.r64;
                 }
@@ -493,13 +497,37 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.s64 == arg2->value.s64;
                 }
-                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                else if (type == Builtin::type_double)
                 {
                     dest->value.s64 = arg1->value.r64 == arg2->value.r64;
                 }
                 else if (type->kind == AST_TYPE_ENUM)
                 {
                     dest->value.s64 = arg1->value.s64 == arg2->value.s64;
+                }
+                else assert(false);
+                break;
+            }
+
+            case IR_OP_NEQ:
+            {
+                IR_Value* arg1 = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
+                IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
+
+                AST_Type* type = arg1->type;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    dest->value.s64 = arg1->value.s64 != arg2->value.s64;
+                }
+                else if (type == Builtin::type_double)
+                {
+                    dest->value.s64 = arg1->value.r64 != arg2->value.r64;
+                }
+                else if (type->kind == AST_TYPE_ENUM)
+                {
+                    dest->value.s64 = arg1->value.s64 != arg2->value.s64;
                 }
                 else assert(false);
                 break;
@@ -517,7 +545,7 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.s64 && arg2->value.s64;
                 }
-                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                else if (type == Builtin::type_double)
                 {
                     dest->value.s64 = arg1->value.r64 && arg2->value.r64;
                 }
@@ -567,7 +595,15 @@ namespace Zodiac
                 IR_Value* arg_value = ir_runner_get_local_temporary(runner, iri->arg1);
                 if (iri->arg1->type->flags & AST_TYPE_FLAG_FLOAT)
                 {
-                    dcArgDouble(runner->dyn_vm, arg_value->value.r64);
+                    if (iri->arg1->type->bit_size == 64)
+                    {
+                        dcArgDouble(runner->dyn_vm, arg_value->value.r64);
+                    }
+                    else if (iri->arg1->type->bit_size == 32)
+                    {
+                        dcArgFloat(runner->dyn_vm, arg_value->value.r32);
+                    }
+                    else assert(false);
                 }
                 else if (iri->arg1->type->kind == AST_TYPE_POINTER)
                 {
@@ -831,6 +867,12 @@ namespace Zodiac
                         break;
                     }
 
+                    case 32:
+                    {
+                        *((uint32_t*)pointer) = source_value->value.u32;
+                        break;
+                    }
+
                     case 64:
                     {
                         *((uint64_t*)pointer) = source_value->value.s64;
@@ -863,7 +905,7 @@ namespace Zodiac
                     //        dest_type->bit_size / 8);
                     dest_value->value.struct_pointer = pointer_value->value.struct_pointer;
                 }
-                else
+                else if (dest_type->flags & AST_TYPE_FLAG_INT)
                 {
                     switch (dest_type->bit_size)
                     {
@@ -873,9 +915,33 @@ namespace Zodiac
                             break;
                         }
 
+                        case 32:
+                        {
+                            dest_value->value.u32 = *((uint32_t*)pointer_value->value.string);
+                            break;
+                        }
+
                         default: assert(false);
                     }
                 }
+                else if (dest_type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    switch (dest_type->bit_size)
+                    {
+                        case 64:
+                        {
+                            dest_value->value.r64 = *((double*)pointer_value->value.string);
+                            break;
+                        }
+
+                        case 32:
+                        {
+                            dest_value->value.r32 = *((float*)pointer_value->value.string);
+                            break;
+                        }
+                    }
+                }
+                else assert(false);
 
                 break;
             }
