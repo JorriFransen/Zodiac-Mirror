@@ -4,11 +4,22 @@
 GLFWmonitor :: struct {}
 GLFWwindow :: struct {}
 
+GLFW_CONTEXT_VERSION_MAJOR :: 0x00022002;
+GLFW_CONTEXT_VERSION_MINOR :: 0x00022003;
+GLFW_OPENGL_PROFILE        :: 0x00022008;
+
+GLFW_NO_ERROR :: 0;
+GLFW_OPENGL_ANY_PROFILE :: 0;
+
 #foreign glfwInit :: () -> int;
+#foreign glfwTerminate :: () -> void;
 
 #foreign
 glfwCreateWindow :: (width: int, height: int, title: *u8, monitor: *GLFWmonitor, share: *GLFWwindow) -> *GLFWwindow;
 
+#foreign glfwMakeContextCurrent :: (window: *GLFWwindow) -> void;
 #foreign glfwWindowShouldClose :: (window: *GLFWwindow) -> int;
 #foreign glfwSwapBuffers :: (window: *GLFWwindow) -> void;
 #foreign glfwPollEvents :: () -> void;
+#foreign glfwWindowHint :: (hint: int, value: int) -> void;
+#foreign glfwGetError :: (desc: **u8) -> int;

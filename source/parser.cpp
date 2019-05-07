@@ -296,7 +296,10 @@ namespace Zodiac
         else
         {
             AST_Expression* init_expression = parse_expression(parser);
-            assert(expect_token(parser, TOK_SEMICOLON));
+            if (!expect_token(parser, TOK_SEMICOLON))
+            {
+                return nullptr;
+            }
 
             return ast_constant_variable_declaration_new(parser->context, identifier->file_pos, identifier,
                                                          type_spec, init_expression, location);
@@ -1079,6 +1082,14 @@ namespace Zodiac
             {
                 consume_token(parser);
                 uint64_t value = atom_to_u64(ct.atom);
+                return ast_integer_literal_expression_new(parser->context, ct.file_pos, value);
+                break;
+            }
+
+            case TOK_HEX_NUM:
+            {
+                consume_token(parser);
+                uint64_t value = atom_to_u64(ct.atom, 16);
                 return ast_integer_literal_expression_new(parser->context, ct.file_pos, value);
                 break;
             }

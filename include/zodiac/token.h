@@ -14,6 +14,7 @@ namespace Zodiac
     DEFINE_TOKEN(TOK_DIV),        /* / */ \
     DEFINE_TOKEN(TOK_EQ),         /* = */ \
     DEFINE_TOKEN(TOK_EQEQ),       /* == */ \
+    DEFINE_TOKEN(TOK_NEQ),        /* != */ \
     DEFINE_TOKEN(TOK_LT),         /* < */ \
     DEFINE_TOKEN(TOK_LTEQ),       /* <= */ \
     DEFINE_TOKEN(TOK_GT),         /* > */ \
@@ -35,6 +36,7 @@ namespace Zodiac
     DEFINE_TOKEN(TOK_ELLIPSIS),   /* ... */ \
     DEFINE_TOKEN(TOK_IDENTIFIER), \
     DEFINE_TOKEN(TOK_INTEGER), \
+    DEFINE_TOKEN(TOK_HEX_NUM), \
     DEFINE_TOKEN(TOK_FLOAT), \
     DEFINE_TOKEN(TOK_CHAR_LIT), \
     DEFINE_TOKEN(TOK_STRING_LIT), \

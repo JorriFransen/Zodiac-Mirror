@@ -1880,7 +1880,8 @@ namespace Zodiac
                new_value->kind == IRV_INT_LITERAL ||
                new_value->kind == IRV_STRING_LITERAL ||
                new_value->kind == IRV_CHAR_LITERAL ||
-               new_value->kind == IRV_FLOAT_LITERAL);
+               new_value->kind == IRV_FLOAT_LITERAL ||
+               new_value->kind == IRV_NULL_LITERAL);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_STOREL, allocl_value, new_value,
                                                  nullptr);

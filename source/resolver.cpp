@@ -315,21 +315,25 @@ namespace Zodiac
             }
         }
 
-        result &= try_resolve_expression(resolver, declaration->constant_var.init_expression, scope);
+        AST_Expression* init_expr = declaration->constant_var.init_expression;
+        assert(init_expr);
+        result &= try_resolve_expression(resolver, init_expr, scope, specified_type);
 
         if (!result)
         {
             return false;
         }
 
-        assert(declaration->constant_var.init_expression->is_const);
+        assert(init_expr->is_const);
 
         if (specified_type)
         {
-			if (!(specified_type == declaration->constant_var.init_expression->type))
+            AST_Type* init_expr_type = init_expr->type;
+			if (!(specified_type == init_expr_type))
 			{
-				assert(specified_type->kind == AST_TYPE_POINTER &&
-					declaration->constant_var.init_expression->kind == AST_EXPR_NULL_LITERAL);
+				assert(is_valid_integer_conversion(resolver, specified_type, init_expr_type) ||
+                       (specified_type->kind == AST_TYPE_POINTER &&
+                        init_expr->kind == AST_EXPR_NULL_LITERAL));
 			}
         }
 
@@ -775,7 +779,8 @@ namespace Zodiac
 
         if (suggested_type)
         {
-            assert(expression->kind == AST_EXPR_COMPOUND_LITERAL);
+            assert(expression->kind == AST_EXPR_COMPOUND_LITERAL ||
+                   expression->kind == AST_EXPR_INTEGER_LITERAL);
         }
 
         switch (expression->kind)
@@ -845,7 +850,8 @@ namespace Zodiac
 
             case AST_EXPR_INTEGER_LITERAL:
             {
-                result &= try_resolve_integer_literal_expression(resolver, expression);
+                result &= try_resolve_integer_literal_expression(resolver, expression,
+                                                                 suggested_type);
                 break;
             }
 
@@ -1041,7 +1047,8 @@ namespace Zodiac
         return true;
     }
 
-    static bool try_resolve_integer_literal_expression(Resolver* resolver, AST_Expression* expression)
+    static bool try_resolve_integer_literal_expression(Resolver* resolver, AST_Expression* expression,
+                                                       AST_Type* suggested_type)
     {
         assert(resolver);
         assert(expression);
@@ -1049,7 +1056,15 @@ namespace Zodiac
 
         if (!expression->type)
         {
-            expression->type = Builtin::type_int;
+            if (suggested_type)
+            {
+                assert(suggested_type->flags & AST_TYPE_FLAG_INT);
+                expression->type = suggested_type;
+            }
+            else
+            {
+                expression->type = Builtin::type_int;
+            }
         }
         expression->is_const = true;
 
@@ -1465,6 +1480,10 @@ namespace Zodiac
             {
                 expression->type = var_decl->mutable_decl.type;
             }
+            else if (var_decl->kind == AST_DECL_CONSTANT_VAR)
+            {
+                expression->type = var_decl->constant_var.type;
+            }
             else assert(false);
 
             result &= try_resolve_identifier(resolver, member_expression->identifier,
@@ -1674,6 +1693,29 @@ namespace Zodiac
         }
 
         return import_module;
+    }
+
+    static bool is_valid_integer_conversion(Resolver* resolver, AST_Type* dest_type, AST_Type* source_type)
+    {
+        assert(resolver);
+        assert(dest_type);
+        assert(source_type);
+
+        assert(dest_type->flags & AST_TYPE_FLAG_INT);
+        assert(source_type->flags & AST_TYPE_FLAG_INT);
+
+        if (dest_type == source_type)
+        {
+            return true;
+        }
+
+        if ((dest_type->flags & AST_TYPE_FLAG_SIGNED) ==
+            (source_type->flags & AST_TYPE_FLAG_SIGNED))
+        {
+            return dest_type->bit_size >= source_type->bit_size;
+        }
+
+        return false;
     }
 
     AST_Type* create_struct_type(Resolver* resolver, AST_Identifier* identifier,

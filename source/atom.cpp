@@ -85,9 +85,26 @@ namespace Zodiac
         return result;
     }
 
-    uint64_t atom_to_u64(const Atom& atom)
+    static uint64_t _digit_value(char c)
     {
-        uint64_t base = 10;
+        if (c >= '0' && c <= '9')
+        {
+            return c - '0';
+        }
+        else if (c >= 'a' && c <= 'f')
+        {
+            return c - 'a' + 10;
+        }
+        else if (c >= 'A' && c <= 'F')
+            return c - 'A' + 10;
+        else
+        {
+            assert(false);
+        }
+    }
+
+    uint64_t atom_to_u64(const Atom& atom, uint64_t base/* = 10 */)
+    {
         uint64_t result = 0;
 
         for (uint64_t i = 0; i < atom.length; i++)

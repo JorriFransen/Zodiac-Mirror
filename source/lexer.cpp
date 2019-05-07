@@ -95,12 +95,12 @@ namespace Zodiac
             _SINGLE_CHAR_TOKEN_CASE('[', TOK_LBRACK);
             _SINGLE_CHAR_TOKEN_CASE(']', TOK_RBRACK);
             _SINGLE_CHAR_TOKEN_CASE('#', TOK_POUND);
-            _SINGLE_CHAR_TOKEN_CASE('!', TOK_BANG);
 
             _DOUBLE_CHAR_TOKEN_CASE('<', TOK_LT, '=', TOK_LTEQ);
             _DOUBLE_CHAR_TOKEN_CASE('>', TOK_GT, '=', TOK_GTEQ);
             _DOUBLE_CHAR_TOKEN_CASE('=', TOK_EQ, '=', TOK_EQEQ);
             _DOUBLE_CHAR_TOKEN_CASE('-', TOK_MINUS, '>', TOK_RARROW);
+            _DOUBLE_CHAR_TOKEN_CASE('!', TOK_BANG, '=', TOK_NEQ);
 
             case '/':
             {
@@ -182,7 +182,15 @@ namespace Zodiac
                 }
                 else if (char_is_num(current_char(lexer)))
                 {
-                    lex_integer_or_float(lexer);
+                    if (current_char(lexer) == '0' &&
+                        next_char(lexer) == 'x')
+                    {
+                        lex_hex_number(lexer);
+                    }
+                    else
+                    {
+                        lex_integer_or_float(lexer);
+                    }
                 }
                 else
                {
@@ -225,6 +233,7 @@ namespace Zodiac
         uint64_t integer_length = 0;
 
         bool found_dot = false;
+        bool found_x = false;
 
         while (char_is_num(current_char(lexer)))
         {
@@ -242,6 +251,28 @@ namespace Zodiac
 
         Token_Kind kind = found_dot ? TOK_FLOAT : TOK_INTEGER;
         lexer_push_token(lexer, kind, file_pos, integer_length);
+    }
+
+    static void lex_hex_number(Lexer* lexer)
+    {
+        assert(lexer);
+
+        assert(current_char(lexer) == '0');
+        lexer_consume_character(lexer);
+        assert(current_char(lexer) == 'x');
+        lexer_consume_character(lexer);
+
+        File_Pos file_pos = lexer->current_file_pos;
+        uint64_t hex_num_length = 0;
+
+        while (char_is_alpha_num(current_char(lexer)))
+        {
+            lexer_consume_character(lexer);
+            hex_num_length++;
+        }
+
+        lexer_push_token(lexer, TOK_HEX_NUM, file_pos, hex_num_length);
+
     }
 
     static void lexer_consume_character(Lexer* lexer)

@@ -79,7 +79,8 @@ namespace Zodiac
     static bool try_resolve_string_literal_expression(Resolver* resolver,
                                                       AST_Expression* expression);
     static bool try_resolve_integer_literal_expression(Resolver* resolver,
-                                                       AST_Expression* expression);
+                                                       AST_Expression* expression,
+                                                       AST_Type* suggested_type);
     static bool try_resolve_float_literal_expression(Resolver* resolver,
                                                      AST_Expression* expression);
     static bool try_resolve_character_literal_expression(Resolver* resolver,
@@ -107,6 +108,8 @@ namespace Zodiac
     AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module,
                                               const Atom& module_path,
                                               const Atom& module_name);
+
+    static bool is_valid_integer_conversion(Resolver* resolver, AST_Type* dest_type, AST_Type* source_type);
 
     AST_Type* create_struct_type(Resolver* resolver, AST_Identifier* identifier,
                                  BUF(AST_Declaration*) member_decls);

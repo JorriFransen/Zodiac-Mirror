@@ -13,19 +13,46 @@ main :: () -> int
         return 9;
     }
 
-    window := glfw.glfwCreateWindow(640, 480, "Triangles!!!", null, null);
+    width := 640;
+    height := 480;
+
+    // glfw.glfwWindowHint(glfw.GLFW_CONTEXT_VERSION_MAJOR, 2);
+    // glfw.glfwWindowHint(glfw.GLFW_CONTEXT_VERSION_MINOR, 1);
+    // glfw.glfwWindowHint(glfw.GLFW_OPENGL_PROFILE, glfw.GLFW_OPENGL_ANY_PROFILE);
+    window := glfw.glfwCreateWindow(width, height, "Triangles!!!", null, null);
     if (!window)
     {
         io.printf("glfwCreateWindow failed\n");
         return 9;
     }
 
+    glfw.glfwMakeContextCurrent(window);
+
+    msg : *u8 = null;
+    err := glfw.glfwGetError(*msg);
+    if (err != glfw.GLFW_NO_ERROR)
+    {
+        io.printf("GLFW error: %s\n", msg);
+        return 9;
+    }
+
+    gl.glViewport(0, 0, width, height);
+
+    vendor := gl.glGetString(gl.GL_VENDOR);
+    renderer := gl.glGetString(gl.GL_RENDERER);
+    version := gl.glGetString(gl.GL_VERSION);
+
+    io.printf("GL vendor: %s\n", vendor);
+    io.printf("GL renderer: %s\n", renderer);
+    io.printf("GL version: %s\n", version);
+
+    gl.glClearColor(0.0, 1.0, 0.0, 1.0);
+
     while (!glfw.glfwWindowShouldClose(window))
     {
-        glfw.glfwPollEvents();
-
         gl.glClear(gl.GL_COLOR_BUFFER_BIT);
-        gl.glBegin(gl.GL_TRIANGLE);
+        gl.glBegin(gl.GL_TRIANGLES);
+        gl.glColor3f(1.0, 0.0, 0.0);
         gl.glVertex3f(0.0, 0.0, 0.0);
         gl.glVertex3f(0.5, 0.0, 0.0);
         gl.glVertex3f(0.25, 0.5, 0.0);
@@ -33,5 +60,6 @@ main :: () -> int
         gl.glFlush();
 
         glfw.glfwSwapBuffers(window);
+        glfw.glfwPollEvents();
     }
 }

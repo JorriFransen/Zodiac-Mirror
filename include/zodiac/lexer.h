@@ -38,6 +38,7 @@ namespace Zodiac
 
     static void lex_identifier(Lexer* lexer);
     static void lex_integer_or_float(Lexer* lexer);
+    static void lex_hex_number(Lexer* lexer);
 
     static void lexer_consume_character(Lexer* lexer);
     static void lexer_consume_line(Lexer* lexer);

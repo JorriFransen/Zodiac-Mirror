@@ -1,8 +1,30 @@
 
-dummy :: 7;
+#dynamic_link "libGL.so";
 
 GLbitfield :: typedef u32;
+GLenum     :: typedef u32;
+GLubyte    :: typedef u8;
+GLint      :: typedef s32;
+GLsizei    :: typedef u32;
+GLfloat    :: typedef float;
+GLclampf   :: typedef float;
 
-GL_COLOR_BUFFER_BIT : GLbitfield : 
+GL_COLOR_BUFFER_BIT : GLbitfield : 0x00004000;
+
+GL_VENDOR    : GLenum : 0x1F00;
+GL_RENDERER  : GLenum : 0x1F01;
+GL_VERSION   : GLenum : 0x1F02;
+
+GL_TRIANGLES : GLenum : 0x00000004;
 
 #foreign glClear :: (mask: GLbitfield) -> void;
+#foreign glClearColor :: (r: GLclampf, g: GLclampf, b: GLclampf, a: GLclampf) -> void;
+#foreign glBegin :: (mode: GLenum) -> void;
+#foreign glEnd :: () -> void;
+#foreign glFlush :: () -> void;
+#foreign glVertex3f :: (x: GLfloat, y: GLfloat, z: GLfloat) -> void;
+#foreign glColor3f :: (r: GLfloat, g: GLfloat, b: GLfloat) -> void;
+#foreign glViewport :: (x: GLint, y: GLint, width: GLsizei, height: GLsizei) -> void;
+
+
+#foreign glGetString :: (name: GLenum) -> *GLubyte;
