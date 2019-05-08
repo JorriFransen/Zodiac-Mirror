@@ -1,5 +1,12 @@
 
-#dynamic_link "libGL.so";
+static_if (PLATFORM_WINDOWS)
+{
+    #dynamic_link "Opengl32.dll";
+}
+else static_if (PLATFORM_LINUX)
+{
+    #dynamic_link "libGL.so";
+}
 
 GLbitfield :: typedef u32;
 GLenum     :: typedef u32;
@@ -28,3 +35,13 @@ GL_TRIANGLES : GLenum : 0x00000004;
 
 
 #foreign glGetString :: (name: GLenum) -> *GLubyte;
+
+glGetStringProc :: typedef *(name: GLenum) -> *GLubyte;
+_glGetString : glGetStringProc = null;
+
+Load_Proc :: typedef *(proc_name: *u8) -> *void;
+
+load :: (load_proc: Load_Proc) -> void
+{
+    _glGetString = (:glGetStringProc)load_proc("glGetString");
+}

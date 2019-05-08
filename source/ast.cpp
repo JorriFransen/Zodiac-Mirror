@@ -232,6 +232,20 @@ namespace Zodiac
         return result;
     }
 
+	AST_Expression* ast_cast_expression_new(Context* context, File_Pos file_pos,
+		AST_Type_Spec* type_spec, AST_Expression* cast_expr)
+	{
+		assert(context);
+		assert(type_spec);
+		assert(cast_expr);
+
+		auto result = ast_expression_new(context, file_pos, AST_EXPR_CAST);
+		result->cast_expr.type_spec = type_spec;
+		result->cast_expr.expr = cast_expr;
+
+		return result;
+	}
+
     AST_Declaration* ast_declaration_new(Context* context, File_Pos file_pos,
                                          AST_Declaration_Kind kind,
                                          AST_Declaration_Location location,
@@ -741,6 +755,20 @@ namespace Zodiac
         return result;
     }
 
+    AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
+                                    AST_Type* return_type)
+    {
+        assert(context);
+        assert(return_type);
+
+        AST_Type* result = ast_type_new(context, AST_TYPE_FUNCTION, AST_TYPE_FLAG_NONE, 64);
+        result->function.is_vararg = is_vararg;
+        result->function.arg_types = arg_types;
+        result->function.return_type = return_type;
+
+        return result;
+    }
+
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind)
     {
         assert(context);
@@ -787,6 +815,20 @@ namespace Zodiac
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_STATIC_ARRAY);
         result->static_array.count_expr = count_expr;
         result->static_array.base = base_type_spec;
+
+        return result;
+    }
+
+    AST_Type_Spec* ast_type_spec_function_new(Context* context, File_Pos file_pos,
+                                              bool is_vararg, BUF(AST_Declaration*) arg_decls,
+                                              AST_Type_Spec* return_type_spec)
+    {
+        assert(context);
+        
+        AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_FUNCTION);
+        result->function.is_vararg = is_vararg;
+        result->function.args = arg_decls;
+        result->function.return_type_spec = return_type_spec;
 
         return result;
     }
@@ -861,4 +903,53 @@ namespace Zodiac
         BUF_PUSH(module->types, array_type);
         return array_type;
     }
+
+	AST_Type* ast_find_or_create_function_type(Context* context, AST_Module* module,
+		bool is_vararg,
+		BUF(AST_Type*) arg_types,
+		AST_Type* return_type)
+	{
+		assert(context);
+		assert(module);
+		assert(return_type);
+
+		for (uint64_t i = 0; i < BUF_LENGTH(module->types); i++)
+		{
+			AST_Type* ex_type = module->types[i];
+			if (ex_type->kind == AST_TYPE_FUNCTION)
+			{
+				bool ret_match = ex_type->function.return_type == return_type;
+				bool var_match = ex_type->function.is_vararg == is_vararg;
+				bool ac_match = BUF_LENGTH(ex_type->function.arg_types) ==
+					BUF_LENGTH(arg_types);
+
+				if (ret_match && var_match && ac_match)
+				{
+					uint64_t a_count = BUF_LENGTH(arg_types);
+					bool a_match = true;
+					for (uint64_t ai = 0; ai < a_count; ai++)
+					{
+						AST_Type* ex_arg_type = ex_type->function.arg_types[ai];
+						AST_Type* new_arg_type = arg_types[ai];
+
+						if (ex_arg_type != new_arg_type)
+						{
+							a_match = false;
+							break;
+						}
+					}
+
+					if (a_match)
+					{
+						return ex_type;
+					}
+				}
+
+			}
+		}
+
+		AST_Type* result = ast_type_function_new(context, is_vararg, arg_types, return_type);
+		BUF_PUSH(module->types, result);
+		return result;
+	}
 }

@@ -48,7 +48,8 @@ namespace Zodiac
                                                        AST_Declaration_Location location);
     static AST_Declaration* parse_mutable_declaration(Parser* parser, AST_Identifier* identifier,
                                                       AST_Type_Spec* type_spec,
-                                                      AST_Declaration_Location location);
+                                                      AST_Declaration_Location location,
+		AST_Scope* scope);
     static AST_Declaration* parse_link_declaration(Parser* parser, bool global, AST_Scope* scope,
                                                    AST_Directive* directive);
     static AST_Declaration* parse_static_if_declaration(Parser* parser, bool global, AST_Scope* scope);
@@ -60,29 +61,32 @@ namespace Zodiac
 
     static AST_Statement* parse_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope);
-    static AST_Statement* parse_return_statement(Parser* parser);
+    static AST_Statement* parse_return_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_if_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_while_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_for_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_switch_statement(Parser* parser, AST_Scope* scope);
 
-    static AST_Expression* parse_expression(Parser* parser);
-    static AST_Expression* parse_ternary_expression(Parser* parser);
-    static AST_Expression* parse_or_or_expression(Parser* parser);
-    static AST_Expression* parse_and_and_expression(Parser* parser);
-    static AST_Expression* parse_or_expression(Parser* parser);
-    static AST_Expression* parse_cmp_expression(Parser* parser);
-    static AST_Expression* parse_add_expression(Parser* parser);
-    static AST_Expression* parse_mul_expression(Parser* parser);
-    static AST_Expression* parse_unary_expression(Parser* parser);
-    static AST_Expression* parse_base_expression(Parser* parser, AST_Expression* base = nullptr);
-    static AST_Expression* parse_literal_expression(Parser* parser);
-    static AST_Expression* parse_compound_literal_expression(Parser* parser);
-    static AST_Expression* parse_array_length_expression(Parser* parser);
-    static AST_Expression* parse_call_expression(Parser* parser, AST_Expression* ident_expression);
-    static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier);
+    static AST_Expression* parse_expression(Parser* parser, AST_Scope* scope);
+    static AST_Expression* parse_ternary_expression(Parser* parser, AST_Scope* scope);
+    static AST_Expression* parse_or_or_expression(Parser* parser, AST_Scope* scope);
+    static AST_Expression* parse_and_and_expression(Parser* parser, AST_Scope* scope);
+    static AST_Expression* parse_or_expression(Parser* parser, AST_Scope* scope);
+    static AST_Expression* parse_cmp_expression(Parser* parser, AST_Scope* scope);
+    static AST_Expression* parse_add_expression(Parser* parser, AST_Scope* scope);
+    static AST_Expression* parse_mul_expression(Parser* parser, AST_Scope* scope);
+    static AST_Expression* parse_unary_expression(Parser* parser, AST_Scope* scope);
+    static AST_Expression* parse_base_expression(Parser* parser, AST_Scope* scope, AST_Expression* base = nullptr);
+    static AST_Expression* parse_literal_expression(Parser* parser, AST_Scope* scope);
+    static AST_Expression* parse_compound_literal_expression(Parser* parser, AST_Scope* scope);
+    static AST_Expression* parse_array_length_expression(Parser* parser, AST_Scope* scope);
+    static AST_Expression* parse_call_expression(Parser* parser, AST_Expression* ident_expression,
+		AST_Scope* scope);
+    static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier,
+		AST_Scope* scope);
 
-    static AST_Type_Spec* parse_type_spec(Parser* parser);
+    static AST_Type_Spec* parse_type_spec(Parser* parser, AST_Scope* scope);
+	static AST_Type_Spec* parse_function_type_spec(Parser* parser, AST_Scope* scope);
 
     static bool is_add_op(Parser* parser);
     static bool is_mul_op(Parser* parser);

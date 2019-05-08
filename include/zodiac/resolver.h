@@ -98,6 +98,8 @@ namespace Zodiac
                                              AST_Scope* scope);
     static bool try_resolve_dot_expression(Resolver* resolver, AST_Expression* expression,
         AST_Scope* scope);
+	static bool try_resolve_cast_expression(Resolver* resolver, AST_Expression* expression,
+		AST_Scope* scope);
 
     static bool try_resolve_identifier(Resolver* resolver, AST_Identifier* identifier,
                                        AST_Scope* scope);

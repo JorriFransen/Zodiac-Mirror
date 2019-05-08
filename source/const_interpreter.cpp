@@ -28,6 +28,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return false;
     }
 
     bool const_bool_decl_value(AST_Declaration* declaration, AST_Scope* scope)
@@ -46,5 +49,8 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return false;
     }
 }

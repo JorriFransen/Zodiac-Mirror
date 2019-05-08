@@ -656,6 +656,36 @@ namespace Zodiac
                 break;
             }
 
+			case IR_OP_CALL_PTR:
+			{
+				IR_Value* ptr_val = ir_runner_get_local_temporary(runner, iri->arg1);
+
+				dcMode(runner->dyn_vm, DC_CALL_C_DEFAULT);
+
+				assert(iri->result);
+				IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
+				assert(result_value);
+				
+				if (iri->result->type->kind == AST_TYPE_POINTER)
+				{
+					result_value->value.s64 = dcCallInt(runner->dyn_vm, ptr_val->value.string);
+				}
+				else assert(false);
+				break;
+			}
+
+			case IR_OP_ADDROF_FOREIGN:
+			{
+				IR_Value* func = iri->arg1;
+				assert(func->kind == IRV_FUNCTION);
+				uint64_t foreign_index = func->function->foreign_index;
+				assert(BUF_LENGTH(runner->loaded_foreign_symbols) > foreign_index);
+
+				IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
+				dest->value.string = (uint8_t*)runner->loaded_foreign_symbols[foreign_index];
+				break;
+			}
+
             case IR_OP_RETURN:
             {
                 if (iri->arg1)
@@ -1139,6 +1169,15 @@ namespace Zodiac
                 result_pointer_value->value.s64 = (int64_t)result_pointer;
                 break;
             }
+
+			case IR_OP_CAST:
+			{
+				IR_Value* source = ir_runner_get_local_temporary(runner, iri->arg1);
+				IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
+
+				dest->value = source->value;
+				break;
+			}
 
             case IR_OP_AGGREGATE_OFFSET_POINTER:
             {

@@ -98,6 +98,8 @@ namespace Zodiac
         IR_OP_CALL,
         IR_OP_PUSH_EX_CALL_ARG,
         IR_OP_CALL_EX,
+		IR_OP_ADDROF_FOREIGN,
+		IR_OP_CALL_PTR,
         IR_OP_RETURN,
 
         IR_OP_SUBSCRIPT,
@@ -124,6 +126,8 @@ namespace Zodiac
         IR_OP_DEREF,
         IR_OP_ARRAY_OFFSET_POINTER,
         IR_OP_AGGREGATE_OFFSET_POINTER,
+
+		IR_OP_CAST,
     };
 
     struct IR_Instruction
@@ -227,8 +231,11 @@ namespace Zodiac
                                           IR_Value* break_block);
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_dot_expression(IR_Builder* ir_builder, AST_Expression* expression);
+	IR_Value* ir_builder_emit_cast_expression(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_load_lit(IR_Builder* ir_builder, IR_Value* literal);
     IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression);
+	IR_Value* ir_builder_emit_addrof_foreign(IR_Builder* ir_builder, IR_Value* foreign_func,
+		AST_Type* foreign_type);
     IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_not(IR_Builder* ir_builder, AST_Expression* expression);
 
@@ -285,6 +292,8 @@ namespace Zodiac
     void ir_builder_emit_storeg(IR_Builder* ir_builder, IR_Value* global_value, IR_Value* new_value);
     IR_Value* ir_builder_emit_loadg(IR_Builder* ir_builder, IR_Value* global_value);
 
+	IR_Value* ir_builder_emit_load(IR_Builder* ir_builder, IR_Value* store);
+
     IR_Value* ir_boolean_literal(IR_Builder* ir_builder, AST_Type* type, bool value);
 	IR_Value* ir_null_literal(IR_Builder* ir_builder, AST_Type* type);
     IR_Value* ir_string_literal(IR_Builder* ir_builder, AST_Type* type, Atom string);
@@ -318,5 +327,6 @@ namespace Zodiac
     void ir_print_instruction(IR_Instruction* instruction);
     void ir_print_value(IR_Value* value);
     void ir_print_string_literal(const char* string);
+	void ir_print_type(AST_Type* type);
     void ir_print_character(char c);
 }

@@ -52,6 +52,7 @@ namespace Zodiac
         AST_EXPR_COMPOUND_LITERAL,
         AST_EXPR_ARRAY_LENGTH,
         AST_EXPR_DOT,
+		AST_EXPR_CAST,
     };
 
     enum AST_Binop_Kind
@@ -165,6 +166,12 @@ namespace Zodiac
                 AST_Expression* base_expression;
                 AST_Expression* member_expression;
             } dot;
+
+			struct
+			{
+				AST_Type_Spec* type_spec;
+				AST_Expression* expr;
+			} cast_expr;
         };
     };
 
@@ -281,6 +288,8 @@ namespace Zodiac
 
         // The body block will have it's own scope, this will be it's parent
         AST_Scope* argument_scope = nullptr;
+
+		AST_Type* type = nullptr;
     };
 
     struct AST_Mutable_Declaration
@@ -404,6 +413,7 @@ namespace Zodiac
         AST_TYPE_STATIC_ARRAY,
         AST_TYPE_STRUCT,
         AST_TYPE_ENUM,
+        AST_TYPE_FUNCTION,
     };
 
     typedef uint64_t AST_Type_Flags;
@@ -446,6 +456,13 @@ namespace Zodiac
                 BUF(AST_Enum_Member_Decl*) member_declarations;
                 AST_Type* base_type;
             } enum_type;
+
+            struct
+            {
+                bool is_vararg;
+                BUF(AST_Type*) arg_types;
+                AST_Type* return_type;
+            } function;
         };
     };
 
@@ -454,6 +471,7 @@ namespace Zodiac
         AST_TYPE_SPEC_IDENT,
         AST_TYPE_SPEC_POINTER,
         AST_TYPE_SPEC_STATIC_ARRAY,
+        AST_TYPE_SPEC_FUNCTION,
     };
 
     struct AST_Type_Spec
@@ -475,6 +493,13 @@ namespace Zodiac
                 AST_Expression* count_expr;
                 AST_Type_Spec* base;
             } static_array;
+
+            struct 
+            {
+                bool is_vararg;
+                BUF(AST_Declaration*) args;
+                AST_Type_Spec* return_type_spec;
+            } function;
         };
     };
 
@@ -536,6 +561,8 @@ namespace Zodiac
     AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos,
                                            AST_Expression* base_expr,
                                            AST_Expression* member_expr);
+	AST_Expression* ast_cast_expression_new(Context* context, File_Pos file_pos,
+		AST_Type_Spec* type_spec, AST_Expression* cast_expr);
 
     AST_Declaration* ast_declaration_new(Context* context, File_Pos file_Pos,
                                          AST_Declaration_Kind kind,
@@ -621,6 +648,8 @@ namespace Zodiac
                                   uint64_t bit_size);
     AST_Type* ast_type_enum_new(Context* context, BUF(AST_Enum_Member_Decl*) member_decls,
                                 AST_Type* base_type);
+    AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
+                                    AST_Type* return_type);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind);
     AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos,
@@ -630,6 +659,9 @@ namespace Zodiac
     AST_Type_Spec* ast_type_spec_static_array_new(Context* context, File_Pos file_pos,
                                                   AST_Expression* count_expr,
                                                   AST_Type_Spec* base_type_spec);
+    AST_Type_Spec* ast_type_spec_function_new(Context* context, File_Pos file_pos,
+                                              bool is_vararg, BUF(AST_Declaration*) arg_decls,
+                                              AST_Type_Spec* return_type_spec);
 
     AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope);
 
@@ -640,4 +672,8 @@ namespace Zodiac
                                             AST_Expression* count_expr);
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module,
                                             AST_Type* base_type, uint64_t count);
+	AST_Type* ast_find_or_create_function_type(Context* context, AST_Module* module,
+		                                       bool is_vararg,
+             		                           BUF(AST_Type*) arg_types,
+		                                       AST_Type* return_type);
 }

@@ -150,7 +150,7 @@ namespace Zodiac
         if (!is_token(parser, TOK_COLON) &&
             !is_token(parser, TOK_EQ))
         {
-            type_spec = parse_type_spec(parser);
+            type_spec = parse_type_spec(parser, scope);
         }
 
         if (is_token(parser, TOK_COLON))
@@ -169,7 +169,7 @@ namespace Zodiac
             {
                 loc = location;
             }
-            result = parse_mutable_declaration(parser, identifier, type_spec, loc);
+            result = parse_mutable_declaration(parser, identifier, type_spec, loc, scope);
             if (!result)
             {
                 return nullptr;
@@ -235,7 +235,7 @@ namespace Zodiac
             AST_Type_Spec* return_type_spec = nullptr;
             if (match_token(parser, TOK_RARROW))
             {
-                return_type_spec = parse_type_spec(parser);
+                return_type_spec = parse_type_spec(parser, scope);
             }
 
             AST_Statement* body_block = nullptr;
@@ -271,7 +271,7 @@ namespace Zodiac
 		{
 			assert(!type_spec);
 
-			AST_Type_Spec* type_spec = parse_type_spec(parser);
+			AST_Type_Spec* type_spec = parse_type_spec(parser, scope);
 			assert(type_spec);
 			expect_token(parser, TOK_SEMICOLON);
 
@@ -295,7 +295,7 @@ namespace Zodiac
         }
         else
         {
-            AST_Expression* init_expression = parse_expression(parser);
+            AST_Expression* init_expression = parse_expression(parser, scope);
             if (!expect_token(parser, TOK_SEMICOLON))
             {
                 return nullptr;
@@ -308,16 +308,18 @@ namespace Zodiac
 
     static AST_Declaration* parse_mutable_declaration(Parser* parser, AST_Identifier* identifier,
                                                       AST_Type_Spec* type_spec,
-                                                      AST_Declaration_Location location)
+                                                      AST_Declaration_Location location,
+		AST_Scope* scope)
     {
         assert(parser);
         assert(identifier);
         assert(location != AST_DECL_LOC_INVALID);
+		assert(scope);
 
         AST_Expression* init_expression = nullptr;
         if (match_token(parser, TOK_EQ))
         {
-            init_expression = parse_expression(parser);
+            init_expression = parse_expression(parser, scope);
             if (!init_expression)
             {
                 return nullptr;
@@ -362,7 +364,7 @@ namespace Zodiac
 
         expect_token(parser, TOK_LPAREN);
 
-        AST_Expression* cond_expr = parse_expression(parser);
+        AST_Expression* cond_expr = parse_expression(parser, scope);
         if (!cond_expr)
         {
             return nullptr;
@@ -425,7 +427,7 @@ namespace Zodiac
         expect_token(parser, TOK_KW_STATIC_ASSERT);
 
         expect_token(parser, TOK_LPAREN);
-        AST_Expression* assert_expr = parse_expression(parser);
+        AST_Expression* assert_expr = parse_expression(parser, scope);
         expect_token(parser, TOK_RPAREN);
         expect_token(parser, TOK_SEMICOLON);
 
@@ -488,7 +490,7 @@ namespace Zodiac
         switch (ft.kind)
         {
             case TOK_KW_RETURN:
-                return parse_return_statement(parser);
+                return parse_return_statement(parser, scope);
                 break;
 
             case TOK_KW_IF:
@@ -524,7 +526,7 @@ namespace Zodiac
         }
 
         // AST_Identifier* identifier = parse_identifier(parser);
-        AST_Expression* lvalue_expr = parse_expression(parser);
+        AST_Expression* lvalue_expr = parse_expression(parser, scope);
         // if (!identifier)
         // {
         //     return nullptr;
@@ -548,7 +550,7 @@ namespace Zodiac
         }
         else if (match_token(parser, TOK_EQ))
         {
-            AST_Expression* assign_expression = parse_expression(parser);
+            AST_Expression* assign_expression = parse_expression(parser, scope);
             match_token(parser, TOK_SEMICOLON);
             return ast_assign_statement_new(parser->context, ft.file_pos, lvalue_expr,
                                             assign_expression);
@@ -595,7 +597,7 @@ namespace Zodiac
         return ast_block_statement_new(parser->context, ft.file_pos, block_statements, block_scope);
     }
 
-    static AST_Statement* parse_return_statement(Parser* parser)
+    static AST_Statement* parse_return_statement(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
 
@@ -606,7 +608,7 @@ namespace Zodiac
 
         if (!is_token(parser, TOK_SEMICOLON))
         {
-            return_expr = parse_expression(parser);
+            return_expr = parse_expression(parser, scope);
         }
 
         if (!expect_token(parser, TOK_SEMICOLON))
@@ -626,7 +628,7 @@ namespace Zodiac
         expect_token(parser, TOK_KW_IF);
         expect_token(parser, TOK_LPAREN);
 
-        AST_Expression* cond_expr = parse_expression(parser);
+        AST_Expression* cond_expr = parse_expression(parser, scope);
 
         expect_token(parser, TOK_RPAREN);
 
@@ -655,7 +657,7 @@ namespace Zodiac
         expect_token(parser, TOK_KW_WHILE);
         expect_token(parser, TOK_LPAREN);
 
-        AST_Expression* while_condition_expr = parse_expression(parser);
+        AST_Expression* while_condition_expr = parse_expression(parser, scope);
         if (!while_condition_expr)
         {
             return nullptr;
@@ -692,7 +694,7 @@ namespace Zodiac
 
         assert(for_decl_statement->kind == AST_STMT_DECLARATION);
 
-        AST_Expression* for_cond_expr = parse_expression(parser);
+        AST_Expression* for_cond_expr = parse_expression(parser, scope);
         if (!for_cond_expr)
         {
             return nullptr;
@@ -728,7 +730,7 @@ namespace Zodiac
         expect_token(parser, TOK_KW_SWITCH);
 
         expect_token(parser, TOK_LPAREN);
-        AST_Expression* switch_expr = parse_expression(parser);
+        AST_Expression* switch_expr = parse_expression(parser, scope);
         expect_token(parser, TOK_RPAREN);
 
         BUF(AST_Switch_Case) cases = nullptr;
@@ -747,14 +749,14 @@ namespace Zodiac
 
                 while (!match_token(parser, TOK_COLON))
                 {
-                    AST_Expression* case_expr = parse_expression(parser);
+                    AST_Expression* case_expr = parse_expression(parser, scope);
                     assert(case_expr);
 
                     if (match_token(parser, TOK_DOUBLE_DOT))
                     {
                         BUF_PUSH(range_expressions, case_expr);
 
-                        AST_Expression* rhs = parse_expression(parser);
+                        AST_Expression* rhs = parse_expression(parser, scope);
                         assert(rhs);
                         BUF_PUSH(range_expressions, rhs);
                     }
@@ -805,26 +807,26 @@ namespace Zodiac
         return ast_switch_statement_new(parser->context, ft.file_pos, switch_expr, cases);
     }
 
-    static AST_Expression* parse_expression(Parser* parser)
+    static AST_Expression* parse_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
 
 
-        return parse_ternary_expression(parser);
+        return parse_ternary_expression(parser, scope);
     }
 
-    static AST_Expression* parse_ternary_expression(Parser* parser)
+    static AST_Expression* parse_ternary_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
 
-        return parse_or_or_expression(parser);
+        return parse_or_or_expression(parser, scope);
     }
 
-    static AST_Expression* parse_or_or_expression(Parser* parser)
+    static AST_Expression* parse_or_or_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
 
-        AST_Expression* lhs = parse_and_and_expression(parser);
+        AST_Expression* lhs = parse_and_and_expression(parser, scope);
 
         // while (match_token(parser, TOK_OR_OR))
         // {
@@ -836,11 +838,11 @@ namespace Zodiac
         return lhs;
     }
 
-    static AST_Expression* parse_and_and_expression(Parser* parser)
+    static AST_Expression* parse_and_and_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
 
-        AST_Expression* lhs = parse_or_expression(parser);
+        AST_Expression* lhs = parse_or_expression(parser, scope);
 
         // while (match_token(parser, TOK_AND_AND))
         // {
@@ -852,11 +854,11 @@ namespace Zodiac
         return lhs;
     }
 
-    static AST_Expression* parse_or_expression(Parser* parser)
+    static AST_Expression* parse_or_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
 
-        AST_Expression* lhs = parse_cmp_expression(parser);
+        AST_Expression* lhs = parse_cmp_expression(parser, scope);
 
         // while (match_token(parser, TOK_OR))
         // {
@@ -868,77 +870,80 @@ namespace Zodiac
         return lhs;
     }
 
-    static AST_Expression* parse_cmp_expression(Parser* parser)
+    static AST_Expression* parse_cmp_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
 
-        AST_Expression* lhs = parse_add_expression(parser);
+        AST_Expression* lhs = parse_add_expression(parser, scope);
 
         while (is_cmp_op(parser))
         {
             auto op_tok = current_token(parser);
             auto op = parse_cmp_op(parser);
-            AST_Expression* rhs = parse_add_expression(parser);
+            AST_Expression* rhs = parse_add_expression(parser, scope);
             lhs = ast_binary_expression_new(parser->context, op_tok.file_pos, lhs, op, rhs);
         }
 
         return lhs;
     }
 
-    static AST_Expression* parse_add_expression(Parser* parser)
+    static AST_Expression* parse_add_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
 
-        AST_Expression* lhs = parse_mul_expression(parser);
+        AST_Expression* lhs = parse_mul_expression(parser, scope);
 
         while (is_add_op(parser))
         {
             auto op_tok = current_token(parser);
             auto op = parse_add_op(parser);
-            AST_Expression* rhs = parse_mul_expression(parser);
+            AST_Expression* rhs = parse_mul_expression(parser, scope);
             lhs = ast_binary_expression_new(parser->context, op_tok.file_pos, lhs, op, rhs);
         }
 
         return lhs;
     }
 
-    static AST_Expression* parse_mul_expression(Parser* parser)
+    static AST_Expression* parse_mul_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
 
-        AST_Expression* lhs = parse_unary_expression(parser);
+        AST_Expression* lhs = parse_unary_expression(parser, scope);
 
         while (is_mul_op(parser))
         {
             auto op_tok = current_token(parser);
             auto op = parse_mul_op(parser);
-            AST_Expression* rhs = parse_mul_expression(parser);
+            AST_Expression* rhs = parse_mul_expression(parser, scope);
             lhs = ast_binary_expression_new(parser->context, op_tok.file_pos, lhs, op, rhs);
         }
 
         return lhs;
     }
 
-    static AST_Expression* parse_unary_expression(Parser* parser)
+    static AST_Expression* parse_unary_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
+		assert(scope);
 
         if (is_unary_op(parser))
         {
             auto op_tok = current_token(parser);
             auto op = parse_unary_op(parser);
-            AST_Expression* operand_expr = parse_unary_expression(parser);
+            AST_Expression* operand_expr = parse_unary_expression(parser, scope);
             return ast_unary_expression_new(parser->context, op_tok.file_pos, op, operand_expr);
         }
         else
         {
-            return parse_base_expression(parser);
+            return parse_base_expression(parser, scope);
         }
     }
 
-    static AST_Expression* parse_base_expression(Parser* parser, AST_Expression* base/*=nullptr*/)
+    static AST_Expression* parse_base_expression(Parser* parser, AST_Scope* scope,
+		                                         AST_Expression* base/*=nullptr*/)
     {
         assert(parser);
+		assert(scope);
 
         AST_Expression* result = nullptr;
         auto ft = current_token(parser);
@@ -956,7 +961,7 @@ namespace Zodiac
 
                 if (is_token(parser, TOK_LPAREN))
                 {
-                    result = parse_call_expression(parser, identifier);
+                    result = parse_call_expression(parser, identifier, scope);
                 }
                 else
                 {
@@ -965,20 +970,31 @@ namespace Zodiac
             }
             else if (is_token(parser, TOK_KW_ARRAY_LENGTH))
             {
-                result = parse_array_length_expression(parser);
+                result = parse_array_length_expression(parser, scope);
             }
             else
             {
+				auto fp = current_token(parser).file_pos;
                 // Paren expr
                 if (match_token(parser, TOK_LPAREN))
                 {
-                    result = parse_expression(parser);
-                    expect_token(parser, TOK_RPAREN);
+					if (match_token(parser, TOK_COLON))
+					{
+						AST_Type_Spec* cast_ts = parse_type_spec(parser, scope);
+						expect_token(parser, TOK_RPAREN);
+						AST_Expression* cast_expr = parse_expression(parser, scope);
+						result = ast_cast_expression_new(parser->context, fp, cast_ts, cast_expr);
+					}
+					else
+					{
+						result = parse_expression(parser, scope);
+						expect_token(parser, TOK_RPAREN);
+					}
                 }
                 else
                 {
                     // Literal
-                    result = parse_literal_expression(parser);
+                    result = parse_literal_expression(parser, scope);
                 }
             }
 
@@ -1000,7 +1016,7 @@ namespace Zodiac
             case TOK_LBRACK:
             {
                 expect_token(parser, TOK_LBRACK);
-                AST_Expression* index_expr = parse_expression(parser);
+                AST_Expression* index_expr = parse_expression(parser, scope);
                 expect_token(parser, TOK_RBRACK);
                 result = ast_subscript_expression_new(parser->context, ft.file_pos, result,
                                                       index_expr);
@@ -1023,7 +1039,7 @@ namespace Zodiac
 
             case TOK_LPAREN:
             {
-                result = parse_call_expression(parser, result);
+                result = parse_call_expression(parser, result, scope);
                 break;
             }
 
@@ -1036,15 +1052,16 @@ namespace Zodiac
 
         if (!done)
         {
-            result = parse_base_expression(parser, result);
+            result = parse_base_expression(parser, scope, result);
         }
 
         return result;
     }
 
-    static AST_Expression* parse_literal_expression(Parser* parser)
+    static AST_Expression* parse_literal_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
+		assert(scope);
 
         auto ct = current_token(parser);
         //expect_token(parser, TOK_INTEGER);
@@ -1113,7 +1130,7 @@ namespace Zodiac
 
             case TOK_LBRACE:
             {
-                return parse_compound_literal_expression(parser);
+                return parse_compound_literal_expression(parser, scope);
                 break;
             }
 
@@ -1124,7 +1141,7 @@ namespace Zodiac
         return nullptr;
     }
 
-    static AST_Expression* parse_compound_literal_expression(Parser* parser)
+    static AST_Expression* parse_compound_literal_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
 
@@ -1140,34 +1157,37 @@ namespace Zodiac
                 expect_token(parser, TOK_COMMA);
             }
 
-            AST_Expression* compound_expression = parse_expression(parser);
+            AST_Expression* compound_expression = parse_expression(parser, scope);
             BUF_PUSH(compound_expressions, compound_expression);
         }
 
         return ast_compound_literal_expression_new(parser->context, ft.file_pos, compound_expressions);
     }
 
-    static AST_Expression* parse_array_length_expression(Parser* parser)
+    static AST_Expression* parse_array_length_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
+		assert(scope);
 
         auto ft = current_token(parser);
 
         expect_token(parser, TOK_KW_ARRAY_LENGTH);
         expect_token(parser, TOK_LPAREN);
-        AST_Expression* ident_expr = parse_expression(parser);
+        AST_Expression* ident_expr = parse_expression(parser, scope);
         assert(ident_expr->kind == AST_EXPR_IDENTIFIER);
         expect_token(parser, TOK_RPAREN);
 
         return ast_array_length_expression_new(parser->context, ft.file_pos, ident_expr);
     }
 
-    static AST_Expression* parse_call_expression(Parser* parser, AST_Expression* ident_expression)
+    static AST_Expression* parse_call_expression(Parser* parser, AST_Expression* ident_expression,
+		AST_Scope* scope)
     {
         assert(parser);
         assert(ident_expression);
         assert(ident_expression->kind == AST_EXPR_IDENTIFIER ||
                ident_expression->kind == AST_EXPR_DOT);
+		assert(scope);
 
         expect_token(parser, TOK_LPAREN);
 
@@ -1180,7 +1200,7 @@ namespace Zodiac
                 expect_token(parser, TOK_COMMA);
             }
 
-            AST_Expression* arg_expr = parse_expression(parser);
+            AST_Expression* arg_expr = parse_expression(parser, scope);
             if (!arg_expr)
             {
                 return nullptr;
@@ -1191,34 +1211,41 @@ namespace Zodiac
         return ast_call_expression_new(parser->context, ident_expression->file_pos, ident_expression, arg_exprs);
     }
 
-    static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier)
+    static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier,
+		AST_Scope* scope)
     {
         assert(parser);
         assert(identifier);
+		assert(scope);
 
         AST_Expression* ident_expression = ast_ident_expression_new(parser->context, identifier->file_pos,
                                                                     identifier);
-        return parse_call_expression(parser, ident_expression);
+        return parse_call_expression(parser, ident_expression, scope);
     }
 
-    static AST_Type_Spec* parse_type_spec(Parser* parser)
+    static AST_Type_Spec* parse_type_spec(Parser* parser, AST_Scope* scope)
 
     {
         assert(parser);
+		assert(scope);
 
         auto ft = current_token(parser);
 
         if (match_token(parser, TOK_MUL))
         {
-            AST_Type_Spec* base_type_spec = parse_type_spec(parser);
+            AST_Type_Spec* base_type_spec = parse_type_spec(parser, scope);
             return ast_type_spec_pointer_new(parser->context, ft.file_pos, base_type_spec);
         }
+		else if (is_token(parser, TOK_LPAREN))
+		{
+			return parse_function_type_spec(parser, scope);
+		}
         else if (match_token(parser, TOK_LBRACK))
         {
-            AST_Expression* count_expr = parse_expression(parser);
+            AST_Expression* count_expr = parse_expression(parser, scope);
             assert(count_expr->kind == AST_EXPR_INTEGER_LITERAL);
             expect_token(parser, TOK_RBRACK);
-            AST_Type_Spec* base_type_spec = parse_type_spec(parser);
+            AST_Type_Spec* base_type_spec = parse_type_spec(parser, scope);
             return ast_type_spec_static_array_new(parser->context, ft.file_pos, count_expr, base_type_spec);
         }
         else
@@ -1232,6 +1259,53 @@ namespace Zodiac
             return ast_type_spec_identifier_new(parser->context, typespec_ident->file_pos, typespec_ident);
         }
     }
+
+	static AST_Type_Spec* parse_function_type_spec(Parser* parser, AST_Scope* scope)
+	{
+		assert(parser);
+		assert(scope);
+
+		auto ft = current_token(parser);
+
+		bool is_vararg = false;
+		BUF(AST_Declaration*) arg_decls = nullptr;
+
+		expect_token(parser, TOK_LPAREN);
+		while (!match_token(parser, TOK_RPAREN))
+		{
+			assert(!is_vararg);
+	
+			if (arg_decls)
+			{
+				expect_token(parser, TOK_COLON);
+			}
+
+			if (match_token(parser, TOK_ELLIPSIS))
+			{
+				is_vararg = true;
+			}
+			else
+			{
+				AST_Declaration* decl = parse_declaration(parser, scope, false, nullptr,
+														  AST_DECL_LOC_ARGUMENT);
+
+				if (!decl)
+				{
+					return nullptr;
+				}
+				BUF_PUSH(arg_decls, decl);
+			}
+		}
+
+		AST_Type_Spec* return_type_spec = nullptr;
+		if (match_token(parser, TOK_RARROW))
+		{
+			return_type_spec = parse_type_spec(parser, scope);
+		}
+
+		return ast_type_spec_function_new(parser->context, ft.file_pos, is_vararg, arg_decls,
+		                                  return_type_spec);
+	}
 
     static bool is_add_op(Parser* parser)
     {

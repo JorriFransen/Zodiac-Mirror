@@ -27,6 +27,11 @@ main :: () -> int
     }
 
     glfw.glfwMakeContextCurrent(window);
+    
+    gl.load(*glfw.glfwGetProcAddress);
+
+    _vendor := gl._glGetString(gl.GL_VENDOR);
+    io.printf("GL _vendor: %s\n", _vendor);
 
     msg : *u8 = null;
     err := glfw.glfwGetError(*msg);

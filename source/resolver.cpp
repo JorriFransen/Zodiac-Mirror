@@ -188,10 +188,23 @@ namespace Zodiac
         AST_Scope* arg_scope  = declaration->function.argument_scope;
         assert(arg_scope->parent == scope);
 
+		AST_Type* func_type = nullptr;
+		BUF(AST_Type*) arg_types = nullptr;
+
         for (uint64_t i = 0; i < BUF_LENGTH(declaration->function.args); i++)
         {
             AST_Declaration* arg_decl = declaration->function.args[i];
             result &= try_resolve_declaration(resolver, arg_decl, arg_scope);
+			if (result)
+			{
+				assert(arg_decl->kind == AST_DECL_MUTABLE);
+				BUF_PUSH(arg_types, arg_decl->mutable_decl.type);
+			}
+			else
+			{
+				BUF_FREE(arg_types);
+				break;
+			}
         }
 
         if (!declaration->function.return_type && declaration->function.return_type_spec)
@@ -230,6 +243,10 @@ namespace Zodiac
 
         if (result)
         {
+			declaration->function.type = ast_find_or_create_function_type(resolver->context,
+				resolver->module, declaration->function.is_vararg, arg_types,
+				declaration->function.return_type);
+
             auto main_atom = atom_get(resolver->context->atom_table, "main");
             if (main_atom == declaration->identifier->atom)
             {
@@ -899,6 +916,12 @@ namespace Zodiac
                 break;
             }
 
+			case AST_EXPR_CAST:
+			{
+				result &= try_resolve_cast_expression(resolver, expression, scope);
+				break;
+			}
+
             default:
             {
                 assert(false);
@@ -978,11 +1001,24 @@ namespace Zodiac
             {
                 result = false;
             }
-
-            assert(func_decl->kind == AST_DECL_FUNC);
         }
 
+		AST_Type* return_type = nullptr;
+
         assert(func_decl);
+		if (func_decl->kind == AST_DECL_FUNC)
+		{
+			return_type = func_decl->function.return_type;
+		}
+		else if (func_decl->kind == AST_DECL_MUTABLE && func_decl->mutable_decl.type &&
+			func_decl->mutable_decl.type->kind == AST_TYPE_POINTER &&
+			func_decl->mutable_decl.type->pointer.base->kind == AST_TYPE_FUNCTION)
+		{
+			return_type = func_decl->mutable_decl.type->pointer.base->function.return_type;
+		}
+		else assert(false);
+
+		assert(return_type);
 
         for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
         {
@@ -1002,9 +1038,9 @@ namespace Zodiac
             result &= try_resolve_expression(resolver, arg_expr, scope, specified_arg_type);
         }
 
-        if (result && !expression->type && func_decl->function.return_type)
+        if (result && !expression->type && return_type)
         {
-            expression->type = func_decl->function.return_type;
+            expression->type = return_type;
         }
 
         if (!expression->type)
@@ -1360,7 +1396,6 @@ namespace Zodiac
                     if (operand_expr->kind == AST_EXPR_DOT)
                     {
                         assert(operand_expr->dot.base_expression->kind == AST_EXPR_IDENTIFIER);
-                        assert(operand_expr->dot.base_expression->type->kind == AST_TYPE_STRUCT);
                         assert(operand_expr->dot.member_expression->kind == AST_EXPR_IDENTIFIER);
                     }
                     expression->type = ast_find_or_create_pointer_type(resolver->context,
@@ -1536,6 +1571,10 @@ namespace Zodiac
             {
                 expression->type = var_decl->constant_var.type;
             }
+			else if (var_decl->kind == AST_DECL_FUNC)
+			{
+				expression->type = var_decl->function.type;
+			}
             else assert(false);
 
             result &= try_resolve_identifier(resolver, member_expression->identifier,
@@ -1543,6 +1582,29 @@ namespace Zodiac
             return result;
         }
     }
+
+	static bool try_resolve_cast_expression(Resolver* resolver, AST_Expression* expression,
+		AST_Scope* scope)
+	{
+		assert(resolver);
+		assert(expression);
+		assert(scope);
+
+		bool result = true;
+
+		AST_Type* type = nullptr;
+		result &= try_resolve_type_spec(resolver, expression->cast_expr.type_spec, &type, scope);
+
+		result &= try_resolve_expression(resolver, expression->cast_expr.expr, scope);
+		
+		if (result && !expression->type)
+		{
+			assert(type);
+			expression->type = type;
+		}
+
+		return result;
+	}
 
     static bool try_resolve_identifier(Resolver* resolver, AST_Identifier* identifier,
                                        AST_Scope* scope)
@@ -1584,6 +1646,13 @@ namespace Zodiac
                 return false;
             }
         }
+		else if (decl->kind == AST_DECL_FUNC)
+		{
+			if (!decl->function.type)
+			{
+				return false;
+			}
+		}
         else if (decl->kind == AST_DECL_IMPORT)
         {
             // Do nothing for now.
@@ -1709,6 +1778,45 @@ namespace Zodiac
                 }
                 break;
             }
+
+			case AST_TYPE_SPEC_FUNCTION:
+			{
+				bool result = true;
+				BUF(AST_Type*) arg_types = nullptr;
+				for (uint64_t i = 0; i < BUF_LENGTH(type_spec->function.args); i++)
+				{
+					AST_Declaration* arg_decl = type_spec->function.args[i];
+					bool arg_result = try_resolve_declaration(resolver, arg_decl, scope);
+					if (!arg_result)
+					{
+						result = false;
+						BUF_FREE(arg_types);
+						break;
+					}
+
+					assert(arg_decl->kind == AST_DECL_MUTABLE);
+					
+					BUF_PUSH(arg_types, arg_decl->mutable_decl.type);
+				}
+
+				AST_Type* return_type = nullptr;
+				AST_Type_Spec* return_type_spec = type_spec->function.return_type_spec;
+				if (return_type_spec)
+				{
+					result &= try_resolve_type_spec(resolver, return_type_spec, &return_type, scope);
+				}
+
+				if (result)
+				{
+					AST_Type* result_type =
+						ast_find_or_create_function_type(resolver->context, resolver->module,
+						                                 type_spec->function.is_vararg,
+						                                 arg_types, return_type);
+					*type_dest = result_type;
+					return true;
+				}
+				return false;
+			}
 
             default: assert(false);
         }

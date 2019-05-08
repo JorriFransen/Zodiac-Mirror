@@ -1,5 +1,12 @@
 
-#dynamic_link "libglfw.so.3.3";
+static_if (PLATFORM_WINDOWS)
+{
+    #dynamic_link "glfw3.dll";
+}
+else static_if (PLATFORM_LINUX)
+{
+    #dynamic_link "libglfw.so.3.3";
+}
 
 GLFWmonitor :: struct {}
 GLFWwindow :: struct {}
@@ -23,3 +30,5 @@ glfwCreateWindow :: (width: int, height: int, title: *u8, monitor: *GLFWmonitor,
 #foreign glfwPollEvents :: () -> void;
 #foreign glfwWindowHint :: (hint: int, value: int) -> void;
 #foreign glfwGetError :: (desc: **u8) -> int;
+
+#foreign glfwGetProcAddress :: (procname: *u8) -> *void;
