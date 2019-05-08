@@ -986,8 +986,20 @@ namespace Zodiac
 
         for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
         {
+            AST_Type* specified_arg_type = nullptr;
+            if (i < BUF_LENGTH(func_decl->function.args))
+            {
+                AST_Declaration* arg_decl = func_decl->function.args[i];
+                assert(arg_decl->kind == AST_DECL_MUTABLE);
+                specified_arg_type = arg_decl->mutable_decl.type;
+            }
+            else
+            {
+                assert(func_decl->function.is_vararg);
+            }
+
             AST_Expression* arg_expr = expression->call.arg_expressions[i];
-            result &= try_resolve_expression(resolver, arg_expr, scope);
+            result &= try_resolve_expression(resolver, arg_expr, scope, specified_arg_type);
         }
 
         if (result && !expression->type && func_decl->function.return_type)
