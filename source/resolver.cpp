@@ -270,6 +270,14 @@ namespace Zodiac
             {
                 suggested_type = declaration->mutable_decl.type;
             }
+            else if (declaration->mutable_decl.type == Builtin::type_double)
+            {
+                suggested_type = Builtin::type_double;
+            }
+            else if (declaration->mutable_decl.type == Builtin::type_float)
+            {
+                suggested_type = Builtin::type_float;
+            }
             result &= try_resolve_expression(resolver, init_expr, scope, suggested_type);
 
             if (result && !declaration->mutable_decl.type_spec)
@@ -779,11 +787,13 @@ namespace Zodiac
 
         bool result = true;
 
-        if (suggested_type)
-        {
-            assert(expression->kind == AST_EXPR_COMPOUND_LITERAL ||
-                   expression->kind == AST_EXPR_INTEGER_LITERAL);
-        }
+        // if (suggested_type)
+        // {
+        //     assert(expression->kind == AST_EXPR_COMPOUND_LITERAL ||
+        //            expression->kind == AST_EXPR_INTEGER_LITERAL ||
+        //            ((expression->kind == AST_EXPR_FLOAT_LITERAL) ||
+        //             (expression->type->flags & AST_TYPE_FLAG_FLOAT)));
+        // }
 
         switch (expression->kind)
         {
@@ -859,7 +869,8 @@ namespace Zodiac
 
             case AST_EXPR_FLOAT_LITERAL:
             {
-                result &= try_resolve_float_literal_expression(resolver, expression);
+                assert(suggested_type);
+                result &= try_resolve_float_literal_expression(resolver, expression, suggested_type);
                 break;
             }
 
@@ -1074,7 +1085,8 @@ namespace Zodiac
     }
 
     static bool try_resolve_float_literal_expression(Resolver* resolver,
-                                                     AST_Expression* expression)
+                                                     AST_Expression* expression,
+                                                     AST_Type* suggested_type)
     {
         assert(resolver);
         assert(expression);
@@ -1082,7 +1094,21 @@ namespace Zodiac
 
         if (!expression->type)
         {
-            expression->type = Builtin::type_float;
+            if (suggested_type)
+            {
+                if (suggested_type == Builtin::type_double)
+                {
+                    expression->type = Builtin::type_double;
+                }
+                else if (suggested_type == Builtin::type_float)
+                {
+                    expression->type = Builtin::type_float;
+                }
+            }
+            else
+            {
+                expression->type = Builtin::type_float;
+            }
         }
 
         expression->is_const = true;
@@ -1119,8 +1145,16 @@ namespace Zodiac
 
         for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions); i++)
         {
+            AST_Type* suggested_member_type = nullptr;
+            if (suggested_type && suggested_type->kind == AST_TYPE_STRUCT)
+            {
+                assert(i < BUF_LENGTH(suggested_type->aggregate_type.member_declarations));
+                AST_Declaration* member_decl = suggested_type->aggregate_type.member_declarations[i];
+                assert(member_decl->kind == AST_DECL_MUTABLE);
+                suggested_member_type = member_decl->mutable_decl.type;
+            }
             AST_Expression* expr = expression->compound_literal.expressions[i];
-            result &= try_resolve_expression(resolver, expr, scope);
+            result &= try_resolve_expression(resolver, expr, scope, suggested_member_type);
 
             if (result)
             {

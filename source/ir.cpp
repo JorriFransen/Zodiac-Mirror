@@ -2769,7 +2769,15 @@ namespace Zodiac
 
             case IRV_FLOAT_LITERAL:
             {
-                printf("lit(%f)", value->value.r64);
+                if (value->type == Builtin::type_double)
+                {
+                    printf("lit(%f)", value->value.r64);
+                }
+                else if (value->type == Builtin::type_float)
+                {
+                    printf("lit(%f)", value->value.r32);
+                }
+                else assert(false);
                 break;
             }
 

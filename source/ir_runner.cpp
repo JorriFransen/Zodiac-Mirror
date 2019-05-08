@@ -601,7 +601,7 @@ namespace Zodiac
                     }
                     else if (iri->arg1->type->bit_size == 32)
                     {
-                        dcArgFloat(runner->dyn_vm, arg_value->value.r32);
+                        dcArgDouble(runner->dyn_vm, (double)arg_value->value.r32);
                     }
                     else assert(false);
                 }
@@ -809,7 +809,8 @@ namespace Zodiac
                 IR_Value* source_value = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value* dest_value = ir_runner_get_local_temporary(runner, iri->result);
 
-                dest_value->value.s64 = source_value->value.s64;
+                // dest_value->value.s64 = source_value->value.s64;
+                dest_value->value = source_value->value;
                 assert(iri->result->type);
                 dest_value->type = iri->result->type;
                 break;

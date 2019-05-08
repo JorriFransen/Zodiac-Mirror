@@ -82,7 +82,8 @@ namespace Zodiac
                                                        AST_Expression* expression,
                                                        AST_Type* suggested_type);
     static bool try_resolve_float_literal_expression(Resolver* resolver,
-                                                     AST_Expression* expression);
+                                                     AST_Expression* expression,
+                                                     AST_Type* suggested_type);
     static bool try_resolve_character_literal_expression(Resolver* resolver,
                                                          AST_Expression* expression);
     static bool try_resolve_compound_literal_expression(Resolver* resolver,
