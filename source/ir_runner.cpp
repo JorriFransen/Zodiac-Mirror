@@ -665,12 +665,17 @@ namespace Zodiac
 				assert(iri->result);
 				IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
 				assert(result_value);
-				
-				if (iri->result->type->kind == AST_TYPE_POINTER)
+
+                if (iri->result->type->flags & AST_TYPE_FLAG_INT)
+                {
+                    result_value->value.s64 = dcCallInt(runner->dyn_vm, ptr_val->value.string);
+                }
+				else if (iri->result->type->kind == AST_TYPE_POINTER)
 				{
-					result_value->value.s64 = dcCallInt(runner->dyn_vm, ptr_val->value.string);
+					result_value->value.string = (uint8_t*)dcCallPointer(runner->dyn_vm, ptr_val->value.string);
 				}
 				else assert(false);
+                dcReset(runner->dyn_vm);
 				break;
 			}
 

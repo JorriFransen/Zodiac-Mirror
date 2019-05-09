@@ -46,7 +46,7 @@ namespace Zodiac
         file_pos.file_name = "<builtin>";
         Atom name_atom = atom_get(context->atom_table, name);
         AST_Identifier* identifier = ast_identifier_new(context, name_atom, file_pos);
-        AST_Type* type = ast_type_base_new(context, flags, size);
+        AST_Type* type = ast_type_base_new(context, flags, name_atom, size);
         AST_Declaration* type_decl = ast_type_declaration_new(context, file_pos, type, identifier);
         type_decl->flags |= AST_DECL_FLAG_RESOLVED;
 

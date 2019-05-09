@@ -1,0 +1,26 @@
+
+static_if (PLATFORM_WINDOWS)
+{
+    #dynamic_link "msvcrt.dll";
+}
+else static_if (PLATFORM_LINUX)
+{
+    #dynamic_link "libc.so.6";
+}
+else
+{
+    static_assert(false);
+}
+
+#foreign puts :: (string: *u8) -> int;
+
+io :: import io;
+
+main :: () -> void
+{
+    puts_ptr := *puts;
+    io.printf("puts_ptr: %#x\n", puts_ptr);
+    io.printf("*io.puts: %#x\n", *io.puts);
+
+    puts_ptr("puts_ptr_test");
+}

@@ -433,6 +433,8 @@ namespace Zodiac
 
         uint64_t bit_size = 0;
 
+        Atom name;
+
         union
         {
             struct
@@ -446,7 +448,7 @@ namespace Zodiac
                 AST_Type* base;
             } static_array;
 
-            struct 
+            struct
             {
                 BUF(AST_Declaration*) member_declarations;
             } aggregate_type;
@@ -640,8 +642,8 @@ namespace Zodiac
     AST_Statement* ast_break_statement_new(Context* context, File_Pos file_pos);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
-                           uint64_t bit_size);
-    AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size);
+                           Atom name, uint64_t bit_size);
+    AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, Atom name, uint64_t bit_size);
     AST_Type* ast_type_pointer_new(Context* context, AST_Type* base_type);
     AST_Type* ast_type_static_array_new(Context* context, AST_Type* base_type, uint64_t count);
     AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations,

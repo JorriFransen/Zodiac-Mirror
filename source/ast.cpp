@@ -677,7 +677,7 @@ namespace Zodiac
     }
 
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
-                           uint64_t bit_size)
+                           Atom name, uint64_t bit_size)
     {
         assert(context);
 
@@ -685,16 +685,17 @@ namespace Zodiac
         result->kind = kind;
         result->flags = type_flags;
         result->bit_size = bit_size;
+        result->name = name;
 
         return result;
     }
 
-    AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, uint64_t bit_size)
+    AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, Atom name, uint64_t bit_size)
     {
         assert(context);
         assert(bit_size % 8 == 0);
 
-        AST_Type* result = ast_type_new(context, AST_TYPE_BASE, type_flags, bit_size);
+        AST_Type* result = ast_type_new(context, AST_TYPE_BASE, type_flags, name, bit_size);
 
         return result;
     }
@@ -705,7 +706,7 @@ namespace Zodiac
         assert(base_type);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_POINTER, AST_TYPE_FLAG_NONE,
-                                        Builtin::pointer_size);
+                                        {}, Builtin::pointer_size);
         result->pointer.base = base_type;
 
         return result;
@@ -719,7 +720,7 @@ namespace Zodiac
         assert(base_type->bit_size);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_STATIC_ARRAY, AST_TYPE_FLAG_NONE,
-                                        base_type->bit_size * count);
+                                        {}, base_type->bit_size * count);
         result->static_array.base = base_type;
         result->static_array.count = count;
 
@@ -732,7 +733,7 @@ namespace Zodiac
         assert(context);
         // assert(member_declarations);
 
-        AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE, bit_size);
+        AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE, {}, bit_size);
         result->aggregate_type.member_declarations = member_declarations;
 
         return result;
@@ -748,7 +749,7 @@ namespace Zodiac
         assert(base_type->flags & AST_TYPE_FLAG_INT);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_ENUM, AST_TYPE_FLAG_NONE,
-                                        base_type->bit_size);
+                                        {}, base_type->bit_size);
         result->enum_type.member_declarations = member_decls;
         result->enum_type.base_type = base_type;
 
@@ -761,7 +762,7 @@ namespace Zodiac
         assert(context);
         assert(return_type);
 
-        AST_Type* result = ast_type_new(context, AST_TYPE_FUNCTION, AST_TYPE_FLAG_NONE, 64);
+        AST_Type* result = ast_type_new(context, AST_TYPE_FUNCTION, AST_TYPE_FLAG_NONE, {}, 64);
         result->function.is_vararg = is_vararg;
         result->function.arg_types = arg_types;
         result->function.return_type = return_type;

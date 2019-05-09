@@ -27,10 +27,12 @@ main :: () -> int
     }
 
     glfw.glfwMakeContextCurrent(window);
-    
+
     gl.load(*glfw.glfwGetProcAddress);
 
     _vendor := gl._glGetString(gl.GL_VENDOR);
+    io.printf("gl._glGetString: %#x\n", gl._glGetString);
+    io.printf("*gl.glGetString: %#x\n", *gl.glGetString);
     io.printf("GL _vendor: %s\n", _vendor);
 
     msg : *u8 = null;
@@ -56,12 +58,12 @@ main :: () -> int
     while (!glfw.glfwWindowShouldClose(window))
     {
         gl.glClear(gl.GL_COLOR_BUFFER_BIT);
-        gl.glBegin(gl.GL_TRIANGLES);
-        gl.glColor3f(1.0, 0.0, 0.0);
-        gl.glVertex3f(0.0, 0.0, 0.0);
-        gl.glVertex3f(0.5, 0.0, 0.0);
-        gl.glVertex3f(0.25, 0.5, 0.0);
-        gl.glEnd();
+        // gl.glBegin(gl.GL_TRIANGLES);
+        // gl.glColor3f(1.0, 0.0, 0.0);
+        // gl.glVertex3f(0.0, 0.0, 0.0);
+        // gl.glVertex3f(0.5, 0.0, 0.0);
+        // gl.glVertex3f(0.25, 0.5, 0.0);
+        // gl.glEnd();
         gl.glFlush();
 
         glfw.glfwSwapBuffers(window);

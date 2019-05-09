@@ -1121,16 +1121,26 @@ namespace Zodiac
                                                                           decl);
             assert(expression_value);
 
-            AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,
-                                                                    ir_builder->ast_module,
-                                                                    expression->type);
-            IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
+            if (expression_value->kind == IRV_FUNCTION)
+            {
+                assert(expression_value->function->flags & IR_FUNC_FLAG_FOREIGN);
+                return ir_builder_emit_addrof_foreign(ir_builder, expression_value,
+                                                      expression->type);
+            }
+            else
+            {
+                AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,
+                                                                        ir_builder->ast_module,
+                                                                        expression->type);
+                IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
 
-            IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ADDROF, expression_value, nullptr,
-                                                     result_value);
-            ir_builder_emit_instruction(ir_builder, iri);
+                IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ADDROF,
+                                                        expression_value, nullptr,
+                                                        result_value);
+                ir_builder_emit_instruction(ir_builder, iri);
 
-            return result_value;
+                return result_value;
+            }
         }
         else if (expression->kind == AST_EXPR_SUBSCRIPT)
         {
@@ -1142,7 +1152,8 @@ namespace Zodiac
                                                                     base_expr);
                 IR_Value* index_value = ir_builder_emit_expression(ir_builder,
                                                                    index_expr);
-                return ir_builder_emit_array_offset_pointer(ir_builder, base_pointer, index_value);
+                return ir_builder_emit_array_offset_pointer(ir_builder, base_pointer,
+                                                            index_value);
             }
             else
             {
@@ -1153,7 +1164,8 @@ namespace Zodiac
                 assert(base_expr->type->kind == AST_TYPE_STATIC_ARRAY);
                 IR_Value* index_value = ir_builder_emit_expression(ir_builder,
                                                                    index_expr);
-                return ir_builder_emit_array_offset_pointer(ir_builder, array_allocl, index_value);
+                return ir_builder_emit_array_offset_pointer(ir_builder, array_allocl,
+                                                            index_value);
             }
         }
         else if (expression->kind == AST_EXPR_DOT)
@@ -2150,6 +2162,12 @@ namespace Zodiac
 				break;
 			}
 
+            case IRV_ALLOCL:
+            {
+                return ir_builder_emit_loadl(ir_builder, store);
+                break;
+            }
+
 			default: assert(false);
 		}
 
@@ -3018,9 +3036,20 @@ namespace Zodiac
 				{
 					printf("%c%" PRIu64, sign ? 's' : 'u', type->bit_size);
 				}
+                else if (type->flags & AST_TYPE_FLAG_VOID)
+                {
+                    printf("void");
+                }
 				else assert(false);
 				break;
 			}
+
+            case AST_TYPE_ENUM:
+            {
+                bool sign = type->flags & AST_TYPE_FLAG_SIGNED;
+                printf("enum(%c%" PRIu64 ")", sign ? 's' : 'u', type->bit_size);
+                break;
+            }
 
 			default: assert(false);
 		}

@@ -949,6 +949,7 @@ namespace Zodiac
 
         AST_Declaration* func_decl = nullptr;
         AST_Expression* ident_expr = expression->call.ident_expression;
+        bool recursive = false;
         if (ident_expr->kind == AST_EXPR_IDENTIFIER)
         {
             func_decl = find_declaration(scope, ident_expr->identifier);
@@ -956,6 +957,7 @@ namespace Zodiac
                 (ident_expr->identifier->atom == resolver->current_func_decl->identifier->atom))
             {
                 func_decl = resolver->current_func_decl;
+                recursive = true;
             }
             else if (!func_decl)
             {
@@ -982,6 +984,8 @@ namespace Zodiac
             AST_Declaration* import_decl = find_declaration(scope, base_expression->identifier);
             if (!import_decl)
             {
+                report_undeclared_identifier(resolver, base_expression->file_pos,
+                                             base_expression->identifier);
                 return false;
             }
             assert(import_decl->kind == AST_DECL_IMPORT);
@@ -1003,44 +1007,63 @@ namespace Zodiac
             }
         }
 
-		AST_Type* return_type = nullptr;
-
         assert(func_decl);
+        AST_Type* func_type = nullptr;
+
 		if (func_decl->kind == AST_DECL_FUNC)
 		{
-			return_type = func_decl->function.return_type;
+            func_type = func_decl->function.type;
 		}
 		else if (func_decl->kind == AST_DECL_MUTABLE && func_decl->mutable_decl.type &&
 			func_decl->mutable_decl.type->kind == AST_TYPE_POINTER &&
 			func_decl->mutable_decl.type->pointer.base->kind == AST_TYPE_FUNCTION)
 		{
-			return_type = func_decl->mutable_decl.type->pointer.base->function.return_type;
+            func_type = func_decl->mutable_decl.type->pointer.base;
 		}
 		else assert(false);
 
-		assert(return_type);
+		assert(func_type || recursive);
+        if (func_type) assert(func_type->kind == AST_TYPE_FUNCTION);
 
         for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
         {
             AST_Type* specified_arg_type = nullptr;
-            if (i < BUF_LENGTH(func_decl->function.args))
+            if (func_type)
             {
-                AST_Declaration* arg_decl = func_decl->function.args[i];
-                assert(arg_decl->kind == AST_DECL_MUTABLE);
-                specified_arg_type = arg_decl->mutable_decl.type;
-            }
-            else
-            {
-                assert(func_decl->function.is_vararg);
+                if (i < BUF_LENGTH(func_type->function.arg_types))
+                {
+                    specified_arg_type = func_type->function.arg_types[i];
+                }
+                else
+                {
+                    assert(func_type->function.is_vararg);
+                }
             }
 
             AST_Expression* arg_expr = expression->call.arg_expressions[i];
             result &= try_resolve_expression(resolver, arg_expr, scope, specified_arg_type);
         }
 
-        if (result && !expression->type && return_type)
+        if (result && !expression->type)
         {
-            expression->type = return_type;
+            if (func_type)
+            {
+                assert(func_type->function.return_type);
+                expression->type = func_type->function.return_type;
+            }
+            else
+            {
+                assert(func_decl);
+                assert(func_decl->function.return_type_spec);
+
+                AST_Type* return_type = nullptr;
+                result &= try_resolve_type_spec(resolver, func_decl->function.return_type_spec,
+                                                &return_type, scope);
+                if (result)
+                {
+                    expression->type = return_type;
+                }
+            }
         }
 
         if (!expression->type)
@@ -1318,11 +1341,15 @@ namespace Zodiac
                 expression->type = nullptr;
                 expression->is_const = true;
             }
+            else if (decl->kind == AST_DECL_FUNC)
+            {
+                expression->type = decl->function.type;
+                expression->is_const = true;
+            }
             else assert(false);
 
             assert(expression->type || decl->kind == AST_DECL_IMPORT);
         }
-
 
         return result;
     }

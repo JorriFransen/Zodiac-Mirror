@@ -39,9 +39,13 @@ GL_TRIANGLES : GLenum : 0x00000004;
 glGetStringProc :: typedef *(name: GLenum) -> *GLubyte;
 _glGetString : glGetStringProc = null;
 
+glClearProc :: typedef *(mask: GLbitfield) -> void;
+_glClear : glClearProc = null;
+
 Load_Proc :: typedef *(proc_name: *u8) -> *void;
 
 load :: (load_proc: Load_Proc) -> void
 {
     _glGetString = (:glGetStringProc)load_proc("glGetString");
+    _glClear = (:glClearProc)load_proc("glClear");
 }

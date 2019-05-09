@@ -47,7 +47,7 @@ main :: () -> int
     print_day(day);
     print_day(day2);
     print_day(Day.SUNDAY);
-    print_day(11);
+    print_day((:Day)11);
 
     for (i := 0; i <= 12; i = i + 1)
     {
