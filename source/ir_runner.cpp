@@ -133,8 +133,8 @@ namespace Zodiac
                 void* foreign_symbol = dlFindSymbol(loaded_lib.lib, foreign_name.data);
                 if (foreign_symbol)
                 {
-                    //printf("Loaded foreign \"%s\" from library \"%s\"\n",
-                    //    foreign_name.data, loaded_lib.name.data);
+                    printf("Loaded foreign \"%s\" from library \"%s\"\n",
+                        foreign_name.data, loaded_lib.name.data);
                     BUF_PUSH(ir_runner->loaded_foreign_symbols, foreign_symbol);
                     found = true;
                     break;
@@ -1315,8 +1315,14 @@ namespace Zodiac
     IR_Stack_Frame* ir_runner_top_stack_frame(IR_Runner* ir_runner)
     {
         assert(ir_runner);
-        assert(stack_count(ir_runner->call_stack));
-        return stack_top(ir_runner->call_stack);
+        if (stack_count(ir_runner->call_stack))
+		{
+			return stack_top(ir_runner->call_stack);
+		}
+		else
+		{
+			return nullptr;
+		}
     }
 
     void ir_runner_pop_stack_frame(IR_Runner* ir_runner)

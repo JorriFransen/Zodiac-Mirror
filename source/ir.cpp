@@ -1913,6 +1913,9 @@ namespace Zodiac
 			return result_value;
 		}
 		else assert(false);
+
+		assert(false);
+		return nullptr;
     }
 
     IR_Value* ir_builder_emit_subscript(IR_Builder* ir_builder, IR_Value* base_value, IR_Value* index_value)
