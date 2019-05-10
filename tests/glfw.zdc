@@ -21,6 +21,7 @@ GLFW_OPENGL_PROFILE        :: 0x00022008;
 
 GLFW_NO_ERROR :: 0;
 GLFW_OPENGL_ANY_PROFILE :: 0;
+GLFW_OPENGL_COMPAT_PROFILE :: 0x00032002;
 
 #foreign glfwInit :: () -> int;
 #foreign glfwTerminate :: () -> void;

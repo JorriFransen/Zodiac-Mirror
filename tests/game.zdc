@@ -1,7 +1,7 @@
 
 io :: import io;
-gl :: import gl;
 glfw :: import glfw;
+gl :: import gl;
 
 main :: () -> int
 {
@@ -20,8 +20,9 @@ main :: () -> int
 
     // glfw.glfwWindowHint(glfw.GLFW_CONTEXT_VERSION_MAJOR, 2);
     // glfw.glfwWindowHint(glfw.GLFW_CONTEXT_VERSION_MINOR, 1);
-    glfw.glfwWindowHint(glfw.GLFW_OPENGL_PROFILE, glfw.GLFW_OPENGL_ANY_PROFILE);
-    glfw.glfwWindowHint(glfw.GLFW_RESIZABLE, glfw.GLFW_FALSE);
+    // // glfw.glfwWindowHint(glfw.GLFW_OPENGL_PROFILE, glfw.GLFW_OPENGL_COMPAT_PROFILE);
+    // // glfw.glfwWindowHint(glfw.GLFW_OPENGL_PROFILE, glfw.GLFW_OPENGL_ANY_PROFILE);
+    // glfw.glfwWindowHint(glfw.GLFW_RESIZABLE, glfw.GLFW_FALSE);
     if (glfw_error()) return 8;
     window := glfw.glfwCreateWindow(width, height, "Triangles!!!", null, null);
     if (glfw_error()) return 8;
@@ -47,6 +48,8 @@ main :: () -> int
     gl.load(*glfw.glfwGetProcAddress);
     if (glfw_error()) return 8;
 
+    io.printf("GL_VENDOR: %#x\n", gl.GL_VENDOR);
+
     _vendor := gl._glGetString(gl.GL_VENDOR);
     io.printf("gl._glGetString: %#x\n", gl._glGetString);
     io.printf("*gl.glGetString: %#x\n", *gl.glGetString);
@@ -60,7 +63,7 @@ main :: () -> int
         return 9;
     }
 
-    // gl.glViewport(0, 0, width, height);
+    gl.glViewport(0, 0, width, height);
 
     vendor := gl.glGetString(gl.GL_VENDOR);
     renderer := gl.glGetString(gl.GL_RENDERER);
@@ -70,22 +73,23 @@ main :: () -> int
     io.printf("GL renderer: %s\n", renderer);
     io.printf("GL version: %s\n", version);
 
-    // gl.glClearColor(0.0, 1.0, 0.0, 1.0);
+    gl.glClearColor(0.0, 1.0, 0.0, 1.0);
 
-    // while (!glfw.glfwWindowShouldClose(window))
-    // {
-        // gl.glClear(gl.GL_COLOR_BUFFER_BIT);
-        // // gl.glBegin(gl.GL_TRIANGLES);
-        // // gl.glColor3f(1.0, 0.0, 0.0);
-        // // gl.glVertex3f(0.0, 0.0, 0.0);
-        // // gl.glVertex3f(0.5, 0.0, 0.0);
-        // // gl.glVertex3f(0.25, 0.5, 0.0);
-        // // gl.glEnd();
-        // gl.glFlush();
+    while (!glfw.glfwWindowShouldClose(window))
+    {
+        glfw.glfwSwapBuffers(window);
+        glfw.glfwPollEvents();
+        
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT);
+        gl.glBegin(gl.GL_TRIANGLES);
+        gl.glColor3f(1.0, 0.0, 1.0);
+        gl.glVertex3f(0.0, 0.0, 0.0);
+        gl.glVertex3f(0.5, 0.0, 0.0);
+        gl.glVertex3f(0.25, 0.5, 0.0);
+        gl.glEnd();
+        gl.glFlush();
 
-        // glfw.glfwSwapBuffers(window);
-        // glfw.glfwPollEvents();
-    // }
+    }
 }
 
 glfw_error :: () -> bool

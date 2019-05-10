@@ -110,7 +110,7 @@ namespace Zodiac
         for (uint64_t i = 0; i < atom.length; i++)
         {
             result *= base;
-            uint64_t digit_value = atom.data[i] - '0';
+            uint64_t digit_value = _digit_value(atom.data[i]);
             result += digit_value;
         }
 
