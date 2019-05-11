@@ -36,13 +36,18 @@ namespace Zodiac
         union
         {
             int64_t s64;
+
             uint8_t u8;
+            uint16_t u16;
             uint32_t u32;
+            uint64_t u64;
+
             float r32;
             double r64;
-            uint8_t* string;
+
             bool boolean;
 
+            uint8_t* string;
             void* static_array;
             void* struct_pointer;
         } value;

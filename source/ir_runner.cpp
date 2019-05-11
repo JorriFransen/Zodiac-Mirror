@@ -601,7 +601,7 @@ namespace Zodiac
                     }
                     else if (iri->arg1->type->bit_size == 32)
                     {
-                        dcArgDouble(runner->dyn_vm, (double)arg_value->value.r32);
+                        dcArgFloat(runner->dyn_vm, arg_value->value.r32);
                     }
                     else assert(false);
                 }
@@ -609,13 +609,27 @@ namespace Zodiac
                 {
                     dcArgPointer(runner->dyn_vm, arg_value->value.string);
                 }
-                else
+                else if (iri->arg1->type->flags & AST_TYPE_FLAG_INT)
                 {
-                    assert(iri->arg1->type->flags & AST_TYPE_FLAG_INT ||
-                           (iri->arg1->type->kind == AST_TYPE_ENUM &&
-                            iri->arg1->type->enum_type.base_type->flags & AST_TYPE_FLAG_INT));
-                    dcArgLongLong(runner->dyn_vm, arg_value->value.s64);
+                    if (iri->arg1->type->bit_size == 8)
+                    {
+                        dcArgChar(runner->dyn_vm, arg_value->value.u8);
+                    }
+                    else if (iri->arg1->type->bit_size == 16)
+                    {
+                        dcArgShort(runner->dyn_vm, arg_value->value.u16);
+                    }
+                    else if (iri->arg1->type->bit_size == 32)
+                    {
+                        dcArgInt(runner->dyn_vm, arg_value->value.u32);
+                    }
+                    else if (iri->arg1->type->bit_size == 64)
+                    {
+                        dcArgLong(runner->dyn_vm, arg_value->value.u64);
+                    }
+                    else assert(false);
                 }
+                else assert(false);
                 break;
             }
 

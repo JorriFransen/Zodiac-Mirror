@@ -5,7 +5,7 @@ static_if (PLATFORM_WINDOWS)
 }
 else static_if (PLATFORM_LINUX)
 {
-    #dynamic_link "libGL.so";
+    // #dynamic_link "libGL.so";
 }
 
 GLbitfield :: typedef u32;
@@ -39,27 +39,6 @@ glClear : glClearProc = null;
 glClearColorProc :: typedef *(r: GLclampf, g: GLclampf, b: GLclampf, a: GLclampf) -> void;
 glClearColor : glClearColorProc = null;
 
-glBeginProc :: typedef *(mode: GLenum) -> void;
-glBegin : glBeginProc = null;
-
-glEndProc :: typedef *() -> void;
-glEnd : glEndProc = null;
-
-glFlushProc :: typedef *() -> void;
-glFlush : glFlushProc = null;
-
-glVertex3fProc :: typedef *(x: GLfloat, y: GLfloat, z: GLfloat) -> void;
-glVertex3f : glVertex3fProc = null;
-
-glColor3fProc :: typedef *(r: GLfloat, g: GLfloat, b: GLfloat) -> void;
-glColor3f : glColor3fProc = null;
-
-glViewportProc :: typedef *(x: GLint, y: GLint, width: GLsizei, height: GLsizei) -> void;
-glViewport : glViewportProc = null;
-
-// glGetErrorProc :: typedef *() -> GLenum;
-// glGetError : glGetErrorProc = null;
-#foreign glGetError :: () -> GLenum;
 
 Load_Proc :: typedef *(proc_name: *u8) -> *void;
 
@@ -68,12 +47,4 @@ load :: (load_proc: Load_Proc) -> void
     glGetString = (:glGetStringProc)load_proc("glGetString");
     glClear = (:glClearProc)load_proc("glClear");
     glClearColor = (:glClearColorProc)load_proc("glClearColor");
-    glBegin = (:glBeginProc)load_proc("glBegin");
-    glEnd = (:glEndProc)load_proc("glEnd");
-    glFlush = (:glFlushProc)load_proc("glFlush");
-    glVertex3f = (:glVertex3fProc)load_proc("glVertex3f");
-    glColor3f = (:glColor3fProc)load_proc("glColor3f");
-    glViewport = (:glViewportProc)load_proc("glViewport");
-    // glGetError = (:glGetErrorProc)load_proc("glGetError");
-
 }

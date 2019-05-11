@@ -5,27 +5,16 @@ gl :: import gl;
 
 main :: () -> int
 {
-    io.printf("zodiac game\n");
-
     if (!glfw.glfwInit())
     {
         io.printf("glfwInit failed\n");
         return 9;
     }
 
-    if (glfw_error()) return 8;
-
     width := 640;
     height := 480;
 
-    // glfw.glfwWindowHint(glfw.GLFW_CONTEXT_VERSION_MAJOR, 3);
-    // glfw.glfwWindowHint(glfw.GLFW_CONTEXT_VERSION_MINOR, 2);
-    // // glfw.glfwWindowHint(glfw.GLFW_OPENGL_PROFILE, glfw.GLFW_OPENGL_COMPAT_PROFILE);
-    // glfw.glfwWindowHint(glfw.GLFW_OPENGL_PROFILE, glfw.GLFW_OPENGL_ANY_PROFILE);
-    glfw.glfwWindowHint(glfw.GLFW_RESIZABLE, glfw.GLFW_FALSE);
-    if (glfw_error()) return 8;
     window := glfw.glfwCreateWindow(width, height, "Triangles!!!", null, null);
-    if (glfw_error()) return 8;
     if (!window)
     {
         io.printf("glfwCreateWindow failed\n");
@@ -33,30 +22,9 @@ main :: () -> int
     }
 
     glfw.glfwMakeContextCurrent(window);
-    if (glfw_error()) return 8;
-
-    glfw.glfwSwapInterval(1);
-    if (glfw_error()) return 8;
-
-    gl_error := gl.glGetError();
-    if (gl_error != gl.GL_NO_ERROR)
-    {
-        io.printf("gl_error: %#x\n", gl_error);
-        return 8;
-    }
-
+    // glfw.glfwSwapInterval(1);
     gl.load(*glfw.glfwGetProcAddress);
-    if (glfw_error()) return 8;
-
-    msg : *u8 = null;
-    err := glfw.glfwGetError(*msg);
-    if (err != glfw.GLFW_NO_ERROR)
-    {
-        io.printf("GLFW error: %s\n", msg);
-        return 9;
-    }
-
-    gl.glViewport(0, 0, width, height);
+    // gl.glViewport(0, 0, width, height);
 
     vendor := gl.glGetString(gl.GL_VENDOR);
     renderer := gl.glGetString(gl.GL_RENDERER);
@@ -68,7 +36,7 @@ main :: () -> int
 
     gl.glClearColor(0.0, 1.0, 0.0, 1.0);
 
-    io.printf("gl.GL_COLOR_BUFFER_BIT: %#x\n", gl.GL_COLOR_BUFFER_BIT);
+    // io.printf("gl.GL_COLOR_BUFFER_BIT: %#x\n", gl.GL_COLOR_BUFFER_BIT);
 
     while (!glfw.glfwWindowShouldClose(window))
     {
@@ -77,17 +45,4 @@ main :: () -> int
         glfw.glfwSwapBuffers(window);
         glfw.glfwPollEvents();
     }
-}
-
-glfw_error :: () -> bool
-{
-    msg : *u8 = null;
-    err := glfw.glfwGetError(*msg);
-    if (err != glfw.GLFW_NO_ERROR)
-    {
-        io.printf("GLFW error: %s\n", msg);
-        return true;
-    }
-
-    return false;
 }
