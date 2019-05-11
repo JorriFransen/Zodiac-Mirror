@@ -18,11 +18,11 @@ main :: () -> int
     width := 640;
     height := 480;
 
-    // glfw.glfwWindowHint(glfw.GLFW_CONTEXT_VERSION_MAJOR, 2);
-    // glfw.glfwWindowHint(glfw.GLFW_CONTEXT_VERSION_MINOR, 1);
+    // glfw.glfwWindowHint(glfw.GLFW_CONTEXT_VERSION_MAJOR, 3);
+    // glfw.glfwWindowHint(glfw.GLFW_CONTEXT_VERSION_MINOR, 2);
     // // glfw.glfwWindowHint(glfw.GLFW_OPENGL_PROFILE, glfw.GLFW_OPENGL_COMPAT_PROFILE);
-    // // glfw.glfwWindowHint(glfw.GLFW_OPENGL_PROFILE, glfw.GLFW_OPENGL_ANY_PROFILE);
-    // glfw.glfwWindowHint(glfw.GLFW_RESIZABLE, glfw.GLFW_FALSE);
+    // glfw.glfwWindowHint(glfw.GLFW_OPENGL_PROFILE, glfw.GLFW_OPENGL_ANY_PROFILE);
+    glfw.glfwWindowHint(glfw.GLFW_RESIZABLE, glfw.GLFW_FALSE);
     if (glfw_error()) return 8;
     window := glfw.glfwCreateWindow(width, height, "Triangles!!!", null, null);
     if (glfw_error()) return 8;
@@ -48,13 +48,6 @@ main :: () -> int
     gl.load(*glfw.glfwGetProcAddress);
     if (glfw_error()) return 8;
 
-    io.printf("GL_VENDOR: %#x\n", gl.GL_VENDOR);
-
-    _vendor := gl._glGetString(gl.GL_VENDOR);
-    io.printf("gl._glGetString: %#x\n", gl._glGetString);
-    io.printf("*gl.glGetString: %#x\n", *gl.glGetString);
-    // io.printf("GL _vendor: %s\n", _vendor);
-
     msg : *u8 = null;
     err := glfw.glfwGetError(*msg);
     if (err != glfw.GLFW_NO_ERROR)
@@ -75,20 +68,14 @@ main :: () -> int
 
     gl.glClearColor(0.0, 1.0, 0.0, 1.0);
 
+    io.printf("gl.GL_COLOR_BUFFER_BIT: %#x\n", gl.GL_COLOR_BUFFER_BIT);
+
     while (!glfw.glfwWindowShouldClose(window))
     {
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT);
+
         glfw.glfwSwapBuffers(window);
         glfw.glfwPollEvents();
-        
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT);
-        gl.glBegin(gl.GL_TRIANGLES);
-        gl.glColor3f(1.0, 0.0, 1.0);
-        gl.glVertex3f(0.0, 0.0, 0.0);
-        gl.glVertex3f(0.5, 0.0, 0.0);
-        gl.glVertex3f(0.25, 0.5, 0.0);
-        gl.glEnd();
-        gl.glFlush();
-
     }
 }
 

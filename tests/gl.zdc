@@ -30,29 +30,50 @@ GL_VERSION   : GLenum : 0x1F02;
 
 GL_TRIANGLES : GLenum : 0x00000004;
 
-#foreign glClear :: (mask: GLbitfield) -> void;
-#foreign glClearColor :: (r: GLclampf, g: GLclampf, b: GLclampf, a: GLclampf) -> void;
-#foreign glBegin :: (mode: GLenum) -> void;
-#foreign glEnd :: () -> void;
-#foreign glFlush :: () -> void;
-#foreign glVertex3f :: (x: GLfloat, y: GLfloat, z: GLfloat) -> void;
-#foreign glColor3f :: (r: GLfloat, g: GLfloat, b: GLfloat) -> void;
-#foreign glViewport :: (x: GLint, y: GLint, width: GLsizei, height: GLsizei) -> void;
-#foreign glGetError :: () -> GLenum;
-
-
-#foreign glGetString :: (name: GLenum) -> *GLubyte;
-
 glGetStringProc :: typedef *(name: GLenum) -> *GLubyte;
-_glGetString : glGetStringProc = null;
+glGetString : glGetStringProc = null;
 
 glClearProc :: typedef *(mask: GLbitfield) -> void;
-_glClear : glClearProc = null;
+glClear : glClearProc = null;
+
+glClearColorProc :: typedef *(r: GLclampf, g: GLclampf, b: GLclampf, a: GLclampf) -> void;
+glClearColor : glClearColorProc = null;
+
+glBeginProc :: typedef *(mode: GLenum) -> void;
+glBegin : glBeginProc = null;
+
+glEndProc :: typedef *() -> void;
+glEnd : glEndProc = null;
+
+glFlushProc :: typedef *() -> void;
+glFlush : glFlushProc = null;
+
+glVertex3fProc :: typedef *(x: GLfloat, y: GLfloat, z: GLfloat) -> void;
+glVertex3f : glVertex3fProc = null;
+
+glColor3fProc :: typedef *(r: GLfloat, g: GLfloat, b: GLfloat) -> void;
+glColor3f : glColor3fProc = null;
+
+glViewportProc :: typedef *(x: GLint, y: GLint, width: GLsizei, height: GLsizei) -> void;
+glViewport : glViewportProc = null;
+
+// glGetErrorProc :: typedef *() -> GLenum;
+// glGetError : glGetErrorProc = null;
+#foreign glGetError :: () -> GLenum;
 
 Load_Proc :: typedef *(proc_name: *u8) -> *void;
 
 load :: (load_proc: Load_Proc) -> void
 {
-    _glGetString = (:glGetStringProc)load_proc("glGetString");
-    _glClear = (:glClearProc)load_proc("glClear");
+    glGetString = (:glGetStringProc)load_proc("glGetString");
+    glClear = (:glClearProc)load_proc("glClear");
+    glClearColor = (:glClearColorProc)load_proc("glClearColor");
+    glBegin = (:glBeginProc)load_proc("glBegin");
+    glEnd = (:glEndProc)load_proc("glEnd");
+    glFlush = (:glFlushProc)load_proc("glFlush");
+    glVertex3f = (:glVertex3fProc)load_proc("glVertex3f");
+    glColor3f = (:glColor3fProc)load_proc("glColor3f");
+    glViewport = (:glViewportProc)load_proc("glViewport");
+    // glGetError = (:glGetErrorProc)load_proc("glGetError");
+
 }

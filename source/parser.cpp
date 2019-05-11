@@ -272,7 +272,10 @@ namespace Zodiac
 			assert(!type_spec);
 
 			AST_Type_Spec* type_spec = parse_type_spec(parser, scope);
-			assert(type_spec);
+            if (!type_spec)
+            {
+                return nullptr;
+            }
 			expect_token(parser, TOK_SEMICOLON);
 
 			return ast_typedef_declaration_new(parser->context, identifier->file_pos, identifier,
@@ -1234,6 +1237,10 @@ namespace Zodiac
         if (match_token(parser, TOK_MUL))
         {
             AST_Type_Spec* base_type_spec = parse_type_spec(parser, scope);
+            if (!base_type_spec)
+            {
+                return nullptr;
+            }
             return ast_type_spec_pointer_new(parser->context, ft.file_pos, base_type_spec);
         }
 		else if (is_token(parser, TOK_LPAREN))
@@ -1277,7 +1284,7 @@ namespace Zodiac
 	
 			if (arg_decls)
 			{
-				expect_token(parser, TOK_COLON);
+                expect_token(parser, TOK_COMMA);
 			}
 
 			if (match_token(parser, TOK_ELLIPSIS))

@@ -3043,6 +3043,10 @@ namespace Zodiac
                 {
                     printf("void");
                 }
+                else if (type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    printf("r%" PRIu64, type->bit_size);
+                }
 				else assert(false);
 				break;
 			}

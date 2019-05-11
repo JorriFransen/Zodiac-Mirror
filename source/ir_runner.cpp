@@ -674,6 +674,10 @@ namespace Zodiac
 				{
 					result_value->value.string = (uint8_t*)dcCallPointer(runner->dyn_vm, ptr_val->value.string);
 				}
+                else if (iri->result->type->flags & AST_TYPE_FLAG_VOID)
+                {
+                    dcCallVoid(runner->dyn_vm, ptr_val->value.string);
+                }
 				else assert(false);
                 dcReset(runner->dyn_vm);
 				break;
