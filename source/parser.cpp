@@ -1211,7 +1211,8 @@ namespace Zodiac
             BUF_PUSH(arg_exprs, arg_expr);
         }
 
-        return ast_call_expression_new(parser->context, ident_expression->file_pos, ident_expression, arg_exprs);
+        return ast_call_expression_new(parser->context, ident_expression->file_pos, ident_expression,
+                                       arg_exprs);
     }
 
     static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier,
@@ -1255,16 +1256,34 @@ namespace Zodiac
             AST_Type_Spec* base_type_spec = parse_type_spec(parser, scope);
             return ast_type_spec_static_array_new(parser->context, ft.file_pos, count_expr, base_type_spec);
         }
-        else
+        else if (is_token(parser, TOK_IDENTIFIER))
         {
-            AST_Identifier* typespec_ident = parse_identifier(parser);
-            if (!typespec_ident)
+            AST_Identifier* base_ident = parse_identifier(parser);
+            if (match_token(parser, TOK_DOT))
             {
-                return nullptr;
+                AST_Identifier* member_ident = parse_identifier(parser);
+                AST_Type_Spec* member_type_spec = ast_type_spec_identifier_new(parser->context,
+                                                                               member_ident->file_pos,
+                                                                               member_ident);
+                return ast_type_spec_dot_new(parser->context, base_ident->file_pos, base_ident,
+                                             member_type_spec);
             }
-
-            return ast_type_spec_identifier_new(parser->context, typespec_ident->file_pos, typespec_ident);
+            else
+            {
+                return ast_type_spec_identifier_new(parser->context, base_ident->file_pos, base_ident);
+            }
+            assert(false);
         }
+        else assert(false);
+        // {
+        //     AST_Identifier* typespec_ident = parse_identifier(parser);
+        //     if (!typespec_ident)
+        //     {
+        //         return nullptr;
+        //     }
+
+        //     return ast_type_spec_identifier_new(parser->context, typespec_ident->file_pos, typespec_ident);
+        // }
     }
 
 	static AST_Type_Spec* parse_function_type_spec(Parser* parser, AST_Scope* scope)

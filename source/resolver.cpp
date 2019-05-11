@@ -244,7 +244,7 @@ namespace Zodiac
         if (result)
         {
 			declaration->function.type = ast_find_or_create_function_type(resolver->context,
-				resolver->module, declaration->function.is_vararg, arg_types,
+				declaration->function.is_vararg, arg_types,
 				declaration->function.return_type);
 
             auto main_atom = atom_get(resolver->context->atom_table, "main");
@@ -335,7 +335,8 @@ namespace Zodiac
 
         if (declaration->constant_var.type_spec)
         {
-            result &= try_resolve_type_spec(resolver, declaration->constant_var.type_spec, &specified_type, scope);
+            result &= try_resolve_type_spec(resolver, declaration->constant_var.type_spec, &specified_type,
+                                            scope);
             if (!result)
             {
                 return false;
@@ -886,7 +887,6 @@ namespace Zodiac
 
             case AST_EXPR_FLOAT_LITERAL:
             {
-                assert(suggested_type);
                 result &= try_resolve_float_literal_expression(resolver, expression, suggested_type);
                 break;
             }
@@ -1108,8 +1108,7 @@ namespace Zodiac
 
         if (!expression->type)
         {
-            expression->type = ast_find_or_create_pointer_type(resolver->context, resolver->module,
-                                                               Builtin::type_void);
+            expression->type = ast_find_or_create_pointer_type(resolver->context, Builtin::type_void);
         }
         expression->is_const = true;
 
@@ -1124,7 +1123,7 @@ namespace Zodiac
 
         if (!expression->type)
         {
-            expression->type = ast_find_or_create_pointer_type(resolver->context, resolver->module, Builtin::type_u8);
+            expression->type = ast_find_or_create_pointer_type(resolver->context, Builtin::type_u8);
         }
         expression->is_const = true;
 
@@ -1278,7 +1277,7 @@ namespace Zodiac
         else
         {
             assert(same_type);
-            expression->type = ast_find_or_create_array_type(resolver->context, resolver->module, first_type,
+            expression->type = ast_find_or_create_array_type(resolver->context, first_type,
                                                              BUF_LENGTH(expression->compound_literal.expressions));
         }
 
@@ -1410,7 +1409,9 @@ namespace Zodiac
             {
                 case AST_UNOP_MINUS:
                 {
-                    assert(false);
+                    assert((operand_expr->type->flags & AST_TYPE_FLAG_INT) ||
+                           operand_expr->type->flags & AST_TYPE_FLAG_FLOAT);
+                    expression->type = operand_expr->type;
                     break;
                 }
 
@@ -1426,7 +1427,6 @@ namespace Zodiac
                         assert(operand_expr->dot.member_expression->kind == AST_EXPR_IDENTIFIER);
                     }
                     expression->type = ast_find_or_create_pointer_type(resolver->context,
-                                                                       resolver->module,
                                                                        operand_expr->type);
                     break;
                 }
@@ -1623,7 +1623,7 @@ namespace Zodiac
 		result &= try_resolve_type_spec(resolver, expression->cast_expr.type_spec, &type, scope);
 
 		result &= try_resolve_expression(resolver, expression->cast_expr.expr, scope);
-		
+
 		if (result && !expression->type)
 		{
 			assert(type);
@@ -1766,6 +1766,32 @@ namespace Zodiac
                 return false;
             }
 
+            case AST_TYPE_SPEC_DOT:
+            {
+                bool base_result = try_resolve_identifier(resolver, type_spec->dot.module_ident, scope);
+                if (base_result)
+                {
+                    assert(type_spec->dot.module_ident);
+                    assert(type_spec->dot.module_ident->declaration);
+                    AST_Declaration* module_decl = type_spec->dot.module_ident->declaration;
+                    assert(module_decl->kind == AST_DECL_IMPORT);
+                    assert(module_decl->import.module);
+
+                    AST_Scope* module_scope = module_decl->import.module->module_scope;
+                    AST_Type* type = nullptr;
+                    bool member_result = try_resolve_type_spec(resolver, type_spec->dot.member_type_spec,
+                                                               &type, module_scope);
+                    if (member_result)
+                    {
+                        *type_dest = type;
+                        return true;
+                    }
+                }
+
+                return false;
+                break;
+            }
+
             case AST_TYPE_SPEC_POINTER:
             {
                 AST_Type* base_type = nullptr;
@@ -1774,7 +1800,6 @@ namespace Zodiac
                 if (base_result)
                 {
                     AST_Type* pointer_type = ast_find_or_create_pointer_type(resolver->context,
-                                                                             resolver->module,
                                                                              base_type);
                     assert(pointer_type);
                     *type_dest = pointer_type;
@@ -1790,11 +1815,14 @@ namespace Zodiac
             case AST_TYPE_SPEC_STATIC_ARRAY:
             {
                 AST_Type* base_type = nullptr;
-                bool base_result = try_resolve_type_spec(resolver, type_spec->static_array.base, &base_type, scope);
-                bool count_result = try_resolve_expression(resolver, type_spec->static_array.count_expr, scope);
+                bool base_result = try_resolve_type_spec(resolver, type_spec->static_array.base,
+                                                         &base_type, scope);
+                bool count_result = try_resolve_expression(resolver, type_spec->static_array.count_expr,
+                                                           scope);
                 if (base_result && count_result)
                 {
-                    AST_Type* array_type = ast_find_or_create_array_type(resolver->context, resolver->module, base_type,
+                    AST_Type* array_type = ast_find_or_create_array_type(resolver->context,
+                                                                         base_type,
                                                                          type_spec->static_array.count_expr);
                     *type_dest = array_type;
                     return true;
@@ -1822,7 +1850,6 @@ namespace Zodiac
 					}
 
 					assert(arg_decl->kind == AST_DECL_MUTABLE);
-					
 					BUF_PUSH(arg_types, arg_decl->mutable_decl.type);
 				}
 
@@ -1836,8 +1863,7 @@ namespace Zodiac
 				if (result)
 				{
 					AST_Type* result_type =
-						ast_find_or_create_function_type(resolver->context, resolver->module,
-						                                 type_spec->function.is_vararg,
+						ast_find_or_create_function_type(resolver->context, type_spec->function.is_vararg,
 						                                 arg_types, return_type);
 					*type_dest = result_type;
 					return true;
@@ -1926,7 +1952,8 @@ namespace Zodiac
             bit_size += member_type->bit_size;
         }
 
-        AST_Type* struct_type = ast_type_struct_new(resolver->context, member_decls, bit_size);
+        AST_Type* struct_type = ast_type_struct_new(resolver->context, member_decls, identifier->atom.data,
+                                                    bit_size);
 
         assert(struct_type->bit_size || BUF_LENGTH(member_decls) == 0);
         return struct_type;

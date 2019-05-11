@@ -324,11 +324,8 @@ namespace Zodiac
             case IR_OP_SUB:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_TEMPORARY || iri->arg1->kind == IRV_INT_LITERAL);
                 assert(iri->arg2);
-                assert(iri->arg2->kind == IRV_TEMPORARY || iri->arg2->kind == IRV_INT_LITERAL);
                 assert(iri->result);
-                assert(iri->result->kind == IRV_TEMPORARY);
 
                 IR_Value* arg1 = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
@@ -339,6 +336,10 @@ namespace Zodiac
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
                     dest->value.s64 = arg1->value.s64 - arg2->value.s64;
+                }
+                else if (type == Builtin::type_float)
+                {
+                    dest->value.r32 = arg1->value.r32 - arg2->value.r32;
                 }
                 else if (type == Builtin::type_double)
                 {
@@ -843,6 +844,17 @@ namespace Zodiac
             {
                 IR_Value* dest_value = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value* source_value = ir_runner_get_local_temporary(runner, iri->arg2);
+                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
+                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
+                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
+                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
+                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
+                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
+                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
+                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
+                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
+                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
+                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
 
                 if (dest_value->type->kind == AST_TYPE_STATIC_ARRAY)
                 {

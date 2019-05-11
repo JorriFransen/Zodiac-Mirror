@@ -39,6 +39,21 @@ glClear : glClearProc = null;
 glClearColorProc :: typedef *(r: GLclampf, g: GLclampf, b: GLclampf, a: GLclampf) -> void;
 glClearColor : glClearColorProc = null;
 
+glViewportProc :: typedef *(x: GLint, y: GLint, width: GLsizei, height: GLsizei) -> void;
+glViewport : glViewportProc = null;
+
+glBeginProc :: typedef *(mode: GLenum) -> void;
+glBegin : glBeginProc = null;
+
+glEndProc :: typedef *() -> void;
+glEnd : glEndProc = null;
+
+glColor4fProc :: typedef *(red: GLfloat, green: GLfloat, blue: GLfloat, alpha: GLfloat) -> void;
+glColor4f : glColor4fProc = null;
+
+glVertex2fProc :: typedef *(x: GLfloat, y: GLfloat) -> void;
+glVertex2f : glVertex2fProc = null;
+
 
 Load_Proc :: typedef *(proc_name: *u8) -> *void;
 
@@ -47,4 +62,9 @@ load :: (load_proc: Load_Proc) -> void
     glGetString = (:glGetStringProc)load_proc("glGetString");
     glClear = (:glClearProc)load_proc("glClear");
     glClearColor = (:glClearColorProc)load_proc("glClearColor");
+    glViewport = (:glViewportProc)load_proc("glViewport");
+    glBegin = (:glBeginProc)load_proc("glBegin");
+    glEnd = (:glEndProc)load_proc("glEnd");
+    glColor4f = (:glColor4fProc)load_proc("glColor4f");
+    glVertex2f = (:glVertex2fProc)load_proc("glVertex2f");
 }

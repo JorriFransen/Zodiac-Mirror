@@ -14,12 +14,15 @@ main :: () -> int
     width := 640;
     height := 480;
 
-    window := glfw.glfwCreateWindow(width, height, "Triangles!!!", null, null);
+    glfw.glfwWindowHint(glfw.GLFW_RESIZABLE, glfw.GLFW_FALSE);
+    window : *glfw.GLFWwindow = glfw.glfwCreateWindow(width, height, "Triangles!!!", null, null);
     if (!window)
     {
         io.printf("glfwCreateWindow failed\n");
         return 9;
     }
+
+    // glfw.glfwSetKeyCallback(window, key_callback);
 
     glfw.glfwMakeContextCurrent(window);
     // glfw.glfwSwapInterval(1);
@@ -34,7 +37,10 @@ main :: () -> int
     io.printf("GL renderer: %s\n", renderer);
     io.printf("GL version: %s\n", version);
 
-    gl.glClearColor(0.0, 1.0, 0.0, 1.0);
+    gl.glViewport(0, 0, width, height);
+
+    // gl.glClearColor(0.1, 0.3, 0.5, 1.0);
+    gl.glClearColor(0.0, 0.0, 0.0, 0.0);
 
     // io.printf("gl.GL_COLOR_BUFFER_BIT: %#x\n", gl.GL_COLOR_BUFFER_BIT);
 
@@ -42,7 +48,21 @@ main :: () -> int
     {
         gl.glClear(gl.GL_COLOR_BUFFER_BIT);
 
+        gl.glBegin(gl.GL_TRIANGLES);
+        gl.glColor4f(1.0, 0.0, 0.0, 1.0);
+        gl.glVertex2f(-0.5, -0.5);
+        gl.glColor4f(0.0, 1.0, 0.0, 1.0);
+        gl.glVertex2f(0.5, -0.5);
+        gl.glColor4f(0.0, 0.0, 1.0, 1.0);
+        gl.glVertex2f(0.0, 0.5);
+        gl.glEnd();
+
         glfw.glfwSwapBuffers(window);
         glfw.glfwPollEvents();
     }
 }
+
+// key_callback :: (window: *glfw.GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void
+// {
+    
+// }

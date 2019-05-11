@@ -751,7 +751,7 @@ namespace Zodiac
                 {
                     case AST_UNOP_MINUS:
                     {
-                        assert(false);
+                        return ir_builder_emit_negate(ir_builder, expression->unary.operand);
                         break;
                     }
 
@@ -1127,6 +1127,22 @@ namespace Zodiac
         return result_value;
     }
 
+    IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression)
+    {
+        assert(ir_builder);
+        assert(expression);
+
+        IR_Value* zero_val = ir_builder_emit_zero_literal(ir_builder, expression->type);
+        IR_Value* expression_value = ir_builder_emit_expression(ir_builder, expression);
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_SUB, zero_val, expression_value,
+                                                 result_value);
+
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result_value;
+    }
+
     IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression)
     {
         assert(ir_builder);
@@ -1148,7 +1164,6 @@ namespace Zodiac
             else
             {
                 AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,
-                                                                        ir_builder->ast_module,
                                                                         expression->type);
                 IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
 
@@ -1254,9 +1269,7 @@ namespace Zodiac
 		assert(foreign_func->function->flags & IR_FUNC_FLAG_FOREIGN);
 		assert(foreign_type);
 
-		AST_Type* pointer_type = ast_find_or_create_pointer_type(ir_builder->context,
-			ir_builder->ast_module,
-			foreign_type);
+		AST_Type* pointer_type = ast_find_or_create_pointer_type(ir_builder->context, foreign_type);
 
 		IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, pointer_type);
 		IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ADDROF_FOREIGN, foreign_func,
@@ -1572,7 +1585,7 @@ namespace Zodiac
         assert(offset < array_allocl->type->static_array.count);
 
         IR_Value* offset_value_literal = ir_integer_literal(ir_builder, Builtin::type_int, offset);
-        AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context, ir_builder->ast_module,
+        AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,
                                                                 array_allocl->type->static_array.base);
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ARRAY_OFFSET_POINTER, array_allocl,
@@ -1596,7 +1609,7 @@ namespace Zodiac
         AST_Type* result_type = nullptr;
         if (array_allocl->type->kind == AST_TYPE_STATIC_ARRAY)
         {
-            result_type = ast_find_or_create_pointer_type(ir_builder->context, ir_builder->ast_module,
+            result_type = ast_find_or_create_pointer_type(ir_builder->context,
                                                           array_allocl->type->static_array.base);
         }
         else
@@ -1629,7 +1642,7 @@ namespace Zodiac
         assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
 
         IR_Value* offset_value_literal = ir_integer_literal(ir_builder, Builtin::type_int, offset);
-        AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context, ir_builder->ast_module,
+        AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,
                                                                 member_decl->mutable_decl.type);
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_AGGREGATE_OFFSET_POINTER, struct_value,
@@ -2201,6 +2214,21 @@ namespace Zodiac
 		return nullptr;
 	}
 
+    IR_Value* ir_builder_emit_zero_literal(IR_Builder* ir_builder, AST_Type* type)
+    {
+        assert(ir_builder);
+        assert(type);
+
+        if (type->flags & AST_TYPE_FLAG_FLOAT)
+        {
+            return ir_float_literal(ir_builder, type, 0, 0);
+        }
+        else assert(false);
+
+        assert(false);
+        return nullptr;
+    }
+
     IR_Value* ir_boolean_literal(IR_Builder* ir_builder, AST_Type* type, bool value)
     {
         assert(ir_builder);
@@ -2561,8 +2589,15 @@ namespace Zodiac
                 printf(", ");
             }
             ir_print_value(function->arguments[i]);
+            printf(":(");
+            ir_print_type(function->arguments[i]->type);
+            printf(")");
         }
-        printf(")\n");
+        printf(")");
+
+        printf(" -> ");
+        ir_print_type(function->return_type);
+        printf("\n");
 
         if (!is_foreign)
         {
@@ -2606,7 +2641,9 @@ namespace Zodiac
         if (instruction->result)
         {
             ir_print_value(instruction->result);
-            printf(" = ");
+            printf(":(");
+            ir_print_type(instruction->result->type);
+            printf(") = ");
         }
 
         switch (instruction->op)
@@ -3078,6 +3115,38 @@ namespace Zodiac
             {
                 bool sign = type->flags & AST_TYPE_FLAG_SIGNED;
                 printf("enum(%c%" PRIu64 ")", sign ? 's' : 'u', type->bit_size);
+                break;
+            }
+
+            case AST_TYPE_STRUCT:
+            {
+                if (type->name)
+                {
+                    printf("struct(%s)", type->name);
+                }
+                else
+                {
+                    printf("struct { ");
+                    for (uint64_t i = 0; i < BUF_LENGTH(type->aggregate_type.member_declarations); i++)
+                    {
+                        if (i > 0)
+                        {
+                            printf(", ");
+                        }
+
+                        AST_Declaration* member_decl = type->aggregate_type.member_declarations[i];
+                        assert(member_decl->kind == AST_DECL_MUTABLE);
+                        ir_print_type(member_decl->mutable_decl.type);
+                    }
+                    printf(" }");
+                }
+                break;
+            }
+
+            case AST_TYPE_STATIC_ARRAY:
+            {
+                printf("[%" PRIu64 "]", type->static_array.count);
+                ir_print_type(type->static_array.base);
                 break;
             }
 

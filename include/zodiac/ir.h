@@ -238,6 +238,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_dot_expression(IR_Builder* ir_builder, AST_Expression* expression);
 	IR_Value* ir_builder_emit_cast_expression(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_load_lit(IR_Builder* ir_builder, IR_Value* literal);
+    IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression);
 	IR_Value* ir_builder_emit_addrof_foreign(IR_Builder* ir_builder, IR_Value* foreign_func,
 		AST_Type* foreign_type);
@@ -300,6 +301,7 @@ namespace Zodiac
 
 	IR_Value* ir_builder_emit_load(IR_Builder* ir_builder, IR_Value* store);
 
+    IR_Value* ir_builder_emit_zero_literal(IR_Builder* ir_builder, AST_Type* type);
     IR_Value* ir_boolean_literal(IR_Builder* ir_builder, AST_Type* type, bool value);
 	IR_Value* ir_null_literal(IR_Builder* ir_builder, AST_Type* type);
     IR_Value* ir_string_literal(IR_Builder* ir_builder, AST_Type* type, Atom string);

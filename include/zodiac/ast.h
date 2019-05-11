@@ -18,7 +18,6 @@ namespace Zodiac
     struct AST_Module
     {
         BUF(AST_Declaration*) global_declarations = nullptr;
-        BUF(AST_Type*) types = nullptr;
         AST_Scope* module_scope = nullptr;
         AST_Declaration* entry_point = nullptr;
         const char* module_name = nullptr;
@@ -433,7 +432,7 @@ namespace Zodiac
 
         uint64_t bit_size = 0;
 
-        Atom name;
+        const char* name;
 
         union
         {
@@ -471,6 +470,7 @@ namespace Zodiac
     enum AST_Type_Spec_Kind
     {
         AST_TYPE_SPEC_IDENT,
+        AST_TYPE_SPEC_DOT,
         AST_TYPE_SPEC_POINTER,
         AST_TYPE_SPEC_STATIC_ARRAY,
         AST_TYPE_SPEC_FUNCTION,
@@ -496,12 +496,18 @@ namespace Zodiac
                 AST_Type_Spec* base;
             } static_array;
 
-            struct 
+            struct
             {
                 bool is_vararg;
                 BUF(AST_Declaration*) args;
                 AST_Type_Spec* return_type_spec;
             } function;
+
+            struct
+            {
+                AST_Identifier* module_ident;
+                AST_Type_Spec* member_type_spec;
+            } dot;
         };
     };
 
@@ -642,12 +648,13 @@ namespace Zodiac
     AST_Statement* ast_break_statement_new(Context* context, File_Pos file_pos);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
-                           Atom name, uint64_t bit_size);
-    AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, Atom name, uint64_t bit_size);
+                           const char* name, uint64_t bit_size);
+    AST_Type* ast_type_base_new(Context* context, AST_Type_Flags type_flags, const char* name,
+                                uint64_t bit_size);
     AST_Type* ast_type_pointer_new(Context* context, AST_Type* base_type);
     AST_Type* ast_type_static_array_new(Context* context, AST_Type* base_type, uint64_t count);
     AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations,
-                                  uint64_t bit_size);
+                                  const char* name, uint64_t bit_size);
     AST_Type* ast_type_enum_new(Context* context, BUF(AST_Enum_Member_Decl*) member_decls,
                                 AST_Type* base_type);
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
@@ -656,6 +663,8 @@ namespace Zodiac
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind);
     AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier);
+    AST_Type_Spec* ast_type_spec_dot_new(Context* context, File_Pos file_pos,
+                                         AST_Identifier* module_ident, AST_Type_Spec* member_type_spec);
     AST_Type_Spec* ast_type_spec_pointer_new(Context* context, File_Pos file_pos,
                                              AST_Type_Spec* base_type_spec);
     AST_Type_Spec* ast_type_spec_static_array_new(Context* context, File_Pos file_pos,
@@ -667,15 +676,10 @@ namespace Zodiac
 
     AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope);
 
-    AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Module* module,
-                                              AST_Type* base_type);
-    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module,
-                                            AST_Type* base_type,
+    AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Type* base_type);
+    AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type,
                                             AST_Expression* count_expr);
-    AST_Type* ast_find_or_create_array_type(Context* context, AST_Module* module,
-                                            AST_Type* base_type, uint64_t count);
-	AST_Type* ast_find_or_create_function_type(Context* context, AST_Module* module,
-		                                       bool is_vararg,
-             		                           BUF(AST_Type*) arg_types,
+    AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type, uint64_t count);
+	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
 		                                       AST_Type* return_type);
 }

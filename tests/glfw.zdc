@@ -11,6 +11,8 @@ else static_if (PLATFORM_LINUX)
 GLFWmonitor :: struct {}
 GLFWwindow :: struct {}
 
+GLFWkeyfun :: typedef *(window: *GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void;
+
 GLFW_TRUE  :: 1;
 GLFW_FALSE :: 0;
 
@@ -27,7 +29,8 @@ GLFW_OPENGL_COMPAT_PROFILE :: 0x00032002;
 #foreign glfwTerminate :: () -> void;
 
 #foreign
-glfwCreateWindow :: (width: int, height: int, title: *u8, monitor: *GLFWmonitor, share: *GLFWwindow) -> *GLFWwindow;
+glfwCreateWindow :: (width: int, height: int, title: *u8, monitor: *GLFWmonitor, share: *GLFWwindow)
+                     -> *GLFWwindow;
 
 #foreign glfwMakeContextCurrent :: (window: *GLFWwindow) -> void;
 #foreign glfwWindowShouldClose :: (window: *GLFWwindow) -> int;
@@ -38,3 +41,4 @@ glfwCreateWindow :: (width: int, height: int, title: *u8, monitor: *GLFWmonitor,
 #foreign glfwSwapInterval :: (interval: int) -> void;
 
 #foreign glfwGetProcAddress :: (procname: *u8) -> *void;
+#foreign glfwSetKeyCallback :: (window: *GLFWwindow, cbfun: GLFWkeyfun) -> GLFWkeyfun;
