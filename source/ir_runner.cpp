@@ -593,17 +593,41 @@ namespace Zodiac
             case IR_OP_PUSH_EX_CALL_ARG:
             {
                 IR_Value* arg_value = ir_runner_get_local_temporary(runner, iri->arg1);
+                bool is_vararg = false;
+                if (iri->arg2)
+                {
+                    IR_Value* is_vararg_value = ir_runner_get_local_temporary(runner, iri->arg2);
+                    assert(is_vararg_value->type == Builtin::type_bool);
+                    assert(is_vararg_value->kind == IRV_BOOL_LITERAL);
+                    is_vararg = is_vararg_value->value.boolean;
+                }
+
                 if (iri->arg1->type->flags & AST_TYPE_FLAG_FLOAT)
                 {
-                    if (iri->arg1->type->bit_size == 64)
+                    if (is_vararg)
                     {
-                        dcArgDouble(runner->dyn_vm, arg_value->value.r64);
+                        if (iri->arg1->type->bit_size == 64)
+                        {
+                            dcArgDouble(runner->dyn_vm, arg_value->value.r64);
+                        }
+                        else if (iri->arg1->type->bit_size == 32)
+                        {
+                            dcArgDouble(runner->dyn_vm, (double)arg_value->value.r32);
+                        }
+                        else assert(false);
                     }
-                    else if (iri->arg1->type->bit_size == 32)
+                    else
                     {
-                        dcArgFloat(runner->dyn_vm, arg_value->value.r32);
+                        if (iri->arg1->type->bit_size == 64)
+                        {
+                            dcArgDouble(runner->dyn_vm, arg_value->value.r64);
+                        }
+                        else if (iri->arg1->type->bit_size == 32)
+                        {
+                            dcArgFloat(runner->dyn_vm, arg_value->value.r32);
+                        }
+                        else assert(false);
                     }
-                    else assert(false);
                 }
                 else if (iri->arg1->type->kind == AST_TYPE_POINTER)
                 {

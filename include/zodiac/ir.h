@@ -281,7 +281,8 @@ namespace Zodiac
     IR_Value* ir_builder_emit_neq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_and_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val);
-    void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value, bool is_foreign = false);
+    void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value, bool is_vararg = false,
+                                  bool is_foreign = false);
     IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value, IR_Value* num_args);
     IR_Value* ir_builder_emit_subscript(IR_Builder* ir_builder, IR_Value* base_value, IR_Value* index_value);
     void ir_builder_emit_jmp(IR_Builder* ir_builder, IR_Value* block_value);

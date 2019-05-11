@@ -861,11 +861,21 @@ namespace Zodiac
 
 					bool is_foreign = callee_value->function->flags & IR_FUNC_FLAG_FOREIGN;
 
+                    AST_Type* func_type = callee_decl->function.type;
+                    assert(func_type);
+                    assert(func_type->kind == AST_TYPE_FUNCTION);
+
 					for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
 					{
+                        bool is_vararg = false;
+                        if (i >= BUF_LENGTH(func_type->function.arg_types))
+                        {
+                            assert(func_type->function.is_vararg);
+                            is_vararg = true;
+                        }
 						AST_Expression* arg_expr = expression->call.arg_expressions[i];
 						IR_Value* arg_value = ir_builder_emit_expression(ir_builder, arg_expr);
-						ir_builder_emit_call_arg(ir_builder, arg_value, is_foreign);
+						ir_builder_emit_call_arg(ir_builder, arg_value, is_vararg, is_foreign);
 					}
 
 					uint64_t num_args = BUF_LENGTH(expression->call.arg_expressions);
@@ -881,11 +891,19 @@ namespace Zodiac
 					IR_Value* callee_value = ir_builder_value_for_declaration(ir_builder, callee_decl);
 					IR_Value* func_ptr_value = ir_builder_emit_load(ir_builder, callee_value);
 
+                    AST_Type* func_type = callee_decl->mutable_decl.type->pointer.base;
+
 					for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
 					{
+                        bool is_vararg = false;
+                        if (i >= BUF_LENGTH(func_type->function.arg_types))
+                        {
+                            assert(func_type->function.is_vararg);
+                            is_vararg = true;
+                        }
 						AST_Expression* arg_expr = expression->call.arg_expressions[i];
 						IR_Value* arg_value = ir_builder_emit_expression(ir_builder, arg_expr);
-						ir_builder_emit_call_arg(ir_builder, arg_value, true);
+						ir_builder_emit_call_arg(ir_builder, arg_value, is_vararg, true);
 					}
 					uint64_t num_args = BUF_LENGTH(expression->call.arg_expressions);
 					IR_Value* num_args_lit = ir_integer_literal(ir_builder, Builtin::type_int,
@@ -1862,7 +1880,7 @@ namespace Zodiac
     }
 
     void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value,
-                                  bool is_foreign/*=false*/)
+                                  bool is_vararg, bool is_foreign/*=false*/)
     {
         assert(ir_builder);
         assert(arg_value);
@@ -1872,8 +1890,13 @@ namespace Zodiac
         {
             op = IR_OP_PUSH_EX_CALL_ARG;
         }
+        IR_Value* is_vararg_value = nullptr;
+        if (is_vararg)
+        {
+            is_vararg_value = ir_boolean_literal(ir_builder, Builtin::type_bool, true);
+        }
         IR_Instruction* iri = ir_instruction_new(ir_builder, op, arg_value,
-                                                 nullptr, nullptr);
+                                                 is_vararg_value, nullptr);
         ir_builder_emit_instruction(ir_builder, iri);
     }
 
