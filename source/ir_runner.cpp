@@ -633,7 +633,8 @@ namespace Zodiac
                 {
                     dcArgPointer(runner->dyn_vm, arg_value->value.string);
                 }
-                else if (iri->arg1->type->flags & AST_TYPE_FLAG_INT)
+                else if (iri->arg1->type->flags & AST_TYPE_FLAG_INT ||
+                         iri->arg1->type->kind == AST_TYPE_ENUM)
                 {
                     if (iri->arg1->type->bit_size == 8)
                     {
