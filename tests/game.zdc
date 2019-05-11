@@ -22,7 +22,7 @@ main :: () -> int
         return 9;
     }
 
-    // glfw.glfwSetKeyCallback(window, key_callback);
+    glfw.glfwSetKeyCallback(window, key_callback);
 
     glfw.glfwMakeContextCurrent(window);
     // glfw.glfwSwapInterval(1);
@@ -62,7 +62,7 @@ main :: () -> int
     }
 }
 
-// key_callback :: (window: *glfw.GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void
-// {
-    
-// }
+key_callback :: (window: *glfw.GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void
+{
+    io.printf("user pressed key: %ld\n", key);
+}

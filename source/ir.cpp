@@ -116,7 +116,7 @@ namespace Zodiac
                 AST_Type* return_type = global_decl->function.return_type;
                 IR_Value* func_value = ir_builder_begin_function(ir_builder,
                                                                     ident->atom.data,
-                                                                    return_type);
+                                                                    global_decl->function.type);
                 if (global_decl->function.body_block)
                 {
                     IR_Value* entry_block = ir_builder_create_block(ir_builder, "entry",
@@ -842,6 +842,10 @@ namespace Zodiac
                 {
                     value = ir_builder_emit_loadg(ir_builder, value);
                 }
+                else if (value->kind == IRV_FUNCTION)
+                {
+                    value = ir_builder_emit_addrof_function(ir_builder, value, expression->type);
+                }
                 else assert(false);
 
                 return  value;
@@ -1280,6 +1284,25 @@ namespace Zodiac
 		return result_value;
 	}
 
+    IR_Value* ir_builder_emit_addrof_function(IR_Builder* ir_builder, IR_Value* func, AST_Type* func_type)
+    {
+        assert(ir_builder);
+        assert(func);
+        assert(func->kind == IRV_FUNCTION);
+        assert(func_type);
+        assert(func_type->kind == AST_TYPE_FUNCTION);
+
+        AST_Type* pointer_type = ast_find_or_create_pointer_type(ir_builder->context, func_type);
+
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, pointer_type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ADDROF_FUNCTION, func, nullptr,
+                                                 result_value);
+
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result_value;
+    }
+
     IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression)
     {
         assert(ir_builder);
@@ -1323,7 +1346,8 @@ namespace Zodiac
         return result_value;
     }
 
-    IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder, AST_Declaration* declaration)
+    IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder,
+                                               AST_Declaration* declaration)
     {
         assert(ir_builder);
         assert(declaration);
@@ -1357,16 +1381,17 @@ namespace Zodiac
         return nullptr;
     }
 
-    IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, const char* name, AST_Type* return_type)
+    IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, const char* name,
+                                        AST_Type* func_type)
     {
         assert(ir_builder);
         assert(name);
-        assert(return_type);
+        assert(func_type);
 
         assert(ir_builder->current_function == nullptr);
 
         //TODO: Assert we don't have a function with the same name
-        IR_Function* function = ir_function_new(ir_builder, name, return_type);
+        IR_Function* function = ir_function_new(ir_builder, name, func_type);
         ir_builder->current_function = function;
         BUF_PUSH(ir_builder->result.functions, function);
 
@@ -1913,7 +1938,8 @@ namespace Zodiac
         ir_builder_emit_instruction(ir_builder, iri);
     }
 
-    IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value, IR_Value* num_args)
+    IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value,
+                                   IR_Value* num_args)
     {
         assert(ir_builder);
         assert(func_value);
@@ -1923,9 +1949,10 @@ namespace Zodiac
 		if (func_value->kind == IRV_FUNCTION)
 		{
 			IR_Function* function = func_value->function;
-			assert(function->return_type);
+			assert(function->type);
 
-			IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, function->return_type);
+			IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY,
+                                                  function->type->function.return_type);
 			auto op = IR_OP_CALL;
 			IR_Value* arg_1 = func_value;
 			if (func_value->function->flags & IR_FUNC_FLAG_FOREIGN)
@@ -2324,16 +2351,16 @@ namespace Zodiac
         return BUF_LENGTH(ir_builder->context->foreign_table) - 1;
     }
 
-    IR_Function* ir_function_new(IR_Builder* ir_builder, const char* name, AST_Type* return_type)
+    IR_Function* ir_function_new(IR_Builder* ir_builder, const char* name, AST_Type* func_type)
     {
         assert(ir_builder);
         assert(name);
-        assert(return_type);
+        assert(func_type);
 
         IR_Function* result = arena_alloc(&ir_builder->arena, IR_Function);
         result->flags = IR_FUNC_FLAG_NONE;
         result->name = name;
-        result->return_type = return_type;
+        result->type = func_type;
         result->first_block = nullptr;
         result->last_block = nullptr;
         result->arguments = nullptr;
@@ -2596,7 +2623,7 @@ namespace Zodiac
         printf(")");
 
         printf(" -> ");
-        ir_print_type(function->return_type);
+        ir_print_type(function->type->function.return_type);
         printf("\n");
 
         if (!is_foreign)
@@ -2805,6 +2832,13 @@ namespace Zodiac
 				ir_print_value(instruction->arg1);
 				break;
 			}
+
+            case IR_OP_ADDROF_FUNCTION:
+            {
+                printf("ADDROF_FUNCTION ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
 
 			case IR_OP_CALL_PTR:
 			{

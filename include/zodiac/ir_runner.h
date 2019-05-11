@@ -2,8 +2,9 @@
 
 #include "ir.h"
 
-#include <dyncall/dyncall.h>
-#include <dynload/dynload.h>
+#include <dyncall.h>
+#include <dyncall_callback.h>
+#include <dynload.h>
 
 namespace Zodiac
 {
@@ -46,7 +47,8 @@ namespace Zodiac
     IR_Value* ir_runner_get_local_temporary(IR_Runner* ir_runner, uint64_t temp_index);
     IR_Value* ir_runner_get_local_temporary(IR_Runner* ir_runner, IR_Value* code_value);
 
-    IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, IR_Function* function, uint64_t num_args);
+    IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, IR_Function* function,
+                                            uint64_t num_args);
     void ir_runner_execute_block(IR_Runner* runner, IR_Block* block);
     void ir_runner_execute_instruction(IR_Runner* runner, IR_Instruction* iri);
 
@@ -57,4 +59,7 @@ namespace Zodiac
                                                BUF(IR_Value) args);
     IR_Stack_Frame* ir_runner_top_stack_frame(IR_Runner* ir_runner);
     void ir_runner_pop_stack_frame(IR_Runner* ir_runner);
+
+    static const char* get_dcb_signature(AST_Type* type);
+    static char get_dcb_signature_char(AST_Type* type);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ast.h"
+#include <dyncall_callback.h>
 
 namespace Zodiac
 {
@@ -104,6 +105,7 @@ namespace Zodiac
         IR_OP_PUSH_EX_CALL_ARG,
         IR_OP_CALL_EX,
 		IR_OP_ADDROF_FOREIGN,
+        IR_OP_ADDROF_FUNCTION,
 		IR_OP_CALL_PTR,
         IR_OP_RETURN,
 
@@ -168,7 +170,7 @@ namespace Zodiac
         _IR_Function_Flags_ flags = IR_FUNC_FLAG_NONE;
 
         const char* name = nullptr;
-        AST_Type* return_type = nullptr;
+        AST_Type* type = nullptr;
 
         IR_Block* first_block = nullptr;
         IR_Block* last_block = nullptr;
@@ -177,7 +179,9 @@ namespace Zodiac
         BUF(IR_Value*) local_temps = nullptr;
 
         bool is_entry = false;
+
         uint64_t foreign_index = 0;
+        DCCallback* callback_address = nullptr;
 
         uint64_t next_duplicate_name_index = 1;
     };
@@ -241,20 +245,25 @@ namespace Zodiac
     IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression);
 	IR_Value* ir_builder_emit_addrof_foreign(IR_Builder* ir_builder, IR_Value* foreign_func,
-		AST_Type* foreign_type);
+                                             AST_Type* foreign_type);
+    IR_Value* ir_builder_emit_addrof_function(IR_Builder* ir_builder, IR_Value* func,
+                                              AST_Type* func_type);
     IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_not(IR_Builder* ir_builder, AST_Expression* expression);
 
-    IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder, AST_Declaration* declaration);
+    IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder,
+                                               AST_Declaration* declaration);
 
-    IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, const char* name, AST_Type* return_type);
+    IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, const char* name, AST_Type*
+                                        return_type);
     void ir_builder_end_function(IR_Builder* ir_builder, IR_Value* func_value);
     void ir_builder_patch_empty_block_jumps(IR_Builder* ir_builder, IR_Function* function);
     void ir_builder_patch_block_jumps(IR_Builder* ir_builder, IR_Function* function,
                                      IR_Block* orig_block, IR_Block* target_block);
     IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name,
                                       IR_Function* function = nullptr);
-    IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name, IR_Value* function);
+    IR_Value* ir_builder_create_block(IR_Builder* ir_builder, const char* name,
+                                      IR_Value* function);
 
     void ir_builder_append_block(IR_Builder* ir_builder, IR_Function* function, IR_Block* block);
     void ir_builder_set_insert_block(IR_Builder* ir_builder, IR_Block* block);
@@ -264,12 +273,14 @@ namespace Zodiac
                                                    uint64_t offset);
     IR_Value* ir_builder_emit_array_offset_pointer(IR_Builder* ir_builder, IR_Value* array_allocl,
                                                    IR_Value* offset_value);
-    IR_Value* ir_builder_emit_aggregate_offset_pointer(IR_Builder* ir_builder, IR_Value* struct_value,
+    IR_Value* ir_builder_emit_aggregate_offset_pointer(IR_Builder* ir_builder,
+                                                       IR_Value* struct_value,
                                                        uint64_t offset);
 
     void ir_builder_emit_instruction(IR_Builder* ir_builder, IR_Instruction* iri);
 
-    IR_Value* ir_builder_emit_function_arg(IR_Builder* ir_builder, const char* name, AST_Type* type);
+    IR_Value* ir_builder_emit_function_arg(IR_Builder* ir_builder, const char* name,
+                                           AST_Type* type);
     IR_Value* ir_builder_emit_add(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_sub(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_mul(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
@@ -310,7 +321,7 @@ namespace Zodiac
     IR_Value* ir_character_literal(IR_Builder* ir_builder, AST_Type* type, char c);
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);
 
-    IR_Function* ir_function_new(IR_Builder* ir_builder, const char* name, AST_Type* return_type);
+    IR_Function* ir_function_new(IR_Builder* ir_builder, const char* name, AST_Type* func_type);
 
     IR_Value* ir_value_new(IR_Builder* ir_builder, IR_Value_Kind kind, AST_Type* type);
     IR_Value* ir_value_function_new(IR_Builder* ir_builder, IR_Function* function);

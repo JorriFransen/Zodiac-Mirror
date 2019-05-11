@@ -274,6 +274,27 @@ namespace Zodiac
         }
     }
 
+    struct IR_DCB_Data
+    {
+        IR_Runner* runner = nullptr;
+        IR_Value* func_value;
+    };
+
+    char dcb_handler(DCCallback* cb, DCArgs* args, DCValue* result, void* userdata)
+    {
+        assert(userdata);
+        IR_Value* func_value = (IR_Value*)userdata;
+        assert(func_value->kind == IRV_FUNCTION);
+
+        BUF(IR_Value*) arg_values = nullptr;
+        for (uint64_t i = 0; i < BUF_LENGTH(func_value->function->type->function.arg_types); i++)
+        {
+            // IR_Value* arg_value = ir_value_new()
+        }
+
+        assert(false);
+    }
+
     void ir_runner_execute_instruction(IR_Runner* runner, IR_Instruction* iri)
     {
         assert(runner);
@@ -712,7 +733,8 @@ namespace Zodiac
                 }
 				else if (iri->result->type->kind == AST_TYPE_POINTER)
 				{
-					result_value->value.string = (uint8_t*)dcCallPointer(runner->dyn_vm, ptr_val->value.string);
+					result_value->value.string = (uint8_t*)dcCallPointer(runner->dyn_vm,
+                                                                         ptr_val->value.string);
 				}
                 else if (iri->result->type->flags & AST_TYPE_FLAG_VOID)
                 {
@@ -734,6 +756,31 @@ namespace Zodiac
 				dest->value.string = (uint8_t*)runner->loaded_foreign_symbols[foreign_index];
 				break;
 			}
+
+            case IR_OP_ADDROF_FUNCTION:
+            {
+                IR_Value* func = iri->arg1;
+                assert(func->kind == IRV_FUNCTION);
+
+                IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
+
+                DCCallback* callback_address = nullptr;
+
+                if (func->function->callback_address)
+                {
+                    callback_address = func->function->callback_address;
+                }
+                else
+                {
+                    // TODO: temp mem
+                    const char* signature_string = get_dcb_signature(func->function->type);
+                    callback_address = dcbNewCallback(signature_string, dcb_handler, func);
+                }
+
+                assert(callback_address);
+                dest->value.string = (uint8_t*)callback_address;
+                break;
+            }
 
             case IR_OP_RETURN:
             {
@@ -1337,13 +1384,13 @@ namespace Zodiac
             assert(new_temp.type);
             BUF_PUSH(result->temps, new_temp);
 
-            if (function->return_type &&
-                function->return_type->kind == AST_TYPE_STRUCT)
+            if (function->type->function.return_type &&
+                function->type->function.return_type->kind == AST_TYPE_STRUCT)
             {
-                result->return_value.type = function->return_type;
+                result->return_value.type = function->type->function.return_type;
                 auto parent_stack_frame = ir_runner_top_stack_frame(ir_runner);
                 auto parent_arena = parent_stack_frame->arena;
-                uint64_t struct_byte_size = function->return_type->bit_size / 8;
+                uint64_t struct_byte_size = function->type->function.return_type->bit_size / 8;
                 assert(struct_byte_size);
                 result->return_value.value.struct_pointer = arena_alloc_array(&parent_arena,
                                                                                uint8_t,
@@ -1387,5 +1434,98 @@ namespace Zodiac
         auto old_stack_frame = stack_pop(ir_runner->call_stack);
 
         arena_free(&old_stack_frame->arena);
+    }
+
+    static const char* get_dcb_signature(AST_Type* type)
+    {
+        assert(type);
+
+        switch (type->kind)
+        {
+            case AST_TYPE_FUNCTION:
+            {
+                BUF(char) signature = nullptr;
+                for (uint64_t i = 0; i < BUF_LENGTH(type->function.arg_types); i++)
+                {
+                    BUF_PUSH(signature, get_dcb_signature_char(type->function.arg_types[i]));
+                }
+                BUF_PUSH(signature, ')');
+                BUF_PUSH(signature, get_dcb_signature_char(type->function.return_type));
+                return signature;
+                break;
+            }
+
+            default: assert(false);
+        }
+    }
+
+    static char get_dcb_signature_char(AST_Type* type)
+    {
+        assert(type);
+
+        switch (type->kind)
+        {
+            case AST_TYPE_POINTER:
+                return 'p';
+
+            case AST_TYPE_BASE:
+            {
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    char c;
+                    switch (type->bit_size)
+                    {
+                        case 8:
+                        {
+                            c = 'c';
+                            break;
+                        }
+
+                        case 16:
+                        {
+                            c = 's';
+                            break;
+                        }
+
+                        case 32:
+                        {
+                            c = 'i';
+                            break;
+                        }
+
+                        case 64:
+                        {
+                            c = 'l';
+                            break;
+                        }
+                        default: assert(false);
+                    }
+
+                    if (!(type->flags & AST_TYPE_FLAG_SIGNED))
+                    {
+                        c -= 'a' - 'A';
+                    }
+                    return c;
+                }
+                else if (type == Builtin::type_float)
+                {
+                    assert(false);
+                }
+                else if (type == Builtin::type_double)
+                {
+                    assert(false);
+                }
+                else if (type->flags & AST_TYPE_FLAG_VOID)
+                {
+                    return 'v';
+                }
+                else assert(false);
+                break;
+            }
+
+            default: assert(false);
+        }
+
+        assert(false);
     }
 }
