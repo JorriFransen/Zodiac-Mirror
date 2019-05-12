@@ -165,6 +165,14 @@ namespace Zodiac
         IR_FUNC_FLAG_VARARG  = 0x02,
     };
 
+    struct IR_Runner;
+    struct _IR_DCB_Data
+    {
+        IR_Runner* runner = nullptr;
+        IR_Value* func_value = nullptr;
+        DCCallback* callback_address = nullptr;
+    };
+
     struct IR_Function
     {
         _IR_Function_Flags_ flags = IR_FUNC_FLAG_NONE;
@@ -181,7 +189,7 @@ namespace Zodiac
         bool is_entry = false;
 
         uint64_t foreign_index = 0;
-        DCCallback* callback_address = nullptr;
+        _IR_DCB_Data dcb_data = {};
 
         uint64_t next_duplicate_name_index = 1;
     };

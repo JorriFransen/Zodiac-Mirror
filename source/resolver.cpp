@@ -212,6 +212,10 @@ namespace Zodiac
             result &= try_resolve_type_spec(resolver, declaration->function.return_type_spec,
                                             &declaration->function.return_type, scope);
         }
+        else if (!declaration->function.return_type && !declaration->function.return_type_spec)
+        {
+            declaration->function.return_type = Builtin::type_void;
+        }
 
         if (declaration->directive)
         {
@@ -674,7 +678,8 @@ namespace Zodiac
                 {
                     auto switch_type = switch_expr->type;
                     assert(switch_type->flags & AST_TYPE_FLAG_INT ||
-                           (switch_type->kind == AST_TYPE_ENUM) && switch_type->enum_type.base_type->flags & AST_TYPE_FLAG_INT);
+                           (switch_type->kind == AST_TYPE_ENUM) &&
+                            switch_type->enum_type.base_type->flags & AST_TYPE_FLAG_INT);
                 }
 
                 bool found_default = false;
@@ -1255,7 +1260,8 @@ namespace Zodiac
                     AST_Declaration* struct_member_decl = suggested_type->aggregate_type.member_declarations[i];
 
                     if (expr->type != struct_member_decl->mutable_decl.type &&
-                        !(expr->type == Builtin::type_float && struct_member_decl->mutable_decl.type == Builtin::type_double))
+                        !(expr->type == Builtin::type_float &&
+                          struct_member_decl->mutable_decl.type == Builtin::type_double))
                     {
                         match = false;
                         resolver_report_error(resolver, expr->file_pos,
@@ -1284,7 +1290,8 @@ namespace Zodiac
         return result;
     }
 
-    static bool try_resolve_array_length_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope)
+    static bool try_resolve_array_length_expression(Resolver* resolver, AST_Expression* expression,
+                                                    AST_Scope* scope)
     {
         assert(resolver);
         assert(expression);
@@ -1590,22 +1597,13 @@ namespace Zodiac
             }
             assert(var_decl->flags & AST_DECL_FLAG_RESOLVED);
 
-            if (var_decl->kind == AST_DECL_MUTABLE)
-            {
-                expression->type = var_decl->mutable_decl.type;
-            }
-            else if (var_decl->kind == AST_DECL_CONSTANT_VAR)
-            {
-                expression->type = var_decl->constant_var.type;
-            }
-			else if (var_decl->kind == AST_DECL_FUNC)
-			{
-				expression->type = var_decl->function.type;
-			}
-            else assert(false);
-
-            result &= try_resolve_identifier(resolver, member_expression->identifier,
+            result &= try_resolve_identifier_expression(resolver, member_expression,
                                              import_module->module_scope);
+            if (result)
+            {
+                expression->is_const = member_expression->is_const;
+                expression->type = member_expression->type;
+            }
             return result;
         }
     }

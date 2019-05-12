@@ -741,6 +741,9 @@ namespace Zodiac
                     case AST_BINOP_NEQ:
                         return ir_builder_emit_neq(ir_builder, lhs_value, rhs_value);
 
+                    case AST_BINOP_AND_AND:
+                        return ir_builder_emit_and_and(ir_builder, lhs_value, rhs_value);
+
                     default: assert(false);
                 }
             }
@@ -2366,6 +2369,7 @@ namespace Zodiac
         result->arguments = nullptr;
         result->local_temps = nullptr;
         result->is_entry = false;
+        result->dcb_data = {};
 
         return result;
     }

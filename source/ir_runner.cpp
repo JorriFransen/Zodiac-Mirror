@@ -274,25 +274,63 @@ namespace Zodiac
         }
     }
 
-    struct IR_DCB_Data
-    {
-        IR_Runner* runner = nullptr;
-        IR_Value* func_value;
-    };
-
     char dcb_handler(DCCallback* cb, DCArgs* args, DCValue* result, void* userdata)
     {
         assert(userdata);
-        IR_Value* func_value = (IR_Value*)userdata;
+
+        _IR_DCB_Data* dcb_data = (_IR_DCB_Data*)userdata;
+        IR_Value* func_value = dcb_data->func_value;
         assert(func_value->kind == IRV_FUNCTION);
 
-        BUF(IR_Value*) arg_values = nullptr;
-        for (uint64_t i = 0; i < BUF_LENGTH(func_value->function->type->function.arg_types); i++)
+
+        auto arg_types = func_value->function->type->function.arg_types;
+        for (uint64_t i = 0; i < BUF_LENGTH(arg_types); i++)
         {
-            // IR_Value* arg_value = ir_value_new()
+            AST_Type* arg_type = arg_types[i];
+
+            IR_Value arg_value = {};
+            arg_value.kind = IRV_TEMPORARY;
+            arg_value.type = arg_type;
+            arg_value.assigned = true;
+
+            if (arg_type->kind == AST_TYPE_POINTER)
+            {
+                arg_value.value.string = (uint8_t*)dcbArgPointer(args);
+            }
+            else if (arg_type->flags & AST_TYPE_FLAG_INT)
+            {
+                if (arg_type->flags & AST_TYPE_FLAG_SIGNED)
+                {
+                    if (arg_type->bit_size == 64)
+                    {
+                        arg_value.value.u64 = dcbArgLongLong(args);
+                    }
+                    else assert(false);
+                }
+                else assert(false);
+            }
+            else if (arg_type->flags & AST_TYPE_FLAG_FLOAT)
+            {
+                assert(false);
+            }
+            else assert(false);
+
+            stack_push(dcb_data->runner->arg_stack, arg_value);
         }
 
-        assert(false);
+        IR_Stack_Frame* stack_frame = ir_runner_call_function(dcb_data->runner, func_value->function,
+                                                              BUF_LENGTH(arg_types));
+
+        AST_Type* return_type = func_value->function->type->function.return_type;
+        if (return_type->flags & AST_TYPE_FLAG_INT)
+        {
+            assert(false);
+        }
+        else if (return_type->flags & AST_TYPE_FLAG_VOID)
+        {
+            return 'v';
+        }
+        else assert(false);
     }
 
     void ir_runner_execute_instruction(IR_Runner* runner, IR_Instruction* iri)
@@ -766,15 +804,18 @@ namespace Zodiac
 
                 DCCallback* callback_address = nullptr;
 
-                if (func->function->callback_address)
+                if (func->function->dcb_data.callback_address)
                 {
-                    callback_address = func->function->callback_address;
+                    callback_address = func->function->dcb_data.callback_address;
                 }
                 else
                 {
                     // TODO: temp mem
                     const char* signature_string = get_dcb_signature(func->function->type);
-                    callback_address = dcbNewCallback(signature_string, dcb_handler, func);
+                    func->function->dcb_data.func_value = func;
+                    func->function->dcb_data.runner = runner;
+                    callback_address = dcbNewCallback(signature_string, dcb_handler, &func->function->dcb_data);
+                    func->function->dcb_data.callback_address = callback_address;
                 }
 
                 assert(callback_address);

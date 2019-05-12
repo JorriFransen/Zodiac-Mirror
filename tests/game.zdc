@@ -23,11 +23,12 @@ main :: () -> int
     }
 
     glfw.glfwSetKeyCallback(window, key_callback);
+    glfw.glfwSetErrorCallback(error_callback);
 
     glfw.glfwMakeContextCurrent(window);
-    // glfw.glfwSwapInterval(1);
+    glfw.glfwSwapInterval(1);
     gl.load(*glfw.glfwGetProcAddress);
-    // gl.glViewport(0, 0, width, height);
+    gl.glViewport(0, 0, width, height);
 
     vendor := gl.glGetString(gl.GL_VENDOR);
     renderer := gl.glGetString(gl.GL_RENDERER);
@@ -42,7 +43,6 @@ main :: () -> int
     // gl.glClearColor(0.1, 0.3, 0.5, 1.0);
     gl.glClearColor(0.0, 0.0, 0.0, 0.0);
 
-    // io.printf("gl.GL_COLOR_BUFFER_BIT: %#x\n", gl.GL_COLOR_BUFFER_BIT);
 
     while (!glfw.glfwWindowShouldClose(window))
     {
@@ -60,9 +60,35 @@ main :: () -> int
         glfw.glfwSwapBuffers(window);
         glfw.glfwPollEvents();
     }
+
+    glfw.glfwDestroyWindow(window);
+    glfw.glfwTerminate();
 }
 
 key_callback :: (window: *glfw.GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void
 {
-    io.printf("user pressed key: %ld\n", key);
+    if (key == glfw.GLFW_KEY_ESCAPE && action == glfw.GLFW_PRESS)
+    {
+        io.printf("Exit requested by user\n");
+        glfw.glfwSetWindowShouldClose(window, glfw.GLFW_TRUE);
+    }
+    // switch (action)
+    // {
+    //     case glfw.GLFW_RELEASE:
+    //         io.printf("released key: %lu\n", key);
+
+    //     case glfw.GLFW_PRESS:
+    //         io.printf("pressed key: %lu\n", key);
+
+    //     case glfw.GLFW_REPEAT:
+    //         io.printf("repeat key: %lu\n", key);
+
+    //     default:
+    //         io.printf("Unknown action: %lu, key: %lu\n", action, key);
+    // }
+}
+
+error_callback :: (error: int, description: *u8) -> void
+{
+    io.fprintf(io.stderr, "GLFW error:%lu:s\n", error, description);
 }

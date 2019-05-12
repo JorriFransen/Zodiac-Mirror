@@ -918,7 +918,7 @@ namespace Zodiac
                                                AST_Type* return_type)
 	{
 		assert(context);
-		assert(return_type);
+        assert(return_type);
 
 		for (uint64_t i = 0; i < BUF_LENGTH(context->types); i++)
 		{

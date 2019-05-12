@@ -101,6 +101,7 @@ namespace Zodiac
             _DOUBLE_CHAR_TOKEN_CASE('=', TOK_EQ, '=', TOK_EQEQ);
             _DOUBLE_CHAR_TOKEN_CASE('-', TOK_MINUS, '>', TOK_RARROW);
             _DOUBLE_CHAR_TOKEN_CASE('!', TOK_BANG, '=', TOK_NEQ);
+            _DOUBLE_CHAR_TOKEN_CASE('&', TOK_AND, '&', TOK_AND_AND);
 
             case '/':
             {

@@ -12,6 +12,7 @@ GLFWmonitor :: struct {}
 GLFWwindow :: struct {}
 
 GLFWkeyfun :: typedef *(window: *GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void;
+GLFWerrorfun :: typedef *(error: int, description: *u8) -> void;
 
 GLFW_TRUE  :: 1;
 GLFW_FALSE :: 0;
@@ -21,19 +22,25 @@ GLFW_CONTEXT_VERSION_MAJOR :: 0x00022002;
 GLFW_CONTEXT_VERSION_MINOR :: 0x00022003;
 GLFW_OPENGL_PROFILE        :: 0x00022008;
 
+GLFW_RELEASE :: 0;
+GLFW_PRESS   :: 1;
+GLFW_REPEAT  :: 2;
+
 GLFW_NO_ERROR :: 0;
 GLFW_OPENGL_ANY_PROFILE :: 0;
 GLFW_OPENGL_COMPAT_PROFILE :: 0x00032002;
 
 #foreign glfwInit :: () -> int;
-#foreign glfwTerminate :: () -> void;
+#foreign glfwTerminate :: ();
 
 #foreign
 glfwCreateWindow :: (width: int, height: int, title: *u8, monitor: *GLFWmonitor, share: *GLFWwindow)
                      -> *GLFWwindow;
+#foreign glfwDestroyWindow :: (window: *GLFWwindow) -> void;
 
 #foreign glfwMakeContextCurrent :: (window: *GLFWwindow) -> void;
 #foreign glfwWindowShouldClose :: (window: *GLFWwindow) -> int;
+#foreign glfwSetWindowShouldClose :: (window: *GLFWwindow, value: int) -> void;
 #foreign glfwSwapBuffers :: (window: *GLFWwindow) -> void;
 #foreign glfwPollEvents :: () -> void;
 #foreign glfwWindowHint :: (hint: int, value: int) -> void;
@@ -42,3 +49,6 @@ glfwCreateWindow :: (width: int, height: int, title: *u8, monitor: *GLFWmonitor,
 
 #foreign glfwGetProcAddress :: (procname: *u8) -> *void;
 #foreign glfwSetKeyCallback :: (window: *GLFWwindow, cbfun: GLFWkeyfun) -> GLFWkeyfun;
+#foreign glfwSetErrorCallback :: (cbfun: GLFWerrorfun) -> GLFWerrorfun;
+
+GLFW_KEY_ESCAPE :: 256;

@@ -847,12 +847,12 @@ namespace Zodiac
 
         AST_Expression* lhs = parse_or_expression(parser, scope);
 
-        // while (match_token(parser, TOK_AND_AND))
-        // {
-        //     AST_Expression* rhs = parse_or_expression(parser);
-        //     auto op = AST_BINOP_OR;
-        //     lhs = ast_new_binary_expression(parser->context, lhs, op, rhs);
-        // }
+        while (match_token(parser, TOK_AND_AND))
+        {
+            AST_Expression* rhs = parse_or_expression(parser, scope);
+            auto op = AST_BINOP_AND_AND;
+            lhs = ast_binary_expression_new(parser->context, lhs->file_pos, lhs, op, rhs);
+        }
 
         return lhs;
     }
