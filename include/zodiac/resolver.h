@@ -119,7 +119,8 @@ namespace Zodiac
     AST_Type* create_enum_type(Resolver* resolver, AST_Identifier* identifier,
                                BUF(AST_Enum_Member_Decl*) member_decls);
 
-    AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier);
+    AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier,
+                                      bool allow_import_check = true);
 
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,
                                              AST_Identifier* identifier);

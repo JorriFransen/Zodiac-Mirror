@@ -380,6 +380,7 @@ namespace Zodiac
             struct
             {
                 AST_Identifier* module_identifier;
+                bool import_all;
                 AST_Module* module;
             } import;
 
@@ -515,7 +516,9 @@ namespace Zodiac
 
     struct AST_Scope
     {
-        AST_Scope* parent;
+        AST_Scope* parent = nullptr;
+        bool is_module_scope = false;
+        AST_Module* module = nullptr;
 
         BUF(AST_Declaration*) declarations = nullptr;
     };
@@ -611,7 +614,8 @@ namespace Zodiac
                                                        AST_Expression* assert_expr);
     AST_Declaration* ast_import_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
-                                                AST_Identifier* import_module_identifier);
+                                                AST_Identifier* import_module_identifier,
+                                                bool import_all);
     AST_Declaration* ast_struct_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
                                                 BUF(AST_Declaration*) member_decls);
@@ -676,7 +680,9 @@ namespace Zodiac
                                               bool is_vararg, BUF(AST_Declaration*) arg_decls,
                                               AST_Type_Spec* return_type_spec);
 
-    AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope);
+    AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope,
+                             bool is_module_scope = false,
+                             AST_Module* module = nullptr);
 
     AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Type* base_type);
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type,

@@ -11,7 +11,7 @@ namespace Zodiac
 
         AST_Module* result = arena_alloc(context->arena, AST_Module);
         result->global_declarations = nullptr;
-        result->module_scope = ast_scope_new(context, nullptr);
+        result->module_scope = ast_scope_new(context, nullptr, true, result);
         result->entry_point = nullptr;
         result->module_name = module_name;
         result->import_modules = nullptr;
@@ -420,7 +420,8 @@ namespace Zodiac
 
     AST_Declaration* ast_import_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
-                                                AST_Identifier* import_module_identifier)
+                                                AST_Identifier* import_module_identifier,
+                                                bool import_all)
     {
         assert(context);
         assert(identifier);
@@ -430,6 +431,7 @@ namespace Zodiac
                                                       AST_DECL_LOC_GLOBAL, identifier,
                                                       nullptr, true);
         result->import.module_identifier = import_module_identifier;
+        result->import.import_all = import_all;
         return result;
     }
 
@@ -848,13 +850,22 @@ namespace Zodiac
         return result;
     }
 
-    AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope)
+    AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope,
+                             bool is_module_scope/*=false*/,
+                             AST_Module* module/*=nullptr*/)
     {
         assert(context);
+
+        if (is_module_scope)
+            assert(module);
+        else
+            assert(!module);
 
         AST_Scope* result = arena_alloc(context->arena, AST_Scope);
         result->parent = parent_scope;
         result->declarations = nullptr;
+        result->is_module_scope = is_module_scope;
+        result->module = module;
 
         return result;
     }

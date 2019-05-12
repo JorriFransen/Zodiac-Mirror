@@ -1857,6 +1857,10 @@ namespace Zodiac
 				{
 					result &= try_resolve_type_spec(resolver, return_type_spec, &return_type, scope);
 				}
+                else
+                {
+                    return_type = Builtin::type_void;
+                }
 
 				if (result)
 				{
@@ -1876,7 +1880,8 @@ namespace Zodiac
         return false;
     }
 
-    AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module, const Atom& module_path,
+    AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module,
+                                              const Atom& module_path,
                                               const Atom& module_name)
     {
         assert(resolver);
@@ -1884,7 +1889,8 @@ namespace Zodiac
 
         assert(file_exists(module_path.data));
 
-        AST_Module* import_module = zodiac_compile_or_get_module(resolver->context, module_path, module_name);
+        AST_Module* import_module = zodiac_compile_or_get_module(resolver->context, module_path,
+                                                                 module_name);
         assert(import_module);
 
         bool found = false;
@@ -1971,7 +1977,8 @@ namespace Zodiac
         return enum_type;
     }
 
-    AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier)
+    AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier,
+                                      bool allow_import_check/*=true*/)
     {
         assert(scope);
         assert(identifier);
@@ -1986,15 +1993,35 @@ namespace Zodiac
             }
         }
 
+        if (allow_import_check && scope->is_module_scope)
+        {
+            for (uint64_t i = 0; i < BUF_LENGTH(scope->module->global_declarations); i++)
+            {
+                AST_Declaration* global_decl = scope->module->global_declarations[i];
+                if ((global_decl->flags & AST_DECL_FLAG_RESOLVED) &&
+                    global_decl->kind == AST_DECL_IMPORT &&
+                    global_decl->import.import_all)
+                {
+                    auto import_result = find_declaration(global_decl->import.module->module_scope,
+                                                          identifier, false);
+                    if (import_result && !(import_result->kind == AST_DECL_IMPORT))
+                    {
+                        return import_result;
+                    }
+                }
+            }
+        }
+
         if (scope->parent)
         {
-            return find_declaration(scope->parent, identifier);
+            return find_declaration(scope->parent, identifier, allow_import_check);
         }
 
         return nullptr;
     }
 
-    static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos, AST_Identifier* identifier)
+    static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,
+                                             AST_Identifier* identifier)
     {
         assert(resolver);
         assert(identifier);
