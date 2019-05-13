@@ -1,8 +1,8 @@
 
  - normal types are not pushed in the per module type table. (only pointer and array types?)
    
-* Modules [0/1]
-  - [ ] Access globals across modules 
+* Modules [1/1]
+  - [X] Access globals across modules 
    
 * Structs [0/2]
   - [ ] Nested declarations
