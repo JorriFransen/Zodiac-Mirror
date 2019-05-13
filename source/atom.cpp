@@ -89,18 +89,21 @@ namespace Zodiac
     {
         if (c >= '0' && c <= '9')
         {
-            return c - '0';
+            return ((uint64_t)c - '0');
         }
         else if (c >= 'a' && c <= 'f')
         {
-            return c - 'a' + 10;
+            return ((uint64_t)c - 'a') + 10;
         }
         else if (c >= 'A' && c <= 'F')
-            return c - 'A' + 10;
+            return ((uint64_t)c - 'A') + 10;
         else
         {
             assert(false);
         }
+
+		assert(false);
+		return 0;
     }
 
     uint64_t atom_to_u64(const Atom& atom, uint64_t base/* = 10 */)

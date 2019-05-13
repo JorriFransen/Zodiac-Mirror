@@ -77,6 +77,7 @@ namespace Zodiac
         }
 
         assert(false);
+		return 0;
     }
 
     int64_t const_interpret_s64_unary_expression(AST_Expression* expression, AST_Scope* scope)
@@ -99,6 +100,7 @@ namespace Zodiac
         }
 
         assert(false);
+		return 0;
     }
 
     float const_interpret_float_expression(AST_Expression* expression, AST_Scope* scope)
@@ -121,6 +123,7 @@ namespace Zodiac
 
             default: assert(false);
         }
+		return 0;
     }
 
     float const_interpret_float_unary_expression(AST_Expression* expression, AST_Scope* scope)
@@ -143,5 +146,6 @@ namespace Zodiac
         }
 
         assert(false);
+		return 0;
     }
 }

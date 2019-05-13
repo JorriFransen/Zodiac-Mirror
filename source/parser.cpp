@@ -1287,6 +1287,9 @@ namespace Zodiac
             assert(false);
         }
         else assert(false);
+
+		assert(false);
+		return nullptr;
     }
 
 	static AST_Type_Spec* parse_function_type_spec(Parser* parser, AST_Scope* scope)

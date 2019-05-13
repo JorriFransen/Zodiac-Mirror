@@ -331,6 +331,9 @@ namespace Zodiac
             return 'v';
         }
         else assert(false);
+
+		assert(false);
+		return 0;
     }
 
     void ir_runner_execute_instruction(IR_Runner* runner, IR_Instruction* iri)
@@ -710,7 +713,7 @@ namespace Zodiac
                     }
                     else if (iri->arg1->type->bit_size == 64)
                     {
-                        dcArgLong(runner->dyn_vm, arg_value->value.u64);
+                        dcArgLongLong(runner->dyn_vm, arg_value->value.u64);
                     }
                     else assert(false);
                 }
@@ -1498,6 +1501,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return 0;
     }
 
     static char get_dcb_signature_char(AST_Type* type)
@@ -1568,5 +1574,6 @@ namespace Zodiac
         }
 
         assert(false);
+		return 0;
     }
 }
