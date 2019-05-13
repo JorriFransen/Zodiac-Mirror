@@ -1673,7 +1673,8 @@ namespace Zodiac
         AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,
                                                                 member_decl->mutable_decl.type);
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
-        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_AGGREGATE_OFFSET_POINTER, struct_value,
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_AGGREGATE_OFFSET_POINTER,
+                                                 struct_value,
                                                  offset_value_literal, result_value);
         ir_builder_emit_instruction(ir_builder, iri);
         return result_value;
@@ -2252,6 +2253,10 @@ namespace Zodiac
         if (type->flags & AST_TYPE_FLAG_FLOAT)
         {
             return ir_float_literal(ir_builder, type, 0, 0);
+        }
+        else if (type->flags & AST_TYPE_FLAG_INT)
+        {
+            return ir_integer_literal(ir_builder, type, 0);
         }
         else assert(false);
 

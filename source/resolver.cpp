@@ -363,7 +363,8 @@ namespace Zodiac
 
         if (declaration->constant_var.type_spec)
         {
-            result &= try_resolve_type_spec(resolver, declaration->constant_var.type_spec, &specified_type,
+            result &= try_resolve_type_spec(resolver, declaration->constant_var.type_spec,
+                                            &specified_type,
                                             scope);
             if (!result)
             {
@@ -398,7 +399,8 @@ namespace Zodiac
         return result;
     }
 
-    static bool try_resolve_static_if_declaration(Resolver* resolver, AST_Declaration* declaration, AST_Scope* scope)
+    static bool try_resolve_static_if_declaration(Resolver* resolver,
+                                                  AST_Declaration* declaration, AST_Scope* scope)
     {
         assert(resolver);
         assert(declaration);
@@ -409,14 +411,17 @@ namespace Zodiac
 
         if (result)
         {
-            bool cond_value = const_interpret_bool_expression(declaration->static_if.cond_expr, scope);
+            bool cond_value = const_interpret_bool_expression(declaration->static_if.cond_expr,
+                                                              scope);
             if (cond_value)
             {
-                result &= try_resolve_declaration(resolver, declaration->static_if.then_declaration, scope);
+                result &= try_resolve_declaration(resolver,
+                                                  declaration->static_if.then_declaration, scope);
             }
             else if (declaration->static_if.else_declaration)
             {
-                result &= try_resolve_declaration(resolver, declaration->static_if.else_declaration, scope);
+                result &= try_resolve_declaration(resolver,
+                                                  declaration->static_if.else_declaration, scope);
             }
         }
 
@@ -1457,8 +1462,28 @@ namespace Zodiac
                 case AST_UNOP_MINUS:
                 {
                     assert((operand_expr->type->flags & AST_TYPE_FLAG_INT) ||
-                           operand_expr->type->flags & AST_TYPE_FLAG_FLOAT);
-                    expression->type = operand_expr->type;
+                           (operand_expr->type->flags & AST_TYPE_FLAG_FLOAT));
+
+                    if (operand_expr->is_const)
+                    {
+                        if (operand_expr->type == Builtin::type_int)
+                        {
+                            expression->type = Builtin::type_int;
+                            int64_t value = const_interpret_s64_expression(expression, scope);
+                            expression->kind = AST_EXPR_INTEGER_LITERAL;
+                            expression->integer_literal.u64 = value;
+                        }
+                        else if (operand_expr->type == Builtin::type_float)
+                        {
+                            expression->type = Builtin::type_float;
+                            float value = const_interpret_float_expression(expression, scope);
+                            expression->kind = AST_EXPR_FLOAT_LITERAL;
+                            expression->float_literal.r32 = value;
+                            expression->float_literal.r64 = (double)value;
+                        }
+                        else assert(false);
+                    }
+                    expression->is_const = operand_expr->is_const;
                     break;
                 }
 

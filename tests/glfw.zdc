@@ -51,5 +51,3 @@ glfwCreateWindow :: (width: int, height: int, title: *u8, monitor: *GLFWmonitor,
 #foreign glfwGetProcAddress :: (procname: *u8) -> *void;
 #foreign glfwSetKeyCallback :: (window: *GLFWwindow, cbfun: GLFWkeyfun) -> GLFWkeyfun;
 #foreign glfwSetErrorCallback :: (cbfun: GLFWerrorfun) -> GLFWerrorfun;
-
-GLFW_KEY_ESCAPE :: 256;
