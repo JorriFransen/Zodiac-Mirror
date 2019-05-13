@@ -1,11 +1,11 @@
 
-io :: import io;
+c :: import c;
 
-newline :: () -> void { io.putchar(10); }
+newline :: () -> void { c.putchar(10); }
 
 print_digit :: (digit: int) -> void
 {
-    io.putchar(digit + 48);
+    c.putchar(digit + 48);
     newline();
 }
 
@@ -29,23 +29,23 @@ pointer_test :: () -> void
 
     print_digit(x);
 
-    c : u8 = 'c';
-    io.putchar(c);
+    ch : u8 = 'c';
+    c.putchar(ch);
     newline();
 
     hello_zodiac := "Hello zodiac!";
-    io.puts(hello_zodiac);
+    c.puts(hello_zodiac);
 
-    io.putchar(hello_zodiac[1]);
+    c.putchar(hello_zodiac[1]);
     newline();
 
     hello_zodiac[4] = 'x';
 
-    io.puts(hello_zodiac);
+    c.puts(hello_zodiac);
 
     z_ptr := *hello_zodiac[5];
     <z_ptr = 'z';
-    io.puts(hello_zodiac);
+    c.puts(hello_zodiac);
 
     return 0;
 }

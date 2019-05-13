@@ -14,13 +14,13 @@ else
 
 #foreign puts :: (string: *u8) -> int;
 
-io :: import io;
+c :: import c;
 
 main :: () -> void
 {
     puts_ptr := *puts;
-    io.printf("puts_ptr: %#x\n", puts_ptr);
-    io.printf("*io.puts: %#x\n", *io.puts);
+    c.printf("puts_ptr: %#x\n", puts_ptr);
+    c.printf("*io.puts: %#x\n", *c.puts);
 
     puts_ptr("puts_ptr_test");
 }

@@ -1,4 +1,3 @@
-
 static_if (PLATFORM_WINDOWS)
 {
     #dynamic_link "msvcrt.dll";

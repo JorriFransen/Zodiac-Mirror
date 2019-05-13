@@ -1,7 +1,7 @@
 
 global_int := 4;
 
-io :: import io;
+c :: import c;
 
 DAY_MONDAY    :: 1;
 DAY_TUESDAY   :: 2;
@@ -43,7 +43,7 @@ main :: () -> int
 
     day2 := Day.FRIDAY;
 
-    io.printf("day: %lu\n", day);
+    c.printf("day: %lu\n", day);
     print_day(day);
     print_day(day2);
     print_day(Day.SUNDAY);
@@ -62,27 +62,27 @@ print_day :: (day : Day) -> void
     switch (day)
     {
         case Day.MONDAY:
-            io.printf("Day.MONDAY\n");
+            c.printf("Day.MONDAY\n");
 
         case Day.TUESDAY, Day.WEDNESDAY:
         {
-            io.printf("Day.TUESDAY or Day.WEDNESDAY\n");
+            c.printf("Day.TUESDAY or Day.WEDNESDAY\n");
         }
 
         case Day.THURSDAY:
-            io.printf("Day.THURSDAY\n");
+            c.printf("Day.THURSDAY\n");
 
         case Day.FRIDAY:
-            io.printf("Day.FRIDAY\n");
+            c.printf("Day.FRIDAY\n");
 
         case Day.SATURDAY:
-            io.printf("Day.SATURDAY\n");
+            c.printf("Day.SATURDAY\n");
 
         case Day.SUNDAY:
-            io.printf("Day.SUNDAY\n");
+            c.printf("Day.SUNDAY\n");
 
         default:
-            io.printf("Day.???\n");
+            c.printf("Day.???\n");
     }
 }
 
@@ -90,10 +90,10 @@ print_num :: (num : int) -> void
 {
     switch (num)
     {
-        case 0: io.printf("zero\n");
-        case 1..3: io.printf("low\n");
-        case 4..7: io.printf("medium\n");
-        case 8..10: io.printf("high\n");
-        default: io.printf("%lu\n", num);
+        case 0: c.printf("zero\n");
+        case 1..3: c.printf("low\n");
+        case 4..7: c.printf("medium\n");
+        case 8..10: c.printf("high\n");
+        default: c.printf("%lu\n", num);
     }
 }

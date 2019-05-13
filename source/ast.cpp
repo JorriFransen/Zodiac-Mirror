@@ -838,14 +838,17 @@ namespace Zodiac
 
     AST_Type_Spec* ast_type_spec_function_new(Context* context, File_Pos file_pos,
                                               bool is_vararg, BUF(AST_Declaration*) arg_decls,
-                                              AST_Type_Spec* return_type_spec)
+                                              AST_Type_Spec* return_type_spec,
+                                              AST_Scope* arg_scope)
     {
         assert(context);
+        assert(arg_scope);
 
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_FUNCTION);
         result->function.is_vararg = is_vararg;
         result->function.args = arg_decls;
         result->function.return_type_spec = return_type_spec;
+        result->function.arg_scope = arg_scope;
 
         return result;
     }

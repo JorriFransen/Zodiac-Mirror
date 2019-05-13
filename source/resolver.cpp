@@ -80,83 +80,106 @@ namespace Zodiac
 
         if (!(declaration->flags & AST_DECL_FLAG_RESOLVED))
         {
-            switch (declaration->kind)
+            if (declaration->identifier)
             {
-                case AST_DECL_FUNC:
+                // printf("Checking for redecl: %s\n", declaration->identifier->atom.data);
+                auto redecl = find_declaration(scope, declaration->identifier);
+                if (redecl)
                 {
-                    result &= try_resolve_function_declaration(resolver, declaration, scope);
-                    break;
+                    // printf("Found redecl: %s\n", declaration->identifier->atom.data);
+                    resolver_report_error(resolver, declaration->file_pos,
+                                        "Redeclaration of identifier '%s'\n\tPreviously defined here: '%s:%" PRIu64 ":%" PRIu64 "'",
+                                        declaration->identifier->atom.data,
+                                        redecl->file_pos.file_name, redecl->file_pos.line,
+                                        redecl->file_pos.line_relative_char_pos);
+                    result = false;
                 }
+            }
 
-                case AST_DECL_MUTABLE:
+            if (result)
+            {
+                switch (declaration->kind)
                 {
-                    result &= try_resolve_mutable_declaration(resolver, declaration, scope);
-                    break;
-                }
+                    case AST_DECL_FUNC:
+                    {
+                        result &= try_resolve_function_declaration(resolver, declaration, scope);
+                        break;
+                    }
 
-                case AST_DECL_CONSTANT_VAR:
-                {
-                    result &= try_resolve_constant_var_declaration(resolver, declaration, scope);
-                    break;
-                }
+                    case AST_DECL_MUTABLE:
+                    {
+                        result &= try_resolve_mutable_declaration(resolver, declaration, scope);
+                        break;
+                    }
 
-                case AST_DECL_DYN_LINK:
-                {
-                    break;
-                }
+                    case AST_DECL_CONSTANT_VAR:
+                    {
+                        result &= try_resolve_constant_var_declaration(resolver, declaration,
+                                                                       scope);
+                        break;
+                    }
 
-                case AST_DECL_STATIC_IF:
-                {
-                    result &= try_resolve_static_if_declaration(resolver, declaration, scope);
-                    break;
-                }
+                    case AST_DECL_DYN_LINK:
+                    {
+                        break;
+                    }
 
-                case AST_DECL_BLOCK:
-                {
-                    result &= try_resolve_block_declaration(resolver, declaration, scope);
-                    break;
-                }
+                    case AST_DECL_STATIC_IF:
+                    {
+                        result &= try_resolve_static_if_declaration(resolver, declaration, scope);
+                        break;
+                    }
 
-                case AST_DECL_STATIC_ASSERT:
-                {
-                    result &= try_resolve_static_assert_declaration(resolver, declaration, scope);
-                    break;
-                }
+                    case AST_DECL_BLOCK:
+                    {
+                        result &= try_resolve_block_declaration(resolver, declaration, scope);
+                        break;
+                    }
 
-                case AST_DECL_IMPORT:
-                {
-                    result &= try_resolve_import_declaration(resolver, declaration, scope);
-                    break;
-                }
+                    case AST_DECL_STATIC_ASSERT:
+                    {
+                        result &= try_resolve_static_assert_declaration(resolver, declaration,
+                                                                        scope);
+                        break;
+                    }
 
-                case AST_DECL_AGGREGATE_TYPE:
-                {
-                    result &= try_resolve_aggregate_type_declaration(resolver, declaration, scope);
-                    break;
-                }
+                    case AST_DECL_IMPORT:
+                    {
+                        result &= try_resolve_import_declaration(resolver, declaration,
+                                                                 scope);
+                        break;
+                    }
 
-                case AST_DECL_ENUM_TYPE:
-                {
-                    result &= try_resolve_enum_type_declaration(resolver, declaration, scope);
-                    break;
-                }
+                    case AST_DECL_AGGREGATE_TYPE:
+                    {
+                        result &= try_resolve_aggregate_type_declaration(resolver, declaration,
+                                                                         scope);
+                        break;
+                    }
 
-				case AST_DECL_TYPEDEF:
-				{
-					result &= try_resolve_typedef_declaration(resolver, declaration, scope);
-					break;
-				}
+                    case AST_DECL_ENUM_TYPE:
+                    {
+                        result &= try_resolve_enum_type_declaration(resolver, declaration, scope);
+                        break;
+                    }
 
-                default:
-                    assert(false);
-                    break;
+                    case AST_DECL_TYPEDEF:
+                    {
+                        result &= try_resolve_typedef_declaration(resolver, declaration, scope);
+                        break;
+                    }
+
+                    default:
+                        assert(false);
+                        break;
+                    }
             }
 
             if (!result)
             {
                 resolver->unresolved_decl_count++;
             }
-            else
+            else if (declaration->location != AST_DECL_LOC_AGGREGATE_MEMBER)
             {
                 declaration->flags |= AST_DECL_FLAG_RESOLVED;
                 BUF_PUSH(scope->declarations, declaration);
@@ -186,6 +209,7 @@ namespace Zodiac
 
         bool result = true;
         AST_Scope* arg_scope  = declaration->function.argument_scope;
+        assert(!arg_scope->is_module_scope);
         assert(arg_scope->parent == scope);
 
 		AST_Type* func_type = nullptr;
@@ -937,7 +961,9 @@ namespace Zodiac
 
         if (result)
         {
-            assert(expression->type);
+            assert(expression->type ||
+                   (expression->kind == AST_EXPR_IDENTIFIER &&
+                    expression->identifier->declaration->kind == AST_DECL_IMPORT));
         }
 
         return result;
@@ -993,7 +1019,12 @@ namespace Zodiac
                                              base_expression->identifier);
                 return false;
             }
-            assert(import_decl->kind == AST_DECL_IMPORT);
+            if (import_decl->kind != AST_DECL_IMPORT)
+            {
+                resolver_report_error(resolver, expression->file_pos,
+                                      "Left hand side of dot expression must be an import for call expressions");
+                return false;
+            }
             assert(import_decl->import.module);
 
             AST_Module* import_module = import_decl->import.module;
@@ -1378,17 +1409,26 @@ namespace Zodiac
 
         if (result && !expression->type)
         {
+            if (!lhs->type)
+            {
+                resolver_report_error(resolver, expression->file_pos,
+                                      "Mismatching types in binary expression");
+                return false;
+            }
+            else
+            {
+                if (lhs->type == rhs->type)
+                {
+                    expression->type = lhs->type;
+                }
+                else if (lhs->type->kind == AST_TYPE_ENUM)
+                {
+                    assert(lhs->type->enum_type.base_type == rhs->type);
+                    expression->type = rhs->type;
+                }
+                else assert(false);
+            }
 
-            if (lhs->type == rhs->type)
-            {
-                expression->type = lhs->type;
-            }
-            else if (lhs->type->kind == AST_TYPE_ENUM)
-            {
-                assert(lhs->type->enum_type.base_type == rhs->type);
-                expression->type = rhs->type;
-            }
-            else assert(false);
 
             if (lhs->is_const && rhs->is_const)
             {
@@ -1480,8 +1520,11 @@ namespace Zodiac
         AST_Declaration* base_decl = find_declaration(scope, base_expression->identifier);
         if (!base_decl)
         {
+            report_undeclared_identifier(resolver, base_expression->file_pos,
+                                         base_expression->identifier);
             return false;
         }
+
         if (base_decl->kind != AST_DECL_IMPORT)
         {
             result &= try_resolve_expression(resolver, base_expression, scope);
@@ -1766,7 +1809,8 @@ namespace Zodiac
 
             case AST_TYPE_SPEC_DOT:
             {
-                bool base_result = try_resolve_identifier(resolver, type_spec->dot.module_ident, scope);
+                bool base_result = try_resolve_identifier(resolver, type_spec->dot.module_ident,
+                                                          scope);
                 if (base_result)
                 {
                     assert(type_spec->dot.module_ident);
@@ -1777,7 +1821,8 @@ namespace Zodiac
 
                     AST_Scope* module_scope = module_decl->import.module->module_scope;
                     AST_Type* type = nullptr;
-                    bool member_result = try_resolve_type_spec(resolver, type_spec->dot.member_type_spec,
+                    bool member_result = try_resolve_type_spec(resolver,
+                                                               type_spec->dot.member_type_spec,
                                                                &type, module_scope);
                     if (member_result)
                     {
@@ -1815,13 +1860,14 @@ namespace Zodiac
                 AST_Type* base_type = nullptr;
                 bool base_result = try_resolve_type_spec(resolver, type_spec->static_array.base,
                                                          &base_type, scope);
-                bool count_result = try_resolve_expression(resolver, type_spec->static_array.count_expr,
+                bool count_result = try_resolve_expression(resolver,
+                                                           type_spec->static_array.count_expr,
                                                            scope);
                 if (base_result && count_result)
                 {
-                    AST_Type* array_type = ast_find_or_create_array_type(resolver->context,
-                                                                         base_type,
-                                                                         type_spec->static_array.count_expr);
+                    AST_Type* array_type =
+                        ast_find_or_create_array_type(resolver->context, base_type,
+                                                      type_spec->static_array.count_expr);
                     *type_dest = array_type;
                     return true;
                 }
@@ -1836,10 +1882,13 @@ namespace Zodiac
 			{
 				bool result = true;
 				BUF(AST_Type*) arg_types = nullptr;
+                AST_Scope* arg_scope = type_spec->function.arg_scope;
+                assert(arg_scope);
+                assert(!arg_scope->is_module_scope);
 				for (uint64_t i = 0; i < BUF_LENGTH(type_spec->function.args); i++)
 				{
 					AST_Declaration* arg_decl = type_spec->function.args[i];
-					bool arg_result = try_resolve_declaration(resolver, arg_decl, scope);
+					bool arg_result = try_resolve_declaration(resolver, arg_decl, arg_scope);
 					if (!arg_result)
 					{
 						result = false;
@@ -1855,7 +1904,8 @@ namespace Zodiac
 				AST_Type_Spec* return_type_spec = type_spec->function.return_type_spec;
 				if (return_type_spec)
 				{
-					result &= try_resolve_type_spec(resolver, return_type_spec, &return_type, scope);
+					result &= try_resolve_type_spec(resolver, return_type_spec, &return_type,
+                                                    scope);
 				}
                 else
                 {
@@ -1865,7 +1915,8 @@ namespace Zodiac
 				if (result)
 				{
 					AST_Type* result_type =
-						ast_find_or_create_function_type(resolver->context, type_spec->function.is_vararg,
+						ast_find_or_create_function_type(resolver->context,
+                                                         type_spec->function.is_vararg,
 						                                 arg_types, return_type);
 					*type_dest = result_type;
 					return true;

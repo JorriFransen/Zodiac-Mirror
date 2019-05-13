@@ -1,5 +1,5 @@
 
-io :: import io;
+_c :: import c;
 
 Vec2 :: struct
 {
@@ -10,7 +10,7 @@ Vec2 :: struct
 main :: () -> int
 {
     x : float = 3.14;
-    io.printf("x: %f\n", x);
+    _c.printf("x: %f\n", x);
 
     a : Vec2 = { 1.0, 2.0 };
     b : Vec2 = { 3.3, 4.4 };
@@ -20,8 +20,8 @@ main :: () -> int
     // // c.x = a.x + b.x;
     // // c.y = a.y + b.y;
 
-    io.printf("c.x: %f\n", c.x);
-    io.printf("c: %f,%f\n", c.x, c.y);
+    _c.printf("c.x: %f\n", c.x);
+    _c.printf("c: %f,%f\n", c.x, c.y);
 
     return 0;
 }

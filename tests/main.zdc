@@ -1,5 +1,5 @@
 
-io :: import io;
+c :: import c;
 
 add :: (a: int, b: int) -> int
 {
@@ -12,11 +12,11 @@ plusone :: (x: int) -> int
     return x;
 }
 
-newline :: () -> void { io.putchar(10); }
+newline :: () -> void { c.putchar(10); }
 
 print_digit :: (digit: int) -> void
 {
-    io.putchar(digit + 48);
+    c.putchar(digit + 48);
     newline();
 }
 
@@ -29,11 +29,11 @@ main :: () -> int
 
     result := 1 + 2 + add(4, 5) + plusone(z);
 
-    io.putchar(50);
+    c.putchar(50);
     newline();
     print_digit(7);
-    c1 := io.getchar();
-    io.putchar(c1);
+    c1 := c.getchar();
+    c.putchar(c1);
     newline();
 
     return 1;

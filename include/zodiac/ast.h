@@ -504,6 +504,7 @@ namespace Zodiac
                 bool is_vararg;
                 BUF(AST_Declaration*) args;
                 AST_Type_Spec* return_type_spec;
+                AST_Scope* arg_scope;
             } function;
 
             struct
@@ -650,7 +651,8 @@ namespace Zodiac
                                          AST_Statement* init_stmt, AST_Expression* cond_expr,
                                          AST_Statement* step_stmt, AST_Statement* body_stmt);
     AST_Statement* ast_switch_statement_new(Context* context, File_Pos file_pos,
-                                            AST_Expression* switch_expr, BUF(AST_Switch_Case) cases);
+                                            AST_Expression* switch_expr,
+                                            BUF(AST_Switch_Case) cases);
     AST_Statement* ast_break_statement_new(Context* context, File_Pos file_pos);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
@@ -670,7 +672,8 @@ namespace Zodiac
     AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier);
     AST_Type_Spec* ast_type_spec_dot_new(Context* context, File_Pos file_pos,
-                                         AST_Identifier* module_ident, AST_Type_Spec* member_type_spec);
+                                         AST_Identifier* module_ident,
+                                         AST_Type_Spec* member_type_spec);
     AST_Type_Spec* ast_type_spec_pointer_new(Context* context, File_Pos file_pos,
                                              AST_Type_Spec* base_type_spec);
     AST_Type_Spec* ast_type_spec_static_array_new(Context* context, File_Pos file_pos,
@@ -678,7 +681,8 @@ namespace Zodiac
                                                   AST_Type_Spec* base_type_spec);
     AST_Type_Spec* ast_type_spec_function_new(Context* context, File_Pos file_pos,
                                               bool is_vararg, BUF(AST_Declaration*) arg_decls,
-                                              AST_Type_Spec* return_type_spec);
+                                              AST_Type_Spec* return_type_spec,
+                                              AST_Scope* arg_scope);
 
     AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope,
                              bool is_module_scope = false,
@@ -688,6 +692,7 @@ namespace Zodiac
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type,
                                             AST_Expression* count_expr);
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type, uint64_t count);
-	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
+	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
+                                               BUF(AST_Type*) arg_types,
 		                                       AST_Type* return_type);
 }

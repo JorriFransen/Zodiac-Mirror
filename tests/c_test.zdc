@@ -1,0 +1,11 @@
+c :: import c;
+
+main :: () -> void
+{
+    c.printf("c_test()\n");
+
+    c.open_std_handles();
+    c.fprintf(c.stderr, "stderr test\n");
+    c.fprintf(c.stderr, "stderr %s test %lu\n",
+               "format", 41);
+}

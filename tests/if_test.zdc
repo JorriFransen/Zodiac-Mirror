@@ -1,27 +1,27 @@
 
-io :: import io;
+c :: import c;
 
 main :: () -> void
 {
-    c := io.getchar();
-    if (c == 49)
+    ch := c.getchar();
+    if (ch == 49)
     {
-       io.printf("You choose number one\n");
+       c.printf("You choose number one\n");
     }
-    else if (c == 50)
+    else if (ch == 50)
     {
-       io.printf("You choose number two\n");
+       c.printf("You choose number two\n");
     }
-    else if (c == 51)
+    else if (ch == 51)
     {
-        io.printf("You choose number three\n");
+        c.printf("You choose number three\n");
     }
-    else if (c == 52)
+    else if (ch == 52)
     {
-        io.printf("you choose number four\n");
+        c.printf("you choose number four\n");
     }
     else
     {
-        io.printf("Invalid option\n");
+        c.printf("Invalid option\n");
     }
 }

@@ -133,8 +133,8 @@ namespace Zodiac
                 void* foreign_symbol = dlFindSymbol(loaded_lib.lib, foreign_name.data);
                 if (foreign_symbol)
                 {
-                    printf("Loaded foreign \"%s\" from library \"%s\"\n",
-                        foreign_name.data, loaded_lib.name.data);
+                    // printf("Loaded foreign \"%s\" from library \"%s\"\n",
+                    //     foreign_name.data, loaded_lib.name.data);
                     BUF_PUSH(ir_runner->loaded_foreign_symbols, foreign_symbol);
                     found = true;
                     break;
