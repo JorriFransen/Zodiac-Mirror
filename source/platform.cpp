@@ -23,8 +23,12 @@ namespace Zodiac
         auto var_length = GetEnvironmentVariable(name, nullptr, 0);
         if (var_length)
         {
+			printf("Envvar length: %d\n", var_length);
             char* buffer = (char*)malloc(var_length);
-            assert(GetEnvironmentVariable(name, buffer, var_length) == var_length - 1);
+            auto length_without_null = GetEnvironmentVariable(name, buffer, var_length);
+			printf("length_without_null: %d\n", length_without_null);
+			assert(length_without_null == var_length - 1);
+			printf("Envvar: %s\n", buffer);
             result = (char*)normalize_path(buffer);
             free(buffer);
         }
