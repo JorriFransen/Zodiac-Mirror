@@ -371,7 +371,8 @@ namespace Zodiac
 
         auto ft = current_token(parser);
 
-        assert(expect_token(parser, TOK_KW_STATIC_IF));
+        assert(is_token(parser, TOK_KW_STATIC_IF));
+		expect_token(parser, TOK_KW_STATIC_IF);
 
         expect_token(parser, TOK_LPAREN);
 
@@ -410,7 +411,8 @@ namespace Zodiac
         assert(scope);
 
         auto ft = current_token(parser);
-        assert(expect_token(parser, TOK_LBRACE));
+        assert(is_token(parser, TOK_LBRACE));
+		expect_token(parser, TOK_LBRACE);
 
         BUF(AST_Declaration*) block_decls = nullptr;
 
@@ -711,8 +713,8 @@ namespace Zodiac
             return nullptr;
         }
 
-        assert(expect_token(parser, TOK_SEMICOLON));
-
+        assert(is_token(parser, TOK_SEMICOLON));
+		expect_token(parser, TOK_SEMICOLON);
         AST_Statement* for_step_stmt = parse_statement(parser, for_scope);
         if (!for_step_stmt)
         {

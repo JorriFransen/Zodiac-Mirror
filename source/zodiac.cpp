@@ -111,7 +111,7 @@ namespace Zodiac
         if (!validation.messages)
         {
             fprintf(stderr, "Generated ir for file: %s:\n", module_path.data);
-            //ir_builder_print_result(ir_builder);
+            ir_builder_print_result(ir_builder);
         }
         else
         {
