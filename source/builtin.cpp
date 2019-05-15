@@ -16,6 +16,8 @@ namespace Zodiac
     AST_Declaration* Builtin::decl_PLATFORM_WINDOWS = nullptr;
     AST_Declaration* Builtin::decl_PLATFORM_LINUX = nullptr;
 
+	Atom Builtin::atom_main;
+
     void init_builtin_types(Context* context)
     {
         assert(context);
@@ -35,6 +37,8 @@ namespace Zodiac
         Builtin::type_double = register_builtin_type(context, AST_TYPE_FLAG_FLOAT, 64, "double");
 
         Builtin::pointer_size = Builtin::type_int->bit_size;
+
+		Builtin::atom_main = atom_get(context->atom_table, "main");
     }
 
     AST_Type* register_builtin_type(Context* context, AST_Type_Flags flags, uint64_t size, const char* name)

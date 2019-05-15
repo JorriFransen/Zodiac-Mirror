@@ -79,6 +79,10 @@ namespace Zodiac
 				{
 					opc->options->print_ir = true;
 				}
+				else if (strcmp(option_name, "execute_ir") == 0)
+				{
+					opc->options->execute_ir = true;
+				}
 				else
 				{
 					fprintf(stderr, "Unrecognized option: %s\n", option_name);
@@ -136,7 +140,16 @@ namespace Zodiac
             }
         }
 
-        return zodiac_compile_module(context, module_path, module_name);
+        AST_Module* module = zodiac_compile_module(context, module_path, module_name);
+		assert(module);
+
+		Compiled_Module cm;
+		cm.module = module;
+		cm.module_path = module_path;
+		cm.module_name = module_name;
+		BUF_PUSH(context->compiled_modules, cm);
+
+		return module;
     }
 
     AST_Module* zodiac_compile_module(Context* context, const Atom& module_path, const Atom& module_name)

@@ -20,6 +20,8 @@ void usage(const char* exe_name)
 
 int main(int argc, char** argv)
 {
+	//atom_test();
+
     Options options;
     // options.verbose = true;
 	if (!zodiac_parse_options(&options, argc, argv))
@@ -36,7 +38,7 @@ int main(int argc, char** argv)
     }
     auto context = &_context;
 
-	const char* file_name = context->options.main_file_name;
+	const char* file_name = normalize_path(context->options.main_file_name);
 
     if (!path_exists(file_name))
     {
@@ -135,7 +137,10 @@ int main(int argc, char** argv)
         IR_Runner ir_runner;
         ir_runner_init(context, &ir_runner);
 
-        ir_runner_execute(&ir_runner, parse_result.ast_module, &ir_module);
+		if (context->options.execute_ir)
+		{
+			ir_runner_execute(&ir_runner, parse_result.ast_module, &ir_module);
+		}
     }
     else
     {

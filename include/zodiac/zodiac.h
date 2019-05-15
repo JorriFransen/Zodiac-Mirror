@@ -38,6 +38,7 @@ namespace Zodiac
 		const char* main_file_name = nullptr;
         bool verbose = false;
         bool print_ir = false;
+		bool execute_ir = false;
     };
 
 	struct Option_Parse_Context

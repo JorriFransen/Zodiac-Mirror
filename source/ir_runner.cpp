@@ -415,9 +415,7 @@ namespace Zodiac
             case IR_OP_MUL:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_TEMPORARY);
                 assert(iri->arg2);
-                assert(iri->arg2->kind == IRV_TEMPORARY);
                 assert(iri->result);
                 assert(iri->result->kind == IRV_TEMPORARY);
 

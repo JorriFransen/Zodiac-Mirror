@@ -401,12 +401,15 @@ const char* normalize_path(const char* path)
     size_t result_len = 0;
 
 #ifdef WIN32
-    if (!PathCanonicalizeA((LPSTR)_result, path))
-    {
-        assert(false);
-    }
+    //if (!PathCanonicalizeA((LPSTR)_result, path))
+    //{
+    //    assert(false);
+    //}
 
-    result_len = strlen(_result);
+    //result_len = strlen(_result);
+
+
+	result_len = GetFullPathName(path, MAX_PATH, _result, nullptr);
 
     if (dir_exists(_result) && _result[result_len - 1] != '\\')
     {
@@ -415,6 +418,8 @@ const char* normalize_path(const char* path)
         result_len++;
         _result[result_len] = 0;
     }
+
+	assert(result_len);
 
 #else
     if (!realpath(path, _result))

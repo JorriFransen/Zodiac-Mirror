@@ -6,45 +6,107 @@
 
 namespace Zodiac
 {
+	void atom_test()
+	{
+		Atom_Table at;
+		atom_table_init(&at);
+
+		Atom test1 = atom_get(&at, "test");
+		Atom test2 = atom_get(&at, "test");
+	}
+
     void atom_table_init(Atom_Table* atom_table)
     {
         assert(atom_table);
 
         atom_table->atoms = nullptr;
         atom_table->string_arena = arena_create(MB(1));
+
+		atom_table->atoms = (Atom*)mem_alloc(sizeof(Atom) * 1024);
+		atom_table->atom_count = 1024;
     }
 
-    const Atom& atom_get(Atom_Table* atom_table, const char* string, uint64_t string_length)
+    const Atom& atom_get(Atom_Table* atom_table, const char* string, uint64_t string_length,
+		bool copy_string/*=true*/)
     {
         assert(atom_table);
         assert(string);
         assert(string_length > 0);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(atom_table->atoms); i++)
-        {
-            const Atom& atom = atom_table->atoms[i];
-            if (string_length == atom.length &&
-                strncmp(string, atom.data, string_length) == 0)
-            {
-                return atom;
-            }
-        }
+		uint64_t hash = get_atom_hash(string, string_length);
+		uint64_t hash_index = hash % atom_table->atom_count;
 
-        Atom result = {};
-        result.data = arena_alloc_array(&atom_table->string_arena, char, string_length + 1);
-        memcpy((void*)result.data, string, string_length);
-        result.data[result.length - 1] = '\0';
-        result.length = string_length;
+		uint64_t index = hash_index;
+		uint64_t iterations = 0;
+		while (iterations < atom_table->atom_count)
+		{
+			Atom* atom = &atom_table->atoms[index];
+			if (atom->data)
+			{
+				if (atom->length == string_length &&
+					strncmp(atom->data, string, string_length) == 0)
+				{
+					// Match
+					return *atom;
+				}
+				// Collision
+			}
+			else
+			{
+				// Free slot
+				if (copy_string)
+				{
+					atom->data = arena_alloc_array(&atom_table->string_arena, char, string_length + 1);
+					memcpy((void*)atom->data, string, string_length);
+					((char*)atom->data)[string_length] = '\0';
+				}
+				else
+				{
+					atom->data = string;
+				}
+				atom->length = string_length;
+				return *atom;
+			}
 
-        BUF_PUSH(atom_table->atoms, result);
+			iterations++;
+			index++;
+			if (atom_table->atom_count <= index)
+			{
+				index = 0;
+			}
+		}
 
-        return atom_table->atoms[BUF_LENGTH(atom_table->atoms) - 1];
+		atom_table_grow(atom_table);
+		return atom_get(atom_table, string, string_length);
     }
 
     const Atom& atom_get(Atom_Table* atom_table, const char* string)
     {
         return atom_get(atom_table, string, strlen(string));
     }
+
+	static void atom_table_grow(Atom_Table* atom_table)
+	{
+		assert(atom_table);
+		assert(atom_table->atoms);
+		assert(atom_table->atom_count);
+
+		uint64_t new_count = atom_table->atom_count * 2;
+		Atom* old_atoms = atom_table->atoms;
+		uint64_t old_atom_count = atom_table->atom_count;
+		Atom* new_atoms = (Atom*)mem_alloc(sizeof(Atom) * new_count);
+
+		atom_table->atoms = new_atoms;
+		atom_table->atom_count = new_count;
+
+		for (uint64_t i = 0; i < old_atom_count; i++)
+		{
+			Atom& old_atom = old_atoms[i];
+			atom_get(atom_table, old_atom.data, old_atom.length, false);
+		}
+
+		mem_free(old_atoms);
+	}
 
     const Atom& atom_append(Atom_Table* atom_table, const Atom& lhs, const char* rhs, uint64_t rhs_length)
     {
@@ -150,9 +212,24 @@ namespace Zodiac
         return result;
     }
 
+	static uint64_t get_atom_hash(const char* string, uint64_t string_length)
+	{
+		assert(string);
+		assert(string_length > 0);
+
+		uint64_t result = 55943;
+
+		for (uint64_t i = 0; i < string_length; i++)
+		{
+			result = result * string[i] * 7537;
+		}
+
+		return result;
+	}
+
     bool operator==(const Atom& lhs, const Atom& rhs)
     {
-        return lhs.length == rhs.length && lhs.data == rhs.data;
+        return lhs.data == rhs.data;
     }
 
     bool operator!=(const Atom& lhs, const Atom& rhs)

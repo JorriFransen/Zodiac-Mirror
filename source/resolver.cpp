@@ -275,7 +275,7 @@ namespace Zodiac
 				declaration->function.is_vararg, arg_types,
 				declaration->function.return_type);
 
-            auto main_atom = atom_get(resolver->context->atom_table, "main");
+            auto main_atom = Builtin::atom_main;
             if (main_atom == declaration->identifier->atom)
             {
                 assert(!resolver->module->entry_point);
