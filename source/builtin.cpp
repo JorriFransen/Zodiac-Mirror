@@ -70,13 +70,16 @@ namespace Zodiac
         assert(false);
 #endif
 
-        if (platform_windows)
+        if (context->options.verbose)
         {
-            printf("Windows mode\n");
-        }
-        else if (platform_linux)
-        {
-            printf("Linux mode\n");
+            if (platform_windows)
+            {
+                printf("Windows mode\n");
+            }
+            else if (platform_linux)
+            {
+                printf("Linux mode\n");
+            }
         }
 
         Builtin::decl_PLATFORM_WINDOWS = register_builtin_constant_bool(context,

@@ -32,6 +32,22 @@ namespace Zodiac
         IR_Value* value = nullptr;
     };
 
+    struct Options
+    {
+		const char* exe_name = nullptr;
+		const char* main_file_name = nullptr;
+        bool verbose = false;
+        bool print_ir = false;
+    };
+
+	struct Option_Parse_Context
+	{
+		Options* options;
+		uint32_t arg_count = 0;
+		uint32_t arg_index = 0;
+		char** args = nullptr;
+	};
+
     struct Context
     {
         Arena* arena = nullptr;
@@ -48,9 +64,14 @@ namespace Zodiac
 
         IR_Value* global_init_block = nullptr;
         BUF(Global_Variable) global_table = nullptr;
+
+        Options options;
     };
 
-    bool context_init(Context* context, Arena* arena);
+    bool context_init(Context* context, Arena* arena, Options options);
+
+	bool zodiac_parse_options(Options* options, int argc, char** argv);
+	bool zodiac_parse_option_argument(Option_Parse_Context* opc);
 
     AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path, const Atom& module_name);
     AST_Module* zodiac_compile_module(Context* context, const Atom& module_path, const Atom& module_name);

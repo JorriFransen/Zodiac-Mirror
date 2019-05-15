@@ -20,21 +20,23 @@ void usage(const char* exe_name)
 
 int main(int argc, char** argv)
 {
+    Options options;
+    // options.verbose = true;
+	if (!zodiac_parse_options(&options, argc, argv))
+	{
+		usage(argv[0]);
+		return -1;
+	}
+
     Arena arena = arena_create(MB(2));
     Context _context;
-    if (!context_init(&_context, &arena))
+    if (!context_init(&_context, &arena, options))
     {
         return -1;
     }
     auto context = &_context;
 
-    if (argc != 2)
-    {
-        usage(argv[0]);
-        return -1;
-    }
-
-    const char* file_name = argv[1];
+	const char* file_name = context->options.main_file_name;
 
     if (!path_exists(file_name))
     {
@@ -105,7 +107,10 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    fprintf(stderr, "Resolved file: %s\n\n", file_name);
+    if (context->options.verbose)
+    {
+        fprintf(stderr, "Resolved file: %s\n\n", file_name);
+    }
 
     IR_Builder ir_builder;
     ir_builder_init(&ir_builder, context);
@@ -120,20 +125,20 @@ int main(int argc, char** argv)
 
     IR_Validation_Result validation = ir_validate(&ir_builder);
 
+    if (context->options.print_ir)
+    {
+        ir_builder_print_result(&ir_builder);
+    }
+
     if (!validation.messages)
     {
-        fprintf(stderr, "Generated ir for file: %s:\n", file_name);
-        ir_builder_print_result(&ir_builder);
-
         IR_Runner ir_runner;
         ir_runner_init(context, &ir_runner);
 
         ir_runner_execute(&ir_runner, parse_result.ast_module, &ir_module);
-		return 0;
     }
     else
     {
-        ir_builder_print_result(&ir_builder);
         for (uint64_t i = 0; i < BUF_LENGTH(validation.messages); i++)
         {
             fprintf(stderr, "%s\n", validation.messages[i]);

@@ -56,6 +56,8 @@ namespace Zodiac
 
     enum AST_Binop_Kind
     {
+		AST_BINOP_INVALID,
+
         AST_BINOP_ADD,
         AST_BINOP_SUB,
         AST_BINOP_MUL,

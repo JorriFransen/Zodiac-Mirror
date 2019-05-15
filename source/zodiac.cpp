@@ -9,11 +9,12 @@
 
 namespace Zodiac
 {
-    bool context_init(Context* context, Arena* arena)
+    bool context_init(Context* context, Arena* arena, Options options)
     {
         assert(context);
         assert(arena);
 
+        context->options = options;
         context->arena = arena;
 
         context->atom_table = (Atom_Table*)mem_alloc(sizeof(Atom_Table));
@@ -30,12 +31,103 @@ namespace Zodiac
         return init_module_path(context);
     }
 
+	bool zodiac_parse_options(Options* options, int argc, char** argv)
+	{
+		assert(options);
+		assert(argc > 0);
+		assert(argv);
+
+		const char* exe_name = argv[0];
+		argv++;
+		argc--;
+
+		Option_Parse_Context opc;
+		opc.options = options;
+		opc.options->exe_name = exe_name;
+		opc.arg_count = argc;
+		opc.arg_index = 0;
+		opc.args = argv;
+
+		while (opc.arg_index < opc.arg_count)
+		{
+			if (!zodiac_parse_option_argument(&opc))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool zodiac_parse_option_argument(Option_Parse_Context* opc)
+	{
+		assert(opc);
+		assert(opc->arg_index < opc->arg_count);
+
+		char* arg = opc->args[opc->arg_index];
+		auto arg_length = strlen(arg);
+
+		bool result = true;
+
+		if (arg_length > 1 && arg[0] == '-')
+		{
+			if (arg_length > 2 && arg[1] == '-')
+			{
+				const char* option_name = &arg[2];
+
+				if (strcmp(option_name, "print_ir") == 0)
+				{
+					opc->options->print_ir = true;
+				}
+				else
+				{
+					fprintf(stderr, "Unrecognized option: %s\n", option_name);
+					result = false;
+				}
+			}
+			else
+			{
+				for (auto i = 1; i < arg_length; i++)
+				{
+					switch (arg[i])
+					{
+						case 'v':
+						{
+							opc->options->verbose = true;
+							break;
+						}
+
+						default:
+						{
+							fprintf(stderr, "Unrecognized option: '%c'\n", arg[i]);
+							result = false;
+							break;
+						}
+					}
+
+					if (!result)
+					{
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			assert(!opc->options->main_file_name);
+			opc->options->main_file_name = arg;
+		}
+
+		opc->arg_index++;
+		return result;
+	}
+
     AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path,
 		    const Atom& module_name)
     {
         assert(context);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(context->compiled_modules); i++)
+		for (uint64_t i = 0; i < BUF_LENGTH(context->compiled_modules); i++)
         {
             const Compiled_Module& cm = context->compiled_modules[i];
             if (cm.module_path == module_path && cm.module_name == module_name)
@@ -95,6 +187,11 @@ namespace Zodiac
             return nullptr;
         }
 
+        if (context->options.verbose)
+        {
+            printf("Resolved module: %s\n", module_name.data);
+        }
+
         IR_Builder* ir_builder = arena_alloc(context->arena, IR_Builder);
         ir_builder_init(ir_builder, context);
 
@@ -110,8 +207,10 @@ namespace Zodiac
 
         if (!validation.messages)
         {
-            fprintf(stderr, "Generated ir for file: %s:\n", module_path.data);
-            ir_builder_print_result(ir_builder);
+            if (ir_builder->context->options.print_ir)
+            {
+                ir_builder_print_result(ir_builder);
+            }
         }
         else
         {
@@ -172,9 +271,13 @@ namespace Zodiac
 	    return false;
         }
 
-        printf("ZODIAC_MODULE_PATH: %s\n", module_path);
+        if (context->options.verbose)
+        {
+            printf("ZODIAC_MODULE_PATH: %s\n", module_path);
+        }
+
         context->module_search_path = atom_get(context->atom_table, module_path);
 
-	return true;
+        return true;
     }
 }

@@ -1284,7 +1284,7 @@ namespace Zodiac
             if (BUF_LENGTH(suggested_type->aggregate_type.member_declarations) !=
                 BUF_LENGTH(expression->compound_literal.expressions))
             {
-                return result = false;
+                result = false;
             }
             else
             {
@@ -2136,6 +2136,7 @@ namespace Zodiac
 
         auto message_length = strlen(print_buf);
         char* message = (char*)mem_alloc(message_length + 1);
+		assert(message);
         memcpy(message, print_buf, message_length);
         message[message_length] = '\0';
 

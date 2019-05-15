@@ -25,7 +25,7 @@ namespace Zodiac
         uint64_t undeclared_decl_count = 0;
         uint64_t undeclared_decl_count_last_cycle = UINT64_MAX;
 
-        BUF(Resolve_Error) errors;
+		BUF(Resolve_Error) errors = nullptr;
 
         AST_Declaration* current_func_decl = nullptr;
     };

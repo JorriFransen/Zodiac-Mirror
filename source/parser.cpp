@@ -1390,7 +1390,7 @@ namespace Zodiac
         assert(parser);
 
         auto ct = current_token(parser);
-        AST_Binop_Kind result;
+		AST_Binop_Kind result = AST_BINOP_INVALID;
 
         switch (ct.kind)
         {
@@ -1408,6 +1408,7 @@ namespace Zodiac
         }
 
         consume_token(parser);
+
         return result;
     }
 
@@ -1440,7 +1441,7 @@ namespace Zodiac
         assert(parser);
 
         auto ct = current_token(parser);
-        AST_Binop_Kind result;
+		AST_Binop_Kind result = AST_BINOP_INVALID;
 
         switch (ct.kind)
         {
@@ -1580,10 +1581,11 @@ namespace Zodiac
 
         auto message_size = strlen(message_buf);
 
-        Parse_Error result = {};
+		Parse_Error result;
         result.file_pos = file_pos;
         message_size = strlen(message_buf);
         result.message = (char*)mem_alloc(message_size + 1);
+		assert(result.message);
         memcpy((void*)result.message, (void*)message_buf, message_size);
         *(char*)(result.message + message_size) = '\0';
         BUF_PUSH(parser->result.errors, result);
