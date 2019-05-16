@@ -37,6 +37,5 @@ newline :: () -> void { putchar(10); }
 
 print_digit :: (digit: int) -> void
 {
-    putchar(digit + 48);
-    newline();
+    printf("%lu\n", digit);
 }

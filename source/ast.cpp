@@ -873,7 +873,14 @@ namespace Zodiac
 			return;
 		}
 
-		declaration->scope = scope;
+        if (declaration->scope)
+        {
+            assert(declaration->scope == scope);
+        }
+        else
+        {
+            declaration->scope = scope;
+        }
 
 		auto module = scope->module;
 
@@ -917,6 +924,7 @@ namespace Zodiac
 
 		if (scope->module)
 		{
+            assert(scope->parent);
 			auto module = scope->module;
 
 			uint64_t scope_hash = hash_pointer(scope);
@@ -942,6 +950,7 @@ namespace Zodiac
 				}
 
 				iterations++;
+                hash_index++;
 				if (module->declaration_count <= hash_index)
 				{
 					hash_index = 0;
@@ -950,6 +959,7 @@ namespace Zodiac
 		}
 		else
 		{
+            assert(!scope->parent);
 			for (uint64_t i = 0; i < BUF_LENGTH(context->builtin_decls); i++)
 			{
 				AST_Declaration* builtin_decl = context->builtin_decls[i];

@@ -2112,6 +2112,7 @@ namespace Zodiac
         }
 		else
 		{
+            assert(!scope->module);
 			for (uint64_t i = 0; i < BUF_LENGTH(context->builtin_decls); i++)
 			{
 				AST_Declaration* builtin_decl = context->builtin_decls[i];
