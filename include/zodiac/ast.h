@@ -25,6 +25,7 @@ namespace Zodiac
         AST_Declaration* entry_point = nullptr;
         const char* module_name = nullptr;
 
+        BUF(AST_Declaration*) import_decls = nullptr;
         BUF(AST_Module*) import_modules = nullptr;
 
         void* gen_data = nullptr;

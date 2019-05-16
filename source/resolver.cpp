@@ -536,6 +536,8 @@ namespace Zodiac
 
         declaration->import.module = import_module;
 
+        BUF_PUSH(resolver->module->import_decls, declaration);
+
         return true;
     }
 
@@ -2036,7 +2038,8 @@ namespace Zodiac
             bit_size += member_type->bit_size;
         }
 
-        AST_Type* struct_type = ast_type_struct_new(resolver->context, member_decls, identifier->atom.data,
+        AST_Type* struct_type = ast_type_struct_new(resolver->context, member_decls,
+                                                    identifier->atom.data,
                                                     bit_size);
 
         assert(struct_type->bit_size || BUF_LENGTH(member_decls) == 0);
@@ -2076,28 +2079,19 @@ namespace Zodiac
 			return decl;
 		}
 
-        //for (uint64_t i = 0; i < BUF_LENGTH(scope->declarations); i++)
-        //{
-        //    AST_Declaration* decl = scope->declarations[i];
-        //    if (decl->identifier &&
-        //        decl->identifier->atom == identifier->atom)
-        //    {
-        //        return decl;
-        //    }
-        //}
-
         if (allow_import_check && scope->is_module_scope)
         {
-            for (uint64_t i = 0; i < BUF_LENGTH(scope->module->global_declarations); i++)
+            for (uint64_t i = 0; i < BUF_LENGTH(scope->module->import_decls); i++)
             {
-                AST_Declaration* global_decl = scope->module->global_declarations[i];
+                AST_Declaration* global_decl = scope->module->import_decls[i];
                 if ((global_decl->flags & AST_DECL_FLAG_RESOLVED) &&
                     global_decl->kind == AST_DECL_IMPORT &&
                     global_decl->import.import_all)
                 {
-                    auto import_result = find_declaration(context, 
-						                                  global_decl->import.module->module_scope,
-                                                          identifier, false);
+                    auto import_result =
+                        find_declaration(context,
+                                         global_decl->import.module->module_scope,
+                                         identifier, false);
                     if (import_result && !(import_result->kind == AST_DECL_IMPORT))
                     {
                         return import_result;

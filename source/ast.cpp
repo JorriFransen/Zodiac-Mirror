@@ -18,6 +18,7 @@ namespace Zodiac
         result->module_scope = ast_scope_new(context, context->builtin_scope, result, true);
         result->entry_point = nullptr;
         result->module_name = module_name;
+        result->import_decls = nullptr;
         result->import_modules = nullptr;
         result->gen_data = nullptr;
 
