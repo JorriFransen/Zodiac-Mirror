@@ -395,51 +395,94 @@ const char* full_path_from_cwd(const char* rel_path)
 
 const char* normalize_path(const char* path)
 {
-    assert(path);
+	assert(path);
 
-    char _result[MAX_PATH];
-    size_t result_len = 0;
+	char _result[MAX_PATH];
+	size_t result_len = 0;
 
 #ifdef WIN32
-    //if (!PathCanonicalizeA((LPSTR)_result, path))
-    //{
-    //    assert(false);
-    //}
+	//if (!PathCanonicalizeA((LPSTR)_result, path))
+	//{
+	//    assert(false);
+	//}
 
-    //result_len = strlen(_result);
+	//result_len = strlen(_result);
 
 
 	result_len = GetFullPathName(path, MAX_PATH, _result, nullptr);
 
-    if (dir_exists(_result) && _result[result_len - 1] != '\\')
-    {
-        assert(result_len + 2 <= MAX_PATH);
-        _result[result_len] = '\\';
-        result_len++;
-        _result[result_len] = 0;
-    }
+	if (dir_exists(_result) && _result[result_len - 1] != '\\')
+	{
+		assert(result_len + 2 <= MAX_PATH);
+		_result[result_len] = '\\';
+		result_len++;
+		_result[result_len] = 0;
+	}
 
 	assert(result_len);
 
 #else
-    if (!realpath(path, _result))
-    {
-        assert(false);
-    }
+	if (!realpath(path, _result))
+	{
+		assert(false);
+	}
 
-    result_len = strlen(_result);
+	result_len = strlen(_result);
 
-    if (dir_exists(_result) && _result[result_len - 1] != '/')
-    {
-        assert(result_len + 2 <= MAX_PATH);
-        _result[result_len] = '/';
-        result_len++;
-        _result[result_len] = 0;
-    }
+	if (dir_exists(_result) && _result[result_len - 1] != '/')
+	{
+		assert(result_len + 2 <= MAX_PATH);
+		_result[result_len] = '/';
+		result_len++;
+		_result[result_len] = 0;
+	}
 
 #endif
 
-    char* result = (char*)mem_alloc(sizeof(char) * (result_len + 1));
-    memcpy(result, _result, result_len + 1);
-    return result;
+	char* result = (char*)mem_alloc(sizeof(char) * (result_len + 1));
+	memcpy(result, _result, result_len + 1);
+	return result;
+
 }
+
+uint64_t hash_string(const char* string)
+{
+	return hash_string(string, strlen(string));
+}
+
+uint64_t hash_string(const char* string, uint64_t string_length)
+{
+	assert(string);
+	assert(string_length > 0);
+
+	uint64_t hash = 14695981039346656037;
+	for (uint64_t i = 0; i < string_length; i++)
+	{
+		hash = hash ^ (string[i]);
+		hash = hash * 1099511628211;
+	}
+
+	return hash;
+}
+
+uint64_t hash_pointer(void* ptr)
+{
+	uint64_t hash = (uint64_t)ptr;
+	hash = (~hash) + (hash << 21);
+	hash = hash ^ (hash >> 24);
+	hash = (hash + (hash << 3)) + (hash << 8);
+	hash = hash ^ (hash >> 14);
+	hash = (hash + (hash << 2)) + (hash << 4);
+	hash = hash ^ (hash >> 28);
+	hash = hash + (hash << 31);
+	return hash;
+}
+
+uint64_t hash_mix(uint64_t hash_a, uint64_t hash_b)
+{
+	uint64_t string[2] = { hash_a, hash_b };
+	uint64_t string_length = 16;
+
+	return hash_string((const char*)string, string_length);
+}
+

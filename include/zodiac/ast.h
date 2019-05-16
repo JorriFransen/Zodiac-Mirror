@@ -17,6 +17,9 @@ namespace Zodiac
 
     struct AST_Module
     {
+		AST_Declaration** declarations = nullptr;
+		uint64_t declaration_count = 32;
+
         BUF(AST_Declaration*) global_declarations = nullptr;
         AST_Scope* module_scope = nullptr;
         AST_Declaration* entry_point = nullptr;
@@ -342,6 +345,7 @@ namespace Zodiac
 
         AST_Identifier* identifier = nullptr;
         AST_Directive* directive = nullptr;
+		AST_Scope* scope = nullptr;
 
         bool constant = false;
 
@@ -522,8 +526,6 @@ namespace Zodiac
         AST_Scope* parent = nullptr;
         bool is_module_scope = false;
         AST_Module* module = nullptr;
-
-        BUF(AST_Declaration*) declarations = nullptr;
     };
 
     enum AST_Directive_Kind
@@ -686,9 +688,13 @@ namespace Zodiac
                                               AST_Type_Spec* return_type_spec,
                                               AST_Scope* arg_scope);
 
-    AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope,
-                             bool is_module_scope = false,
-                             AST_Module* module = nullptr);
+	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
+		                     bool is_module_scope);
+
+	void ast_scope_push_declaration(AST_Scope* scope, AST_Declaration* declaration);
+	AST_Declaration* ast_scope_find_declaration(Context* context, AST_Scope* scope, AST_Identifier* identifier);
+
+	void ast_module_grow_declaration_hash(AST_Module* module);
 
     AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Type* base_type);
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type,

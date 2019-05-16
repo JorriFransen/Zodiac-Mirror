@@ -15,6 +15,7 @@ namespace Zodiac
     struct AST_Module;
     struct AST_Type;
     struct AST_Declaration;
+	struct AST_Scope;
 
     struct IR_Module;
     struct IR_Value;
@@ -54,6 +55,8 @@ namespace Zodiac
         Arena* arena = nullptr;
         Atom_Table* atom_table;
         Atom module_search_path = {};
+
+		AST_Scope* builtin_scope = nullptr;
 
         BUF(Registered_Keyword) keywords = nullptr;
         BUF(AST_Declaration*) builtin_decls = nullptr;

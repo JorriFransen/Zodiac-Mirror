@@ -50,6 +50,7 @@ namespace Zodiac
 					return *atom;
 				}
 				// Collision
+				int y = 1;
 			}
 			else
 			{
@@ -102,7 +103,10 @@ namespace Zodiac
 		for (uint64_t i = 0; i < old_atom_count; i++)
 		{
 			Atom& old_atom = old_atoms[i];
-			atom_get(atom_table, old_atom.data, old_atom.length, false);
+			if (old_atom.data)
+			{
+				atom_get(atom_table, old_atom.data, old_atom.length, false);
+			}
 		}
 
 		mem_free(old_atoms);
@@ -212,19 +216,20 @@ namespace Zodiac
         return result;
     }
 
+	// 64 bit FNV hash
 	static uint64_t get_atom_hash(const char* string, uint64_t string_length)
 	{
 		assert(string);
 		assert(string_length > 0);
 
-		uint64_t result = 55943;
-
+		uint64_t hash = 14695981039346656037;
 		for (uint64_t i = 0; i < string_length; i++)
 		{
-			result = result * string[i] * 7537;
+			hash = hash ^ (string[i]);
+			hash = hash * 1099511628211;
 		}
 
-		return result;
+		return hash;
 	}
 
     bool operator==(const Atom& lhs, const Atom& rhs)

@@ -26,12 +26,6 @@ namespace Zodiac
         }
     }
 
-    struct _IR_Decl_To_Func_
-    {
-        AST_Declaration* decl = nullptr;
-        IR_Function* func = nullptr;
-    };
-
     IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module)
     {
         assert(ir_builder);
@@ -39,6 +33,17 @@ namespace Zodiac
 
         assert(ir_builder->ast_module == nullptr);
         ir_builder->ast_module = module;
+
+		// Emit builtin declarations
+		auto builtin_decls = ir_builder->context->builtin_decls;
+		for (uint64_t i = 0; i < BUF_LENGTH(builtin_decls); i++)
+		{
+			ir_builder_emit_global_declaration(ir_builder, builtin_decls[i]);
+            if (ir_builder->result.error_count)
+            {
+                return ir_builder->result;
+            }
+		}
 
         // Emit global declarations
         for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
@@ -150,7 +155,6 @@ namespace Zodiac
 
                 ir_builder_end_function(ir_builder, func_value);
 
-                _IR_Decl_To_Func_ decl_to_func_entry = { global_decl, func_value->function };
                 ir_builder_push_value_and_decl(ir_builder, func_value, global_decl);
                 break;
             }
@@ -173,7 +177,6 @@ namespace Zodiac
 
             case AST_DECL_TYPE:
             {
-                assert(false);
                 break;
             }
 

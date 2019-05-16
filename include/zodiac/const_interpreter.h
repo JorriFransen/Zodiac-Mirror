@@ -4,8 +4,8 @@
 
 namespace Zodiac
 {
-    bool const_interpret_bool_expression(AST_Expression* expression, AST_Scope* scope);
-    bool const_bool_decl_value(AST_Declaration* declaration, AST_Scope* scope);
+    bool const_interpret_bool_expression(Context* context, AST_Expression* expression, AST_Scope* scope);
+    bool const_bool_decl_value(Context* context, AST_Declaration* declaration, AST_Scope* scope);
 
     int64_t const_interpret_s64_expression(AST_Expression* expression, AST_Scope* scope);
     int64_t const_interpret_s64_unary_expression(AST_Expression* expression, AST_Scope* scope);

@@ -83,7 +83,7 @@ namespace Zodiac
             if (declaration->identifier)
             {
                 // printf("Checking for redecl: %s\n", declaration->identifier->atom.data);
-                auto redecl = find_declaration(scope, declaration->identifier);
+                auto redecl = find_declaration(resolver->context, scope, declaration->identifier);
                 if (redecl)
                 {
                     // printf("Found redecl: %s\n", declaration->identifier->atom.data);
@@ -182,7 +182,7 @@ namespace Zodiac
             else if (declaration->location != AST_DECL_LOC_AGGREGATE_MEMBER)
             {
                 declaration->flags |= AST_DECL_FLAG_RESOLVED;
-                BUF_PUSH(scope->declarations, declaration);
+				ast_scope_push_declaration(scope, declaration);
 
                 if (resolver->current_func_decl &&
                     declaration->location == AST_DECL_LOC_LOCAL)
@@ -411,7 +411,8 @@ namespace Zodiac
 
         if (result)
         {
-            bool cond_value = const_interpret_bool_expression(declaration->static_if.cond_expr,
+            bool cond_value = const_interpret_bool_expression(resolver->context,
+				                                              declaration->static_if.cond_expr,
                                                               scope);
             if (cond_value)
             {
@@ -478,7 +479,7 @@ namespace Zodiac
 
         assert(declaration->identifier);
 
-        assert(!find_declaration(scope, declaration->identifier));
+        assert(!find_declaration(resolver->context, scope, declaration->identifier));
 
         auto aggregate_decls = declaration->aggregate_type.aggregate_declarations;
         for (uint64_t i = 0; i < BUF_LENGTH(aggregate_decls); i++)
@@ -988,7 +989,7 @@ namespace Zodiac
         bool recursive = false;
         if (ident_expr->kind == AST_EXPR_IDENTIFIER)
         {
-            func_decl = find_declaration(scope, ident_expr->identifier);
+            func_decl = find_declaration(resolver->context, scope, ident_expr->identifier);
             if (!func_decl &&
                 (ident_expr->identifier->atom == resolver->current_func_decl->identifier->atom))
             {
@@ -1017,7 +1018,8 @@ namespace Zodiac
             assert(base_expression->kind == AST_EXPR_IDENTIFIER);
             assert(member_expression->kind == AST_EXPR_IDENTIFIER);
 
-            AST_Declaration* import_decl = find_declaration(scope, base_expression->identifier);
+            AST_Declaration* import_decl = find_declaration(resolver->context, 
+				                                            scope, base_expression->identifier);
             if (!import_decl)
             {
                 report_undeclared_identifier(resolver, base_expression->file_pos,
@@ -1033,7 +1035,7 @@ namespace Zodiac
             assert(import_decl->import.module);
 
             AST_Module* import_module = import_decl->import.module;
-            func_decl = find_declaration(import_module->module_scope,
+            func_decl = find_declaration(resolver->context, import_module->module_scope,
                                          member_expression->identifier);
             if (!func_decl)
             {
@@ -1542,7 +1544,7 @@ namespace Zodiac
         assert(base_expression->kind == AST_EXPR_IDENTIFIER);
         assert(member_expression->kind == AST_EXPR_IDENTIFIER);
 
-        AST_Declaration* base_decl = find_declaration(scope, base_expression->identifier);
+        AST_Declaration* base_decl = find_declaration(resolver->context, scope, base_expression->identifier);
         if (!base_decl)
         {
             report_undeclared_identifier(resolver, base_expression->file_pos,
@@ -1655,8 +1657,9 @@ namespace Zodiac
 
             base_expression->identifier->declaration = base_decl;
             AST_Module* import_module = base_decl->import.module;
-            AST_Declaration* var_decl = find_declaration(import_module->module_scope,
-                                         member_expression->identifier);
+            AST_Declaration* var_decl = find_declaration(resolver->context,
+				                                         import_module->module_scope,
+                                                         member_expression->identifier);
             if (!var_decl)
             {
                 report_undeclared_identifier(resolver, member_expression->file_pos,
@@ -1706,7 +1709,7 @@ namespace Zodiac
         assert(identifier);
         assert(scope);
 
-        AST_Declaration* decl = find_declaration(scope, identifier);
+        AST_Declaration* decl = find_declaration(resolver->context, scope, identifier);
         if (!decl)
         {
             report_undeclared_identifier(resolver, identifier->file_pos, identifier);
@@ -1773,7 +1776,8 @@ namespace Zodiac
                 assert(type_spec->identifier);
                 AST_Identifier* identifier = type_spec->identifier;
 
-                AST_Declaration* type_decl = find_declaration(scope, type_spec->identifier);
+                AST_Declaration* type_decl = find_declaration(resolver->context, scope,
+					                                          type_spec->identifier);
                 if (!type_decl)
                 {
                     report_undeclared_identifier(resolver, identifier->file_pos, identifier);
@@ -2053,21 +2057,34 @@ namespace Zodiac
         return enum_type;
     }
 
-    AST_Declaration* find_declaration(AST_Scope* scope, AST_Identifier* identifier,
+    AST_Declaration* find_declaration(Context* context, AST_Scope* scope,
+									  AST_Identifier* identifier,
                                       bool allow_import_check/*=true*/)
     {
         assert(scope);
+		assert(scope->module || !scope->parent);
         assert(identifier);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(scope->declarations); i++)
-        {
-            AST_Declaration* decl = scope->declarations[i];
-            if (decl->identifier &&
-                decl->identifier->atom == identifier->atom)
-            {
-                return decl;
-            }
-        }
+		if (identifier->declaration)
+		{
+			return identifier->declaration;
+		}
+
+		AST_Declaration* decl = ast_scope_find_declaration(context, scope, identifier);
+		if (decl)
+		{
+			return decl;
+		}
+
+        //for (uint64_t i = 0; i < BUF_LENGTH(scope->declarations); i++)
+        //{
+        //    AST_Declaration* decl = scope->declarations[i];
+        //    if (decl->identifier &&
+        //        decl->identifier->atom == identifier->atom)
+        //    {
+        //        return decl;
+        //    }
+        //}
 
         if (allow_import_check && scope->is_module_scope)
         {
@@ -2078,7 +2095,8 @@ namespace Zodiac
                     global_decl->kind == AST_DECL_IMPORT &&
                     global_decl->import.import_all)
                 {
-                    auto import_result = find_declaration(global_decl->import.module->module_scope,
+                    auto import_result = find_declaration(context, 
+						                                  global_decl->import.module->module_scope,
                                                           identifier, false);
                     if (import_result && !(import_result->kind == AST_DECL_IMPORT))
                     {
@@ -2090,8 +2108,19 @@ namespace Zodiac
 
         if (scope->parent)
         {
-            return find_declaration(scope->parent, identifier, allow_import_check);
+            return find_declaration(context, scope->parent, identifier, allow_import_check);
         }
+		else
+		{
+			for (uint64_t i = 0; i < BUF_LENGTH(context->builtin_decls); i++)
+			{
+				AST_Declaration* builtin_decl = context->builtin_decls[i];
+				if (builtin_decl->identifier->atom == identifier->atom)
+				{
+					return builtin_decl;
+				}
+			}
+		}
 
         return nullptr;
     }

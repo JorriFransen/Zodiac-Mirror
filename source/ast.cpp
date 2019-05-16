@@ -10,22 +10,16 @@ namespace Zodiac
         assert(module_name);
 
         AST_Module* result = arena_alloc(context->arena, AST_Module);
+
+		result->declarations = (AST_Declaration**)mem_alloc(sizeof(AST_Declaration*) * 32);
+		result->declaration_count = 32;
+
         result->global_declarations = nullptr;
-        result->module_scope = ast_scope_new(context, nullptr, true, result);
+        result->module_scope = ast_scope_new(context, context->builtin_scope, result, true);
         result->entry_point = nullptr;
         result->module_name = module_name;
         result->import_modules = nullptr;
         result->gen_data = nullptr;
-
-        for (uint64_t i = 0; i < BUF_LENGTH(context->builtin_decls); i++)
-        {
-            AST_Declaration* builtin_decl = context->builtin_decls[i];
-            BUF_PUSH(result->module_scope->declarations, builtin_decl);
-            if (builtin_decl->location == AST_DECL_LOC_GLOBAL)
-            {
-                BUF_PUSH(result->global_declarations, builtin_decl);
-            }
-        }
 
         return result;
     }
@@ -853,25 +847,149 @@ namespace Zodiac
         return result;
     }
 
-    AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope,
-                             bool is_module_scope/*=false*/,
-                             AST_Module* module/*=nullptr*/)
+	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
+		                     bool is_module_scope)
+
     {
         assert(context);
-
-        if (is_module_scope)
-            assert(module);
-        else
-            assert(!module);
+		assert(module || parent_scope == nullptr);
 
         AST_Scope* result = arena_alloc(context->arena, AST_Scope);
         result->parent = parent_scope;
-        result->declarations = nullptr;
         result->is_module_scope = is_module_scope;
         result->module = module;
 
         return result;
     }
+
+	void ast_scope_push_declaration(AST_Scope* scope, AST_Declaration* declaration)
+	{
+		assert(scope);
+		assert(scope->module);
+		assert(declaration);
+
+		if (!declaration->identifier)
+		{
+			return;
+		}
+
+		declaration->scope = scope;
+
+		auto module = scope->module;
+
+		uint64_t scope_hash = hash_pointer(scope);
+		uint64_t ident_hash = hash_string(declaration->identifier->atom.data,
+			                              declaration->identifier->atom.length);
+		uint64_t hash = hash_mix(scope_hash, ident_hash);
+		uint64_t hash_index = hash & (module->declaration_count - 1);
+
+		uint64_t iterations = 0;
+		while (iterations <= module->declaration_count)
+		{
+			AST_Declaration* decl = module->declarations[hash_index];
+			if (decl)
+			{
+				if (decl == declaration) assert(false);
+			}
+			else
+			{
+				module->declarations[hash_index] = declaration;
+				return;
+			}
+
+			iterations++;
+			hash_index++;
+			if (module->declaration_count <= hash_index)
+			{
+				hash_index = 0;
+			}
+		}
+
+		ast_module_grow_declaration_hash(scope->module);
+		ast_scope_push_declaration(scope, declaration);
+	}
+
+	AST_Declaration* ast_scope_find_declaration(Context* context, AST_Scope* scope,
+		                                        AST_Identifier* identifier)
+	{
+		assert(scope);
+		assert(identifier);
+
+		if (scope->module)
+		{
+			auto module = scope->module;
+
+			uint64_t scope_hash = hash_pointer(scope);
+			uint64_t ident_hash = hash_string(identifier->atom.data, identifier->atom.length);
+			uint64_t hash = hash_mix(scope_hash, ident_hash);
+			uint64_t hash_index = hash & (module->declaration_count - 1);
+
+			uint64_t iterations = 0;
+			while (iterations <= module->declaration_count)
+			{
+				AST_Declaration* decl = module->declarations[hash_index];
+				if (decl)
+				{
+					if (decl->scope == scope &&
+						decl->identifier->atom == identifier->atom)
+					{
+						return decl;
+					}
+				}
+				else
+				{
+					return nullptr;
+				}
+
+				iterations++;
+				if (module->declaration_count <= hash_index)
+				{
+					hash_index = 0;
+				}
+			}
+		}
+		else
+		{
+			for (uint64_t i = 0; i < BUF_LENGTH(context->builtin_decls); i++)
+			{
+				AST_Declaration* builtin_decl = context->builtin_decls[i];
+				if (builtin_decl->scope == scope &&
+					builtin_decl->identifier->atom == identifier->atom)
+				{
+					return builtin_decl;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
+	void ast_module_grow_declaration_hash(AST_Module* module)
+	{
+		assert(module);
+		assert(module->declarations);
+		assert(module->declaration_count);
+
+		uint64_t new_count = module->declaration_count * 2;
+		AST_Declaration** old_decls = module->declarations;
+		uint64_t old_decl_count = module->declaration_count;
+		AST_Declaration** new_decls = (AST_Declaration * *)mem_alloc(sizeof(AST_Declaration*) *
+			                                                         new_count);
+
+		module->declarations = new_decls;
+		module->declaration_count = new_count;
+
+		for (uint64_t i = 0; i < old_decl_count; i++)
+		{
+			AST_Declaration* old_decl = old_decls[i];
+			if (old_decl)
+			{
+				ast_scope_push_declaration(old_decl->scope, old_decl);
+			}
+		}
+
+		mem_free(old_decls);
+	}
 
     AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Type* base_type)
     {

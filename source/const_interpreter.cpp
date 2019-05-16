@@ -5,7 +5,7 @@
 
 namespace Zodiac
 {
-    bool const_interpret_bool_expression(AST_Expression* expression, AST_Scope* scope)
+    bool const_interpret_bool_expression(Context* context, AST_Expression* expression, AST_Scope* scope)
     {
         assert(expression);
         assert(expression->type == Builtin::type_bool);
@@ -15,8 +15,8 @@ namespace Zodiac
         {
             case AST_EXPR_IDENTIFIER:
             {
-                AST_Declaration* decl = find_declaration(scope, expression->identifier);
-                return const_bool_decl_value(decl, scope);
+                AST_Declaration* decl = find_declaration(context, scope, expression->identifier);
+                return const_bool_decl_value(context, decl, scope);
                 break;
             }
 
@@ -33,7 +33,7 @@ namespace Zodiac
 		return false;
     }
 
-    bool const_bool_decl_value(AST_Declaration* declaration, AST_Scope* scope)
+    bool const_bool_decl_value(Context* context, AST_Declaration* declaration, AST_Scope* scope)
     {
         assert(declaration);
         assert(scope);
@@ -42,7 +42,8 @@ namespace Zodiac
         {
             case AST_DECL_CONSTANT_VAR:
             {
-                return const_interpret_bool_expression(declaration->constant_var.init_expression,
+                return const_interpret_bool_expression(context, 
+					                                   declaration->constant_var.init_expression,
                                                        scope);
                 break;
             }

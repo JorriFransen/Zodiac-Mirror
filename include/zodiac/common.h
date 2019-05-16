@@ -250,3 +250,10 @@ const char* extract_directory_from_path(const char* path);
 const char* extract_file_name_from_path(const char* path);
 const char* full_path_from_cwd(const char* rel_path);
 const char* normalize_path(const char* path);
+
+
+// Hash
+uint64_t hash_string(const char* string);
+uint64_t hash_string(const char* string, uint64_t string_length);
+uint64_t hash_pointer(void* ptr);
+uint64_t hash_mix(uint64_t hash_a, uint64_t hash_b);

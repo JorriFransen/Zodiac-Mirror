@@ -23,8 +23,10 @@ namespace Zodiac
         context->keywords =  nullptr;
         context->compiled_modules = nullptr;
         context->foreign_table = nullptr;
-        context_init_keywords(context);
 
+		context->builtin_scope = ast_scope_new(context, nullptr, false, nullptr);
+
+        context_init_keywords(context);
         init_builtin_types(context);
         init_builtin_decls(context);
 

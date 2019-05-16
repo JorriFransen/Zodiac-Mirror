@@ -199,8 +199,9 @@ namespace Zodiac
         auto fp = current_token(parser).file_pos;
         expect_token(parser, TOK_COLON);
 
-        AST_Scope* argument_scope = ast_scope_new(parser->context,
-                                                  parser->result.ast_module->module_scope);
+		auto ast_module = parser->result.ast_module;
+        AST_Scope* argument_scope = ast_scope_new(parser->context, ast_module->module_scope,
+			                                      ast_module, false);
 
         if (is_token(parser, TOK_LPAREN))
         {
@@ -594,8 +595,9 @@ namespace Zodiac
         expect_token(parser, TOK_LBRACE);
 
         BUF(AST_Statement*) block_statements = nullptr;
-
-        AST_Scope* block_scope = ast_scope_new(parser->context, scope);
+	
+		auto module = parser->result.ast_module;
+        AST_Scope* block_scope = ast_scope_new(parser->context, scope, module, false);
 
         while (!match_token(parser, TOK_RBRACE))
         {
@@ -697,7 +699,8 @@ namespace Zodiac
         expect_token(parser, TOK_KW_FOR);
         expect_token(parser, TOK_LPAREN);
 
-        AST_Scope* for_scope = ast_scope_new(parser->context, scope);
+		auto module = parser->result.ast_module;
+        AST_Scope* for_scope = ast_scope_new(parser->context, scope, module, false);
 
         AST_Statement* for_decl_statement = parse_statement(parser, for_scope);
         if (!for_decl_statement)
@@ -1304,7 +1307,8 @@ namespace Zodiac
 		bool is_vararg = false;
 		BUF(AST_Declaration*) arg_decls = nullptr;
 
-        AST_Scope* arg_scope = ast_scope_new(parser->context, scope);
+		auto module = parser->result.ast_module;
+        AST_Scope* arg_scope = ast_scope_new(parser->context, scope, module, false);
 
 		expect_token(parser, TOK_LPAREN);
 		while (!match_token(parser, TOK_RPAREN))

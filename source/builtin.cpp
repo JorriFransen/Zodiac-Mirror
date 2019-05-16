@@ -53,6 +53,7 @@ namespace Zodiac
         AST_Type* type = ast_type_base_new(context, flags, name_atom.data, size);
         AST_Declaration* type_decl = ast_type_declaration_new(context, file_pos, type, identifier);
         type_decl->flags |= AST_DECL_FLAG_RESOLVED;
+		type_decl->location = AST_DECL_LOC_GLOBAL;
 
         BUF_PUSH(context->builtin_decls, type_decl);
 
