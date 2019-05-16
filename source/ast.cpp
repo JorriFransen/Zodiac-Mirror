@@ -11,8 +11,8 @@ namespace Zodiac
 
         AST_Module* result = arena_alloc(context->arena, AST_Module);
 
-		result->declarations = (AST_Declaration**)mem_alloc(sizeof(AST_Declaration*) * 32);
-		result->declaration_count = 32;
+		result->declarations = (AST_Declaration**)mem_alloc(sizeof(AST_Declaration*) * 128);
+		result->declaration_count = 128;
 
         result->global_declarations = nullptr;
         result->module_scope = ast_scope_new(context, context->builtin_scope, result, true);
@@ -896,7 +896,8 @@ namespace Zodiac
 			AST_Declaration* decl = module->declarations[hash_index];
 			if (decl)
 			{
-				if (decl == declaration) assert(false);
+                if (decl == declaration) assert(false);
+                int y = 1;
 			}
 			else
 			{
