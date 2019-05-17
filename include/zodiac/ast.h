@@ -693,7 +693,8 @@ namespace Zodiac
 		                     bool is_module_scope);
 
 	void ast_scope_push_declaration(AST_Scope* scope, AST_Declaration* declaration);
-	AST_Declaration* ast_scope_find_declaration(Context* context, AST_Scope* scope, AST_Identifier* identifier);
+	AST_Declaration* ast_scope_find_declaration(Context* context, AST_Scope* scope, AST_Identifier*
+                                                identifier);
 
 	void ast_module_grow_declaration_hash(AST_Module* module);
 
@@ -704,4 +705,11 @@ namespace Zodiac
 	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
                                                BUF(AST_Type*) arg_types,
 		                                       AST_Type* return_type);
+
+    uint64_t ast_get_type_hash(AST_Type* type);
+    uint64_t ast_get_pointer_type_hash(AST_Type* base_type);
+    uint64_t ast_get_static_array_type_hash(AST_Type* base_type, uint64_t count);
+    uint64_t ast_get_function_type_hash(bool is_vararg, BUF(AST_Type*) arg_types, AST_Type* return_type);
+
+    void ast_grow_type_hash(Context* context);
 }

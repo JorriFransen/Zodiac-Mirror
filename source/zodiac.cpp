@@ -26,6 +26,9 @@ namespace Zodiac
 
 		context->builtin_scope = ast_scope_new(context, nullptr, nullptr, false);
 
+        context->type_hash = (AST_Type**)mem_alloc(sizeof(AST_Type*) * 256);
+        context->type_count = 256;
+
         context_init_keywords(context);
         init_builtin_types(context);
         init_builtin_decls(context);

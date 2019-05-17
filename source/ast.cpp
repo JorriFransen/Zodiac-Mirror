@@ -1008,20 +1008,42 @@ namespace Zodiac
         assert(context);
         assert(base_type);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(context->types); i++)
+        uint64_t hash = ast_get_pointer_type_hash(base_type);
+        uint64_t hash_index = hash & (context->type_count - 1);
+
+        uint64_t iterations = 0;
+        bool found_free_slot = false;
+        while (iterations < context->type_count)
         {
-            AST_Type* ex_type = context->types[i];
-            if (ex_type->kind == AST_TYPE_POINTER)
+
+            AST_Type* ex_type = context->type_hash[hash_index];
+            if (ex_type)
             {
-                if (ex_type->pointer.base == base_type)
+                if (ex_type->kind == AST_TYPE_POINTER  &&
+                    ex_type->pointer.base == base_type)
                 {
                     return ex_type;
                 }
             }
+            else
+            {
+                found_free_slot = true;
+                break;
+            }
+
+            iterations++;
+            hash_index++;
+            if (context->type_count <= hash_index)
+            {
+                hash_index = 0;
+            }
         }
 
+        assert(found_free_slot);
+
         AST_Type* pointer_type = ast_type_pointer_new(context, base_type);
-        BUF_PUSH(context->types, pointer_type);
+        context->type_hash[hash_index] = pointer_type;
+
         return pointer_type;
     }
 
@@ -1042,19 +1064,41 @@ namespace Zodiac
         assert(context);
         assert(base_type);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(context->types); i++)
+        uint64_t hash = ast_get_static_array_type_hash(base_type, count);
+        uint64_t hash_index = hash & (context->type_count - 1);
+
+        uint64_t iterations = 0;
+        bool found_free_slot = false;
+        while (iterations < context->type_count)
         {
-            AST_Type* ex_type = context->types[i];
-            if (ex_type->kind == AST_TYPE_STATIC_ARRAY &&
-                ex_type->static_array.base == base_type &&\
-                ex_type->static_array.count == count)
+            AST_Type* ex_type = context->type_hash[hash_index];
+            if (ex_type)
             {
-                return ex_type;
+                if (ex_type->kind == AST_TYPE_STATIC_ARRAY &&
+                    ex_type->static_array.base == base_type &&
+                    ex_type->static_array.count == count)
+                {
+                    return ex_type;
+                }
+            }
+            else
+            {
+                found_free_slot = true;
+            }
+
+            iterations++;
+            hash_index++;
+            if (context->type_count <= hash_index)
+            {
+                hash_index = 0;
             }
         }
 
+        assert(found_free_slot);
+
         AST_Type* array_type = ast_type_static_array_new(context, base_type, count);
-        BUF_PUSH(context->types, array_type);
+        context->type_hash[hash_index] = array_type;
+
         return array_type;
     }
 
@@ -1064,43 +1108,223 @@ namespace Zodiac
 		assert(context);
         assert(return_type);
 
-		for (uint64_t i = 0; i < BUF_LENGTH(context->types); i++)
-		{
-			AST_Type* ex_type = context->types[i];
-			if (ex_type->kind == AST_TYPE_FUNCTION)
-			{
-				bool ret_match = ex_type->function.return_type == return_type;
-				bool var_match = ex_type->function.is_vararg == is_vararg;
-				bool ac_match = BUF_LENGTH(ex_type->function.arg_types) ==
-					BUF_LENGTH(arg_types);
+        uint64_t hash = ast_get_function_type_hash(is_vararg, arg_types, return_type);
+        uint64_t hash_index = hash & (context->type_count - 1);
 
-				if (ret_match && var_match && ac_match)
-				{
-					uint64_t a_count = BUF_LENGTH(arg_types);
-					bool a_match = true;
-					for (uint64_t ai = 0; ai < a_count; ai++)
-					{
-						AST_Type* ex_arg_type = ex_type->function.arg_types[ai];
-						AST_Type* new_arg_type = arg_types[ai];
+        uint64_t iterations = 0;
+        bool found_slot = false;
+        while (iterations < context->type_count)
+        {
+            AST_Type* ex_type = context->type_hash[hash_index];
+            if (ex_type)
+            {
+                if (ex_type->kind == AST_TYPE_FUNCTION)
+                {
+                    bool ret_match = ex_type->function.return_type == return_type;
+                    bool var_match = ex_type->function.is_vararg == is_vararg;
+                    bool ac_match = BUF_LENGTH(ex_type->function.arg_types) ==
+                        BUF_LENGTH(arg_types);
 
-						if (ex_arg_type != new_arg_type)
-						{
-							a_match = false;
-							break;
-						}
-					}
+                    if (ret_match && var_match && ac_match)
+                    {
+                        uint64_t a_count = BUF_LENGTH(arg_types);
+                        bool a_match = true;
+                        for (uint64_t ai = 0; ai < a_count; ai++)
+                        {
+                            AST_Type* ex_arg_type = ex_type->function.arg_types[ai];
+                            AST_Type* new_arg_type = arg_types[ai];
 
-					if (a_match)
-					{
-						return ex_type;
-					}
-				}
+                            if (ex_arg_type != new_arg_type)
+                            {
+                                a_match = false;
+                                break;
+                            }
+                        }
 
-			}
-		}
+                        if (a_match)
+                        {
+                            return ex_type;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                found_slot = true;
+                break;
+            }
 
-		AST_Type* result = ast_type_function_new(context, is_vararg, arg_types, return_type);
-		BUF_PUSH(context->types, result);
-		return result;
+            iterations++;
+            hash_index++;
+            if (context->type_count <= hash_index)
+            {
+                hash_index = 0;
+            }
+        }
+
+        if (found_slot)
+        {
+            AST_Type* result = ast_type_function_new(context, is_vararg, arg_types, return_type);
+            context->type_hash[hash_index] = result;
+            return result;
+        }
+        else
+        {
+            ast_grow_type_hash(context);
+            return ast_find_or_create_function_type(context, is_vararg, arg_types, return_type);
+        }
+
 	}
+
+    uint64_t ast_get_type_hash(AST_Type* type)
+    {
+        assert(type);
+
+        uint64_t kind_hash = hash_pointer((void*)type->kind);
+        uint64_t flag_hash = hash_pointer((void*)type->flags);
+
+        uint64_t base_hash = hash_mix(kind_hash, flag_hash);
+
+        if (type->name)
+        {
+            base_hash = hash_mix(base_hash, hash_string(type->name));
+        }
+
+        switch (type->kind)
+        {
+            case AST_TYPE_POINTER:
+            {
+                return ast_get_pointer_type_hash(type->pointer.base);
+                break;
+            }
+
+            case AST_TYPE_STATIC_ARRAY:
+            {
+                assert(false);
+                break;
+            };
+
+            case AST_TYPE_FUNCTION:
+            {
+                return ast_get_function_type_hash(type->function.is_vararg,
+                                                  type->function.arg_types,
+                                                  type->function.return_type);
+                break;
+            }
+
+            case AST_TYPE_STRUCT:
+            {
+                for (uint64_t i = 0; i < BUF_LENGTH(type->aggregate_type.member_declarations); i++)
+                {
+                    AST_Declaration* member_decl = type->aggregate_type.member_declarations[i];
+                    assert(member_decl->kind == AST_DECL_MUTABLE);
+                    uint64_t member_hash = ast_get_type_hash(member_decl->mutable_decl.type);
+                    base_hash = hash_mix(base_hash, member_hash);
+                }
+                return base_hash;
+                break;
+            }
+
+            case AST_TYPE_BASE:
+            {
+                return base_hash;
+                break;
+            };
+
+            default: assert(false);
+        }
+
+        assert(false);
+    }
+
+    uint64_t ast_get_pointer_type_hash(AST_Type* base_type)
+    {
+        assert(base_type);
+
+        const char* pointer_type_string = "pointer_typesa;fj dofhoqw9euf";
+        return hash_mix(ast_get_type_hash(base_type), hash_string(pointer_type_string));
+    }
+
+    uint64_t ast_get_static_array_type_hash(AST_Type* base_type, uint64_t count)
+    {
+        assert(base_type);
+
+        uint64_t base_hash = ast_get_type_hash(base_type);
+        uint64_t count_hash = hash_pointer((void*)count);
+        uint64_t hash = hash_mix(base_hash, count_hash);
+
+        const char* static_array_type_string = "static_array_typekqn2o9xb376c";
+        uint64_t string_hash = hash_string(static_array_type_string);
+
+        return hash_mix(hash, string_hash);
+    }
+
+    uint64_t ast_get_function_type_hash(bool is_vararg, BUF(AST_Type*) arg_types, AST_Type* return_type)
+    {
+        assert(return_type);
+
+        uint64_t hash = ast_get_type_hash(return_type);
+
+        if (is_vararg)
+        {
+            hash = hash_mix(hash, 0xaf2fdfe1f7f8fc3f);
+        }
+
+        for (uint64_t i = 0; i < BUF_LENGTH(arg_types); i++)
+        {
+            hash = hash_mix(hash, ast_get_type_hash(arg_types[i]));
+        }
+
+        return hash;
+    }
+
+    void ast_grow_type_hash(Context* context)
+    {
+        assert(context);
+
+        uint64_t old_count = context->type_count;
+        AST_Type** old_data = context->type_hash;
+        uint64_t new_count = old_count * 2;
+        AST_Type** new_data = (AST_Type**)mem_alloc(sizeof(AST_Type*) * new_count);
+
+        context->type_hash = new_data;
+        context->type_count = new_count;
+
+        for (uint64_t i = 0; i < old_count; i++)
+        {
+            AST_Type* old_type = old_data[i];
+            if (old_type)
+            {
+                uint64_t hash = ast_get_type_hash(old_type);
+                uint64_t hash_index = hash & (new_count - 1);
+
+                uint64_t iterations = 0;
+                bool found_slot = false;
+                while (iterations < new_count)
+                {
+                    AST_Type* new_type = new_data[hash_index];
+                    if (new_type)
+                    {
+                    }
+                    else
+                    {
+                        new_data[hash_index] = old_type;
+                        found_slot = true;
+                        break;
+                    }
+
+                    iterations++;
+                    hash_index++;
+                    if (new_count <= hash_index)
+                    {
+                        hash_index = 0;
+                    }
+                }
+
+                assert(found_slot);
+            }
+        }
+
+        mem_free(old_data);
+    }
 }

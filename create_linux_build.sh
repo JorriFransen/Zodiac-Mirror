@@ -11,6 +11,6 @@ pushd build
 
     mkdir -p release_deb
     pushd release_deb
-    cmake ../.. -G "Ninja" -DCMAKE_BUILD_TYPE=RelWithDepInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    cmake ../.. -G "Ninja" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=RelWithDepInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 popd
 

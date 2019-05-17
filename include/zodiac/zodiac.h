@@ -61,7 +61,9 @@ namespace Zodiac
         BUF(Registered_Keyword) keywords = nullptr;
         BUF(AST_Declaration*) builtin_decls = nullptr;
 
-        BUF(AST_Type*) types = nullptr;
+        // BUF(AST_Type*) types = nullptr;
+        AST_Type** type_hash = nullptr;
+        uint64_t type_count = 0;
 
         BUF(Compiled_Module) compiled_modules = nullptr;
         BUF(Atom) foreign_table = nullptr;
@@ -77,7 +79,8 @@ namespace Zodiac
 	bool zodiac_parse_options(Options* options, int argc, char** argv);
 	bool zodiac_parse_option_argument(Option_Parse_Context* opc);
 
-    AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path, const Atom& module_name);
+    AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path,
+                                             const Atom& module_name);
     AST_Module* zodiac_compile_module(Context* context, const Atom& module_path, const Atom& module_name);
 
     static void context_init_keywords(Context* context);

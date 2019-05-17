@@ -14,9 +14,11 @@ namespace Zodiac
 
         ir_builder->context = context;
         ir_builder->arena = arena_create(MB(1));
-        ir_builder->value_to_decl_map = nullptr;
         ir_builder->result = {};
-        ir_builder->result.string_literal_arena = arena_create(MB(1));
+
+        ir_builder->value_decl_hash = (IR_Value_And_Decl*)mem_alloc(sizeof(IR_Value_And_Decl) * 512);
+        ir_builder->value_decl_count = 512;
+
         ir_builder->current_function = nullptr;
         ir_builder->insert_block = nullptr;
 
@@ -143,6 +145,11 @@ namespace Zodiac
 				}
 				break;
 			}
+
+            default:
+            {
+                break;
+            }
 		}
 	}
 
@@ -1392,18 +1399,104 @@ namespace Zodiac
         return result_value;
     }
 
+    void ir_builder_push_value_and_decl(IR_Builder* ir_builder, IR_Value* ir_value, AST_Declaration* decl)
+    {
+        assert(ir_builder);
+        assert(ir_value);
+        assert(decl);
+
+        uint64_t hash = hash_pointer(decl);
+        uint64_t hash_index = hash & (ir_builder->value_decl_count - 1);
+
+        uint64_t iterations = 0;
+        while (iterations < ir_builder->value_decl_count)
+        {
+            IR_Value_And_Decl* entry = &ir_builder->value_decl_hash[hash_index];
+
+            if (entry->decl)
+            {
+                assert(entry->decl != decl);
+            }
+            else
+            {
+                IR_Value_And_Decl new_entry;
+                new_entry.decl = decl;
+                new_entry.value = ir_value;
+
+                ir_builder->value_decl_hash[hash_index] = new_entry;
+                return;
+            }
+
+            iterations++;
+            hash_index++;
+            if (ir_builder->value_decl_count <= hash_index)
+            {
+                hash_index = 0;
+            }
+        }
+
+        ir_builder_grow_value_decl_hash(ir_builder);
+        ir_builder_push_value_and_decl(ir_builder, ir_value, decl);
+    }
+
+    void ir_builder_grow_value_decl_hash(IR_Builder* ir_builder)
+    {
+        assert(ir_builder);
+        assert(ir_builder->value_decl_hash);
+        assert(ir_builder->value_decl_count);
+
+
+        uint64_t old_count = ir_builder->value_decl_count;
+        IR_Value_And_Decl* old_data = ir_builder->value_decl_hash;
+        uint64_t new_count = old_count * 2;
+        IR_Value_And_Decl* new_data = (IR_Value_And_Decl*)mem_alloc(sizeof(IR_Value_And_Decl) * new_count);
+
+        ir_builder->value_decl_hash = new_data;
+        ir_builder->value_decl_count = new_count;
+
+        for (uint64_t i = 0; i < old_count; i++)
+        {
+            const IR_Value_And_Decl& old_entry = old_data[i];
+            if (old_entry.decl)
+            {
+                ir_builder_push_value_and_decl(ir_builder, old_entry.value, old_entry.decl);
+            }
+        }
+
+        mem_free(old_data);
+    }
+
     IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder,
                                                AST_Declaration* declaration)
     {
         assert(ir_builder);
         assert(declaration);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->value_to_decl_map); i++)
+        uint64_t hash = hash_pointer(declaration);
+        uint64_t hash_index = hash & (ir_builder->value_decl_count - 1);
+
+        uint64_t iterations = 0;
+        while (iterations < ir_builder->value_decl_count)
         {
-            auto entry = ir_builder->value_to_decl_map[i];
-            if (entry.declaration == declaration)
+            IR_Value_And_Decl* entry = &ir_builder->value_decl_hash[hash_index];
+
+            if (entry->decl)
             {
-                return entry.ir_value;
+                if (entry->decl == declaration)
+                {
+                    return entry->value;
+                }
+            }
+            else
+            {
+                break;
+            }
+
+            iterations++;
+            hash_index++;
+            if (ir_builder->value_decl_count <= hash_index)
+            {
+                hash_index = 0;
             }
         }
 
@@ -1414,13 +1507,10 @@ namespace Zodiac
 
             IR_Builder* import_ir_builder = (IR_Builder*)import_module->gen_data;
 
-            for (uint64_t j = 0; j < BUF_LENGTH(import_ir_builder->value_to_decl_map); j++)
+            auto result = ir_builder_value_for_declaration(import_ir_builder, declaration);
+            if (result)
             {
-                auto entry = import_ir_builder->value_to_decl_map[j];
-                if (entry.declaration == declaration)
-                {
-                    return entry.ir_value;
-                }
+                return result;
             }
         }
 
