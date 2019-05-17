@@ -1,6 +1,7 @@
 #include "ir.h"
 
 #include "builtin.h"
+#include "const_interpreter.h"
 
 #include <inttypes.h>
 #include <stdarg.h>
@@ -56,55 +57,94 @@ namespace Zodiac
         }
 
         // Emit function bodies
-        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->value_to_decl_map); i++)
+        for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
         {
-            AST_Declaration* decl = ir_builder->value_to_decl_map[i].declaration;
-            IR_Value* ir_value = ir_builder->value_to_decl_map[i].ir_value;
-            if (ir_value->kind == IRV_FUNCTION)
-            {
-                IR_Function* func = ir_value->function;
-                IR_Block* entry_block = func->first_block;
-
-                if (decl->function.body_block)
-                {
-                    ir_builder->current_function = func;
-                    ir_builder_set_insert_block(ir_builder, entry_block);
-
-                    ir_builder_emit_statement(ir_builder, decl->function.body_block, nullptr);
-
-                    auto insert_block = ir_builder->insert_block;
-                    auto first_instruction = insert_block->first_instruction;
-                    auto last_instruction = insert_block->last_instruction;
-                    //if (!first_instruction && insert_block->previous)
-                    //{
-                    //    //@TODO: Free list
-                    //    insert_block->previous->next = nullptr;
-                    //    insert_block->previous = nullptr;
-                    //}
-                    //else if (!last_instruction ||
-                    //        !ir_instruction_is_terminator(last_instruction->op))
-                    if (!last_instruction ||
-                        !ir_instruction_is_terminator(last_instruction->op))
-                    {
-                        ir_builder_emit_return(ir_builder, nullptr);
-                    }
-
-                    ir_builder->current_function = nullptr;
-
-					ir_builder_patch_empty_block_jumps(ir_builder, func);
-                }
-                else
-                {
-                    assert(decl->directive);
-                    assert(decl->directive->kind == AST_DIREC_FOREIGN);
-                }
-            }
+			AST_Declaration* decl = module->global_declarations[i];
+			ir_builder_emit_decl_body(ir_builder, decl);
         }
 
         assert(module->gen_data == nullptr);
         module->gen_data = ir_builder;
         return ir_builder->result;
     }
+
+	void ir_builder_emit_decl_body(IR_Builder* ir_builder, AST_Declaration* decl)
+	{
+		assert(ir_builder);
+		assert(decl);
+
+		switch (decl->kind)
+		{
+			case AST_DECL_FUNC:
+			{
+				IR_Value* ir_value = ir_builder_value_for_declaration(ir_builder, decl);
+				assert(ir_value);
+				assert(ir_value->kind == IRV_FUNCTION);
+
+				IR_Function* func = ir_value->function;
+				IR_Block* entry_block = func->first_block;
+
+				if (decl->function.body_block)
+				{
+					ir_builder->current_function = func;
+					ir_builder_set_insert_block(ir_builder, entry_block);
+
+					ir_builder_emit_statement(ir_builder, decl->function.body_block, nullptr);
+
+					auto insert_block = ir_builder->insert_block;
+					auto first_instruction = insert_block->first_instruction;
+					auto last_instruction = insert_block->last_instruction;
+					//if (!first_instruction && insert_block->previous)
+					//{
+					//    //@TODO: Free list
+					//    insert_block->previous->next = nullptr;
+					//    insert_block->previous = nullptr;
+					//}
+					//else if (!last_instruction ||
+					//        !ir_instruction_is_terminator(last_instruction->op))
+					if (!last_instruction ||
+						!ir_instruction_is_terminator(last_instruction->op))
+					{
+						ir_builder_emit_return(ir_builder, nullptr);
+					}
+
+					ir_builder->current_function = nullptr;
+
+					ir_builder_patch_empty_block_jumps(ir_builder, func);
+				}
+				else
+				{
+					assert(decl->directive);
+					assert(decl->directive->kind == AST_DIREC_FOREIGN);
+				}
+				break;
+			}
+
+			case AST_DECL_STATIC_IF:
+			{
+				bool cond = const_interpret_bool_expression(ir_builder->context, decl->static_if.cond_expr,
+					                                        ir_builder->ast_module->module_scope);
+				if (cond)
+				{
+					ir_builder_emit_decl_body(ir_builder, decl->static_if.then_declaration);
+				}
+				else if (decl->static_if.else_declaration)
+				{
+					ir_builder_emit_decl_body(ir_builder, decl->static_if.else_declaration);
+				}
+				break;
+			}
+
+			case AST_DECL_BLOCK:
+			{
+				for (uint64_t i = 0; i < BUF_LENGTH(decl->block.decls); i++)
+				{
+					ir_builder_emit_decl_body(ir_builder, decl->block.decls[i]);
+				}
+				break;
+			}
+		}
+	}
 
     void ir_builder_emit_global_declaration(IR_Builder* ir_builder, AST_Declaration* global_decl)
     {
@@ -2539,12 +2579,12 @@ namespace Zodiac
         {
             assert(!ir_block->last_instruction);
             result = false;
-            ir_report_validation_error(valres, "Block is empty: %s", ir_block->name);
+            ir_report_validation_error(valres, "Block is empty: %s", ir_block->name.data);
         }
         else
         {
             assert(ir_block->last_instruction);
-
+			
             bool ends_with_term = ir_instruction_is_terminator(ir_block->last_instruction->op);
             result &= ends_with_term;
 

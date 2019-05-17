@@ -219,15 +219,12 @@ namespace Zodiac
         }
 
         IR_Validation_Result validation = ir_validate(ir_builder);
+		if (ir_builder->context->options.print_ir)
+		{
+			ir_builder_print_result(ir_builder);
+		}
 
-        if (!validation.messages)
-        {
-            if (ir_builder->context->options.print_ir)
-            {
-                ir_builder_print_result(ir_builder);
-            }
-        }
-        else
+        if (validation.messages)
         {
             for (uint64_t i = 0; i < BUF_LENGTH(validation.messages); i++)
             {

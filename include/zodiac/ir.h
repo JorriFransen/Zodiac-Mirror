@@ -240,6 +240,7 @@ namespace Zodiac
     void ir_builder_init(IR_Builder* ir_builder, Context* context);
 
     IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module);
+	void ir_builder_emit_decl_body(IR_Builder* ir_builder, AST_Declaration* func_decl);
     void ir_builder_emit_global_declaration(IR_Builder* ir_builder, AST_Declaration* global_decl);
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement,
                                    IR_Value* break_block);
