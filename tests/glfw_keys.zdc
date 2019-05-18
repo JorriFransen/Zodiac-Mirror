@@ -123,5 +123,5 @@ GLFWkey :: enum
     GLFW_KEY_RIGHT_SUPER :: 347;
     GLFW_KEY_MENU :: 348;
 
-    GLFW_KEY_LAST :: 348;
+    GLFW_KEY_LAST :: GLFW_KEY_MENU;
 }

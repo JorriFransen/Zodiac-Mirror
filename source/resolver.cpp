@@ -564,18 +564,36 @@ namespace Zodiac
 
             if (member_decl->value_expression)
             {
-                result &= try_resolve_expression(resolver, member_decl->value_expression, scope);
-                if (!result)
+                if (member_decl->value_expression->kind == AST_EXPR_IDENTIFIER)
                 {
-                    return false;
+                    for (uint64_t j = 0; j < BUF_LENGTH(declaration->enum_decl.members); j++)
+                    {
+                        AST_Enum_Member_Decl* other_member_decl = declaration->enum_decl.members[j];
+                        if (member_decl != other_member_decl &&
+                            other_member_decl->identifier->atom == member_decl->value_expression->identifier->atom)
+                        {
+                            assert(other_member_decl->index_assigned);
+                            index_value = other_member_decl->index_value;
+                            break;
+                        }
+                    }
                 }
-                assert(member_decl->value_expression->type->flags & AST_TYPE_FLAG_INT);
-                if (member_decl->value_expression->type == Builtin::type_int)
+                else
                 {
-                    index_value = const_interpret_s64_expression(member_decl->value_expression,
-                                                                 scope);
+                    result &= try_resolve_expression(resolver, member_decl->value_expression, scope);
+                    if (!result)
+                    {
+                        return false;
+                    }
+                    assert(member_decl->value_expression->is_const);
+                    assert(member_decl->value_expression->type->flags & AST_TYPE_FLAG_INT);
+                    if (member_decl->value_expression->type == Builtin::type_int)
+                    {
+                        index_value = const_interpret_s64_expression(member_decl->value_expression,
+                                                                    scope);
+                    }
+                    else assert(false);
                 }
-                else assert(false);
             }
 
             // Check for duplicates
@@ -586,6 +604,7 @@ namespace Zodiac
             }
 
             member_decl->index_value = index_value;
+            member_decl->index_assigned = true;
             index_value++;
         }
 

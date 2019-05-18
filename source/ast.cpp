@@ -492,6 +492,7 @@ namespace Zodiac
         emd->file_pos = file_pos;
         emd->identifier = identifier;
         emd->value_expression = value_expression;
+        emd->index_assigned = false;
 
         return emd;
     }

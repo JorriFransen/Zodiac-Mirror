@@ -335,7 +335,8 @@ namespace Zodiac
         File_Pos file_pos = {};
         AST_Identifier* identifier = nullptr;
         AST_Expression* value_expression = nullptr;
-        uint64_t index_value;
+        uint64_t index_value = 0;
+        bool index_assigned = false;
     };
 
     struct AST_Declaration
