@@ -387,7 +387,6 @@ namespace Zodiac
             struct
             {
                 AST_Identifier* module_identifier;
-                bool import_all;
                 AST_Module* module;
             } import;
 
@@ -620,8 +619,7 @@ namespace Zodiac
                                                        AST_Expression* assert_expr);
     AST_Declaration* ast_import_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
-                                                AST_Identifier* import_module_identifier,
-                                                bool import_all);
+                                                AST_Identifier* import_module_identifier);
     AST_Declaration* ast_struct_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
                                                 BUF(AST_Declaration*) member_decls);

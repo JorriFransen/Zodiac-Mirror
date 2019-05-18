@@ -415,8 +415,7 @@ namespace Zodiac
 
     AST_Declaration* ast_import_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
-                                                AST_Identifier* import_module_identifier,
-                                                bool import_all)
+                                                AST_Identifier* import_module_identifier)
     {
         assert(context);
         assert(identifier);
@@ -426,7 +425,6 @@ namespace Zodiac
                                                       AST_DECL_LOC_GLOBAL, identifier,
                                                       nullptr, true);
         result->import.module_identifier = import_module_identifier;
-        result->import.import_all = import_all;
         return result;
     }
 

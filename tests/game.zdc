@@ -1,12 +1,12 @@
 
 c :: import c;
-glfw :: import glfw.*;
-glfw_keys :: import glfw_keys.*;
-gl :: import gl.*;
+glfw :: import glfw;
+glfw_keys :: import glfw_keys;
+gl :: import gl;
 
 main :: () -> int
 {
-    if (!glfwInit())
+    if (!glfw.glfwInit())
     {
         c.printf("glfwInit failed\n");
         return 9;
@@ -15,63 +15,63 @@ main :: () -> int
     width := 640;
     height := 480;
 
-    glfwWindowHint(glfw.GLFW_RESIZABLE, glfw.GLFW_FALSE);
-    window : *GLFWwindow = glfwCreateWindow(width, height, "Triangles!!!", null, null);
+    glfw.glfwWindowHint(glfw.GLFW_RESIZABLE, glfw.GLFW_FALSE);
+    window : *glfw.GLFWwindow = glfw.glfwCreateWindow(width, height, "Triangles!!!", null, null);
     if (!window)
     {
         c.printf("glfwCreateWindow failed\n");
         return 9;
     }
 
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetErrorCallback(error_callback);
+    glfw.glfwSetKeyCallback(window, key_callback);
+    glfw.glfwSetErrorCallback(error_callback);
 
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
-    load(*glfwGetProcAddress);
-    glViewport(0, 0, width, height);
+    glfw.glfwMakeContextCurrent(window);
+    glfw.glfwSwapInterval(1);
+    gl.load(*glfw.glfwGetProcAddress);
+    gl.glViewport(0, 0, width, height);
 
-    vendor := glGetString(GL_VENDOR);
-    renderer := glGetString(GL_RENDERER);
-    version := glGetString(GL_VERSION);
+    vendor := gl.glGetString(gl.GL_VENDOR);
+    renderer := gl.glGetString(gl.GL_RENDERER);
+    version := gl.glGetString(gl.GL_VERSION);
 
     c.printf("GL vendor: %s\n", vendor);
     c.printf("GL renderer: %s\n", renderer);
     c.printf("GL version: %s\n", version);
 
-    glViewport(0, 0, width, height);
+    gl.glViewport(0, 0, width, height);
 
     // glClearColor(0.1, 0.3, 0.5, 1.0);
-    glClearColor(0.0, 0.0, 0.0, 0.0);
+    gl.glClearColor(0.0, 0.0, 0.0, 0.0);
 
 
-    while (!glfwWindowShouldClose(window))
+    while (!glfw.glfwWindowShouldClose(window))
     {
-        glClear(GL_COLOR_BUFFER_BIT);
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT);
 
-        glBegin(GL_TRIANGLES);
-        glColor4f(1.0, 0.0, 0.0, 1.0);
-        glVertex2f(-0.5, -0.5);
-        glColor4f(0.0, 1.0, 0.0, 1.0);
-        glVertex2f(0.5, -0.5);
-        glColor4f(0.0, 0.0, 1.0, 1.0);
-        glVertex2f(0.0, 0.5);
-        glEnd();
+        gl.glBegin(gl.GL_TRIANGLES);
+        gl.glColor4f(1.0, 0.0, 0.0, 1.0);
+        gl.glVertex2f(-0.5, -0.5);
+        gl.glColor4f(0.0, 1.0, 0.0, 1.0);
+        gl.glVertex2f(0.5, -0.5);
+        gl.glColor4f(0.0, 0.0, 1.0, 1.0);
+        gl.glVertex2f(0.0, 0.5);
+        gl.glEnd();
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        glfw.glfwSwapBuffers(window);
+        glfw.glfwPollEvents();
     }
 
-    glfwDestroyWindow(window);
-    glfwTerminate();
+    glfw.glfwDestroyWindow(window);
+    glfw.glfwTerminate();
 }
 
 key_callback :: (window: *glfw.GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void
 {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    if (key == glfw_keys.GLFW_KEY_ESCAPE && action == glfw.GLFW_PRESS)
     {
         c.printf("Exit requested by user\n");
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        glfw.glfwSetWindowShouldClose(window, glfw.GLFW_TRUE);
     }
     // switch (action)
     // {

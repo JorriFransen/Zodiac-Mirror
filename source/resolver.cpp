@@ -2079,27 +2079,6 @@ namespace Zodiac
 			return decl;
 		}
 
-        if (allow_import_check && scope->is_module_scope)
-        {
-            for (uint64_t i = 0; i < BUF_LENGTH(scope->module->import_decls); i++)
-            {
-                AST_Declaration* global_decl = scope->module->import_decls[i];
-                if ((global_decl->flags & AST_DECL_FLAG_RESOLVED) &&
-                    global_decl->kind == AST_DECL_IMPORT &&
-                    global_decl->import.import_all)
-                {
-                    auto import_result =
-                        find_declaration(context,
-                                         global_decl->import.module->module_scope,
-                                         identifier, false);
-                    if (import_result && !(import_result->kind == AST_DECL_IMPORT))
-                    {
-                        return import_result;
-                    }
-                }
-            }
-        }
-
         if (scope->parent)
         {
             return find_declaration(context, scope->parent, identifier, allow_import_check);

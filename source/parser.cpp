@@ -264,17 +264,11 @@ namespace Zodiac
             assert(!type_spec);
 
             AST_Identifier* import_module_ident = parse_identifier(parser);
-            bool import_all = false;
             assert(import_module_ident);
-            if (match_token(parser, TOK_DOT))
-            {
-                expect_token(parser, TOK_MUL);
-                import_all = true;
-            }
             expect_token(parser, TOK_SEMICOLON);
 
             return ast_import_declaration_new(parser->context, identifier->file_pos, identifier,
-                                              import_module_ident, import_all);
+                                              import_module_ident);
         }
 		else if (match_token(parser, TOK_KW_TYPEDEF))
 		{
