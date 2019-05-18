@@ -1246,7 +1246,13 @@ namespace Zodiac
             {
                 return base_hash;
                 break;
-            };
+            }
+
+            case AST_TYPE_ENUM:
+            {
+                return hash_mix(base_hash, ast_get_type_hash(type->enum_type.base_type));
+                break;
+            }
 
             default: assert(false);
         }
