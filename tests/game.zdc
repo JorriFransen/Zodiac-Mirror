@@ -73,7 +73,7 @@ key_callback :: (window: *GLFWwindow, key: int, scancode: int, action: int, mods
 {
     using glfw_keys;
 
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    if (key == GLFWkey.GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
         c.printf("Exit requested by user\n");
         glfwSetWindowShouldClose(window, GLFW_TRUE);

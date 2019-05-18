@@ -302,6 +302,10 @@ namespace Zodiac
         else if (match_token(parser, TOK_KW_ENUM))
         {
             BUF(AST_Enum_Member_Decl*) member_decls = parse_enum_aggregate(parser, scope);
+            if (!member_decls)
+            {
+                return nullptr;
+            }
             return ast_enum_declaration_new(parser->context, identifier->file_pos, identifier,
                                             member_decls);
         }
@@ -500,10 +504,24 @@ namespace Zodiac
             {
                 return nullptr;
             }
+
+            AST_Expression* value_expr = nullptr;
+
+            if (match_token(parser, TOK_COLON))
+            {
+                expect_token(parser, TOK_COLON);
+                value_expr = parse_expression(parser, scope);
+                if (!value_expr)
+                {
+                    return nullptr;
+                }
+            }
             expect_token(parser, TOK_SEMICOLON);
 
-            AST_Enum_Member_Decl* member_decl = ast_enum_member_decl_new(parser->context, identifier->file_pos,
-                                                                         identifier, nullptr);
+            AST_Enum_Member_Decl* member_decl = ast_enum_member_decl_new(parser->context,
+                                                                         identifier->file_pos,
+                                                                         identifier,
+                                                                         value_expr);
             BUF_PUSH(result, member_decl);
         }
 

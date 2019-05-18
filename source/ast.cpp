@@ -488,13 +488,6 @@ namespace Zodiac
         assert(context);
         assert(identifier);
 
-        if (value_expression)
-        {
-            assert(value_expression->kind == AST_EXPR_IDENTIFIER ||
-                   value_expression->kind == AST_EXPR_INTEGER_LITERAL);
-            assert(false);
-        }
-
         AST_Enum_Member_Decl* emd = arena_alloc(context->arena, AST_Enum_Member_Decl);
         emd->file_pos = file_pos;
         emd->identifier = identifier;

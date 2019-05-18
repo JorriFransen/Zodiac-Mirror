@@ -557,10 +557,26 @@ namespace Zodiac
         bool result = true;
 
         auto num_members = BUF_LENGTH(declaration->enum_decl.members);
+        int64_t index_value = 0;
         for (uint64_t i = 0; i < num_members; i++)
         {
             AST_Enum_Member_Decl* member_decl = declaration->enum_decl.members[i];
-            assert(!member_decl->value_expression);
+
+            if (member_decl->value_expression)
+            {
+                result &= try_resolve_expression(resolver, member_decl->value_expression, scope);
+                if (!result)
+                {
+                    return false;
+                }
+                assert(member_decl->value_expression->type->flags & AST_TYPE_FLAG_INT);
+                if (member_decl->value_expression->type == Builtin::type_int)
+                {
+                    index_value = const_interpret_s64_expression(member_decl->value_expression,
+                                                                 scope);
+                }
+                else assert(false);
+            }
 
             // Check for duplicates
             for (uint64_t j = i + 1; j < num_members; j++)
@@ -569,7 +585,8 @@ namespace Zodiac
                 assert(member_decl->identifier->atom != other->identifier->atom);
             }
 
-            member_decl->index_value = i;
+            member_decl->index_value = index_value;
+            index_value++;
         }
 
         if (result)
