@@ -281,6 +281,7 @@ namespace Zodiac
         AST_DECL_AGGREGATE_TYPE,
         AST_DECL_ENUM_TYPE,
 		AST_DECL_TYPEDEF,
+        AST_DECL_USING,
     };
 
     struct AST_Function_Declaration
@@ -409,6 +410,11 @@ namespace Zodiac
 				AST_Type* type;
 			} typedef_decl;
 
+            struct
+            {
+                AST_Identifier* identifier;
+                AST_Declaration* scope_decl;
+            } using_decl;
         };
 
         void* gen_data = nullptr;
@@ -526,6 +532,8 @@ namespace Zodiac
         AST_Scope* parent = nullptr;
         bool is_module_scope = false;
         AST_Module* module = nullptr;
+
+        BUF(AST_Module*) using_modules = nullptr;
     };
 
     enum AST_Directive_Kind
@@ -613,6 +621,10 @@ namespace Zodiac
                                                    AST_Expression* cond_expr,
                                                    AST_Declaration* then_declaration,
                                                    AST_Declaration* else_declaration);
+    AST_Declaration* ast_using_declaration_new(Context* context, File_Pos file_pos,
+                                               AST_Identifier* identifier,
+                                               AST_Declaration_Location location,
+                                               bool global);
     AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos,
                                                BUF(AST_Declaration*) block_decls);
     AST_Declaration* ast_static_assert_declaration_new(Context* context, File_Pos file_pos,

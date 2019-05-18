@@ -34,7 +34,8 @@ namespace Zodiac
                 directive = parse_directive(parser);
             }
             AST_Declaration* global_decl = parse_declaration(parser, ast_module->module_scope,
-                                                             true, directive);
+                                                             true, directive,
+                                                             AST_DECL_LOC_GLOBAL);
             if (!global_decl)
                 break;
 
@@ -124,6 +125,11 @@ namespace Zodiac
         if (is_token(parser, TOK_KW_STATIC_ASSERT))
         {
             return parse_static_assert_declaration(parser, global, scope);
+        }
+
+        if (is_token(parser, TOK_KW_USING))
+        {
+            return parse_using_declaration(parser, location, global, scope);
         }
 
         AST_Identifier* identifier = parse_identifier(parser);
@@ -442,6 +448,23 @@ namespace Zodiac
         return ast_static_assert_declaration_new(parser->context, ft.file_pos, assert_expr);
     }
 
+    static AST_Declaration* parse_using_declaration(Parser* parser, AST_Declaration_Location location,
+                                                    bool global, AST_Scope* scope)
+    {
+        assert(parser);
+        assert(location != AST_DECL_LOC_INVALID);
+        assert(scope);
+
+        auto ft = current_token(parser);
+
+        expect_token(parser, TOK_KW_USING);
+
+        AST_Identifier* ident = parse_identifier(parser);
+        expect_token(parser, TOK_SEMICOLON);
+
+        return ast_using_declaration_new(parser->context, ft.file_pos, ident, location, global);
+    }
+
     static BUF(AST_Declaration*) parse_aggregate(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
@@ -530,15 +553,29 @@ namespace Zodiac
                 break;
             }
 
+            case TOK_KW_USING:
+            {
+                auto ft = current_token(parser);
+                AST_Declaration_Location location = AST_DECL_LOC_LOCAL;
+                if (scope->is_module_scope)
+                {
+                    location = AST_DECL_LOC_GLOBAL;
+                }
+                AST_Declaration* decl = parse_using_declaration(parser, location,
+                                                                scope->is_module_scope,
+                                                                scope);
+                if (!decl)
+                {
+                    return nullptr;
+                }
+                return ast_declaration_statement_new(parser->context, ft.file_pos, decl);
+            }
+
             default: break;
         }
 
-        // AST_Identifier* identifier = parse_identifier(parser);
         AST_Expression* lvalue_expr = parse_expression(parser, scope);
-        // if (!identifier)
-        // {
-        //     return nullptr;
-        // }
+
         if (!lvalue_expr)
         {
             return nullptr;

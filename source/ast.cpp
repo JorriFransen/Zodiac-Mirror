@@ -387,6 +387,23 @@ namespace Zodiac
         return result;
     }
 
+    AST_Declaration* ast_using_declaration_new(Context* context, File_Pos file_pos,
+                                               AST_Identifier* identifier,
+                                               AST_Declaration_Location location,
+                                               bool global)
+    {
+        assert(context);
+        assert(identifier);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_USING,
+                                                      location, nullptr, nullptr, global);
+
+        result->using_decl.identifier = identifier;
+        result->using_decl.scope_decl = nullptr;
+
+        return result;
+    }
+
     AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos,
                                                BUF(AST_Declaration*) block_decls)
     {
@@ -857,6 +874,7 @@ namespace Zodiac
         result->parent = parent_scope;
         result->is_module_scope = is_module_scope;
         result->module = module;
+        result->using_modules = nullptr;
 
         return result;
     }
@@ -957,7 +975,8 @@ namespace Zodiac
 				}
 			}
 		}
-		else
+
+        if (!scope->module)
 		{
             assert(!scope->parent);
 			for (uint64_t i = 0; i < BUF_LENGTH(context->builtin_decls); i++)

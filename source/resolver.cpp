@@ -169,6 +169,12 @@ namespace Zodiac
                         break;
                     }
 
+                    case AST_DECL_USING:
+                    {
+                        result &= try_resolve_using_declaration(resolver, declaration, scope);
+                        break;;
+                    }
+
                     default:
                         assert(false);
                         break;
@@ -600,6 +606,34 @@ namespace Zodiac
 
 		return result;
 	}
+
+    static bool try_resolve_using_declaration(Resolver* resolver, AST_Declaration* declaration,
+                                              AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(declaration);
+        assert(declaration->kind == AST_DECL_USING);
+        assert(scope);
+
+        AST_Identifier* module_ident = declaration->using_decl.identifier;
+
+        bool result = try_resolve_identifier(resolver, module_ident, scope);
+
+        if (!result)
+        {
+            report_undeclared_identifier(resolver, module_ident->file_pos, module_ident);
+            return false;
+        }
+
+        assert(module_ident->declaration);
+        AST_Declaration* import_decl = module_ident->declaration;
+        assert(import_decl->kind == AST_DECL_IMPORT);
+
+        assert(import_decl->import.module);
+        BUF_PUSH(scope->using_modules, import_decl->import.module);
+
+        return true;
+    }
 
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,
                                       AST_Scope* scope, AST_Statement* break_context)
@@ -2078,6 +2112,19 @@ namespace Zodiac
 		{
 			return decl;
 		}
+
+        if (scope->using_modules)
+        {
+            for (uint64_t i = 0; i < BUF_LENGTH(scope->using_modules); i++)
+            {
+                AST_Module* um = scope->using_modules[i];
+                decl = ast_scope_find_declaration(context, um->module_scope, identifier);
+                if (decl)
+                {
+                    return decl;
+                }
+            }
+        }
 
         if (scope->parent)
         {

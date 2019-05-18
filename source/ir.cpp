@@ -313,6 +313,11 @@ namespace Zodiac
 				break;
 			}
 
+            case AST_DECL_USING:
+            {
+                break;
+            }
+
             default: assert(false);
         }
     }
@@ -328,20 +333,27 @@ namespace Zodiac
             case AST_STMT_DECLARATION:
             {
                 AST_Declaration* decl = statement->declaration;
-                assert(decl->kind == AST_DECL_MUTABLE);
-                assert(decl->location == AST_DECL_LOC_LOCAL);
-
-                IR_Value* allocl = ir_builder_emit_allocl(ir_builder, decl->mutable_decl.type,
-                                                          decl->identifier->atom.data);
-
-                ir_builder_push_value_and_decl(ir_builder, allocl, decl);
-
-                AST_Expression* init_expr = decl->mutable_decl.init_expression;
-                if (init_expr)
+                if (decl->kind == AST_DECL_MUTABLE)
                 {
-                    IR_Value* init_value = ir_builder_emit_expression(ir_builder, init_expr);
-                    ir_builder_emit_storel(ir_builder, allocl, init_value);
+                    assert(decl->location == AST_DECL_LOC_LOCAL);
+
+                    IR_Value* allocl = ir_builder_emit_allocl(ir_builder, decl->mutable_decl.type,
+                                                            decl->identifier->atom.data);
+
+                    ir_builder_push_value_and_decl(ir_builder, allocl, decl);
+
+                    AST_Expression* init_expr = decl->mutable_decl.init_expression;
+                    if (init_expr)
+                    {
+                        IR_Value* init_value = ir_builder_emit_expression(ir_builder, init_expr);
+                        ir_builder_emit_storel(ir_builder, allocl, init_value);
+                    }
                 }
+                else if (decl->kind == AST_DECL_USING)
+                {
+                    // Do nothing
+                }
+                else assert(false);
                 break;
             }
 

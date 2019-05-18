@@ -59,6 +59,8 @@ namespace Zodiac
                                                   AST_Scope* scope);
 	static bool try_resolve_typedef_declaration(Resolver* resolver, AST_Declaration* declaration,
 		                                        AST_Scope* scope);
+    static bool try_resolve_using_declaration(Resolver* resolver, AST_Declaration* declaration,
+                                              AST_Scope* scope);
 
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,
                                       AST_Scope* scope, AST_Statement* break_context);
