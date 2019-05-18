@@ -42,12 +42,24 @@ namespace Zodiac
 		assert(argc > 0);
 		assert(argv);
 
+#define BOOL_OPTION(long_name, short_name) \
+    { OPTION_BOOL, #long_name, short_name, offsetof(Options, long_name) }
+
+        Option option_templates[] =
+        {
+            BOOL_OPTION(verbose, 'v'),
+            BOOL_OPTION(print_ir, 'p'),
+            BOOL_OPTION(execute_ir, 'e'),
+        };
+
 		const char* exe_name = argv[0];
 		argv++;
 		argc--;
 
 		Option_Parse_Context opc;
 		opc.options = options;
+        opc.templates = option_templates;
+        opc.template_count = sizeof(option_templates);
 		opc.options->exe_name = exe_name;
 		opc.arg_count = argc;
 		opc.arg_index = 0;
@@ -79,43 +91,50 @@ namespace Zodiac
 			if (arg_length > 2 && arg[1] == '-')
 			{
 				const char* option_name = &arg[2];
+                result = zodiac_match_long_option(opc, option_name);
 
-				if (strcmp(option_name, "print_ir") == 0)
-				{
-					opc->options->print_ir = true;
-				}
-				else if (strcmp(option_name, "execute_ir") == 0)
-				{
-					opc->options->execute_ir = true;
-				}
-				else
-				{
+				// if (strcmp(option_name, "print_ir") == 0)
+				// {
+				// 	opc->options->print_ir = true;
+				// }
+				// else if (strcmp(option_name, "execute_ir") == 0)
+				// {
+				// 	opc->options->execute_ir = true;
+				// }
+				// else
+				// {
+				// 	fprintf(stderr, "Unrecognized option: %s\n", option_name);
+				// 	result = false;
+				// }
+                if (!result)
+                {
 					fprintf(stderr, "Unrecognized option: %s\n", option_name);
-					result = false;
-				}
+                }
 			}
 			else
 			{
 				for (auto i = 1; i < arg_length; i++)
 				{
-					switch (arg[i])
-					{
-						case 'v':
-						{
-							opc->options->verbose = true;
-							break;
-						}
+                    result = zodiac_match_short_option(opc, arg[i]);
+					// switch (arg[i])
+					// {
+					// 	case 'v':
+					// 	{
+					// 		opc->options->verbose = true;
+					// 		break;
+					// 	}
 
-						default:
-						{
-							fprintf(stderr, "Unrecognized option: '%c'\n", arg[i]);
-							result = false;
-							break;
-						}
-					}
+					// 	default:
+					// 	{
+					// 		fprintf(stderr, "Unrecognized option: '%c'\n", arg[i]);
+					// 		result = false;
+					// 		break;
+					// 	}
+					// }
 
 					if (!result)
 					{
+                        fprintf(stderr, "Unrecognized option: '%c'\n", arg[i]);
 						break;
 					}
 				}
@@ -130,6 +149,57 @@ namespace Zodiac
 		opc->arg_index++;
 		return result;
 	}
+
+    bool zodiac_match_long_option(Option_Parse_Context* opc, const char* option_name)
+    {
+        assert(opc);
+        assert(option_name);
+
+        for (uint64_t i = 0; i < opc->template_count; i++)
+        {
+            const Option& ot = opc->templates[i];
+            if (ot.long_name && strcmp(option_name, ot.long_name) == 0)
+            {
+                switch (ot.kind)
+                {
+                    case OPTION_BOOL:
+                    {
+                        *((bool*)((uint8_t*)opc->options + ot.option_offset)) = true;
+                        return true;
+                        break;
+                    }
+
+                default: assert(false);
+                }
+            }
+        }
+
+        return false;
+    }
+
+    bool zodiac_match_short_option(Option_Parse_Context* opc, char c)
+    {
+        for (uint64_t i = 0; i < opc->template_count; i++)
+        {
+            const Option& ot = opc->templates[i];
+            if (ot.short_name && c == ot.short_name)
+            {
+                switch (ot.kind)
+                {
+                    case OPTION_BOOL:
+                    {
+                        *((bool*)((uint8_t*)opc->options + ot.option_offset)) = true;
+                        return true;
+                        break;
+                    }
+
+                default: assert(false);
+                }
+            }
+        }
+
+        return false;
+    }
 
     AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path,
 		    const Atom& module_name)
@@ -157,7 +227,8 @@ namespace Zodiac
 		return module;
     }
 
-    AST_Module* zodiac_compile_module(Context* context, const Atom& module_path, const Atom& module_name)
+    AST_Module* zodiac_compile_module(Context* context, const Atom& module_path,
+                                      const Atom& module_name)
     {
         assert(context);
 

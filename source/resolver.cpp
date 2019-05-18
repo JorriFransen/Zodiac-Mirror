@@ -2,7 +2,6 @@
 
 #include "builtin.h"
 #include "const_interpreter.h"
-#include "types.h"
 
 #include <string.h>
 #include <stdarg.h>

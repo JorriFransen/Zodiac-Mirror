@@ -42,9 +42,27 @@ namespace Zodiac
 		bool execute_ir = false;
     };
 
+    enum Option_Kind
+    {
+        OPTION_INVALID,
+        OPTION_BOOL,
+    };
+
+    struct Option
+    {
+        Option_Kind kind = OPTION_INVALID;
+        const char* long_name = nullptr;
+        char short_name = 0;
+
+        uint64_t option_offset = 0;
+    };
+
 	struct Option_Parse_Context
 	{
-		Options* options;
+		Options* options = nullptr;
+        Option* templates = nullptr;
+        uint64_t template_count;
+
 		uint32_t arg_count = 0;
 		uint32_t arg_index = 0;
 		char** args = nullptr;
@@ -78,6 +96,8 @@ namespace Zodiac
 
 	bool zodiac_parse_options(Options* options, int argc, char** argv);
 	bool zodiac_parse_option_argument(Option_Parse_Context* opc);
+    bool zodiac_match_long_option(Option_Parse_Context* opc, const char* option_name);
+    bool zodiac_match_short_option(Option_Parse_Context* opc, char c);
 
     AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path,
                                              const Atom& module_name);

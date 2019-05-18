@@ -34,7 +34,6 @@ set (ZODIAC_COMPILER_SOURCE
     source/platform.cpp
     source/resolver.cpp
     source/token.cpp
-    source/types.cpp
 )
 
 add_subdirectory(lib/dyncall-1.0/)
