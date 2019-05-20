@@ -55,8 +55,10 @@ namespace Zodiac
 		return false;
     }
 
-    int64_t const_interpret_s64_expression(AST_Expression* expression, AST_Scope* scope)
+    int64_t const_interpret_s64_expression(Context* context, AST_Expression* expression,
+                                           AST_Scope* scope)
     {
+        assert(context);
         assert(expression);
         assert(expression->type == Builtin::type_int);
         assert(scope);
@@ -65,7 +67,7 @@ namespace Zodiac
         {
             case AST_EXPR_UNARY:
             {
-                return const_interpret_s64_unary_expression(expression, scope);
+                return const_interpret_s64_unary_expression(context, expression, scope);
                 break;
             }
 
@@ -74,6 +76,13 @@ namespace Zodiac
                 return expression->integer_literal.u64;
             }
 
+            case AST_EXPR_IDENTIFIER:
+            {
+                AST_Declaration* decl = find_declaration(context, scope, expression->identifier);
+                return const_s64_decl_value(context, decl, scope);
+                break;
+        }
+
             default: assert(false);
         }
 
@@ -81,8 +90,10 @@ namespace Zodiac
 		return 0;
     }
 
-    int64_t const_interpret_s64_unary_expression(AST_Expression* expression, AST_Scope* scope)
+    int64_t const_interpret_s64_unary_expression(Context* context, AST_Expression* expression,
+                                                 AST_Scope* scope)
     {
+        assert(context);
         assert(expression);
         assert(expression->type == Builtin::type_int);
         assert(expression->kind == AST_EXPR_UNARY);
@@ -92,7 +103,8 @@ namespace Zodiac
         {
             case AST_UNOP_MINUS:
             {
-                int64_t value = const_interpret_s64_expression(expression->unary.operand, scope);
+                int64_t value = const_interpret_s64_expression(context,
+                                                               expression->unary.operand, scope);
                 return -value;
                 break;
             }
@@ -102,6 +114,29 @@ namespace Zodiac
 
         assert(false);
 		return 0;
+    }
+
+    int64_t const_s64_decl_value(Context* context, AST_Declaration* declaration, AST_Scope* scope)
+    {
+        assert(context);
+        assert(declaration);
+        assert(scope);
+
+        switch (declaration->kind)
+        {
+            case AST_DECL_CONSTANT_VAR:
+            {
+                return const_interpret_s64_expression(context,
+                                                      declaration->constant_var.init_expression,
+                                                      scope);
+                break;
+            }
+
+            default: assert(false);
+        }
+
+		assert(false);
+		return false;
     }
 
     float const_interpret_float_expression(AST_Expression* expression, AST_Scope* scope)

@@ -55,8 +55,8 @@ namespace Zodiac
     static bool try_resolve_aggregate_type_declaration(Resolver* resolver,
                                                        AST_Declaration* declaration,
                                                        AST_Scope* scope);
-    static bool try_resolve_enum_type_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                                  AST_Scope* scope);
+    static bool try_resolve_enum_aggregate_type_declaration(Resolver* resolver, AST_Declaration* declaration,
+                                                            AST_Scope* scope);
 	static bool try_resolve_typedef_declaration(Resolver* resolver, AST_Declaration* declaration,
 		                                        AST_Scope* scope);
     static bool try_resolve_using_declaration(Resolver* resolver, AST_Declaration* declaration,
@@ -119,7 +119,7 @@ namespace Zodiac
     AST_Type* create_struct_type(Resolver* resolver, AST_Identifier* identifier,
                                  BUF(AST_Declaration*) member_decls);
     AST_Type* create_enum_type(Resolver* resolver, AST_Identifier* identifier,
-                               BUF(AST_Enum_Member_Decl*) member_decls);
+                               BUF(AST_Declaration*) member_decls);
 
     AST_Declaration* find_declaration(Context* context, AST_Scope* scope,
 		                              AST_Identifier* identifier,

@@ -279,7 +279,6 @@ namespace Zodiac
         AST_DECL_STATIC_ASSERT,
         AST_DECL_IMPORT,
         AST_DECL_AGGREGATE_TYPE,
-        AST_DECL_ENUM_TYPE,
 		AST_DECL_TYPEDEF,
         AST_DECL_USING,
     };
@@ -328,15 +327,7 @@ namespace Zodiac
     enum AST_Aggregate_Declaration_Kind
     {
         AST_AGG_DECL_STRUCT,
-    };
-
-    struct AST_Enum_Member_Decl
-    {
-        File_Pos file_pos = {};
-        AST_Identifier* identifier = nullptr;
-        AST_Expression* value_expression = nullptr;
-        uint64_t index_value = 0;
-        bool index_assigned = false;
+        AST_AGG_DECL_ENUM,
     };
 
     struct AST_Declaration
@@ -395,15 +386,10 @@ namespace Zodiac
             struct
             {
                 AST_Aggregate_Declaration_Kind kind;
-                AST_Type* type = nullptr;
+                AST_Type* type;
                 BUF(AST_Declaration*) aggregate_declarations;
+                AST_Scope* scope;
             } aggregate_type;
-
-            struct
-            {
-                BUF(AST_Enum_Member_Decl*) members;
-                AST_Type* type = nullptr;
-            } enum_decl;
 
 			struct
 			{
@@ -466,13 +452,8 @@ namespace Zodiac
             struct
             {
                 BUF(AST_Declaration*) member_declarations;
+                AST_Type* base_type; // for enums
             } aggregate_type;
-
-            struct
-            {
-                BUF(AST_Enum_Member_Decl*) member_declarations;
-                AST_Type* base_type;
-            } enum_type;
 
             struct
             {
@@ -535,6 +516,7 @@ namespace Zodiac
         AST_Module* module = nullptr;
 
         BUF(AST_Module*) using_modules = nullptr;
+        BUF(AST_Declaration*) using_declarations = nullptr;
     };
 
     enum AST_Directive_Kind
@@ -635,13 +617,12 @@ namespace Zodiac
                                                 AST_Identifier* import_module_identifier);
     AST_Declaration* ast_struct_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
-                                                BUF(AST_Declaration*) member_decls);
+                                                BUF(AST_Declaration*) member_decls,
+                                                AST_Scope* scope);
     AST_Declaration* ast_enum_declaration_new(Context* context, File_Pos file_pos,
                                               AST_Identifier* identifier,
-                                              BUF(AST_Enum_Member_Decl*) member_decl);
-    AST_Enum_Member_Decl* ast_enum_member_decl_new(Context* context, File_Pos file_pos,
-                                                   AST_Identifier* identifier,
-                                                   AST_Expression* value_expression);
+                                              BUF(AST_Declaration*) member_decl,
+                                              AST_Scope* scope);
 	AST_Declaration* ast_typedef_declaration_new(Context* context, File_Pos file_pos,
 		                                         AST_Identifier* identifier,
 		                                         AST_Type_Spec* type_spec);
@@ -679,7 +660,7 @@ namespace Zodiac
     AST_Type* ast_type_static_array_new(Context* context, AST_Type* base_type, uint64_t count);
     AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations,
                                   const char* name, uint64_t bit_size);
-    AST_Type* ast_type_enum_new(Context* context, BUF(AST_Enum_Member_Decl*) member_decls,
+    AST_Type* ast_type_enum_new(Context* context, BUF(AST_Declaration*) member_decls,
                                 AST_Type* base_type);
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type);

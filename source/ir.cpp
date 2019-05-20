@@ -16,7 +16,8 @@ namespace Zodiac
         ir_builder->arena = arena_create(MB(1));
         ir_builder->result = {};
 
-        ir_builder->value_decl_hash = (IR_Value_And_Decl*)mem_alloc(sizeof(IR_Value_And_Decl) * 512);
+        ir_builder->value_decl_hash =
+            (IR_Value_And_Decl*)mem_alloc(sizeof(IR_Value_And_Decl) * 512);
         ir_builder->value_decl_count = 512;
 
         ir_builder->current_function = nullptr;
@@ -124,7 +125,8 @@ namespace Zodiac
 
 			case AST_DECL_STATIC_IF:
 			{
-				bool cond = const_interpret_bool_expression(ir_builder->context, decl->static_if.cond_expr,
+				bool cond = const_interpret_bool_expression(ir_builder->context,
+                                                            decl->static_if.cond_expr,
 					                                        ir_builder->ast_module->module_scope);
 				if (cond)
 				{
@@ -299,12 +301,18 @@ namespace Zodiac
 
             case AST_DECL_AGGREGATE_TYPE:
             {
-                // Do nothing for now?
-                break;
-            }
-
-            case AST_DECL_ENUM_TYPE:
-            {
+                if (global_decl->aggregate_type.kind == AST_AGG_DECL_ENUM)
+                {
+                    auto agg_members = global_decl->aggregate_type.aggregate_declarations;
+                    for (uint64_t i = 0; i < BUF_LENGTH(agg_members); i++)
+                    {
+                        AST_Declaration* enum_mem = agg_members[i];
+                        AST_Expression* init_expr = enum_mem->constant_var.init_expression;
+                        IR_Value* value = ir_builder_emit_expression(ir_builder, init_expr);
+                        BUF_PUSH(ir_builder->result.global_constants, value);
+                        ir_builder_push_value_and_decl(ir_builder, value, enum_mem);
+                    }
+                }
                 break;
             }
 
@@ -924,7 +932,8 @@ namespace Zodiac
                 assert(callee_decl);
 				if (callee_decl->kind == AST_DECL_FUNC)
 				{
-					IR_Value* callee_value = ir_builder_value_for_declaration(ir_builder, callee_decl);
+					IR_Value* callee_value = ir_builder_value_for_declaration(ir_builder,
+                                                                              callee_decl);
 					assert(callee_value);
 					assert(callee_value->kind == IRV_FUNCTION);
 
@@ -1088,28 +1097,34 @@ namespace Zodiac
         {
             assert(base_expression->identifier->declaration);
             auto base_decl = base_expression->identifier->declaration;
-            assert(base_decl->kind == AST_DECL_IMPORT);
 
-            return ir_builder_emit_expression(ir_builder, member_expression);
-        }
-        else if (base_expression->type->kind == AST_TYPE_ENUM)
-        {
-            AST_Type* enum_type = base_expression->type;
-            AST_Enum_Member_Decl* member = nullptr;
-
-            for (uint64_t i = 0; i < BUF_LENGTH(enum_type->enum_type.member_declarations); i++)
+            if (base_decl->kind == AST_DECL_IMPORT)
             {
-                AST_Enum_Member_Decl* member_decl = enum_type->enum_type.member_declarations[i];
-                if (member_decl->identifier->atom == member_expression->identifier->atom)
-                {
-                    member = member_decl;
-                    break;
-                }
+                return ir_builder_emit_expression(ir_builder, member_expression);
             }
+            else if (base_decl->kind == AST_DECL_AGGREGATE_TYPE &&
+                     base_decl->aggregate_type.kind == AST_AGG_DECL_ENUM)
+            {
+                AST_Declaration* member = nullptr;
+                auto agg_decls = base_decl->aggregate_type.aggregate_declarations;
+                for (uint64_t i = 0; i < BUF_LENGTH(agg_decls); i++)
+                {
+                    AST_Declaration* member_decl = agg_decls[i];
+                    if (member_decl->identifier->atom == member_expression->identifier->atom)
+                    {
+                        member = member_decl;
+                        break;
+                    }
+                }
 
-            assert(member);
-            return ir_integer_literal(ir_builder, enum_type->enum_type.base_type,
-                                      member->index_value);
+                assert(member);
+                assert(member->kind == AST_DECL_CONSTANT_VAR);
+                assert(member->constant_var.init_expression);
+                return ir_builder_emit_expression(ir_builder,
+                                                  member->constant_var.init_expression);
+            }
+            else assert(false);
+
         }
         else
         {
@@ -2004,7 +2019,7 @@ namespace Zodiac
         assert(rhs);
 
         if (lhs->type == rhs->type ||
-            (lhs->type->kind == AST_TYPE_ENUM && (lhs->type->enum_type.base_type == rhs->type)))
+            (lhs->type->kind == AST_TYPE_ENUM && (lhs->type->aggregate_type.base_type == rhs->type)))
         {
             IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
             IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_EQ, lhs, rhs, result);
@@ -2025,7 +2040,7 @@ namespace Zodiac
         assert(rhs);
 
         if (lhs->type == rhs->type ||
-            (lhs->type->kind == AST_TYPE_ENUM && (lhs->type->enum_type.base_type == rhs->type)))
+            (lhs->type->kind == AST_TYPE_ENUM && (lhs->type->aggregate_type.base_type == rhs->type)))
         {
             IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
             IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_NEQ, lhs, rhs, result);

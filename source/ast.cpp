@@ -131,7 +131,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_boolean_literal_expression_new(Context* context, File_Pos file_pos, bool value)
+    AST_Expression* ast_boolean_literal_expression_new(Context* context, File_Pos file_pos,
+                                                       bool value)
     {
         assert(context);
 
@@ -147,7 +148,8 @@ namespace Zodiac
         return ast_expression_new(context, file_pos, AST_EXPR_NULL_LITERAL);
     }
 
-    AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos, Atom value)
+    AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos,
+                                                      Atom value)
     {
         assert(context);
 
@@ -324,7 +326,7 @@ namespace Zodiac
     {
         assert(context);
         assert(identifier);
-        assert(init_expr);
+        // assert(init_expr);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_CONSTANT_VAR,
                                                       location,
@@ -447,11 +449,13 @@ namespace Zodiac
 
     AST_Declaration* ast_struct_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
-                                                BUF(AST_Declaration*) member_decls)
+                                                BUF(AST_Declaration*) member_decls,
+                                                AST_Scope* scope)
     {
         assert(context);
         assert(identifier);
         // assert(member_decls);
+        assert(scope);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
                                                       AST_DECL_LOC_GLOBAL, identifier,
@@ -459,42 +463,31 @@ namespace Zodiac
         result->aggregate_type.kind = AST_AGG_DECL_STRUCT;
         result->aggregate_type.type = nullptr;
         result->aggregate_type.aggregate_declarations = member_decls;
+        result->aggregate_type.scope = scope;
 
         return result;
     }
 
     AST_Declaration* ast_enum_declaration_new(Context* context, File_Pos file_pos,
                                               AST_Identifier* identifier,
-                                              BUF(AST_Enum_Member_Decl*) member_decls)
+                                              BUF(AST_Declaration*) member_decls,
+                                              AST_Scope* scope)
     {
         assert(context);
         assert(identifier);
         assert(member_decls);
+        assert(scope);
 
-        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_ENUM_TYPE,
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
                                                       AST_DECL_LOC_GLOBAL, identifier,
                                                       nullptr, true);
 
-        result->enum_decl.members = member_decls;
-        result->enum_decl.type = nullptr;
+        result->aggregate_type.kind = AST_AGG_DECL_ENUM;
+        result->aggregate_type.type = nullptr;
+        result->aggregate_type.aggregate_declarations = member_decls;
+        result->aggregate_type.scope = scope;
 
         return result;
-    }
-
-    AST_Enum_Member_Decl* ast_enum_member_decl_new(Context* context, File_Pos file_pos,
-                                                   AST_Identifier* identifier,
-                                                   AST_Expression* value_expression)
-    {
-        assert(context);
-        assert(identifier);
-
-        AST_Enum_Member_Decl* emd = arena_alloc(context->arena, AST_Enum_Member_Decl);
-        emd->file_pos = file_pos;
-        emd->identifier = identifier;
-        emd->value_expression = value_expression;
-        emd->index_assigned = false;
-
-        return emd;
     }
 
 	AST_Declaration* ast_typedef_declaration_new(Context* context, File_Pos file_pos,
@@ -739,13 +732,14 @@ namespace Zodiac
         assert(context);
         // assert(member_declarations);
 
-        AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE, name, bit_size);
+        AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE, name,
+                                        bit_size);
         result->aggregate_type.member_declarations = member_declarations;
 
         return result;
     }
 
-    AST_Type* ast_type_enum_new(Context* context, BUF(AST_Enum_Member_Decl*) member_decls,
+    AST_Type* ast_type_enum_new(Context* context, BUF(AST_Declaration*) member_decls,
                                 AST_Type* base_type)
     {
         assert(context);
@@ -756,8 +750,8 @@ namespace Zodiac
 
         AST_Type* result = ast_type_new(context, AST_TYPE_ENUM, AST_TYPE_FLAG_NONE,
                                         {}, base_type->bit_size);
-        result->enum_type.member_declarations = member_decls;
-        result->enum_type.base_type = base_type;
+        result->aggregate_type.member_declarations = member_decls;
+        result->aggregate_type.base_type = base_type;
 
         return result;
     }
@@ -869,6 +863,7 @@ namespace Zodiac
         result->is_module_scope = is_module_scope;
         result->module = module;
         result->using_modules = nullptr;
+        result->using_declarations = nullptr;
 
         return result;
     }
@@ -1225,9 +1220,10 @@ namespace Zodiac
 
             case AST_TYPE_STRUCT:
             {
-                for (uint64_t i = 0; i < BUF_LENGTH(type->aggregate_type.member_declarations); i++)
+                auto member_decls = type->aggregate_type.member_declarations;
+                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
                 {
-                    AST_Declaration* member_decl = type->aggregate_type.member_declarations[i];
+                    AST_Declaration* member_decl = member_decls[i];
                     assert(member_decl->kind == AST_DECL_MUTABLE);
                     uint64_t member_hash = ast_get_type_hash(member_decl->mutable_decl.type);
                     base_hash = hash_mix(base_hash, member_hash);
@@ -1244,7 +1240,7 @@ namespace Zodiac
 
             case AST_TYPE_ENUM:
             {
-                return hash_mix(base_hash, ast_get_type_hash(type->enum_type.base_type));
+                return hash_mix(base_hash, ast_get_type_hash(type->aggregate_type.base_type));
                 break;
             }
 

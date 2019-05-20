@@ -151,14 +151,17 @@ namespace Zodiac
 
                     case AST_DECL_AGGREGATE_TYPE:
                     {
-                        result &= try_resolve_aggregate_type_declaration(resolver, declaration,
-                                                                         scope);
-                        break;
-                    }
-
-                    case AST_DECL_ENUM_TYPE:
-                    {
-                        result &= try_resolve_enum_type_declaration(resolver, declaration, scope);
+                        if (declaration->aggregate_type.kind == AST_AGG_DECL_ENUM)
+                        {
+                            result &= try_resolve_enum_aggregate_type_declaration(resolver,
+                                                                                  declaration,
+                                                                                  scope);
+                        }
+                        else
+                        {
+                            result &= try_resolve_aggregate_type_declaration(resolver, declaration,
+                                                                             scope);
+                        }
                         break;
                     }
 
@@ -184,16 +187,18 @@ namespace Zodiac
             {
                 resolver->unresolved_decl_count++;
             }
-            else if (declaration->location != AST_DECL_LOC_AGGREGATE_MEMBER)
+            else
             {
                 declaration->flags |= AST_DECL_FLAG_RESOLVED;
-				ast_scope_push_declaration(scope, declaration);
-
-                if (resolver->current_func_decl &&
-                    declaration->location == AST_DECL_LOC_LOCAL)
+                ast_scope_push_declaration(scope, declaration);
+                if (declaration->location != AST_DECL_LOC_AGGREGATE_MEMBER)
                 {
-                    BUF_PUSH(resolver->current_func_decl->function.locals,
-                             declaration);
+                    if (resolver->current_func_decl &&
+                        declaration->location == AST_DECL_LOC_LOCAL)
+                    {
+                        BUF_PUSH(resolver->current_func_decl->function.locals,
+                                declaration);
+                    }
                 }
             }
         }
@@ -354,7 +359,8 @@ namespace Zodiac
         return result;
     }
 
-    static bool try_resolve_constant_var_declaration(Resolver* resolver, AST_Declaration* declaration,
+    static bool try_resolve_constant_var_declaration(Resolver* resolver,
+                                                     AST_Declaration* declaration,
                                                      AST_Scope* scope)
     {
         assert(resolver);
@@ -452,7 +458,8 @@ namespace Zodiac
         return result;
     }
 
-    static bool try_resolve_static_assert_declaration(Resolver* resolver, AST_Declaration* declaration,
+    static bool try_resolve_static_assert_declaration(Resolver* resolver,
+                                                      AST_Declaration* declaration,
                                                       AST_Scope* scope)
     {
         assert(resolver);
@@ -473,7 +480,8 @@ namespace Zodiac
     }
 
     static bool try_resolve_aggregate_type_declaration(Resolver* resolver,
-        AST_Declaration* declaration, AST_Scope* scope)
+                                                       AST_Declaration* declaration,
+                                                       AST_Scope* scope)
     {
         assert(resolver);
         assert(declaration);
@@ -492,7 +500,8 @@ namespace Zodiac
             AST_Declaration* member_decl = aggregate_decls[i];
             assert(member_decl->kind == AST_DECL_MUTABLE);
             assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
-            result &= try_resolve_declaration(resolver, member_decl, scope);
+            result &= try_resolve_declaration(resolver, member_decl,
+                                              declaration->aggregate_type.scope);
         }
 
         if (result && !declaration->aggregate_type.type)
@@ -505,6 +514,51 @@ namespace Zodiac
         if (result)
         {
             assert(declaration->aggregate_type.type);
+        }
+
+        return result;
+    }
+
+    static bool try_resolve_enum_aggregate_type_declaration(Resolver* resolver,
+                                                            AST_Declaration* declaration,
+                                                            AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(declaration);
+        assert(declaration->kind == AST_DECL_AGGREGATE_TYPE);
+        assert(declaration->aggregate_type.kind == AST_AGG_DECL_ENUM);
+        assert(scope);
+
+        auto aggregate_decls = declaration->aggregate_type.aggregate_declarations;
+
+        int64_t index_value = 0;
+        bool result = true;
+        for (uint64_t i = 0; i < BUF_LENGTH(aggregate_decls); i++)
+        {
+            AST_Declaration* member_decl = aggregate_decls[i];
+            assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
+
+            if (!member_decl->constant_var.init_expression)
+            {
+                File_Pos gen_fp = { "<auto generated>", 0, 0, 0 };
+                member_decl->constant_var.init_expression =
+                    ast_integer_literal_expression_new(resolver->context, gen_fp, index_value);
+            }
+
+            result &= try_resolve_declaration(resolver, member_decl,
+                                              declaration->aggregate_type.scope);
+
+            index_value = const_interpret_s64_expression(resolver->context,
+                                                         member_decl->constant_var.init_expression,
+                                                         scope);
+            index_value++;
+        }
+
+        if (result && !declaration->aggregate_type.type)
+        {
+            declaration->aggregate_type.type = create_enum_type(resolver,
+                                                                declaration->identifier,
+                                                                aggregate_decls);
         }
 
         return result;
@@ -546,83 +600,6 @@ namespace Zodiac
         return true;
     }
 
-    static bool try_resolve_enum_type_declaration(Resolver* resolver,
-                                                  AST_Declaration* declaration, AST_Scope* scope)
-    {
-        assert(resolver);
-        assert(declaration);
-        assert(declaration->kind == AST_DECL_ENUM_TYPE);
-        assert(scope);
-
-        bool result = true;
-
-        auto num_members = BUF_LENGTH(declaration->enum_decl.members);
-        int64_t index_value = 0;
-        for (uint64_t i = 0; i < num_members; i++)
-        {
-            AST_Enum_Member_Decl* member_decl = declaration->enum_decl.members[i];
-
-            if (member_decl->value_expression)
-            {
-                if (member_decl->value_expression->kind == AST_EXPR_IDENTIFIER)
-                {
-                    for (uint64_t j = 0; j < BUF_LENGTH(declaration->enum_decl.members); j++)
-                    {
-                        AST_Enum_Member_Decl* other_member_decl = declaration->enum_decl.members[j];
-                        if (member_decl != other_member_decl &&
-                            other_member_decl->identifier->atom == member_decl->value_expression->identifier->atom)
-                        {
-                            assert(other_member_decl->index_assigned);
-                            index_value = other_member_decl->index_value;
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    result &= try_resolve_expression(resolver, member_decl->value_expression, scope);
-                    if (!result)
-                    {
-                        return false;
-                    }
-                    assert(member_decl->value_expression->is_const);
-                    assert(member_decl->value_expression->type->flags & AST_TYPE_FLAG_INT);
-                    if (member_decl->value_expression->type == Builtin::type_int)
-                    {
-                        index_value = const_interpret_s64_expression(member_decl->value_expression,
-                                                                    scope);
-                    }
-                    else assert(false);
-                }
-            }
-
-            // Check for duplicates
-            for (uint64_t j = i + 1; j < num_members; j++)
-            {
-                AST_Enum_Member_Decl* other = declaration->enum_decl.members[j];
-                assert(member_decl->identifier->atom != other->identifier->atom);
-            }
-
-            member_decl->index_value = index_value;
-            member_decl->index_assigned = true;
-            index_value++;
-        }
-
-        if (result)
-        {
-            declaration->enum_decl.type = create_enum_type(resolver, declaration->identifier,
-                                                           declaration->enum_decl.members);
-        }
-
-
-        if (result)
-        {
-            assert(declaration->enum_decl.type);
-        }
-
-        return result;
-    }
-
 	static bool try_resolve_typedef_declaration(Resolver* resolver, AST_Declaration* declaration,
 		                                        AST_Scope* scope)
 	{
@@ -650,22 +627,29 @@ namespace Zodiac
         assert(declaration->kind == AST_DECL_USING);
         assert(scope);
 
-        AST_Identifier* module_ident = declaration->using_decl.identifier;
+        AST_Identifier* using_ident = declaration->using_decl.identifier;
 
-        bool result = try_resolve_identifier(resolver, module_ident, scope);
+        bool result = try_resolve_identifier(resolver, using_ident, scope);
 
         if (!result)
         {
-            report_undeclared_identifier(resolver, module_ident->file_pos, module_ident);
+            report_undeclared_identifier(resolver, using_ident->file_pos, using_ident);
             return false;
         }
 
-        assert(module_ident->declaration);
-        AST_Declaration* import_decl = module_ident->declaration;
-        assert(import_decl->kind == AST_DECL_IMPORT);
+        assert(using_ident->declaration);
+        AST_Declaration* using_decl = using_ident->declaration;
 
-        assert(import_decl->import.module);
-        BUF_PUSH(scope->using_modules, import_decl->import.module);
+        if (using_decl->kind == AST_DECL_IMPORT)
+        {
+            assert(using_decl->import.module);
+            BUF_PUSH(scope->using_modules, using_decl->import.module);
+        }
+        else if (using_decl->kind == AST_DECL_AGGREGATE_TYPE)
+        {
+            BUF_PUSH(scope->using_declarations, using_decl);
+        }
+        else assert(false);
 
         return true;
     }
@@ -732,7 +716,7 @@ namespace Zodiac
                                                  scope, suggested_type);
                 if (result && lvalue_expr->type->kind == AST_TYPE_ENUM)
                 {
-                    assert(lvalue_expr->type->enum_type.base_type ==
+                    assert(lvalue_expr->type->aggregate_type.base_type ==
                            statement->assign.expression->type);
                 }
                 else if (result && lvalue_expr->kind == AST_EXPR_IDENTIFIER)
@@ -780,7 +764,7 @@ namespace Zodiac
                     auto switch_type = switch_expr->type;
                     assert(switch_type->flags & AST_TYPE_FLAG_INT ||
                            (switch_type->kind == AST_TYPE_ENUM) &&
-                            switch_type->enum_type.base_type->flags & AST_TYPE_FLAG_INT);
+                            switch_type->aggregate_type.base_type->flags & AST_TYPE_FLAG_INT);
                 }
 
                 bool found_default = false;
@@ -1040,7 +1024,10 @@ namespace Zodiac
         {
             assert(expression->type ||
                    (expression->kind == AST_EXPR_IDENTIFIER &&
-                    expression->identifier->declaration->kind == AST_DECL_IMPORT));
+                    expression->identifier->declaration->kind == AST_DECL_IMPORT) ||
+                   (expression->kind == AST_EXPR_IDENTIFIER &&
+                       expression->identifier->declaration->kind == AST_DECL_AGGREGATE_TYPE &&
+                       expression->identifier->declaration->aggregate_type.kind == AST_AGG_DECL_ENUM));
         }
 
         return result;
@@ -1446,11 +1433,6 @@ namespace Zodiac
                 expression->type = ident->declaration->constant_var.type;
                 expression->is_const = true;
             }
-            else if (decl->kind == AST_DECL_ENUM_TYPE)
-            {
-                expression->type = ident->declaration->enum_decl.type;
-                expression->is_const = true;
-            }
             else if (decl->kind == AST_DECL_IMPORT)
             {
                 expression->type = nullptr;
@@ -1461,9 +1443,16 @@ namespace Zodiac
                 expression->type = decl->function.type;
                 expression->is_const = true;
             }
+            else if (decl->kind == AST_DECL_AGGREGATE_TYPE &&
+                     decl->aggregate_type.kind == AST_AGG_DECL_ENUM)
+            {
+                expression->is_const = true;
+            }
             else assert(false);
 
-            assert(expression->type || decl->kind == AST_DECL_IMPORT);
+            assert(expression->type || decl->kind == AST_DECL_IMPORT ||
+                   (decl->kind == AST_DECL_AGGREGATE_TYPE &&
+                    decl->aggregate_type.kind == AST_AGG_DECL_ENUM));
         }
 
         return result;
@@ -1501,8 +1490,13 @@ namespace Zodiac
                 }
                 else if (lhs->type->kind == AST_TYPE_ENUM)
                 {
-                    assert(lhs->type->enum_type.base_type == rhs->type);
+                    assert(lhs->type->aggregate_type.base_type == rhs->type);
                     expression->type = rhs->type;
+                }
+                else if (rhs->type->kind == AST_TYPE_ENUM)
+                {
+                    assert(rhs->type->aggregate_type.base_type == lhs->type);
+
                 }
                 else assert(false);
             }
@@ -1542,7 +1536,8 @@ namespace Zodiac
                         if (operand_expr->type == Builtin::type_int)
                         {
                             expression->type = Builtin::type_int;
-                            int64_t value = const_interpret_s64_expression(expression, scope);
+                            int64_t value = const_interpret_s64_expression(resolver->context,
+                                                                           expression, scope);
                             expression->kind = AST_EXPR_INTEGER_LITERAL;
                             expression->integer_literal.u64 = value;
                         }
@@ -1615,7 +1610,8 @@ namespace Zodiac
         assert(base_expression->kind == AST_EXPR_IDENTIFIER);
         assert(member_expression->kind == AST_EXPR_IDENTIFIER);
 
-        AST_Declaration* base_decl = find_declaration(resolver->context, scope, base_expression->identifier);
+        AST_Declaration* base_decl = find_declaration(resolver->context, scope,
+                                                      base_expression->identifier);
         if (!base_decl)
         {
             report_undeclared_identifier(resolver, base_expression->file_pos,
@@ -1623,7 +1619,39 @@ namespace Zodiac
             return false;
         }
 
-        if (base_decl->kind != AST_DECL_IMPORT)
+        if (base_decl->kind == AST_DECL_IMPORT)
+        {
+            assert(base_decl->kind == AST_DECL_IMPORT);
+            assert(base_decl->import.module);
+
+            base_expression->identifier->declaration = base_decl;
+            AST_Module* import_module = base_decl->import.module;
+            AST_Declaration* var_decl = find_declaration(resolver->context,
+				                                         import_module->module_scope,
+                                                         member_expression->identifier);
+            if (!var_decl)
+            {
+                report_undeclared_identifier(resolver, member_expression->file_pos,
+                                             import_module, member_expression->identifier);
+                return false;
+            }
+            assert(var_decl->flags & AST_DECL_FLAG_RESOLVED);
+
+            result &= try_resolve_identifier_expression(resolver, member_expression,
+                                             import_module->module_scope);
+            if (result)
+            {
+                expression->is_const = member_expression->is_const;
+                expression->type = member_expression->type;
+            }
+            return result;
+        }
+        // else if (base_decl->kind == AST_DECL_AGGREGATE_TYPE &&
+        //          base_decl->aggregate_type.kind == AST_AGG_DECL_ENUM)
+        // {
+        //     assert(false);
+        // }
+        else
         {
             result &= try_resolve_expression(resolver, base_expression, scope);
             if (!result)
@@ -1638,7 +1666,12 @@ namespace Zodiac
 
             if (result)
             {
-                if (base_expression->type->kind == AST_TYPE_STRUCT)
+                if (base_decl->kind == AST_DECL_AGGREGATE_TYPE &&
+                         base_decl->aggregate_type.kind == AST_AGG_DECL_ENUM)
+                {
+                    enum_type = base_decl->aggregate_type.type;
+                }
+                else if (base_expression->type->kind == AST_TYPE_STRUCT)
                 {
                     struct_type = base_expression->type;
                 }
@@ -1646,10 +1679,6 @@ namespace Zodiac
                 {
                     assert(base_expression->type->pointer.base->kind == AST_TYPE_STRUCT);
                     struct_type = base_expression->type->pointer.base;
-                }
-                else if (base_decl->kind == AST_DECL_ENUM_TYPE)
-                {
-                    enum_type = base_expression->type;
                 }
                 else assert(false);
             }
@@ -1692,14 +1721,14 @@ namespace Zodiac
                 assert(!struct_type);
 
                 bool found = false;
-                auto member_decls = enum_type->enum_type.member_declarations;
+                auto member_decls = enum_type->aggregate_type.member_declarations;
                 for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
                 {
-                    AST_Enum_Member_Decl* member_decl = member_decls[i];
+                    AST_Declaration* member_decl = member_decls[i];
                     if (member_decl->identifier->atom == member_expression->identifier->atom)
                     {
                         found = true;
-                        type = enum_type->enum_type.base_type;
+                        type = enum_type->aggregate_type.base_type;
                         break;
                     }
                 }
@@ -1719,33 +1748,6 @@ namespace Zodiac
                 expression->type = type;
             }
 
-            return result;
-        }
-        else
-        {
-            assert(base_decl->kind == AST_DECL_IMPORT);
-            assert(base_decl->import.module);
-
-            base_expression->identifier->declaration = base_decl;
-            AST_Module* import_module = base_decl->import.module;
-            AST_Declaration* var_decl = find_declaration(resolver->context,
-				                                         import_module->module_scope,
-                                                         member_expression->identifier);
-            if (!var_decl)
-            {
-                report_undeclared_identifier(resolver, member_expression->file_pos,
-                                             import_module, member_expression->identifier);
-                return false;
-            }
-            assert(var_decl->flags & AST_DECL_FLAG_RESOLVED);
-
-            result &= try_resolve_identifier_expression(resolver, member_expression,
-                                             import_module->module_scope);
-            if (result)
-            {
-                expression->is_const = member_expression->is_const;
-                expression->type = member_expression->type;
-            }
             return result;
         }
     }
@@ -1806,13 +1808,6 @@ namespace Zodiac
                 return false;
             }
         }
-        else if (decl->kind == AST_DECL_ENUM_TYPE)
-        {
-            if (!decl->enum_decl.type)
-            {
-                return false;
-            }
-        }
 		else if (decl->kind == AST_DECL_FUNC)
 		{
 			if (!decl->function.type)
@@ -1823,6 +1818,10 @@ namespace Zodiac
         else if (decl->kind == AST_DECL_IMPORT)
         {
             // Do nothing for now.
+        }
+        else if (decl->kind == AST_DECL_AGGREGATE_TYPE)
+        {
+            // Do nothing for now
         }
         else assert(false);
 
@@ -1878,17 +1877,6 @@ namespace Zodiac
                         }
                         break;
                     }
-
-					case AST_DECL_ENUM_TYPE:
-					{
-						AST_Type* type = type_decl->enum_decl.type;
-						if (type)
-						{
-							*type_dest = type;
-							return true;
-						}
-						break;
-					}
 
 					case AST_DECL_TYPEDEF:
 					{
@@ -2116,7 +2104,7 @@ namespace Zodiac
     }
 
     AST_Type* create_enum_type(Resolver* resolver, AST_Identifier* identifier,
-                               BUF(AST_Enum_Member_Decl*) member_decls)
+                               BUF(AST_Declaration*) member_decls)
     {
         assert(resolver);
         assert(identifier);
@@ -2148,16 +2136,37 @@ namespace Zodiac
 			return decl;
 		}
 
-        if (scope->using_modules)
+        for (uint64_t i = 0; i < BUF_LENGTH(scope->using_modules); i++)
         {
-            for (uint64_t i = 0; i < BUF_LENGTH(scope->using_modules); i++)
+            AST_Module* um = scope->using_modules[i];
+            decl = ast_scope_find_declaration(context, um->module_scope, identifier);
+            if (decl)
             {
-                AST_Module* um = scope->using_modules[i];
-                decl = ast_scope_find_declaration(context, um->module_scope, identifier);
-                if (decl)
+                return decl;
+            }
+        }
+
+        for (uint64_t i = 0; i < BUF_LENGTH(scope->using_declarations); i++)
+        {
+            AST_Declaration* ud = scope->using_declarations[i];
+            if (ud->kind == AST_DECL_AGGREGATE_TYPE &&
+                ud->aggregate_type.kind == AST_AGG_DECL_ENUM)
+            {
+                auto agg_decls = ud->aggregate_type.aggregate_declarations;
+                for (uint64_t j = 0; j < BUF_LENGTH(agg_decls); j++)
                 {
-                    return decl;
+                    AST_Declaration* member_decl = agg_decls[j];
+                    assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
+                    assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
+                    if (member_decl->identifier->atom == identifier->atom)
+                    {
+                        return member_decl;
+                    }
                 }
+            }
+            else
+            {
+                assert(false);
             }
         }
 

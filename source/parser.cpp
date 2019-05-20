@@ -140,7 +140,8 @@ namespace Zodiac
         return parse_declaration(parser, identifier, scope, global, directive, location);
     }
 
-    static AST_Declaration* parse_declaration(Parser* parser, AST_Identifier* identifier, AST_Scope* scope,
+    static AST_Declaration* parse_declaration(Parser* parser, AST_Identifier* identifier,
+                                              AST_Scope* scope,
                                               bool global, AST_Directive* directive,
                                               AST_Declaration_Location location/*= AST_DECL_LOC_INVALID*/)
     {
@@ -159,9 +160,13 @@ namespace Zodiac
             type_spec = parse_type_spec(parser, scope);
         }
 
+        if (location == AST_DECL_LOC_INVALID)
+        {
+            location = global ? AST_DECL_LOC_GLOBAL : AST_DECL_LOC_LOCAL;
+        }
+
         if (is_token(parser, TOK_COLON))
         {
-            auto location = global ? AST_DECL_LOC_GLOBAL : AST_DECL_LOC_LOCAL;
             result = parse_constant_declaration(parser, identifier, type_spec, scope, location);
             if (!result)
             {
@@ -294,20 +299,28 @@ namespace Zodiac
         {
             assert(!type_spec);
 
-            BUF(AST_Declaration*) aggregate_declarations = parse_aggregate(parser, scope);
+            AST_Scope* struct_scope = ast_scope_new(parser->context, scope,
+                                                    parser->result.ast_module,
+                                                    false);
+
+            BUF(AST_Declaration*) aggregate_declarations = parse_aggregate(parser, struct_scope);
 
             return ast_struct_declaration_new(parser->context, identifier->file_pos, identifier,
-                                              aggregate_declarations);
+                                              aggregate_declarations, struct_scope);
         }
         else if (match_token(parser, TOK_KW_ENUM))
         {
-            BUF(AST_Enum_Member_Decl*) member_decls = parse_enum_aggregate(parser, scope);
+            AST_Scope* enum_scope = ast_scope_new(parser->context, scope,
+                                                  parser->result.ast_module,
+                                                  false);
+
+            BUF(AST_Declaration*) member_decls = parse_aggregate(parser, enum_scope, true);
             if (!member_decls)
             {
                 return nullptr;
             }
             return ast_enum_declaration_new(parser->context, identifier->file_pos, identifier,
-                                            member_decls);
+                                            member_decls, enum_scope);
         }
         else
         {
@@ -317,7 +330,8 @@ namespace Zodiac
                 return nullptr;
             }
 
-            return ast_constant_variable_declaration_new(parser->context, identifier->file_pos, identifier,
+            return ast_constant_variable_declaration_new(parser->context, identifier->file_pos,
+                                                         identifier,
                                                          type_spec, init_expression, location);
         }
     }
@@ -435,7 +449,8 @@ namespace Zodiac
         return ast_block_declaration_new(parser->context, ft.file_pos, block_decls);
     }
 
-    static AST_Declaration* parse_static_assert_declaration(Parser* parser, bool global, AST_Scope* scope)
+    static AST_Declaration* parse_static_assert_declaration(Parser* parser, bool global,
+                                                            AST_Scope* scope)
     {
         assert(parser);
         assert(global);
@@ -452,7 +467,8 @@ namespace Zodiac
         return ast_static_assert_declaration_new(parser->context, ft.file_pos, assert_expr);
     }
 
-    static AST_Declaration* parse_using_declaration(Parser* parser, AST_Declaration_Location location,
+    static AST_Declaration* parse_using_declaration(Parser* parser,
+                                                    AST_Declaration_Location location,
                                                     bool global, AST_Scope* scope)
     {
         assert(parser);
@@ -469,7 +485,8 @@ namespace Zodiac
         return ast_using_declaration_new(parser->context, ft.file_pos, ident, location, global);
     }
 
-    static BUF(AST_Declaration*) parse_aggregate(Parser* parser, AST_Scope* scope)
+    static BUF(AST_Declaration*) parse_aggregate(Parser* parser, AST_Scope* scope,
+                                                 bool is_enum/*=false*/)
     {
         assert(parser);
         assert(scope);
@@ -480,48 +497,24 @@ namespace Zodiac
 
         while (!match_token(parser, TOK_RBRACE))
         {
-            AST_Declaration* member_decl = parse_declaration(parser, scope, false,
-                                                             AST_DECL_LOC_AGGREGATE_MEMBER);
-            BUF_PUSH(result, member_decl);
-        }
-
-        return result;
-    }
-
-    static BUF(AST_Enum_Member_Decl*) parse_enum_aggregate(Parser* parser, AST_Scope* scope)
-    {
-        assert(parser);
-        assert(scope);
-
-        expect_token(parser, TOK_LBRACE);
-
-        BUF(AST_Enum_Member_Decl*) result = nullptr;
-
-        while (!match_token(parser, TOK_RBRACE))
-        {
-            AST_Identifier* identifier = parse_identifier(parser);
-            if (!identifier)
+            AST_Declaration* member_decl = nullptr;
+            AST_Identifier* ident = parse_identifier(parser);
+            if (!ident) assert(false);
+            if (is_enum && match_token(parser, TOK_SEMICOLON))
             {
-                return nullptr;
+                member_decl = ast_constant_variable_declaration_new(parser->context,
+                                                                    ident->file_pos,
+                                                                    ident,
+                                                                    nullptr, nullptr,
+                                                                    AST_DECL_LOC_AGGREGATE_MEMBER);
+            }
+            else
+            {
+                member_decl = parse_declaration(parser, ident, scope, false, nullptr,
+                                                AST_DECL_LOC_AGGREGATE_MEMBER);
             }
 
-            AST_Expression* value_expr = nullptr;
-
-            if (match_token(parser, TOK_COLON))
-            {
-                expect_token(parser, TOK_COLON);
-                value_expr = parse_expression(parser, scope);
-                if (!value_expr)
-                {
-                    return nullptr;
-                }
-            }
-            expect_token(parser, TOK_SEMICOLON);
-
-            AST_Enum_Member_Decl* member_decl = ast_enum_member_decl_new(parser->context,
-                                                                         identifier->file_pos,
-                                                                         identifier,
-                                                                         value_expr);
+            assert(member_decl);
             BUF_PUSH(result, member_decl);
         }
 

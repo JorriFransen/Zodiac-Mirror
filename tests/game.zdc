@@ -9,6 +9,8 @@ using gl;
 
 main :: () -> int
 {
+    // using glfw_keys;
+    // c.printf("GLFW_KEY_ESCAPE: %lu\n", GLFWkey.GLFW_KEY_ESCAPE);
     if (!glfwInit())
     {
         c.printf("glfwInit failed\n");
@@ -72,8 +74,10 @@ main :: () -> int
 key_callback :: (window: *GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void
 {
     using glfw_keys;
+    using GLFWkey;
+    // using glfw_keys.GLFWKey;
 
-    if (key == GLFWkey.GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
         c.printf("Exit requested by user\n");
         glfwSetWindowShouldClose(window, GLFW_TRUE);
