@@ -886,7 +886,8 @@ namespace Zodiac
         return result;
     }
 
-    static bool try_resolve_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope,
+    static bool try_resolve_expression(Resolver* resolver, AST_Expression* expression,
+                                       AST_Scope* scope,
                                        AST_Type* suggested_type/*=nullptr*/)
     {
         assert(resolver);
@@ -894,14 +895,6 @@ namespace Zodiac
         assert(scope);
 
         bool result = true;
-
-        // if (suggested_type)
-        // {
-        //     assert(expression->kind == AST_EXPR_COMPOUND_LITERAL ||
-        //            expression->kind == AST_EXPR_INTEGER_LITERAL ||
-        //            ((expression->kind == AST_EXPR_FLOAT_LITERAL) ||
-        //             (expression->type->flags & AST_TYPE_FLAG_FLOAT)));
-        // }
 
         switch (expression->kind)
         {
@@ -977,7 +970,8 @@ namespace Zodiac
 
             case AST_EXPR_FLOAT_LITERAL:
             {
-                result &= try_resolve_float_literal_expression(resolver, expression, suggested_type);
+                result &= try_resolve_float_literal_expression(resolver, expression,
+                                                               suggested_type);
                 break;
             }
 
@@ -1605,151 +1599,126 @@ namespace Zodiac
 
         bool result = true;
 
-        AST_Expression*  base_expression = expression->dot.base_expression;
-        AST_Expression* member_expression = expression->dot.member_expression;
-        assert(base_expression->kind == AST_EXPR_IDENTIFIER);
-        assert(member_expression->kind == AST_EXPR_IDENTIFIER);
+        auto base_expr = expression->dot.base_expression;
+        auto member_expr = expression->dot.member_expression;
 
-        AST_Declaration* base_decl = find_declaration(resolver->context, scope,
-                                                      base_expression->identifier);
-        if (!base_decl)
+        assert(base_expr->kind == AST_EXPR_IDENTIFIER ||
+               base_expr->kind == AST_EXPR_DOT);
+        assert(member_expr->kind == AST_EXPR_IDENTIFIER);
+
+        result &= try_resolve_expression(resolver, base_expr, scope);
+        if (!result)
         {
-            report_undeclared_identifier(resolver, base_expression->file_pos,
-                                         base_expression->identifier);
             return false;
         }
 
-        if (base_decl->kind == AST_DECL_IMPORT)
+        AST_Declaration* base_decl = nullptr;
+        if (base_expr->kind == AST_EXPR_IDENTIFIER)
         {
-            assert(base_decl->kind == AST_DECL_IMPORT);
-            assert(base_decl->import.module);
-
-            base_expression->identifier->declaration = base_decl;
-            AST_Module* import_module = base_decl->import.module;
-            AST_Declaration* var_decl = find_declaration(resolver->context,
-				                                         import_module->module_scope,
-                                                         member_expression->identifier);
-            if (!var_decl)
-            {
-                report_undeclared_identifier(resolver, member_expression->file_pos,
-                                             import_module, member_expression->identifier);
-                return false;
-            }
-            assert(var_decl->flags & AST_DECL_FLAG_RESOLVED);
-
-            result &= try_resolve_identifier_expression(resolver, member_expression,
-                                             import_module->module_scope);
-            if (result)
-            {
-                expression->is_const = member_expression->is_const;
-                expression->type = member_expression->type;
-            }
-            return result;
+            assert(base_expr->identifier->declaration);
+            base_decl = base_expr->identifier->declaration;
         }
-        // else if (base_decl->kind == AST_DECL_AGGREGATE_TYPE &&
-        //          base_decl->aggregate_type.kind == AST_AGG_DECL_ENUM)
-        // {
-        //     assert(false);
-        // }
-        else
+        else if (base_expr->kind == AST_EXPR_DOT)
         {
-            result &= try_resolve_expression(resolver, base_expression, scope);
-            if (!result)
-            {
-                report_undeclared_identifier(resolver, base_expression->file_pos,
-                                            base_expression->identifier);
-                return false;
-            }
+            assert(false);
+        }
 
-            AST_Type* struct_type = nullptr;
-            AST_Type* enum_type = nullptr;
-
-            if (result)
+        switch (base_decl->kind)
+        {
+            case AST_DECL_AGGREGATE_TYPE:
             {
-                if (base_decl->kind == AST_DECL_AGGREGATE_TYPE &&
-                         base_decl->aggregate_type.kind == AST_AGG_DECL_ENUM)
+                if (base_decl->aggregate_type.kind == AST_AGG_DECL_ENUM)
                 {
-                    enum_type = base_decl->aggregate_type.type;
-                }
-                else if (base_expression->type->kind == AST_TYPE_STRUCT)
-                {
-                    struct_type = base_expression->type;
-                }
-                else if (base_expression->type->kind == AST_TYPE_POINTER)
-                {
-                    assert(base_expression->type->pointer.base->kind == AST_TYPE_STRUCT);
-                    struct_type = base_expression->type->pointer.base;
+                    AST_Declaration* member_decl =
+                        find_declaration(resolver->context, base_decl->aggregate_type.scope,
+                                         member_expr->identifier);
+
+                    if (!member_decl)
+                    {
+                        assert(false);
+                    }
+                    assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
+
+                    expression->type = member_decl->constant_var.type;
+                    expression->is_const = true;
                 }
                 else assert(false);
+                break;
             }
 
-            if (!(struct_type || enum_type))
+            case AST_DECL_MUTABLE:
             {
-                return false;
-            }
-
-            AST_Type* type = nullptr;
-
-            if (struct_type)
-            {
-                assert(!enum_type);
-
-                bool found = false;
-                auto member_decls = struct_type->aggregate_type.member_declarations;
-                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+                AST_Type* struct_type = nullptr;
+                bool is_struct_type = false;
+                if (base_decl->mutable_decl.type->kind == AST_TYPE_STRUCT)
                 {
-                    AST_Declaration* member_decl = member_decls[i];
-                    if (member_decl->identifier->atom == member_expression->identifier->atom)
+                    struct_type = base_decl->mutable_decl.type;
+                    is_struct_type = true;
+                }
+                else if (base_decl->mutable_decl.type->kind == AST_TYPE_POINTER)
+                {
+                    AST_Type* pointer_type = base_decl->mutable_decl.type;
+                    if (pointer_type->pointer.base->kind == AST_TYPE_STRUCT)
                     {
-                        found = true;
-                        assert(member_decl->kind == AST_DECL_MUTABLE);
-                        assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
-                        assert(member_decl->aggregate_type.type);
-
-                        type = member_decl->aggregate_type.type;
-                        break;
+                        struct_type = pointer_type->pointer.base;
+                        is_struct_type = true;
                     }
                 }
+                else assert(false);
 
-                if (!found)
+                if (is_struct_type)
                 {
-                    return false;
-                }
-            }
-            else if (enum_type)
-            {
-                assert(!struct_type);
+                    assert(struct_type);
+                    auto struct_members = struct_type->aggregate_type.member_declarations;
 
-                bool found = false;
-                auto member_decls = enum_type->aggregate_type.member_declarations;
-                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
-                {
-                    AST_Declaration* member_decl = member_decls[i];
-                    if (member_decl->identifier->atom == member_expression->identifier->atom)
+                    bool found = false;
+                    for (uint64_t i = 0; i < BUF_LENGTH(struct_members); i++)
                     {
-                        found = true;
-                        type = enum_type->aggregate_type.base_type;
-                        break;
+                        AST_Declaration* struct_member = struct_members[i];
+                        assert(struct_member->kind == AST_DECL_MUTABLE);
+                        assert(struct_member->location = AST_DECL_LOC_AGGREGATE_MEMBER);
+                        assert(struct_member->mutable_decl.type);
+
+                        if (struct_member->identifier->atom == member_expr->identifier->atom)
+                        {
+                            expression->type = struct_member->mutable_decl.type;
+                            found = true;
+                            break;
+                        }
                     }
-                }
 
-                if (!found)
-                {
-                    return false;
+                    assert(found);
                 }
-
-                expression->is_const = true;
+                else assert(false);
+                break;
             }
 
-            assert(type);
-
-            if (result && !expression->type)
+            case AST_DECL_IMPORT:
             {
-                expression->type = type;
+                assert(base_decl->import.module);
+
+                AST_Module* ast_module = base_decl->import.module;
+
+                result &= try_resolve_identifier_expression(resolver, member_expr,
+                                                            ast_module->module_scope);
+                if (result)
+                {
+                    expression->type = member_expr->type;
+                    expression->is_const = member_expr->is_const;
+                }
+
+                break;
             }
 
-            return result;
+            default: assert(false);
         }
+
+        if (result)
+        {
+            assert(expression->type);
+        }
+
+        return result;
     }
 
 	static bool try_resolve_cast_expression(Resolver* resolver, AST_Expression* expression,
