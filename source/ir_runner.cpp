@@ -17,6 +17,7 @@ namespace Zodiac
         stack_init(&ir_runner->call_stack, 8);
         stack_init(&ir_runner->arg_stack, 8);
         ir_runner->jump_block = nullptr;
+        ir_runner->returned = false;
 
         ir_runner->dyn_vm = dcNewCallVM(MB(4));
         dcMode(ir_runner->dyn_vm, DC_CALL_C_DEFAULT);
@@ -267,6 +268,12 @@ namespace Zodiac
 
             if (runner->jump_block)
             {
+                break;
+            }
+
+            if (runner->returned)
+            {
+                runner->returned = false;
                 break;
             }
 
@@ -846,6 +853,9 @@ namespace Zodiac
                 }
 
                 ir_runner_pop_stack_frame(runner);
+
+                assert(!runner->returned);
+                runner->returned = true;
                 break;
             }
 

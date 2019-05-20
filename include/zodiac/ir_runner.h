@@ -30,6 +30,7 @@ namespace Zodiac
         Stack<IR_Stack_Frame*> call_stack = {};
         Stack<IR_Value> arg_stack = {};
         IR_Block* jump_block = nullptr;
+        bool returned = false;
 
         DCCallVM* dyn_vm = nullptr;
         BUF(IR_Loaded_Dynamic_Lib) loaded_dyn_libs = nullptr;

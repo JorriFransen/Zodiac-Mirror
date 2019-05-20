@@ -37,6 +37,7 @@ main :: () -> int
     newline();
 
     // return 1;
+    // return 2;
     // return fib_recursive(25);
     return fib_recursive(20) / (fact_recursive(y - 2) - 20) + result;
 }
