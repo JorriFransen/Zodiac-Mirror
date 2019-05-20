@@ -1023,7 +1023,8 @@ namespace Zodiac
                 }
                 else
                 {
-                    result = ast_ident_expression_new(parser->context, identifier->file_pos, identifier);
+                    result = ast_ident_expression_new(parser->context, identifier->file_pos,
+                                                      identifier);
                 }
             }
             else if (is_token(parser, TOK_KW_ARRAY_LENGTH))

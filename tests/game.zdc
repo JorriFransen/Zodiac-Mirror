@@ -9,7 +9,7 @@ using gl;
 
 main :: () -> int
 {
-    // c.printf("GLFW_KEY_ESCAPE: %lu\n", glfw_keys.GLFWkey.GLFW_KEY_ESCAPE);
+    c.printf("GLFW_KEY_ESCAPE: %lu\n", glfw_keys.GLFWkey.GLFW_KEY_ESCAPE);
     if (!glfwInit())
     {
         c.printf("glfwInit failed\n");

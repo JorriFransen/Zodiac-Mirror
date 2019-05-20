@@ -1022,7 +1022,8 @@ namespace Zodiac
                     expression->identifier->declaration->kind == AST_DECL_IMPORT) ||
                    (expression->kind == AST_EXPR_IDENTIFIER &&
                        expression->identifier->declaration->kind == AST_DECL_AGGREGATE_TYPE &&
-                       expression->identifier->declaration->aggregate_type.kind == AST_AGG_DECL_ENUM));
+                       expression->identifier->declaration->aggregate_type.kind == AST_AGG_DECL_ENUM) ||
+                   expression->kind == AST_EXPR_DOT);
         }
 
         return result;
@@ -1594,8 +1595,11 @@ namespace Zodiac
         }
         else if (base_expr->kind == AST_EXPR_DOT)
         {
-            assert(false);
+            assert(base_expr->dot.declaration);
+            base_decl = base_expr->dot.declaration;
         }
+
+        assert(base_decl);
 
         switch (base_decl->kind)
         {
@@ -1693,8 +1697,10 @@ namespace Zodiac
 
         if (result)
         {
-            assert(expression->type);
             assert(expression->dot.declaration);
+            assert(expression->type ||
+                   (expression->dot.declaration->kind == AST_DECL_AGGREGATE_TYPE &&
+                       expression->dot.declaration->aggregate_type.kind == AST_AGG_DECL_ENUM));
         }
 
         return result;

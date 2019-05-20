@@ -1089,14 +1089,23 @@ namespace Zodiac
         assert(expression->kind == AST_EXPR_DOT);
 
         AST_Expression* base_expression = expression->dot.base_expression;
-        assert(base_expression->kind == AST_EXPR_IDENTIFIER);
         AST_Expression* member_expression = expression->dot.member_expression;
         assert(member_expression->kind == AST_EXPR_IDENTIFIER);
 
         if (!base_expression->type)
         {
-            assert(base_expression->identifier->declaration);
-            auto base_decl = base_expression->identifier->declaration;
+            AST_Declaration* base_decl = nullptr;
+            if (base_expression->kind == AST_EXPR_IDENTIFIER)
+            {
+                assert(base_expression->identifier->declaration);
+                base_decl = base_expression->identifier->declaration;
+            }
+            else if (base_expression->kind == AST_EXPR_DOT)
+            {
+                assert(base_expression->dot.declaration);
+                base_decl = base_expression->dot.declaration;
+            }
+            else assert(false);
 
             if (base_decl->kind == AST_DECL_IMPORT)
             {
@@ -1128,6 +1137,8 @@ namespace Zodiac
         }
         else
         {
+            assert(base_expression->kind == AST_EXPR_IDENTIFIER);
+
             AST_Type* struct_type = nullptr;
             bool is_pointer = false;
             if (base_expression->type->kind == AST_TYPE_STRUCT)
