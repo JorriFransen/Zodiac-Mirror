@@ -246,10 +246,6 @@ namespace Zodiac
             result &= try_resolve_type_spec(resolver, declaration->function.return_type_spec,
                                             &declaration->function.return_type, scope);
         }
-        else if (!declaration->function.return_type && !declaration->function.return_type_spec)
-        {
-            declaration->function.return_type = Builtin::type_void;
-        }
 
         if (declaration->directive)
         {
@@ -1039,68 +1035,39 @@ namespace Zodiac
         AST_Declaration* func_decl = nullptr;
         AST_Expression* ident_expr = expression->call.ident_expression;
         bool recursive = false;
+
+        if (ident_expr->kind == AST_EXPR_IDENTIFIER &&
+            ident_expr->identifier->atom == resolver->current_func_decl->identifier->atom)
+        {
+            recursive = true;
+        }
+
+        result &= try_resolve_expression(resolver, ident_expr, scope);
+        if (!result && !recursive)
+        {
+            return false;
+        }
+
         if (ident_expr->kind == AST_EXPR_IDENTIFIER)
         {
-            func_decl = find_declaration(resolver->context, scope, ident_expr->identifier);
-            if (!func_decl &&
-                (ident_expr->identifier->atom == resolver->current_func_decl->identifier->atom))
+            if (ident_expr->identifier->declaration)
+            {
+                func_decl = ident_expr->identifier->declaration;
+            }
+            else if (recursive)
             {
                 func_decl = resolver->current_func_decl;
-                recursive = true;
+                assert(!result);
+                result = true;
             }
-            else if (!func_decl)
-            {
-                report_undeclared_identifier(resolver, ident_expr->identifier->file_pos,
-                                             ident_expr->identifier);
-                return false;
-            }
-            else
-            {
-                if (!(func_decl->flags & AST_DECL_FLAG_RESOLVED))
-                {
-                    result = false;
-                }
-            }
+            else assert(false);
         }
-        else
+        else if (ident_expr->kind == AST_EXPR_DOT)
         {
-            assert(ident_expr->kind == AST_EXPR_DOT);
-            AST_Expression* base_expression = ident_expr->dot.base_expression;
-            AST_Expression* member_expression = ident_expr->dot.member_expression;
-            assert(base_expression->kind == AST_EXPR_IDENTIFIER);
-            assert(member_expression->kind == AST_EXPR_IDENTIFIER);
-
-            AST_Declaration* import_decl = find_declaration(resolver->context, 
-				                                            scope, base_expression->identifier);
-            if (!import_decl)
-            {
-                report_undeclared_identifier(resolver, base_expression->file_pos,
-                                             base_expression->identifier);
-                return false;
-            }
-            if (import_decl->kind != AST_DECL_IMPORT)
-            {
-                resolver_report_error(resolver, expression->file_pos,
-                                      "Left hand side of dot expression must be an import for call expressions");
-                return false;
-            }
-            assert(import_decl->import.module);
-
-            AST_Module* import_module = import_decl->import.module;
-            func_decl = find_declaration(resolver->context, import_module->module_scope,
-                                         member_expression->identifier);
-            if (!func_decl)
-            {
-                report_undeclared_identifier(resolver, ident_expr->file_pos, import_module,
-                                             member_expression->identifier);
-                return false;
-            }
-
-            if (!(func_decl->flags & AST_DECL_FLAG_RESOLVED))
-            {
-                result = false;
-            }
+            assert(ident_expr->dot.declaration);
+            func_decl = ident_expr->dot.declaration;
         }
+        else assert(false);
 
         assert(func_decl);
         AST_Type* func_type = nullptr;
@@ -1159,6 +1126,8 @@ namespace Zodiac
                     expression->type = return_type;
                 }
             }
+
+            assert(expression->type);
         }
 
         if (!expression->type)
@@ -1641,6 +1610,7 @@ namespace Zodiac
 
                     expression->type = member_decl->constant_var.type;
                     expression->is_const = true;
+                    expression->dot.declaration = member_decl;
                 }
                 else assert(false);
                 break;
@@ -1682,6 +1652,7 @@ namespace Zodiac
                         if (struct_member->identifier->atom == member_expr->identifier->atom)
                         {
                             expression->type = struct_member->mutable_decl.type;
+                            expression->dot.declaration = struct_member;
                             found = true;
                             break;
                         }
@@ -1705,6 +1676,8 @@ namespace Zodiac
                 {
                     expression->type = member_expr->type;
                     expression->is_const = member_expr->is_const;
+                    assert(member_expr->identifier->declaration);
+                    expression->dot.declaration = member_expr->identifier->declaration;
                 }
 
                 break;
@@ -1716,6 +1689,7 @@ namespace Zodiac
         if (result)
         {
             assert(expression->type);
+            assert(expression->dot.declaration);
         }
 
         return result;

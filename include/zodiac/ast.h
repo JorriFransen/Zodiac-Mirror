@@ -172,6 +172,7 @@ namespace Zodiac
             {
                 AST_Expression* base_expression;
                 AST_Expression* member_expression;
+                AST_Declaration* declaration;
             } dot;
 
 			struct
