@@ -277,7 +277,12 @@ namespace Zodiac
 
         if (result)
         {
+            if (!declaration->function.return_type)
+            {
+                declaration->function.return_type = Builtin::type_void;
+            }
 			declaration->function.type = ast_find_or_create_function_type(resolver->context,
+
 				declaration->function.is_vararg, arg_types,
 				declaration->function.return_type);
 
