@@ -2512,7 +2512,12 @@ namespace Zodiac
                 break;
             }
 
-			default: assert(false);
+			default: 
+			{
+                assert(store->type->kind == AST_TYPE_POINTER);
+                return ir_builder_emit_loadp(ir_builder, store);
+                break;
+			}
 		}
 
 		assert(false);
@@ -2616,7 +2621,7 @@ namespace Zodiac
         {
             IR_Value* base_value = ir_builder_emit_lvalue(ir_builder,
                                                           lvalue_expr->subscript.base_expression);
-            base_value = ir_builder_emit_loadp(ir_builder, base_value);
+            base_value = ir_builder_emit_load(ir_builder, base_value);
 
             IR_Value* index_value =
                 ir_builder_emit_expression(ir_builder, lvalue_expr->subscript.index_expression);
