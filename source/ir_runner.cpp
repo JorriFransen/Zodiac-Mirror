@@ -130,7 +130,7 @@ namespace Zodiac
             {
                 const IR_Loaded_Dynamic_Lib& loaded_lib = ir_runner->loaded_dyn_libs[j];
 
-                //printf("Trying to load foreign \"%s\" from library \"%s\"\n",
+                // printf("Trying to load foreign \"%s\" from library \"%s\"\n",
                 //    foreign_name.data, loaded_lib.name.data);
 
                 void* foreign_symbol = dlFindSymbol(loaded_lib.lib, foreign_name.data);
