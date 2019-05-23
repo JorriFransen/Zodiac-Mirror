@@ -1535,20 +1535,6 @@ namespace Zodiac
             assert(new_temp.type);
             BUF_PUSH(result->temps, new_temp);
 
-            // if (function->type->function.return_type &&
-            //     function->type->function.return_type->kind == AST_TYPE_STRUCT)
-            // {
-            //     result->return_value.type = function->type->function.return_type;
-            //     auto parent_stack_frame = ir_runner_top_stack_frame(ir_runner);
-            //     auto parent_arena = parent_stack_frame->arena;
-            //     uint64_t struct_byte_size = function->type->function.return_type->bit_size / 8;
-            //     assert(struct_byte_size);
-            //     result->return_value.value.struct_pointer = arena_alloc_array(&parent_arena,
-            //                                                                    uint8_t,
-            //                                                                    struct_byte_size);
-            //     printf("allocated struct return in parent scope\n");
-            // }
-
             if (function->type->function.return_type)
             {
                 assert(return_value);
