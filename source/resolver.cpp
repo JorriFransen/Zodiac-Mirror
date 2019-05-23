@@ -1321,6 +1321,10 @@ namespace Zodiac
                 for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions); i++)
                 {
                     AST_Expression* expr = expression->compound_literal.expressions[i];
+                    if (!try_resolve_expression(resolver, expr, scope))
+                    {
+                        return false;
+                    }
                     assert(expr->type);
                     AST_Declaration* struct_member_decl = suggested_type->aggregate_type.member_declarations[i];
 
@@ -1355,7 +1359,8 @@ namespace Zodiac
         return result;
     }
 
-    static bool try_resolve_array_length_expression(Resolver* resolver, AST_Expression* expression,
+    static bool try_resolve_array_length_expression(Resolver* resolver,
+                                                    AST_Expression* expression,
                                                     AST_Scope* scope)
     {
         assert(resolver);
@@ -1368,7 +1373,17 @@ namespace Zodiac
         result &= try_resolve_expression(resolver, ident_expr, scope);
         if (result)
         {
-            AST_Declaration* array_decl = ident_expr->identifier->declaration;
+            AST_Declaration* array_decl = nullptr;
+            if (ident_expr->kind == AST_EXPR_IDENTIFIER)
+            {
+                array_decl = ident_expr->identifier->declaration;
+            }
+            else if (ident_expr->kind == AST_EXPR_DOT)
+            {
+                array_decl = ident_expr->dot.declaration;
+            }
+            else assert(false);
+
             assert(array_decl);
             assert(array_decl->kind == AST_DECL_MUTABLE);
             assert(array_decl->mutable_decl.type);
@@ -1519,6 +1534,10 @@ namespace Zodiac
                             expression->float_literal.r64 = (double)value;
                         }
                         else assert(false);
+                    }
+                    else
+                    {
+                        expression->type = operand_expr->type;
                     }
                     expression->is_const = operand_expr->is_const;
                     break;
@@ -1909,7 +1928,8 @@ namespace Zodiac
                 {
                     AST_Type* array_type =
                         ast_find_or_create_array_type(resolver->context, base_type,
-                                                      type_spec->static_array.count_expr);
+                                                      type_spec->static_array.count_expr,
+                                                      scope);
                     *type_dest = array_type;
                     return true;
                 }

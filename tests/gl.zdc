@@ -15,6 +15,7 @@ GLubyte    :: typedef u8;
 GLint      :: typedef s32;
 GLsizei    :: typedef u32;
 GLfloat    :: typedef float;
+GLdouble   :: typedef double;
 GLclampf   :: typedef float;
 
 GL_FALSE : GLboolean : 0;
@@ -28,7 +29,10 @@ GL_VENDOR    : GLenum : 0x1F00;
 GL_RENDERER  : GLenum : 0x1F01;
 GL_VERSION   : GLenum : 0x1F02;
 
-GL_TRIANGLES : GLenum : 0x00000004;
+GL_POINTS    : GLenum : 0x0000;
+GL_TRIANGLES : GLenum : 0x0004;
+
+GL_PROJECTION : GLenum : 0x1701;
 
 glGetStringProc :: typedef *(name: GLenum) -> *GLubyte;
 glGetString : glGetStringProc = null;
@@ -54,6 +58,19 @@ glColor4f : glColor4fProc = null;
 glVertex2fProc :: typedef *(x: GLfloat, y: GLfloat) -> void;
 glVertex2f : glVertex2fProc = null;
 
+glMatrixModeProc :: typedef *(mode: GLenum);
+glMatrixMode : glMatrixModeProc = null;
+
+glLoadIdentityProc :: typedef *();
+glLoadIdentity : glLoadIdentityProc = null;
+
+glOrthoProc :: typedef *(left: GLdouble, right: GLdouble,
+                         bottom: GLdouble, top: GLdouble,
+                         near_val: GLdouble, far_val: GLdouble);
+glOrtho : glOrthoProc = null;
+
+glPointSizeProc :: typedef *(size: GLfloat);
+glPointSize : glPointSizeProc = null;
 
 Load_Proc :: typedef *(proc_name: *u8) -> *void;
 
@@ -67,4 +84,8 @@ load :: (load_proc: Load_Proc) -> void
     glEnd = (:glEndProc)load_proc("glEnd");
     glColor4f = (:glColor4fProc)load_proc("glColor4f");
     glVertex2f = (:glVertex2fProc)load_proc("glVertex2f");
+    glMatrixMode = (:glMatrixModeProc)load_proc("glMatrixMode");
+    glLoadIdentity = (:glLoadIdentityProc)load_proc("glLoadIdentity");
+    glOrtho = (:glOrthoProc)load_proc("glOrtho");
+    glPointSize = (:glPointSizeProc)load_proc("glPointSize");
 }

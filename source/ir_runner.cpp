@@ -40,10 +40,12 @@ namespace Zodiac
 
         ir_runner_execute_block(ir_runner, ir_runner->context->global_init_block->block);
 
+        IR_Value return_value = {};
         IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(ir_runner,
-                                                                    ir_module->entry_function, 0);
+                                                                    ir_module->entry_function, 0,
+                                                                    &return_value);
 
-        printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value.value.s64);
+        printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value->value.s64);
         uint64_t arena_cap = 0;
         auto block = ir_runner->arena.blocks;
         while (block)
@@ -218,7 +220,7 @@ namespace Zodiac
     }
 
     IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, IR_Function* function,
-                                            uint64_t num_args)
+                                            uint64_t num_args, IR_Value* return_value)
     {
         assert(runner);
         assert(function);
@@ -236,7 +238,8 @@ namespace Zodiac
             stack_pop(runner->arg_stack);
         }
 
-        IR_Stack_Frame* stack_frame = ir_runner_push_stack_frame(runner, function, args);
+        IR_Stack_Frame* stack_frame = ir_runner_push_stack_frame(runner, function, args,
+                                                                 return_value);
 
         auto block = function->first_block;
         while (block && ir_runner_top_stack_frame(runner) == stack_frame)
@@ -325,10 +328,15 @@ namespace Zodiac
             stack_push(dcb_data->runner->arg_stack, arg_value);
         }
 
-        IR_Stack_Frame* stack_frame = ir_runner_call_function(dcb_data->runner, func_value->function,
-                                                              BUF_LENGTH(arg_types));
-
         AST_Type* return_type = func_value->function->type->function.return_type;
+        assert(!(return_type->kind == AST_TYPE_STRUCT));
+
+        IR_Value return_value = {};
+        IR_Stack_Frame* stack_frame = ir_runner_call_function(dcb_data->runner,
+                                                              func_value->function,
+                                                              BUF_LENGTH(arg_types),
+                                                              &return_value);
+
         if (return_type->flags & AST_TYPE_FLAG_INT)
         {
             assert(false);
@@ -359,11 +367,7 @@ namespace Zodiac
             case IR_OP_ADD:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_TEMPORARY ||
-                       iri->arg1->kind == IRV_INT_LITERAL);
                 assert(iri->arg2);
-                assert(iri->arg2->kind == IRV_TEMPORARY ||
-                       iri->arg2->kind == IRV_INT_LITERAL);
                 assert(iri->result);
                 assert(iri->result->kind == IRV_TEMPORARY);
 
@@ -440,6 +444,10 @@ namespace Zodiac
                 {
                     dest->value.r64 = arg1->value.r64 * arg2->value.r64;
                 }
+                else if (type == Builtin::type_float)
+                {
+                    dest->value.r32 = arg1->value.r32 * arg2->value.r32;
+                }
                 else assert(false);
 
                 break;
@@ -448,9 +456,7 @@ namespace Zodiac
             case IR_OP_DIV:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_TEMPORARY);
                 assert(iri->arg2);
-                assert(iri->arg2->kind == IRV_TEMPORARY);
                 assert(iri->result);
                 assert(iri->result->kind == IRV_TEMPORARY);
 
@@ -467,6 +473,10 @@ namespace Zodiac
                 else if (type == Builtin::type_double)
                 {
                     dest->value.r64 = arg1->value.r64 / arg2->value.r64;
+                }
+                else if (type == Builtin::type_float)
+                {
+                    dest->value.r32 = arg1->value.r32 / arg2->value.r32;
                 }
                 else assert(false);
 
@@ -489,6 +499,10 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.r64 < arg2->value.r64;
                 }
+                else if (type == Builtin::type_float)
+                {
+                    dest->value.s64 = arg1->value.r32 < arg2->value.r32;
+                }
                 else assert(false);
                 break;
             }
@@ -509,6 +523,10 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.r64 <= arg2->value.r64;
                 }
+                else if (type == Builtin::type_float)
+                {
+                    dest->value.s64 = arg1->value.r32 <= arg2->value.r32;
+                }
                 else assert(false);
                 break;
             }
@@ -528,6 +546,10 @@ namespace Zodiac
                 else if (type == Builtin::type_double)
                 {
                     dest->value.s64 = arg1->value.r64 > arg2->value.r64;
+                }
+                else if (type == Builtin::type_float)
+                {
+                    dest->value.s64 = arg1->value.r32 > arg2->value.r32;
                 }
                 else assert(false);
                 break;
@@ -593,9 +615,17 @@ namespace Zodiac
                 {
                     dest->value.s64 = arg1->value.r64 != arg2->value.r64;
                 }
+                else if (type == Builtin::type_float)
+                {
+                    dest->value.s64 = arg1->value.r32 != arg2->value.r32;
+                }
                 else if (type->kind == AST_TYPE_ENUM)
                 {
                     dest->value.s64 = arg1->value.s64 != arg2->value.s64;
+                }
+                else if (type == Builtin::type_bool)
+                {
+                    assert(false);
                 }
                 else assert(false);
                 break;
@@ -628,9 +658,6 @@ namespace Zodiac
             case IR_OP_PUSH_CALL_ARG:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_TEMPORARY ||
-                       iri->arg1->kind == IRV_INT_LITERAL ||
-                        iri->arg1->kind == IRV_STRING_LITERAL);
 
                 IR_Value* value = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value arg_value = *value;
@@ -649,12 +676,12 @@ namespace Zodiac
 
                 IR_Function* function = iri->arg1->function;
                 auto num_args = iri->arg2->value.s64;
-                IR_Stack_Frame* callee_stack_frame = ir_runner_call_function(runner, function,
-                                                                             num_args);
-
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
+                IR_Stack_Frame* callee_stack_frame = ir_runner_call_function(runner, function,
+                                                                             num_args,
+                                                                             result_value);
 
-				result_value->value = callee_stack_frame->return_value.value;
+
                 break;
             }
 
@@ -758,6 +785,11 @@ namespace Zodiac
                     dcCallVoid(runner->dyn_vm,
                                runner->loaded_foreign_symbols[foreign_index]);
                 }
+                else if (iri->result->type == Builtin::type_double)
+                {
+                    result_value->value.r64 = dcCallDouble(runner->dyn_vm,
+                                                           runner->loaded_foreign_symbols[foreign_index]);
+                }
                 else assert(false);
                 dcReset(runner->dyn_vm);
                 break;
@@ -822,7 +854,8 @@ namespace Zodiac
                     const char* signature_string = get_dcb_signature(func->function->type);
                     func->function->dcb_data.func_value = func;
                     func->function->dcb_data.runner = runner;
-                    callback_address = dcbNewCallback(signature_string, dcb_handler, &func->function->dcb_data);
+                    callback_address = dcbNewCallback(signature_string, dcb_handler,
+                                                      &func->function->dcb_data);
                     func->function->dcb_data.callback_address = callback_address;
                 }
 
@@ -843,12 +876,12 @@ namespace Zodiac
 					{
                         uint64_t struct_byte_size = temp->type->bit_size / 8;
                         assert(struct_byte_size);
-                        memcpy(current_stack_frame->return_value.value.struct_pointer,
+                        memcpy(current_stack_frame->return_value->value.struct_pointer,
                                temp->value.struct_pointer, struct_byte_size);
 					}
 					else
 					{
-						current_stack_frame->return_value = *temp;
+						*current_stack_frame->return_value = *temp;
 					}
                 }
 
@@ -882,7 +915,8 @@ namespace Zodiac
                 uint8_t* base_pointer = base_value->value.string;
 
                 IR_Value* index_value = ir_runner_get_local_temporary(runner, iri->arg2);
-                assert(iri->arg2->type == Builtin::type_int);
+                assert((iri->arg2->type->flags & AST_TYPE_FLAG_INT) ||
+                       iri->arg2->type->kind == AST_TYPE_ENUM);
 
                 assert(iri->result->type == element_type);
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
@@ -1094,6 +1128,10 @@ namespace Zodiac
                     // memcpy(dest_value->value.struct_pointer, pointer_value->value.struct_pointer,
                     //        dest_type->bit_size / 8);
                     dest_value->value.struct_pointer = pointer_value->value.struct_pointer;
+                }
+                else if (dest_type->kind == AST_TYPE_STATIC_ARRAY)
+                {
+                    dest_value->value.static_array = (void*)pointer_value->value.string;
                 }
                 else if (dest_type->flags & AST_TYPE_FLAG_INT)
                 {
@@ -1334,7 +1372,59 @@ namespace Zodiac
 				IR_Value* source = ir_runner_get_local_temporary(runner, iri->arg1);
 				IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
-				dest->value = source->value;
+                if ((iri->arg1->type->flags & AST_TYPE_FLAG_INT) &&
+                    iri->result->type == Builtin::type_float)
+                {
+                    if (iri->arg1->type->flags & AST_TYPE_FLAG_SIGNED)
+                    {
+                        dest->value.r32 = (float)source->value.s64;
+                    }
+                    else
+                    {
+                        assert(false);
+                    }
+                }
+                else if ((iri->arg1->type->flags & AST_TYPE_FLAG_INT) &&
+                         iri->result->type == Builtin::type_double)
+                {
+                    if (iri->arg1->type->flags & AST_TYPE_FLAG_SIGNED)
+                    {
+                        dest->value.r64 = (double)source->value.s64;
+                    }
+                    else
+                    {
+                        assert(false);
+                    }
+                }
+                else if (iri->arg1->type == Builtin::type_double &&
+                         iri->result->type == Builtin::type_float)
+                {
+                    dest->value.r32 = (float)source->value.r64;
+                }
+                else if (iri->arg1->type == Builtin::type_float &&
+                         iri->result->type == Builtin::type_double)
+                {
+                    dest->value.r64 = (double)source->value.r32;
+                }
+                else if (((iri->arg1->type->flags & AST_TYPE_FLAG_INT) &&
+                          (iri->result->type->flags & AST_TYPE_FLAG_INT)) ||
+                         (iri->arg1->type->kind == AST_TYPE_POINTER &&
+                          iri->result->type->kind == AST_TYPE_POINTER))
+                {
+                    dest->value = source->value;
+                }
+                else if (iri->arg1->type->kind == AST_TYPE_POINTER &&
+                         iri->result->type == Builtin::type_bool)
+                {
+                    dest->value.boolean = source->value.string != nullptr;
+                }
+                else if ((iri->arg1->type->flags & AST_TYPE_FLAG_INT) &&
+                         iri->result->type->kind == AST_TYPE_ENUM)
+                {
+                    dest->value.u64 = source->value.u64;
+                }
+                else assert(false);
+
 				break;
 			}
 
@@ -1386,13 +1476,22 @@ namespace Zodiac
     }
 
     IR_Stack_Frame* ir_runner_new_stack_frame(IR_Runner* ir_runner, IR_Function* function,
-                                              BUF(IR_Value) args)
+                                              BUF(IR_Value) args, IR_Value* return_value)
     {
         assert(ir_runner);
         assert(function);
 
         IR_Stack_Frame* result = nullptr;
-        result = arena_alloc(&ir_runner->arena, IR_Stack_Frame);
+        if (ir_runner->free_stack_frames)
+        {
+            result = ir_runner->free_stack_frames;
+            ir_runner->free_stack_frames = result->next_free;
+            result->next_free = nullptr;
+        }
+        else
+        {
+            result = arena_alloc(&ir_runner->arena, IR_Stack_Frame);
+        }
         result->function = function;
         result->arena = arena_create(KB(1));
         result->args = args;
@@ -1436,17 +1535,24 @@ namespace Zodiac
             assert(new_temp.type);
             BUF_PUSH(result->temps, new_temp);
 
-            if (function->type->function.return_type &&
-                function->type->function.return_type->kind == AST_TYPE_STRUCT)
+            // if (function->type->function.return_type &&
+            //     function->type->function.return_type->kind == AST_TYPE_STRUCT)
+            // {
+            //     result->return_value.type = function->type->function.return_type;
+            //     auto parent_stack_frame = ir_runner_top_stack_frame(ir_runner);
+            //     auto parent_arena = parent_stack_frame->arena;
+            //     uint64_t struct_byte_size = function->type->function.return_type->bit_size / 8;
+            //     assert(struct_byte_size);
+            //     result->return_value.value.struct_pointer = arena_alloc_array(&parent_arena,
+            //                                                                    uint8_t,
+            //                                                                    struct_byte_size);
+            //     printf("allocated struct return in parent scope\n");
+            // }
+
+            if (function->type->function.return_type)
             {
-                result->return_value.type = function->type->function.return_type;
-                auto parent_stack_frame = ir_runner_top_stack_frame(ir_runner);
-                auto parent_arena = parent_stack_frame->arena;
-                uint64_t struct_byte_size = function->type->function.return_type->bit_size / 8;
-                assert(struct_byte_size);
-                result->return_value.value.struct_pointer = arena_alloc_array(&parent_arena,
-                                                                               uint8_t,
-                                                                               struct_byte_size);
+                assert(return_value);
+                result->return_value = return_value;
             }
         }
 
@@ -1454,12 +1560,13 @@ namespace Zodiac
     }
 
     IR_Stack_Frame* ir_runner_push_stack_frame(IR_Runner* ir_runner, IR_Function* function,
-                                               BUF(IR_Value) args)
+                                               BUF(IR_Value) args, IR_Value* return_value)
     {
         assert(ir_runner);
         assert(function);
 
-        IR_Stack_Frame* new_frame = ir_runner_new_stack_frame(ir_runner, function, args);
+        IR_Stack_Frame* new_frame = ir_runner_new_stack_frame(ir_runner, function, args,
+                                                              return_value);
         assert(new_frame);
 
         stack_push(ir_runner->call_stack, new_frame);
@@ -1486,6 +1593,14 @@ namespace Zodiac
         auto old_stack_frame = stack_pop(ir_runner->call_stack);
 
         arena_free(&old_stack_frame->arena);
+
+        // *old_stack_frame = {};
+        old_stack_frame->function = nullptr;
+        old_stack_frame->args = nullptr;
+        old_stack_frame->temps = nullptr;
+
+        old_stack_frame->next_free = ir_runner->free_stack_frames;
+        ir_runner->free_stack_frames = old_stack_frame;
     }
 
     static const char* get_dcb_signature(AST_Type* type)

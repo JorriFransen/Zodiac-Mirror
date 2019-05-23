@@ -26,6 +26,8 @@ stderr : *FILE = null;
 #foreign printf :: (format: *u8, ...) -> int;
 #foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
 
+#foreign sqrt :: (x: double) -> double;
+
 open_std_handles :: () -> void
 {
     stdin = fdopen(0, "r");

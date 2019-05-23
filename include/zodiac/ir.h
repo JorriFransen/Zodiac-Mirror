@@ -257,7 +257,8 @@ namespace Zodiac
     IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_not(IR_Builder* ir_builder, AST_Expression* expression);
 
-    void ir_builder_push_value_and_decl(IR_Builder* ir_builder, IR_Value* ir_value, AST_Declaration* decl);
+    void ir_builder_push_value_and_decl(IR_Builder* ir_builder, IR_Value* ir_value,
+                                        AST_Declaration* decl);
     void ir_builder_grow_value_decl_hash(IR_Builder* ir_builder);
     IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder,
                                                AST_Declaration* declaration);
@@ -301,24 +302,35 @@ namespace Zodiac
     IR_Value* ir_builder_emit_neq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_and_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val);
-    void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value, bool is_vararg = false,
-                                  bool is_foreign = false);
-    IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value, IR_Value* num_args);
-    IR_Value* ir_builder_emit_subscript(IR_Builder* ir_builder, IR_Value* base_value, IR_Value* index_value);
+    void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value,
+                                  bool is_vararg = false, bool is_foreign = false);
+    IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value,
+                                   IR_Value* num_args);
+    IR_Value* ir_builder_emit_subscript(IR_Builder* ir_builder, IR_Value* base_value,
+                                        IR_Value* index_value);
     void ir_builder_emit_jmp(IR_Builder* ir_builder, IR_Value* block_value);
-    void ir_builder_emit_jmp_if(IR_Builder* ir_builder, IR_Value* cond_value, IR_Value* block_value);
+    void ir_builder_emit_jmp_if(IR_Builder* ir_builder, IR_Value* cond_value,
+                                IR_Value* block_value);
     IR_Value* ir_builder_emit_allocl(IR_Builder* ir_builder, AST_Type* type, const char* name);
-    void ir_builder_emit_storel(IR_Builder* ir_builder, IR_Value* allocl_value, IR_Value* new_value);
+    void ir_builder_emit_storel(IR_Builder* ir_builder, IR_Value* allocl_value,
+                                IR_Value* new_value);
     IR_Value* ir_builder_emit_loadl(IR_Builder* ir_builder, IR_Value* allocl_value);
     void ir_builder_emit_storea(IR_Builder* ir_builder, IR_Value* arg_value, IR_Value* new_value);
     IR_Value* ir_builder_emit_loada(IR_Builder* ir_builder, IR_Value* alloca_value);
-    void ir_builder_emit_storep(IR_Builder* ir_builder, IR_Value* pointer_allocl, IR_Value* new_value);
-    IR_Value* ir_builder_emit_loadp(IR_Builder* ir_builder, IR_Value* pointer, AST_Type* type);
+    void ir_builder_emit_storep(IR_Builder* ir_builder, IR_Value* pointer_allocl,
+                                IR_Value* new_value);
+    IR_Value* ir_builder_emit_loadp(IR_Builder* ir_builder, IR_Value* pointer);
     IR_Value* ir_builder_emit_global(IR_Builder* ir_builder, AST_Declaration* global_decl);
-    void ir_builder_emit_storeg(IR_Builder* ir_builder, IR_Value* global_value, IR_Value* new_value);
+    void ir_builder_emit_storeg(IR_Builder* ir_builder, IR_Value* global_value,
+                                IR_Value* new_value);
     IR_Value* ir_builder_emit_loadg(IR_Builder* ir_builder, IR_Value* global_value);
 
 	IR_Value* ir_builder_emit_load(IR_Builder* ir_builder, IR_Value* store);
+    void ir_builder_emit_store(IR_Builder* ir_builder, IR_Value* store, IR_Value* new_value);
+
+    IR_Value* ir_builder_emit_lvalue(IR_Builder* ir_builder, AST_Expression* lvalue_expr);
+
+    IR_Value* ir_builder_emit_cast(IR_Builder* ir_builder, IR_Value* value, AST_Type* type);
 
     IR_Value* ir_builder_emit_zero_literal(IR_Builder* ir_builder, AST_Type* type);
     IR_Value* ir_boolean_literal(IR_Builder* ir_builder, AST_Type* type, bool value);

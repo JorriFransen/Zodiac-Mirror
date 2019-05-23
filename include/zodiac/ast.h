@@ -693,7 +693,7 @@ namespace Zodiac
 
     AST_Type* ast_find_or_create_pointer_type(Context* context, AST_Type* base_type);
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type,
-                                            AST_Expression* count_expr);
+                                            AST_Expression* count_expr, AST_Scope* scope);
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type, uint64_t count);
 	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
                                                BUF(AST_Type*) arg_types,

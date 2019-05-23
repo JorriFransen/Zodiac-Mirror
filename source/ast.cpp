@@ -1,6 +1,7 @@
 #include "ast.h"
 
 #include "builtin.h"
+#include "const_interpreter.h"
 
 namespace Zodiac
 {
@@ -1054,15 +1055,18 @@ namespace Zodiac
     }
 
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type,
-                                            AST_Expression* count_expr)
+                                            AST_Expression* count_expr, AST_Scope* scope)
     {
         assert(context);
         assert(base_type);
         assert(count_expr);
-        assert(count_expr->kind == AST_EXPR_INTEGER_LITERAL);
+        assert(count_expr->is_const);
+        assert(count_expr->type == Builtin::type_int);
+        assert(scope);
 
-        return ast_find_or_create_array_type(context, base_type,
-                                             count_expr->integer_literal.u64);
+        int64_t count_value = const_interpret_s64_expression(context, count_expr, scope);
+
+        return ast_find_or_create_array_type(context, base_type, count_value);
     }
 
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type, uint64_t count)
@@ -1206,7 +1210,8 @@ namespace Zodiac
 
             case AST_TYPE_STATIC_ARRAY:
             {
-                assert(false);
+                uint64_t count_hash = hash_pointer((void*)type->static_array.count);
+                return hash_mix(base_hash, count_hash);
                 break;
             };
 
@@ -1248,6 +1253,7 @@ namespace Zodiac
         }
 
         assert(false);
+        return 0;
     }
 
     uint64_t ast_get_pointer_type_hash(AST_Type* base_type)

@@ -637,7 +637,7 @@ namespace Zodiac
         expect_token(parser, TOK_LBRACE);
 
         BUF(AST_Statement*) block_statements = nullptr;
-	
+
 		auto module = parser->result.ast_module;
         AST_Scope* block_scope = ast_scope_new(parser->context, scope, module, false);
 
@@ -1041,7 +1041,7 @@ namespace Zodiac
 					{
 						AST_Type_Spec* cast_ts = parse_type_spec(parser, scope);
 						expect_token(parser, TOK_RPAREN);
-						AST_Expression* cast_expr = parse_expression(parser, scope);
+						AST_Expression* cast_expr = parse_base_expression(parser, scope);
 						result = ast_cast_expression_new(parser->context, fp, cast_ts, cast_expr);
 					}
 					else
@@ -1220,7 +1220,8 @@ namespace Zodiac
             BUF_PUSH(compound_expressions, compound_expression);
         }
 
-        return ast_compound_literal_expression_new(parser->context, ft.file_pos, compound_expressions);
+        return ast_compound_literal_expression_new(parser->context, ft.file_pos,
+                                                   compound_expressions);
     }
 
     static AST_Expression* parse_array_length_expression(Parser* parser, AST_Scope* scope)
@@ -1233,7 +1234,8 @@ namespace Zodiac
         expect_token(parser, TOK_KW_ARRAY_LENGTH);
         expect_token(parser, TOK_LPAREN);
         AST_Expression* ident_expr = parse_expression(parser, scope);
-        assert(ident_expr->kind == AST_EXPR_IDENTIFIER);
+        assert(ident_expr->kind == AST_EXPR_IDENTIFIER ||
+               ident_expr->kind == AST_EXPR_DOT);
         expect_token(parser, TOK_RPAREN);
 
         return ast_array_length_expression_new(parser->context, ft.file_pos, ident_expr);
@@ -1309,7 +1311,6 @@ namespace Zodiac
         else if (match_token(parser, TOK_LBRACK))
         {
             AST_Expression* count_expr = parse_expression(parser, scope);
-            assert(count_expr->kind == AST_EXPR_INTEGER_LITERAL);
             expect_token(parser, TOK_RBRACK);
             AST_Type_Spec* base_type_spec = parse_type_spec(parser, scope);
             return ast_type_spec_static_array_new(parser->context, ft.file_pos, count_expr,

@@ -46,7 +46,10 @@ glfwCreateWindow :: (width: int, height: int, title: *u8, monitor: *GLFWmonitor,
 #foreign glfwPollEvents :: ();
 #foreign glfwWindowHint :: (hint: int, value: int);
 #foreign glfwGetError :: (desc: **u8) -> int;
+#foreign glfwGetTime :: () -> double;
 #foreign glfwSwapInterval :: (interval: int);
+#foreign glfwGetWindowUserPointer :: (window: *GLFWwindow) -> *void;
+#foreign glfwSetWindowUserPointer :: (window: *GLFWwindow, pointer: *void);
 
 #foreign glfwGetProcAddress :: (procname: *u8) -> *void;
 #foreign glfwSetKeyCallback :: (window: *GLFWwindow, cbfun: GLFWkeyfun) -> GLFWkeyfun;

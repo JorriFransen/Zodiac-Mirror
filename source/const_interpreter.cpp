@@ -5,7 +5,8 @@
 
 namespace Zodiac
 {
-    bool const_interpret_bool_expression(Context* context, AST_Expression* expression, AST_Scope* scope)
+    bool const_interpret_bool_expression(Context* context, AST_Expression* expression,
+                                         AST_Scope* scope)
     {
         assert(expression);
         assert(expression->type == Builtin::type_bool);
@@ -81,7 +82,14 @@ namespace Zodiac
                 AST_Declaration* decl = find_declaration(context, scope, expression->identifier);
                 return const_s64_decl_value(context, decl, scope);
                 break;
-        }
+            }
+
+            case AST_EXPR_DOT:
+            {
+                assert(expression->dot.declaration);
+                AST_Declaration* decl = expression->dot.declaration;
+                return const_s64_decl_value(context, decl, scope);
+            }
 
             default: assert(false);
         }
