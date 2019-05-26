@@ -33,7 +33,11 @@ namespace Zodiac
         init_builtin_types(context);
         init_builtin_decls(context);
 
-        return init_module_path(context);
+        const char* main_file_dir = extract_directory_from_path(options.main_file_name);
+        const char* main_file_abs_dir = full_path_from_cwd(main_file_dir);
+        Atom main_file_abs_dir_atom = atom_get(context->atom_table, main_file_abs_dir);
+
+        return init_module_search_path(context, main_file_abs_dir_atom);
     }
 
 	bool zodiac_parse_options(Options* options, int argc, char** argv)
@@ -347,7 +351,7 @@ namespace Zodiac
 
 #undef DEFINE_KW
 
-    static bool init_module_path(Context* context)
+    static bool init_module_search_path(Context* context, Atom first_file_path)
     {
         assert(context);
 
@@ -363,7 +367,10 @@ namespace Zodiac
             printf("ZODIAC_MODULE_PATH: %s\n", module_path);
         }
 
-        context->module_search_path = atom_get(context->atom_table, module_path);
+        BUF_PUSH(context->module_search_path, atom_get(context->atom_table, module_path));
+
+        assert(dir_exists(first_file_path.data));
+        BUF_PUSH(context->module_search_path, first_file_path);
 
         return true;
     }

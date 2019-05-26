@@ -23,7 +23,6 @@ int main(int argc, char** argv)
 	//atom_test();
 
     Options options;
-    // options.verbose = true;
 	if (!zodiac_parse_options(&options, argc, argv))
 	{
 		usage(argv[0]);

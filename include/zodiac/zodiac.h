@@ -72,7 +72,7 @@ namespace Zodiac
     {
         Arena* arena = nullptr;
         Atom_Table* atom_table;
-        Atom module_search_path = {};
+        BUF(Atom) module_search_path = {};
 
 		AST_Scope* builtin_scope = nullptr;
 
@@ -101,8 +101,9 @@ namespace Zodiac
 
     AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path,
                                              const Atom& module_name);
-    AST_Module* zodiac_compile_module(Context* context, const Atom& module_path, const Atom& module_name);
+    AST_Module* zodiac_compile_module(Context* context, const Atom& module_path,
+                                      const Atom& module_name);
 
     static void context_init_keywords(Context* context);
-    static bool init_module_path(Context* context);
+    static bool init_module_search_path(Context* context, Atom first_file_path);
 }

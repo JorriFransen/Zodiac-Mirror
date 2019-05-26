@@ -52,6 +52,20 @@ void arena_free(Arena* arena)
     arena->blocks = NULL;
 }
 
+void arena_reset(Arena* arena)
+{
+    assert(arena);
+
+    Arena_Block* block = arena->blocks;
+
+    while (block)
+    {
+        block->first_free_index = 0;
+
+        block = block->next_block;
+    }
+}
+
 void* _arena_alloc(Arena* arena, size_t size)
 {
     assert(arena);

@@ -87,6 +87,7 @@ typedef struct _Arena
 
 Arena arena_create(size_t block_size);
 void arena_free(Arena* arena);
+void arena_reset(Arena* arena);
 void* _arena_alloc(Arena* arena, size_t size);
 Arena_Block* _arena_alloc_new_block(Arena* arena, size_t min_block_size);
 bool _arena_block_fits(Arena_Block* block, size_t size);
@@ -95,7 +96,8 @@ void* _arena_alloc_from_block(Arena_Block* block, size_t size);
 #define ARENA_DEFAULT_BLOCK_SIZE (MB(1))
 
 #define arena_alloc(arena, type) ((type*)_arena_alloc((arena), sizeof(type)))
-#define arena_alloc_array(arena, type, length) ((type*)_arena_alloc((arena), sizeof(type) * (length)))
+#define arena_alloc_array(arena, type, length) ((type*)_arena_alloc((arena), \
+                                                  sizeof(type) * (length)))
 
 // Stack
 template <typename T>

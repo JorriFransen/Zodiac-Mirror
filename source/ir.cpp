@@ -2118,7 +2118,8 @@ namespace Zodiac
         assert(rhs);
 
         if (lhs->type == rhs->type ||
-            (lhs->type->kind == AST_TYPE_ENUM && (lhs->type->aggregate_type.base_type == rhs->type)))
+            (lhs->type->kind == AST_TYPE_ENUM &&
+             (lhs->type->aggregate_type.base_type == rhs->type)))
         {
             IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
             IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_EQ, lhs, rhs, result);
@@ -2139,7 +2140,8 @@ namespace Zodiac
         assert(rhs);
 
         if (lhs->type == rhs->type ||
-            (lhs->type->kind == AST_TYPE_ENUM && (lhs->type->aggregate_type.base_type == rhs->type)))
+            (lhs->type->kind == AST_TYPE_ENUM &&
+             (lhs->type->aggregate_type.base_type == rhs->type)))
         {
             IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
             IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_NEQ, lhs, rhs, result);
@@ -2333,7 +2335,8 @@ namespace Zodiac
         return allocl_value;
     }
 
-    void ir_builder_emit_storel(IR_Builder* ir_builder, IR_Value* allocl_value, IR_Value* new_value)
+    void ir_builder_emit_storel(IR_Builder* ir_builder, IR_Value* allocl_value,
+                                IR_Value* new_value)
     {
         assert(ir_builder);
         assert(allocl_value);

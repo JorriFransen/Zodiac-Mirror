@@ -314,6 +314,11 @@ namespace Zodiac
         {
             result &= try_resolve_type_spec(resolver, declaration->mutable_decl.type_spec,
                                             &declaration->mutable_decl.type, scope);
+
+            if (!result)
+            {
+                return false;
+            }
         }
 
         AST_Expression* init_expr = declaration->mutable_decl.init_expression;
@@ -577,28 +582,45 @@ namespace Zodiac
 
         Atom module_name = declaration->import.module_identifier->atom;
         Atom module_file_name = atom_append(at, module_name, ".zdc");
-        Atom module_search_path = resolver->context->module_search_path;
 
-        Atom module_path = atom_append(at, module_search_path, module_file_name);
-
-        if (!file_exists(module_path.data))
+        bool found = false;
+        for (uint64_t i = 0; i < BUF_LENGTH(resolver->context->module_search_path); i++)
         {
-            resolver_report_error(resolver, declaration->file_pos, "Failed to find module: %s",
-                                  module_name.data);
-            resolver_report_error(resolver, declaration->file_pos, "\tExpected path: %s",
-                                  module_path.data);
-            return false;
+            Atom module_search_path = resolver->context->module_search_path[i];
+
+            Atom module_path = atom_append(at, module_search_path, module_file_name);
+
+            if (!file_exists(module_path.data))
+            {
+                found = false;
+                continue;
+            }
+            else
+            {
+                found = true;
+            }
+
+            // printf("module path: %s\n", module_path.data);
+            AST_Module* import_module = resolver_add_import_to_module(resolver, resolver->module,
+                                                                    module_path, module_name);
+            assert(import_module);
+
+            declaration->import.module = import_module;
+
+            BUF_PUSH(resolver->module->import_decls, declaration);
+
+            return true;
         }
 
-        AST_Module* import_module = resolver_add_import_to_module(resolver, resolver->module,
-                                                                  module_path, module_name);
-        assert(import_module);
 
-        declaration->import.module = import_module;
+        if (!found)
+        {
+            resolver_report_error(resolver, declaration->file_pos,
+                                  "Failed to find module: %s",
+                                  module_name.data);
+        }
 
-        BUF_PUSH(resolver->module->import_decls, declaration);
-
-        return true;
+        return false;
     }
 
 	static bool try_resolve_typedef_declaration(Resolver* resolver, AST_Declaration* declaration,
@@ -699,6 +721,11 @@ namespace Zodiac
             {
                 AST_Expression* lvalue_expr = statement->assign.lvalue_expression;
                 result &= try_resolve_expression(resolver, lvalue_expr, scope);
+                if (!result)
+                {
+                    return false;
+                }
+
                 if (result && lvalue_expr->is_const)
                 {
                     resolver_report_error(resolver, statement->file_pos,
@@ -1193,14 +1220,16 @@ namespace Zodiac
 
         if (!expression->type)
         {
-            expression->type = ast_find_or_create_pointer_type(resolver->context, Builtin::type_u8);
+            expression->type = ast_find_or_create_pointer_type(resolver->context,
+                                                               Builtin::type_u8);
         }
         expression->is_const = true;
 
         return true;
     }
 
-    static bool try_resolve_integer_literal_expression(Resolver* resolver, AST_Expression* expression,
+    static bool try_resolve_integer_literal_expression(Resolver* resolver,
+                                                       AST_Expression* expression,
                                                        AST_Type* suggested_type)
     {
         assert(resolver);
@@ -1745,6 +1774,11 @@ namespace Zodiac
 			expression->type = type;
 		}
 
+        if (result)
+        {
+            expression->is_const = expression->cast_expr.expr->is_const;
+        }
+
 		return result;
 	}
 
@@ -2176,7 +2210,8 @@ namespace Zodiac
                               identifier->atom.data);
     }
 
-    static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos, AST_Module* module,
+    static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,
+                                             AST_Module* module,
                                              AST_Identifier* identifier)
     {
         assert(resolver);
@@ -2185,11 +2220,13 @@ namespace Zodiac
 
         resolver->undeclared_decl_count++;
 
-        resolver_report_error(resolver, file_pos, "Reference to undeclared identifier '%s' in module '%s'",
+        resolver_report_error(resolver, file_pos,
+                              "Reference to undeclared identifier '%s' in module '%s'",
                               identifier->atom.data, module->module_name);
     }
 
-    static void resolver_report_error(Resolver* resolver, File_Pos file_pos, const char* format, ...)
+    static void resolver_report_error(Resolver* resolver, File_Pos file_pos,
+                                      const char* format, ...)
     {
         assert(resolver);
         assert(format);

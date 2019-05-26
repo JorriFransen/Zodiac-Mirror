@@ -56,7 +56,8 @@ namespace Zodiac
         printf("Arena size: %.2fMB\n", (double)arena_cap / MB(1));
     }
 
-    void ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* ast_module, IR_Module* ir_module)
+    void ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* ast_module,
+                                     IR_Module* ir_module)
     {
         assert(ir_runner);
         assert(ir_module);
@@ -96,23 +97,36 @@ namespace Zodiac
         const char* lib_path = lib_name.data;
 
         auto context = ir_runner->context;
-        auto import_atom = atom_append(context->atom_table, context->module_search_path, lib_name);
-        if (file_exists(import_atom.data))
+        bool found = false;
+        for (uint64_t i = 0; i < BUF_LENGTH(context->module_search_path); i++)
         {
-            lib_path = import_atom.data;
+            Atom search_path = context->module_search_path[i];
+            auto import_atom = atom_append(context->atom_table, search_path, lib_name);
+            if (file_exists(import_atom.data))
+            {
+                lib_path = import_atom.data;
+            }
+
+            assert(lib_path);
+            DLLib* lib = dlLoadLibrary(lib_path);
+            if (!lib)
+            {
+                continue;
+            }
+            else
+            {
+                found = true;
+            }
+
+            IR_Loaded_Dynamic_Lib loaded_lib = { lib_name, lib };
+            BUF_PUSH(ir_runner->loaded_dyn_libs, loaded_lib);
+            // printf("Loaded dynamic library: %s\n", lib_name.data);
         }
 
-        assert(lib_path);
-        DLLib* lib = dlLoadLibrary(lib_path);
-        if (!lib)
+        if (!found)
         {
-            fprintf(stderr, "Could not find library: %s\n", lib_name.data);
-            assert(false);
+            fprintf(stderr, "could not find library: %s\n", lib_name.data);
         }
-
-        IR_Loaded_Dynamic_Lib loaded_lib = { lib_name, lib };
-        BUF_PUSH(ir_runner->loaded_dyn_libs, loaded_lib);
-        //printf("Loaded dynamic library: %s\n", lib_name.data);
     }
 
     void ir_runner_load_foreigns(IR_Runner* ir_runner, IR_Module* ir_module)
@@ -256,6 +270,8 @@ namespace Zodiac
             }
         }
 
+        BUF_FREE(args);
+
         return stack_frame;
     }
 
@@ -330,6 +346,7 @@ namespace Zodiac
 
         AST_Type* return_type = func_value->function->type->function.return_type;
         assert(!(return_type->kind == AST_TYPE_STRUCT));
+        assert(!(return_type->kind == AST_TYPE_STATIC_ARRAY));
 
         IR_Value return_value = {};
         IR_Stack_Frame* stack_frame = ir_runner_call_function(dcb_data->runner,
@@ -857,6 +874,7 @@ namespace Zodiac
                     callback_address = dcbNewCallback(signature_string, dcb_handler,
                                                       &func->function->dcb_data);
                     func->function->dcb_data.callback_address = callback_address;
+                    BUF_FREE(signature_string);
                 }
 
                 assert(callback_address);
@@ -977,17 +995,6 @@ namespace Zodiac
             {
                 IR_Value* dest_value = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value* source_value = ir_runner_get_local_temporary(runner, iri->arg2);
-                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
-                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
-                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
-                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
-                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
-                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
-                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
-                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
-                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
-                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
-                IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
 
                 if (dest_value->type->kind == AST_TYPE_STATIC_ARRAY)
                 {
@@ -1491,9 +1498,9 @@ namespace Zodiac
         else
         {
             result = arena_alloc(&ir_runner->arena, IR_Stack_Frame);
+            result->arena = arena_create(KB(1));
         }
         result->function = function;
-        result->arena = arena_create(KB(1));
         result->args = args;
 
         for (uint64_t i = 0; i < BUF_LENGTH(function->local_temps); i++)
@@ -1578,11 +1585,13 @@ namespace Zodiac
         assert(stack_count(ir_runner->call_stack));
         auto old_stack_frame = stack_pop(ir_runner->call_stack);
 
-        arena_free(&old_stack_frame->arena);
+        // arena_free(&old_stack_frame->arena);
+        arena_reset(&old_stack_frame->arena);
 
         // *old_stack_frame = {};
         old_stack_frame->function = nullptr;
         old_stack_frame->args = nullptr;
+        BUF_FREE(old_stack_frame->temps);
         old_stack_frame->temps = nullptr;
 
         old_stack_frame->next_free = ir_runner->free_stack_frames;

@@ -1069,7 +1069,8 @@ namespace Zodiac
         return ast_find_or_create_array_type(context, base_type, count_value);
     }
 
-    AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type, uint64_t count)
+    AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type,
+                                            uint64_t count)
     {
         assert(context);
         assert(base_type);
@@ -1112,7 +1113,8 @@ namespace Zodiac
         return array_type;
     }
 
-	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
+	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
+                                               BUF(AST_Type*) arg_types,
                                                AST_Type* return_type)
 	{
 		assert(context);
