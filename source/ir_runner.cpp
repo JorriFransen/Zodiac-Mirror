@@ -1156,6 +1156,18 @@ namespace Zodiac
                             break;
                         }
 
+                        case 16:
+                        {
+                            dest_value->value.u16 = *((uint16_t*)pointer_value->value.string);
+                            break;
+                        }
+
+                        case 8:
+                        {
+                            dest_value->value.u8 = *((uint8_t*)pointer_value->value.string);
+                            break;
+                        }
+
                         default: assert(false);
                     }
                 }
