@@ -1406,7 +1406,7 @@ namespace Zodiac
 
         auto ct = current_token(parser);
 
-        return ct.kind == TOK_MUL || ct.kind == TOK_DIV;
+        return ct.kind == TOK_MUL || ct.kind == TOK_DIV || ct.kind == TOK_PERCENT;
     }
 
     static bool is_cmp_op(Parser* parser)
@@ -1475,6 +1475,10 @@ namespace Zodiac
 
             case TOK_DIV:
                 result = AST_BINOP_DIV;
+                break;
+
+            case TOK_PERCENT:
+                result = AST_BINOP_MOD;
                 break;
 
             default: assert(false);
@@ -1610,8 +1614,13 @@ namespace Zodiac
     {
         assert(parser);
 
-        auto ct = current_token(parser);
-        return ct.kind == token_kind;
+        if (parser->ti < BUF_LENGTH(parser->tokens))
+        {
+            auto ct = current_token(parser);
+            return ct.kind == token_kind;
+        }
+
+        return false;
     }
 
     void parser_report_error(Parser* parser, File_Pos file_pos, const char* format, ...)

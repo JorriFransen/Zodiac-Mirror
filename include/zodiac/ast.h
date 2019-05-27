@@ -66,6 +66,7 @@ namespace Zodiac
         AST_BINOP_SUB,
         AST_BINOP_MUL,
         AST_BINOP_DIV,
+        AST_BINOP_MOD,
 
         AST_BINOP_EQ,
         AST_BINOP_LT,

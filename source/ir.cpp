@@ -833,6 +833,9 @@ namespace Zodiac
                     case AST_BINOP_MUL:
                         return ir_builder_emit_mul(ir_builder, lhs_value, rhs_value);
 
+                    case AST_BINOP_MOD:
+                        return ir_builder_emit_mod(ir_builder, lhs_value, rhs_value);
+
                     case AST_BINOP_LT:
                         return ir_builder_emit_lt(ir_builder, lhs_value, rhs_value);
 
@@ -2031,6 +2034,22 @@ namespace Zodiac
         return result;
     }
 
+    IR_Value* ir_builder_emit_mod(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        assert(lhs->type == rhs->type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, lhs->type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_MOD, lhs, rhs, result);
+
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result;
+    }
+
     IR_Value* ir_builder_emit_div(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
     {
         assert(ir_builder);
@@ -3124,6 +3143,14 @@ namespace Zodiac
             {
                 ir_print_value(instruction->arg1);
                 printf(" * ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_MOD:
+            {
+                ir_print_value(instruction->arg1);
+                printf(" %% ");
                 ir_print_value(instruction->arg2);
                 break;
             }

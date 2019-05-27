@@ -85,6 +85,7 @@ namespace Zodiac
 
             _SINGLE_CHAR_TOKEN_CASE('+', TOK_PLUS);
             _SINGLE_CHAR_TOKEN_CASE('*', TOK_MUL);
+            _SINGLE_CHAR_TOKEN_CASE('%', TOK_PERCENT);
             _SINGLE_CHAR_TOKEN_CASE(':', TOK_COLON);
             _SINGLE_CHAR_TOKEN_CASE(';', TOK_SEMICOLON);
             _SINGLE_CHAR_TOKEN_CASE(',', TOK_COMMA);

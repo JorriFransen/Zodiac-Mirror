@@ -90,6 +90,7 @@ namespace Zodiac
         IR_OP_ADD,
         IR_OP_SUB,
         IR_OP_MUL,
+        IR_OP_MOD,
         IR_OP_DIV,
         IR_OP_LT,
         IR_OP_LTEQ,
@@ -293,6 +294,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_add(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_sub(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_mul(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
+    IR_Value* ir_builder_emit_mod(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_div(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_lt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_lteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);

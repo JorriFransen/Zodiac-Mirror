@@ -12,6 +12,7 @@ namespace Zodiac
     DEFINE_TOKEN(TOK_MINUS),      /* - */ \
     DEFINE_TOKEN(TOK_MUL),        /* * */ \
     DEFINE_TOKEN(TOK_DIV),        /* / */ \
+    DEFINE_TOKEN(TOK_PERCENT),    /* % */ \
     DEFINE_TOKEN(TOK_EQ),         /* = */ \
     DEFINE_TOKEN(TOK_EQEQ),       /* == */ \
     DEFINE_TOKEN(TOK_NEQ),        /* != */ \

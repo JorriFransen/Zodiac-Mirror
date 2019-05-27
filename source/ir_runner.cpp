@@ -470,6 +470,28 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_MOD:
+            {
+                assert(iri->arg1);
+                assert(iri->arg2);
+                assert(iri->result);
+                assert(iri->result->kind == IRV_TEMPORARY);
+
+                IR_Value* arg1 = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
+                IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
+
+                AST_Type* type = arg1->type;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    dest->value.s64 = arg1->value.s64 % arg2->value.s64;
+                }
+                else assert(false);
+
+                break;
+            }
+
             case IR_OP_DIV:
             {
                 assert(iri->arg1);
@@ -587,6 +609,10 @@ namespace Zodiac
                 else if (type == Builtin::type_double)
                 {
                     dest->value.s64 = arg1->value.r64 >= arg2->value.r64;
+                }
+                else if (type == Builtin::type_float)
+                {
+                    dest->value.s64 = arg1->value.r32 >= arg2->value.r32;
                 }
                 else assert(false);
                 break;
@@ -806,6 +832,11 @@ namespace Zodiac
                 {
                     result_value->value.r64 = dcCallDouble(runner->dyn_vm,
                                                            runner->loaded_foreign_symbols[foreign_index]);
+                }
+                else if (iri->result->type == Builtin::type_float)
+                {
+                    result_value->value.r32 = dcCallFloat(runner->dyn_vm,
+                                                          runner->loaded_foreign_symbols[foreign_index]);
                 }
                 else assert(false);
                 dcReset(runner->dyn_vm);
@@ -1188,6 +1219,10 @@ namespace Zodiac
                         }
                     }
                 }
+                else if (dest_type->kind == AST_TYPE_ENUM)
+                {
+                    dest_value->value.s64 = *((int64_t*)pointer_value->value.string);
+                }
                 else assert(false);
 
                 break;
@@ -1400,7 +1435,7 @@ namespace Zodiac
                     }
                     else
                     {
-                        assert(false);
+                        dest->value.r32 = (float(source->value.u64));
                     }
                 }
                 else if ((iri->arg1->type->flags & AST_TYPE_FLAG_INT) &&
@@ -1412,7 +1447,19 @@ namespace Zodiac
                     }
                     else
                     {
-                        assert(false);
+                        dest->value.r64 = (double)source->value.u64;
+                    }
+                }
+                else if (iri->arg1->type == Builtin::type_float &&
+                         (iri->result->type->flags & AST_TYPE_FLAG_INT))
+                {
+                    if (iri->result->type->flags & AST_TYPE_FLAG_SIGNED)
+                    {
+                        dest->value.s64 = (int64_t)source->value.r32;
+                    }
+                    else
+                    {
+                        dest->value.u64 = (uint64_t)source->value.r32;
                     }
                 }
                 else if (iri->arg1->type == Builtin::type_double &&

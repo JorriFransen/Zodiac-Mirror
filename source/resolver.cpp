@@ -237,7 +237,8 @@ namespace Zodiac
 			else
 			{
 				BUF_FREE(arg_types);
-				break;
+                resolver->current_func_decl = nullptr;
+                return false;
 			}
         }
 
@@ -744,8 +745,16 @@ namespace Zodiac
                                                  scope, suggested_type);
                 if (result && lvalue_expr->type->kind == AST_TYPE_ENUM)
                 {
-                    assert(lvalue_expr->type->aggregate_type.base_type ==
-                           statement->assign.expression->type);
+                    if (statement->assign.expression->type->kind == AST_TYPE_ENUM)
+                    {
+                        assert(lvalue_expr->type->aggregate_type.base_type ==
+                               statement->assign.expression->type->aggregate_type.base_type);
+                    }
+                    else
+                    {
+                        assert(lvalue_expr->type->aggregate_type.base_type ==
+                               statement->assign.expression->type);
+                    }
                 }
                 else if (result && lvalue_expr->kind == AST_EXPR_IDENTIFIER)
                 {
@@ -1715,7 +1724,14 @@ namespace Zodiac
                         }
                     }
 
-                    assert(found);
+                    if (!found)
+                    {
+                        resolver_report_error(resolver, expression->file_pos,
+                                              "Reference to undeclared struct member '%s' in struct '%s'",
+                                              member_expr->identifier->atom.data,
+                                              struct_type->name);
+                        return false;
+                    }
                 }
                 else assert(false);
                 break;
