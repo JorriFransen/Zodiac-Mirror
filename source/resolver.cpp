@@ -1249,7 +1249,8 @@ namespace Zodiac
         {
             if (suggested_type)
             {
-                assert(suggested_type->flags & AST_TYPE_FLAG_INT);
+                assert((suggested_type->flags & AST_TYPE_FLAG_INT) ||
+                       suggested_type->flags & AST_TYPE_FLAG_FLOAT);
                 expression->type = suggested_type;
             }
             else
