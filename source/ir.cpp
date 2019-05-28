@@ -1316,9 +1316,16 @@ namespace Zodiac
 
             if (expression_value->kind == IRV_FUNCTION)
             {
-                assert(expression_value->function->flags & IR_FUNC_FLAG_FOREIGN);
-                return ir_builder_emit_addrof_foreign(ir_builder, expression_value,
-                                                      expression->type);
+                if (expression_value->function->flags & IR_FUNC_FLAG_FOREIGN)
+                {
+                    return ir_builder_emit_addrof_foreign(ir_builder, expression_value,
+                                                          expression->type);
+                }
+                else
+                {
+                    return ir_builder_emit_addrof_function(ir_builder, expression_value,
+                                                           expression->type);
+                }
             }
             else
             {

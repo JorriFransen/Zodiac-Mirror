@@ -1332,15 +1332,21 @@ namespace Zodiac
             case IR_OP_DEREF:
             {
                 assert(iri->arg1);
-                assert(iri->arg1->kind == IRV_ALLOCL);
                 assert(iri->result);
                 assert(iri->result->kind == IRV_TEMPORARY);
 
                 IR_Value* source_allocl = ir_runner_get_local_temporary(runner, iri->arg1);
-                int64_t* source_ptr = (int64_t*)source_allocl->value.s64;
-
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
-                dest->value.s64 = *source_ptr;
+
+                if (iri->result->type->kind == AST_TYPE_STRUCT)
+                {
+                    dest->value.struct_pointer = source_allocl->value.struct_pointer;
+                }
+                else
+                {
+                    int64_t* source_ptr = (int64_t*)source_allocl->value.s64;
+                    dest->value.s64 = *source_ptr;
+                }
 
                 break;
             }

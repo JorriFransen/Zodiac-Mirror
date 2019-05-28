@@ -1127,7 +1127,25 @@ namespace Zodiac
 		else assert(false);
 
 		assert(func_type || recursive);
-        if (func_type) assert(func_type->kind == AST_TYPE_FUNCTION);
+        if (func_type)
+        {
+            assert(func_type->kind == AST_TYPE_FUNCTION);
+            auto arg_count = BUF_LENGTH(expression->call.arg_expressions);
+            auto expected_arg_count = BUF_LENGTH(func_type->function.arg_types);
+
+            if (arg_count != expected_arg_count)
+            {
+                if ((arg_count > expected_arg_count && !func_type->function.is_vararg) ||
+                    arg_count < expected_arg_count)
+                {
+                    resolver_report_error(resolver, expression->file_pos,
+                                          "Got %lu argument(s) for function call, expected %lu for function: '%s'",
+                                          arg_count, expected_arg_count,
+                                          ident_expr->identifier->atom.data);
+                    return false;
+                }
+            }
+        }
 
         for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
         {
@@ -1146,6 +1164,35 @@ namespace Zodiac
 
             AST_Expression* arg_expr = expression->call.arg_expressions[i];
             result &= try_resolve_expression(resolver, arg_expr, scope, specified_arg_type);
+
+            if (!result)
+            {
+                return false;
+            }
+
+            if (result && specified_arg_type && !(arg_expr->type == specified_arg_type))
+            {
+                if (specified_arg_type->kind == AST_TYPE_POINTER &&
+                    (arg_expr->type->kind == AST_TYPE_POINTER &&
+                     arg_expr->type->pointer.base == Builtin::type_void))
+                {
+                }
+                else if ((specified_arg_type->kind == AST_TYPE_POINTER &&
+                          specified_arg_type->pointer.base == Builtin::type_void) &&
+                         arg_expr->type->kind == AST_TYPE_POINTER)
+                {
+                }
+                else if (specified_arg_type->kind == AST_TYPE_ENUM &&
+                         specified_arg_type->aggregate_type.base_type == arg_expr->type)
+                {
+                }
+                else
+                {
+                    resolver_report_error(resolver, arg_expr->file_pos,
+                                          "Mismatching argument type for argument %lu\n", i);
+                    return false;
+                }
+            }
         }
 
         if (result && !expression->type)
@@ -1344,6 +1391,10 @@ namespace Zodiac
 
                 same_type = first_type == expr->type;
             }
+            else
+            {
+                return false;
+            }
         }
 
 
@@ -1495,7 +1546,9 @@ namespace Zodiac
         AST_Expression* rhs = expression->binary.rhs;
 
         result &= try_resolve_expression(resolver, lhs, scope);
+        if (!result) return false;
         result &= try_resolve_expression(resolver, rhs, scope);
+        if (!result) return false;
 
         if (result && !expression->type)
         {
@@ -1975,6 +2028,11 @@ namespace Zodiac
                 bool count_result = try_resolve_expression(resolver,
                                                            type_spec->static_array.count_expr,
                                                            scope);
+                if (!count_result)
+                {
+                    return false;
+                }
+
                 if (base_result && count_result)
                 {
                     AST_Type* array_type =
