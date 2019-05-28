@@ -1163,8 +1163,6 @@ namespace Zodiac
 
                 if (dest_type->kind == AST_TYPE_STRUCT)
                 {
-                    // memcpy(dest_value->value.struct_pointer, pointer_value->value.struct_pointer,
-                    //        dest_type->bit_size / 8);
                     dest_value->value.struct_pointer = pointer_value->value.struct_pointer;
                 }
                 else if (dest_type->kind == AST_TYPE_STATIC_ARRAY)

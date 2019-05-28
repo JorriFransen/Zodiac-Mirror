@@ -27,13 +27,13 @@ main :: () -> int
         return 9;
     }
 
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetErrorCallback(error_callback);
+    glfwSetKeyCallback(window, *key_callback);
+    glfwSetErrorCallback(*error_callback);
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
     load(*glfwGetProcAddress);
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, (:GLsizei)width, (:GLsizei)height);
 
     vendor := glGetString(GL_VENDOR);
     renderer := glGetString(GL_RENDERER);
@@ -42,8 +42,6 @@ main :: () -> int
     c.printf("GL vendor: %s\n", vendor);
     c.printf("GL renderer: %s\n", renderer);
     c.printf("GL version: %s\n", version);
-
-    glViewport(0, 0, width, height);
 
     // glClearColor(0.1, 0.3, 0.5, 1.0);
     glClearColor(0.0, 0.0, 0.0, 0.0);

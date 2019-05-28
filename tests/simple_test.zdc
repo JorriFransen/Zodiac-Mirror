@@ -133,5 +133,5 @@ loop :: () -> void
         c.printf("\n");
     }
 
-    c.putchar('\n');
+    c.putchar((:int)'\n');
 }

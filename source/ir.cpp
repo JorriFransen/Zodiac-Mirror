@@ -2674,7 +2674,8 @@ namespace Zodiac
         assert(ir_builder);
         assert(value);
         assert(value->kind == IRV_TEMPORARY ||
-               value->kind == IRV_INT_LITERAL);
+               value->kind == IRV_INT_LITERAL ||
+               value->kind == IRV_CHAR_LITERAL);
         assert(type);
 
         IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, type);
