@@ -125,6 +125,8 @@ namespace Zodiac
 		                              AST_Identifier* identifier,
                                       bool allow_import_check = true);
 
+    bool is_valid_integer_promotion(AST_Type* source_type, AST_Type* target_type);
+
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,
                                              AST_Identifier* identifier);
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,

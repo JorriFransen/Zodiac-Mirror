@@ -1186,6 +1186,9 @@ namespace Zodiac
                          specified_arg_type->aggregate_type.base_type == arg_expr->type)
                 {
                 }
+                else if (is_valid_integer_promotion(arg_expr->type, specified_arg_type))
+                {
+                }
                 else
                 {
                     resolver_report_error(resolver, arg_expr->file_pos,
@@ -2271,6 +2274,41 @@ namespace Zodiac
 		}
 
         return nullptr;
+    }
+
+    bool is_valid_integer_promotion(AST_Type* source_type, AST_Type* target_type)
+    {
+        assert(source_type);
+        assert(target_type);
+
+        if ((source_type->flags & AST_TYPE_FLAG_INT) &&
+            target_type->flags & AST_TYPE_FLAG_INT)
+        {
+            if (target_type->flags & AST_TYPE_FLAG_SIGNED)
+            {
+                if (source_type->flags & AST_TYPE_FLAG_SIGNED)
+                {
+                    return target_type->bit_size >= source_type->bit_size;
+                }
+                else
+                {
+                    return target_type->bit_size > source_type->bit_size;
+                }
+            }
+            else
+            {
+                if (source_type->flags & AST_TYPE_FLAG_SIGNED)
+                {
+                    return false;
+                }
+                else
+                {
+                    return target_type->bit_size >= source_type->bit_size;
+                }
+            }
+        }
+
+        assert(false);
     }
 
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,

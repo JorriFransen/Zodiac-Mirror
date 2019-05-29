@@ -15,8 +15,8 @@ namespace Zodiac
         Arena string_arena;
 		Atom* atoms = nullptr;
 		uint64_t atom_count = 0;
-        //BUF(Atom) atoms = nullptr;
     };
+
 	void atom_test();
 
     void atom_table_init(Atom_Table* atom_table);
