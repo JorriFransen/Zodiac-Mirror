@@ -767,8 +767,27 @@ namespace Zodiac
                 }
                 else if (result && lvalue_expr->kind == AST_EXPR_IDENTIFIER)
                 {
-                    assert(lvalue_expr->identifier->declaration->mutable_decl.type ==
-                           statement->assign.expression->type);
+                    AST_Expression* assign_expr = statement->assign.expression;
+                    if (lvalue_expr->type != assign_expr->type)
+                    {
+                        if ((lvalue_expr->type->flags & AST_TYPE_FLAG_FLOAT) &&
+                            (assign_expr->type->flags & AST_TYPE_FLAG_INT))
+                        {
+                            AST_Expression* old_assign_expr =
+                                ast_expression_new(resolver->context, assign_expr->file_pos,
+                                                   assign_expr->kind);
+
+                            *old_assign_expr = *assign_expr;
+                            assign_expr->kind = AST_EXPR_CAST;
+                            assign_expr->type = lvalue_expr->type;
+                            assign_expr->cast_expr.type_spec = nullptr;
+                            assign_expr->cast_expr.expr = old_assign_expr;
+                        }
+                        else
+                        {
+                            assert(false);
+                        }
+                    }
                 }
                 break;
             }
@@ -1198,10 +1217,30 @@ namespace Zodiac
                 else if (is_valid_integer_promotion(arg_expr->type, specified_arg_type))
                 {
                 }
+                else if ((specified_arg_type->flags & AST_TYPE_FLAG_FLOAT) &&
+                         (arg_expr->type->flags & AST_TYPE_FLAG_INT) &&
+                         arg_expr->type->bit_size >= specified_arg_type->bit_size)
+                {
+                    AST_Expression* old_arg_expr = ast_expression_new(resolver->context,
+                                                                      arg_expr->file_pos,
+                                                                      arg_expr->kind);
+                    *old_arg_expr = *arg_expr;
+
+                    arg_expr->kind = AST_EXPR_CAST;
+                    arg_expr->type = specified_arg_type;
+                    arg_expr->cast_expr.type_spec = nullptr;
+                    arg_expr->cast_expr.expr = old_arg_expr;
+                }
                 else
                 {
-                    resolver_report_error(resolver, arg_expr->file_pos,
-                                          "Mismatching argument type for argument %lu\n", i);
+                    const char* format = "Mismatching type for argument %lu\n\tExpected type: %s\n\tGot type: %s";
+                    // TODO: temp mem
+                    const char* expected_type_string = ast_type_to_string(specified_arg_type);
+                    const char* arg_type_string = ast_type_to_string(arg_expr->type);
+                    resolver_report_error(resolver, arg_expr->file_pos, format, i,
+                                          expected_type_string, arg_type_string);
+                    mem_free(expected_type_string);
+                    mem_free(arg_type_string);
                     return false;
                 }
             }
@@ -1308,8 +1347,17 @@ namespace Zodiac
         {
             if (suggested_type)
             {
-                assert((suggested_type->flags & AST_TYPE_FLAG_INT) ||
-                       suggested_type->flags & AST_TYPE_FLAG_FLOAT);
+                if (suggested_type->flags & AST_TYPE_FLAG_INT)
+                {}
+                else if (suggested_type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    uint64_t int_value = expression->integer_literal.u64;
+                    expression->kind = AST_EXPR_FLOAT_LITERAL;
+                    expression->float_literal.r32 = (float)int_value;
+                    expression->float_literal.r64 = (double)int_value;
+                }
+                else assert(false);
+
                 expression->type = suggested_type;
             }
             else
@@ -1330,18 +1378,13 @@ namespace Zodiac
         assert(expression);
         assert(expression->kind == AST_EXPR_FLOAT_LITERAL);
 
+        if (suggested_type) assert(suggested_type->flags & AST_TYPE_FLAG_FLOAT);
+
         if (!expression->type)
         {
             if (suggested_type)
             {
-                if (suggested_type == Builtin::type_double)
-                {
-                    expression->type = Builtin::type_double;
-                }
-                else if (suggested_type == Builtin::type_float)
-                {
-                    expression->type = Builtin::type_float;
-                }
+                expression->type = suggested_type;
             }
             else
             {
@@ -1430,20 +1473,40 @@ namespace Zodiac
                     assert(expr->type);
                     AST_Declaration* struct_member_decl = suggested_type->aggregate_type.member_declarations[i];
 
-                    if (expr->type != struct_member_decl->mutable_decl.type &&
-                        !(expr->type == Builtin::type_float &&
-                          struct_member_decl->mutable_decl.type == Builtin::type_double))
+                    AST_Type* member_type = struct_member_decl->mutable_decl.type;
+
+                    if (expr->type != member_type)
                     {
-                        match = false;
-                        resolver_report_error(resolver, expr->file_pos,
-                                              "Type of compound member does not match type of struct member: %s",
-                                              struct_member_decl->identifier->atom.data);
+                        if (expr->type == Builtin::type_float && member_type ==
+                            Builtin::type_double)
+                        {
+                        }
+                        if ((expr->type->flags & AST_TYPE_FLAG_INT) &&
+                            (member_type->flags & AST_TYPE_FLAG_FLOAT))
+                        {
+                            AST_Expression* old_expr = ast_expression_new(resolver->context,
+                                                                          expr->file_pos,
+                                                                          expr->kind);
+                            *old_expr = *expr;
+
+                            expr->kind = AST_EXPR_CAST;
+                            expr->type = member_type;
+                            expr->cast_expr.type_spec = nullptr;
+                            expr->cast_expr.expr = old_expr;
+                        }
+                        else
+                        {
+                            match = false;
+                            resolver_report_error(resolver, expr->file_pos,
+                                                  "Type of compound member does not match type of struct member: %s",
+                                                  struct_member_decl->identifier->atom.data);
+                        }
                     }
                 }
 
                 if (match)
                 {
-                    expression->type = suggested_type;
+                    if (!expression->type) expression->type = suggested_type;
                 }
                 else
                 {
@@ -1564,29 +1627,56 @@ namespace Zodiac
 
         if (result && !expression->type)
         {
-            if (!lhs->type)
+            if (lhs->type == rhs->type)
             {
-                resolver_report_error(resolver, expression->file_pos,
-                                      "Mismatching types in binary expression");
-                return false;
+                expression->type = lhs->type;
+            }
+            else if (lhs->type->kind == AST_TYPE_ENUM)
+            {
+                assert(lhs->type->aggregate_type.base_type == rhs->type);
+                expression->type = rhs->type;
+            }
+            else if (rhs->type->kind == AST_TYPE_ENUM)
+            {
+                assert(rhs->type->aggregate_type.base_type == lhs->type);
+
+            }
+            else if ((lhs->type->flags & AST_TYPE_FLAG_FLOAT) &&
+                     (rhs->type->flags & AST_TYPE_FLAG_INT))
+            {
+                AST_Expression* old_rhs = ast_expression_new(resolver->context, rhs->file_pos,
+                                                             rhs->kind);
+                *old_rhs = *rhs;
+                rhs->kind = AST_EXPR_CAST;
+                rhs->type = lhs->type;
+                rhs->cast_expr.type_spec = nullptr;
+                rhs->cast_expr.expr = old_rhs;
+                rhs->is_const = old_rhs->is_const;
+
+                expression->type = lhs->type;
+            }
+            else if ((lhs->type->flags & AST_TYPE_FLAG_INT) &&
+                     (rhs->type->flags & AST_TYPE_FLAG_FLOAT))
+            {
+                AST_Expression* old_lhs = ast_expression_new(resolver->context, lhs->file_pos,
+                                                             lhs->kind);
+                *old_lhs = *lhs;
+                lhs->kind = AST_EXPR_CAST;
+                lhs->type = rhs->type;
+                lhs->cast_expr.type_spec = nullptr;
+                lhs->cast_expr.expr = old_lhs;
+                lhs->is_const = old_lhs->is_const;
+
+                expression->type = rhs->type;
             }
             else
             {
-                if (lhs->type == rhs->type)
-                {
-                    expression->type = lhs->type;
-                }
-                else if (lhs->type->kind == AST_TYPE_ENUM)
-                {
-                    assert(lhs->type->aggregate_type.base_type == rhs->type);
-                    expression->type = rhs->type;
-                }
-                else if (rhs->type->kind == AST_TYPE_ENUM)
-                {
-                    assert(rhs->type->aggregate_type.base_type == lhs->type);
-
-                }
-                else assert(false);
+                const char* lhs_type_string = ast_type_to_string(lhs->type);
+                const char* rhs_type_string = ast_type_to_string(rhs->type);
+                resolver_report_error(resolver, expression->file_pos,
+                                        "Mismatching types in binary expression\n\tLeft: %s\n\tRight: %s",
+                                        lhs_type_string, rhs_type_string);
+                return false;
             }
 
 
@@ -1846,7 +1936,11 @@ namespace Zodiac
 		bool result = true;
 
 		AST_Type* type = nullptr;
-		result &= try_resolve_type_spec(resolver, expression->cast_expr.type_spec, &type, scope);
+        if (!expression->type)
+        {
+            result &= try_resolve_type_spec(resolver, expression->cast_expr.type_spec, &type,
+                                            scope);
+        }
 
 		result &= try_resolve_expression(resolver, expression->cast_expr.expr, scope);
 
@@ -2317,7 +2411,7 @@ namespace Zodiac
             }
         }
 
-        assert(false);
+        return false;
     }
 
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,
@@ -2365,7 +2459,8 @@ namespace Zodiac
     }
 
     static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
-                                      Resolve_Error_Flag flags, const char* format, va_list args)
+                                                Resolve_Error_Flag flags, const char* format,
+                                                va_list args)
     {
         assert(resolver);
         assert(format);
@@ -2389,8 +2484,8 @@ namespace Zodiac
     }
 
     static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
-                                      Resolve_Error_Flag flags,
-                                      const char* format, ...)
+                                                Resolve_Error_Flag flags,
+                                                const char* format, ...)
     {
         assert(resolver);
         assert(format);

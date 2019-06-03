@@ -3480,7 +3480,8 @@ namespace Zodiac
 
             case IRV_INT_LITERAL:
             {
-                printf("lit(%" PRId64 ")", value->value.s64);
+                printf("lit(%" PRId64 "):", value->value.s64);
+                ir_print_type(value->type);
                 break;
             }
 
@@ -3488,13 +3489,14 @@ namespace Zodiac
             {
                 if (value->type == Builtin::type_double)
                 {
-                    printf("lit(%f)", value->value.r64);
+                    printf("lit(%f):", value->value.r64);
                 }
                 else if (value->type == Builtin::type_float)
                 {
-                    printf("lit(%f)", value->value.r32);
+                    printf("lit(%f):", value->value.r32);
                 }
                 else assert(false);
+                ir_print_type(value->type);
                 break;
             }
 

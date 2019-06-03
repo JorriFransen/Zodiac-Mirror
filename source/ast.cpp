@@ -1348,4 +1348,36 @@ namespace Zodiac
 
         mem_free(old_data);
     }
+
+    const char* ast_type_to_string(AST_Type* type)
+    {
+        assert(type);
+
+        const char* result = nullptr;
+
+        switch (type->kind)
+        {
+            case AST_TYPE_BASE:
+            {
+                auto name_len = strlen(type->name);
+                result = (char*)mem_alloc(name_len + 1);
+                memcpy((char*)result, type->name, name_len);
+                ((char*)result)[name_len + 1] = '\0';
+                break;
+            }
+
+            case AST_TYPE_POINTER:
+            {
+                // TODO: Temp mem
+                const char* base_string = ast_type_to_string(type->pointer.base);
+                result = string_append("*", base_string);
+                mem_free(base_string);
+                break;
+            }
+
+            default: assert(false);
+        }
+
+        return  result;
+    }
 }

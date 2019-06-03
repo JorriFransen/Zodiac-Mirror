@@ -706,4 +706,6 @@ namespace Zodiac
     uint64_t ast_get_function_type_hash(bool is_vararg, BUF(AST_Type*) arg_types, AST_Type* return_type);
 
     void ast_grow_type_hash(Context* context);
+
+    const char* ast_type_to_string(AST_Type* type);
 }
