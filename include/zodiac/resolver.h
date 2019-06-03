@@ -5,10 +5,18 @@
 
 namespace Zodiac
 {
+    enum Resolve_Error_Flag : uint64_t
+    {
+        RE_FLAG_NONE       = 0,
+        RE_FLAG_UNDECLARED = 1 << 0,
+    };
+
     struct Resolve_Error
     {
+        Resolve_Error_Flag flags = RE_FLAG_NONE;
         char* message = nullptr;
         File_Pos file_pos = {};
+        Atom identifier = {};
     };
 
     struct Resolver
@@ -24,6 +32,8 @@ namespace Zodiac
 
         uint64_t undeclared_decl_count = 0;
         uint64_t undeclared_decl_count_last_cycle = UINT64_MAX;
+
+        BUF(AST_Declaration*) unresolved_decls = nullptr;
 
 		BUF(Resolve_Error) errors = nullptr;
 
@@ -89,9 +99,11 @@ namespace Zodiac
     static bool try_resolve_character_literal_expression(Resolver* resolver,
                                                          AST_Expression* expression);
     static bool try_resolve_compound_literal_expression(Resolver* resolver,
-                                                        AST_Expression* expression, AST_Scope* scope,
+                                                        AST_Expression* expression,
+                                                        AST_Scope* scope,
                                                         AST_Type* suggested_type = nullptr);
-    static bool try_resolve_array_length_expression(Resolver* resolver, AST_Expression* expression, AST_Scope* scope);
+    static bool try_resolve_array_length_expression(Resolver* resolver,
+                                                    AST_Expression* expression, AST_Scope* scope);
     static bool try_resolve_identifier_expression(Resolver* resolver, AST_Expression* expression,
                                                   AST_Scope* scope);
     static bool try_resolve_binary_expression(Resolver* resolver, AST_Expression* expression,
@@ -114,7 +126,8 @@ namespace Zodiac
                                               const Atom& module_path,
                                               const Atom& module_name);
 
-    static bool is_valid_integer_conversion(Resolver* resolver, AST_Type* dest_type, AST_Type* source_type);
+    static bool is_valid_integer_conversion(Resolver* resolver, AST_Type* dest_type,
+                                            AST_Type* source_type);
 
     AST_Type* create_struct_type(Resolver* resolver, AST_Identifier* identifier,
                                  BUF(AST_Declaration*) member_decls);
@@ -132,7 +145,12 @@ namespace Zodiac
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,
                                              AST_Module* module,
                                              AST_Identifier* identifier);
-    static void resolver_report_error(Resolver* resolver, File_Pos file_pos, const char* format,
+    static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
+                                      const char* format, ...);
+    static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
+                                      Resolve_Error_Flag flags, const char* format, va_list args);
+    static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
+                                      Resolve_Error_Flag flags, const char* format,
                                       ...);
     void resolver_report_errors(Resolver* resolver);
 }

@@ -24,6 +24,7 @@ namespace Zodiac
         resolver->unresolved_decl_count_last_cycle = UINT64_MAX;
         resolver->undeclared_decl_count = 0;
         resolver->undeclared_decl_count_last_cycle = UINT64_MAX;
+        resolver->unresolved_decls = nullptr;
 
         resolver->errors = nullptr;
 
@@ -42,6 +43,12 @@ namespace Zodiac
         {
             auto err_hdr = _BUF_HDR(resolver->errors);
             err_hdr->length = 0;
+        }
+
+        if (resolver->unresolved_decls)
+        {
+            auto unres_hdr = _BUF_HDR(resolver->unresolved_decls);
+            unres_hdr->length = 0;
         }
 
         for (uint64_t i = 0; i < BUF_LENGTH(resolver->module->global_declarations); i++)
@@ -159,7 +166,8 @@ namespace Zodiac
                         }
                         else
                         {
-                            result &= try_resolve_aggregate_type_declaration(resolver, declaration,
+                            result &= try_resolve_aggregate_type_declaration(resolver,
+                                                                             declaration,
                                                                              scope);
                         }
                         break;
@@ -186,6 +194,7 @@ namespace Zodiac
             if (!result)
             {
                 resolver->unresolved_decl_count++;
+                BUF_PUSH(resolver->unresolved_decls, declaration);
             }
             else
             {
@@ -2319,8 +2328,11 @@ namespace Zodiac
 
         resolver->undeclared_decl_count++;
 
-        resolver_report_error(resolver, file_pos, "Reference to undeclared identifier: %s",
-                              identifier->atom.data);
+        auto error = resolver_report_error(resolver, file_pos, RE_FLAG_UNDECLARED,
+                                           "Reference to undeclared identifier: %s",
+                                           identifier->atom.data);
+
+        error->identifier = identifier->atom;
     }
 
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,
@@ -2333,13 +2345,27 @@ namespace Zodiac
 
         resolver->undeclared_decl_count++;
 
-        resolver_report_error(resolver, file_pos,
-                              "Reference to undeclared identifier '%s' in module '%s'",
-                              identifier->atom.data, module->module_name);
+        auto error = resolver_report_error(resolver, file_pos, RE_FLAG_UNDECLARED,
+                                           "Reference to undeclared identifier '%s' in module '%s'",
+                                           identifier->atom.data, module->module_name);
+
+        error->identifier = identifier->atom;
     }
 
-    static void resolver_report_error(Resolver* resolver, File_Pos file_pos,
+    static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
                                       const char* format, ...)
+    {
+        va_list args;
+        va_start(args, format);
+        Resolve_Error* result = resolver_report_error(resolver, file_pos, RE_FLAG_NONE,
+                                                      format, args);
+        va_end(args);
+
+        return result;
+    }
+
+    static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
+                                      Resolve_Error_Flag flags, const char* format, va_list args)
     {
         assert(resolver);
         assert(format);
@@ -2347,10 +2373,7 @@ namespace Zodiac
         const size_t print_buf_size = 2048;
         static char print_buf[print_buf_size];
 
-        va_list args;
-        va_start(args, format);
         vsprintf(print_buf, format, args);
-        va_end(args);
 
         auto message_length = strlen(print_buf);
         char* message = (char*)mem_alloc(message_length + 1);
@@ -2358,8 +2381,26 @@ namespace Zodiac
         memcpy(message, print_buf, message_length);
         message[message_length] = '\0';
 
-        Resolve_Error error = { message, file_pos };
+        Resolve_Error error = { flags, message, file_pos };
         BUF_PUSH(resolver->errors, error);
+
+        Resolve_Error* result = &resolver->errors[BUF_LENGTH(resolver->errors) - 1];
+        return result;
+    }
+
+    static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
+                                      Resolve_Error_Flag flags,
+                                      const char* format, ...)
+    {
+        assert(resolver);
+        assert(format);
+
+        va_list args;
+        va_start(args, format);
+        Resolve_Error* result = resolver_report_error(resolver, file_pos, flags, format, args);
+        va_end(args);
+
+        return result;
     }
 
     void resolver_report_errors(Resolver* resolver)
@@ -2369,9 +2410,29 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(resolver->errors); i++)
         {
             auto error = resolver->errors[i];
-            fprintf(stderr, "Error:%s:%" PRIu64 ":%" PRIu64 ": %s\n", error.file_pos.file_name,
-                    error.file_pos.line, error.file_pos.line_relative_char_pos,
-                    error.message);
+
+            bool report = true;
+            if (error.flags & RE_FLAG_UNDECLARED)
+            {
+                for (uint64_t i = 0; i < BUF_LENGTH(resolver->unresolved_decls); i++)
+                {
+                    AST_Declaration* unres_decl = resolver->unresolved_decls[i];
+                    if (unres_decl->identifier &&
+                        unres_decl->identifier->atom == error.identifier)
+                    {
+                        report = false;
+                        break;
+                    }
+                }
+            }
+
+            if (report)
+            {
+                fprintf(stderr, "Error:%s:%" PRIu64 ":%" PRIu64 ": %s\n",
+                        error.file_pos.file_name,
+                        error.file_pos.line, error.file_pos.line_relative_char_pos,
+                        error.message);
+            }
         }
     }
 }
