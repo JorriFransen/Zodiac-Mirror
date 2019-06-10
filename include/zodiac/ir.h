@@ -99,6 +99,7 @@ namespace Zodiac
         IR_OP_EQ,
         IR_OP_NEQ,
         IR_OP_AND_AND,
+        IR_OP_OR_OR,
         IR_OP_NOT,
 
         IR_OP_PUSH_CALL_ARG,
@@ -303,6 +304,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_eq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_neq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_and_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
+    IR_Value* ir_builder_emit_or_or(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val);
     void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value,
                                   bool is_vararg = false, bool is_foreign = false);

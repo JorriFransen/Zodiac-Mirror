@@ -22,6 +22,8 @@ namespace Zodiac
     DEFINE_TOKEN(TOK_GTEQ),       /* >= */ \
     DEFINE_TOKEN(TOK_AND),        /* &  */ \
     DEFINE_TOKEN(TOK_AND_AND),    /* && */ \
+    DEFINE_TOKEN(TOK_OR),         /* | */ \
+    DEFINE_TOKEN(TOK_OR_OR),      /* || */ \
     DEFINE_TOKEN(TOK_POUND),      /* # */ \
     DEFINE_TOKEN(TOK_COLON),      /* : */ \
     DEFINE_TOKEN(TOK_SEMICOLON),  /* ; */ \

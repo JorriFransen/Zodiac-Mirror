@@ -857,6 +857,9 @@ namespace Zodiac
                     case AST_BINOP_AND_AND:
                         return ir_builder_emit_and_and(ir_builder, lhs_value, rhs_value);
 
+                    case AST_BINOP_OR_OR:
+                        return ir_builder_emit_or_or(ir_builder, lhs_value, rhs_value);
+
                     default: assert(false);
                 }
             }
@@ -2197,6 +2200,22 @@ namespace Zodiac
         return result;
     }
 
+    IR_Value* ir_builder_emit_or_or(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        assert(lhs->type == rhs->type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_OR_OR, lhs, rhs, result);
+
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result;
+    }
+
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val)
     {
         assert(ir_builder);
@@ -2619,6 +2638,7 @@ namespace Zodiac
                 {
                     base_value = ir_builder_emit_load(ir_builder, base_value);
                 }
+
                 assert(base_type->pointer.base->kind == AST_TYPE_STRUCT);
                 base_value = ir_builder_emit_loadp(ir_builder, base_value);
                 struct_type = base_type->pointer.base;

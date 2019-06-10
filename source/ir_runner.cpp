@@ -698,6 +698,30 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_OR_OR:
+            {
+                IR_Value* arg1 = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
+                IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
+
+                AST_Type* type = arg1->type;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    dest->value.s64 = arg1->value.s64 || arg2->value.s64;
+                }
+                else if (type == Builtin::type_double)
+                {
+                    dest->value.s64 = arg1->value.r64 || arg2->value.r64;
+                }
+                else if (type->kind == AST_TYPE_ENUM)
+                {
+                    dest->value.s64 = arg1->value.s64 || arg2->value.s64;
+                }
+                else assert(false);
+                break;
+            }
+
             case IR_OP_PUSH_CALL_ARG:
             {
                 assert(iri->arg1);
