@@ -77,6 +77,11 @@ namespace Zodiac
 			}
 		}
 
+        if (!options->main_file_name)
+        {
+            return false;
+        }
+
 		return true;
 	}
 
