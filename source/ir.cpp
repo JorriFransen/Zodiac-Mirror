@@ -1211,6 +1211,12 @@ namespace Zodiac
                 base_decl = base_expression->dot.declaration;
             }
 
+            while (struct_type->kind == AST_TYPE_POINTER)
+            {
+                struct_type = struct_type->pointer.base;
+                is_pointer = true;
+            }
+
             assert(struct_type->kind == AST_TYPE_STRUCT);
 
             uint64_t member_index = 0;
@@ -2625,6 +2631,12 @@ namespace Zodiac
 
             IR_Value* base_value = ir_builder_emit_lvalue(ir_builder,
                                                           lvalue_expr->dot.base_expression);
+
+            while (base_value->type->kind != AST_TYPE_STRUCT)
+            {
+                base_value = ir_builder_emit_load(ir_builder, base_value);
+            }
+
             AST_Type* base_type = base_value->type;
             AST_Type* struct_type = nullptr;
 
@@ -2639,7 +2651,8 @@ namespace Zodiac
                     base_value = ir_builder_emit_load(ir_builder, base_value);
                 }
 
-                assert(base_type->pointer.base->kind == AST_TYPE_STRUCT);
+                assert(base_type->pointer.base->kind == AST_TYPE_STRUCT ||
+                       base_type->pointer.base->kind == AST_TYPE_POINTER);
                 base_value = ir_builder_emit_loadp(ir_builder, base_value);
                 struct_type = base_type->pointer.base;
             }
@@ -2664,6 +2677,7 @@ namespace Zodiac
 
             IR_Value* result = ir_builder_emit_aggregate_offset_pointer(ir_builder, base_value,
                                                                         member_index);
+
             return result;
         }
         else if (lvalue_expr->kind == AST_EXPR_SUBSCRIPT)

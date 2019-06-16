@@ -1189,6 +1189,11 @@ namespace Zodiac
                 {
                     dest_value->value.struct_pointer = pointer_value->value.struct_pointer;
                 }
+                else if (dest_type->kind == AST_TYPE_POINTER &&
+                         dest_type->pointer.base->kind == AST_TYPE_STRUCT)
+                {
+                     dest_value->value.string = (uint8_t*)(*(uint64_t*)pointer_value->value.struct_pointer);
+                }
                 else if (dest_type->kind == AST_TYPE_STATIC_ARRAY)
                 {
                     dest_value->value.static_array = (void*)pointer_value->value.string;
@@ -1245,6 +1250,7 @@ namespace Zodiac
                 {
                     dest_value->value.s64 = *((int64_t*)pointer_value->value.string);
                 }
+
                 else assert(false);
 
                 break;

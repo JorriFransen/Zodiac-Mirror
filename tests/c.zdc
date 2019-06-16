@@ -31,6 +31,8 @@ stderr : *FILE = null;
 #foreign sinf :: (x: float) -> float;
 #foreign cosf :: (x: float) -> float;
 
+#foreign time :: (timer: *int) -> int;
+
 open_std_handles :: () -> void
 {
     stdin = fdopen(0, "r");

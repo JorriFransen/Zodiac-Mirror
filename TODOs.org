@@ -33,7 +33,12 @@
    - [X] break
    - [ ] defer
 
-* IR [3/14]
+* IR [3/15]
+   - [ ] Remove push_ex_call_arg, since this approach doesn't work in all cases anyways
+           (this fails because the args for the outter function are cleared after
+            calling the inner function (both functions are foreign in this case)
+                 printf("The time is: %d\n", time(null));
+   
    - [X] Argument count should be an argument for function calls
    - [X] Handle pointer offsets the same way as we do for static arrays
    - [ ] Make assignment statements for array literals more efficient by not using an intermediary array
@@ -42,7 +47,7 @@
    - [ ] Cleanup the gendata situation (???)
    - [ ] Cleanup lvalue expression generation
    - [ ] Use atoms where possible
-   - [x] Make block names unique with a counter
+   - [X] Make block names unique with a counter
    - [ ] Make value names unique with a counter
    - [ ] Free list for blocks (We don't have any free ones right now?
    - [ ] Manage stack frame memory
