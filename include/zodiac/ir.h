@@ -104,7 +104,6 @@ namespace Zodiac
 
         IR_OP_PUSH_CALL_ARG,
         IR_OP_CALL,
-        IR_OP_PUSH_EX_CALL_ARG,
         IR_OP_CALL_EX,
 		IR_OP_ADDROF_FOREIGN,
         IR_OP_ADDROF_FUNCTION,
@@ -307,7 +306,7 @@ namespace Zodiac
     IR_Value* ir_builder_emit_or_or(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val);
     void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value,
-                                  bool is_vararg = false, bool is_foreign = false);
+                                  bool is_vararg = false);
     IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value,
                                    IR_Value* num_args);
     IR_Value* ir_builder_emit_subscript(IR_Builder* ir_builder, IR_Value* base_value,

@@ -983,8 +983,6 @@ namespace Zodiac
 					assert(callee_value);
 					assert(callee_value->kind == IRV_FUNCTION);
 
-					bool is_foreign = callee_value->function->flags & IR_FUNC_FLAG_FOREIGN;
-
                     AST_Type* func_type = callee_decl->function.type;
                     assert(func_type);
                     assert(func_type->kind == AST_TYPE_FUNCTION);
@@ -999,7 +997,7 @@ namespace Zodiac
                         }
 						AST_Expression* arg_expr = expression->call.arg_expressions[i];
 						IR_Value* arg_value = ir_builder_emit_expression(ir_builder, arg_expr);
-						ir_builder_emit_call_arg(ir_builder, arg_value, is_vararg, is_foreign);
+						ir_builder_emit_call_arg(ir_builder, arg_value, is_vararg);
 					}
 
 					uint64_t num_args = BUF_LENGTH(expression->call.arg_expressions);
@@ -1027,7 +1025,7 @@ namespace Zodiac
                         }
 						AST_Expression* arg_expr = expression->call.arg_expressions[i];
 						IR_Value* arg_value = ir_builder_emit_expression(ir_builder, arg_expr);
-						ir_builder_emit_call_arg(ir_builder, arg_value, is_vararg, true);
+						ir_builder_emit_call_arg(ir_builder, arg_value, is_vararg);
 					}
 					uint64_t num_args = BUF_LENGTH(expression->call.arg_expressions);
 					IR_Value* num_args_lit = ir_integer_literal(ir_builder, Builtin::type_int,
@@ -2234,22 +2232,22 @@ namespace Zodiac
     }
 
     void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value,
-                                  bool is_vararg, bool is_foreign/*=false*/)
+                                  bool is_vararg)
     {
         assert(ir_builder);
         assert(arg_value);
 
-        auto op = IR_OP_PUSH_CALL_ARG;
-        if (is_foreign)
-        {
-            op = IR_OP_PUSH_EX_CALL_ARG;
-        }
+        // auto op = IR_OP_PUSH_CALL_ARG;
+        // if (is_foreign)
+        // {
+        //     op = IR_OP_PUSH_EX_CALL_ARG;
+        // }
         IR_Value* is_vararg_value = nullptr;
         if (is_vararg)
         {
             is_vararg_value = ir_boolean_literal(ir_builder, Builtin::type_bool, true);
         }
-        IR_Instruction* iri = ir_instruction_new(ir_builder, op, arg_value,
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_PUSH_CALL_ARG, arg_value,
                                                  is_vararg_value, nullptr);
         ir_builder_emit_instruction(ir_builder, iri);
     }
@@ -3299,13 +3297,6 @@ namespace Zodiac
                 ir_print_value(instruction->arg1);
                 printf(", ");
                 ir_print_value(instruction->arg2);
-                break;
-            }
-
-            case IR_OP_PUSH_EX_CALL_ARG:
-            {
-                printf("PUSH_EX_ARG ");
-                ir_print_value(instruction->arg1);
                 break;
             }
 

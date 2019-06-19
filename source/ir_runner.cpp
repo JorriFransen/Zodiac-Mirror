@@ -233,6 +233,77 @@ namespace Zodiac
         return result;
     }
 
+    void ir_runner_push_ex_call_args(IR_Runner* runner, IR_Value* num_args_val)
+    {
+        assert(runner);
+
+        assert(num_args_val);
+        assert(num_args_val->kind == IRV_INT_LITERAL);
+
+        uint64_t num_args = (uint64_t)num_args_val->value.s64;
+
+        for (uint64_t i = 0; i < num_args; i++)
+        {
+            IR_Pushed_Arg parg = stack_peek(runner->arg_stack, (num_args - 1) - i);
+            // assert(arg);
+
+            ir_runner_push_ex_call_arg(runner, &parg.arg_value, parg.arg_value.type,
+                                       parg.is_vararg);
+
+        }
+        for (uint64_t i = 0; i < num_args; i++)
+        {
+            stack_pop(runner->arg_stack);
+        }
+    }
+
+    void ir_runner_push_ex_call_arg(IR_Runner* runner, IR_Value* arg_value, AST_Type* arg_type,
+                                    bool is_vararg)
+    {
+        assert(runner);
+        assert(arg_value);
+        assert(arg_type);
+
+        if (arg_type == Builtin::type_int)
+        {
+            dcArgLongLong(runner->dyn_vm, arg_value->value.s64);
+        }
+        else if (arg_type == Builtin::type_u32 ||
+                    arg_type == Builtin::type_s32)
+        {
+            dcArgInt(runner->dyn_vm, arg_value->value.u32);
+        }
+        else if (arg_type == Builtin::type_u8)
+        {
+            dcArgChar(runner->dyn_vm, arg_value->value.u8);
+        }
+        else if (arg_type == Builtin::type_float)
+        {
+            if (is_vararg)
+            {
+                dcArgDouble(runner->dyn_vm, (double)arg_value->value.r32);
+            }
+            else
+            {
+                dcArgFloat(runner->dyn_vm, arg_value->value.r32);
+            }
+        }
+        else if (arg_type == Builtin::type_double)
+        {
+            dcArgDouble(runner->dyn_vm, arg_value->value.r64);
+        }
+        else if (arg_type->kind == AST_TYPE_POINTER)
+        {
+            dcArgPointer(runner->dyn_vm, arg_value->value.string);
+        }
+        else if (arg_type->kind == AST_TYPE_ENUM)
+        {
+            ir_runner_push_ex_call_arg(runner, arg_value, arg_type->aggregate_type.base_type,
+                                       is_vararg);
+        }
+        else assert(false);
+    }
+
     IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, IR_Function* function,
                                             uint64_t num_args, IR_Value* return_value)
     {
@@ -244,8 +315,8 @@ namespace Zodiac
 
         for (uint64_t i = 0; i < num_args; i++)
         {
-            IR_Value arg = stack_peek(runner->arg_stack, (num_args - 1) - i);
-            BUF_PUSH(args, arg);
+            IR_Pushed_Arg parg = stack_peek(runner->arg_stack, (num_args - 1) - i);
+            BUF_PUSH(args, parg.arg_value);
         }
         for (uint64_t i = 0; i < num_args; i++)
         {
@@ -341,7 +412,8 @@ namespace Zodiac
             }
             else assert(false);
 
-            stack_push(dcb_data->runner->arg_stack, arg_value);
+            IR_Pushed_Arg parg = { arg_value, false };
+            stack_push(dcb_data->runner->arg_stack, parg);
         }
 
         AST_Type* return_type = func_value->function->type->function.return_type;
@@ -728,7 +800,18 @@ namespace Zodiac
 
                 IR_Value* value = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value arg_value = *value;
-                stack_push(runner->arg_stack, arg_value);
+
+                bool is_vararg = false;
+
+                if (iri->arg2)
+                {
+                    assert(iri->arg2->kind == IRV_BOOL_LITERAL);
+                    is_vararg = iri->arg2->value.boolean;
+                }
+
+
+                IR_Pushed_Arg parg = { arg_value, is_vararg };
+                stack_push(runner->arg_stack, parg);
                 break;
             }
 
@@ -749,75 +832,7 @@ namespace Zodiac
                                                                              result_value);
 
 
-                break;
-            }
-
-            case IR_OP_PUSH_EX_CALL_ARG:
-            {
-                IR_Value* arg_value = ir_runner_get_local_temporary(runner, iri->arg1);
-                bool is_vararg = false;
-                if (iri->arg2)
-                {
-                    IR_Value* is_vararg_value = ir_runner_get_local_temporary(runner, iri->arg2);
-                    assert(is_vararg_value->type == Builtin::type_bool);
-                    assert(is_vararg_value->kind == IRV_BOOL_LITERAL);
-                    is_vararg = is_vararg_value->value.boolean;
-                }
-
-                if (iri->arg1->type->flags & AST_TYPE_FLAG_FLOAT)
-                {
-                    if (is_vararg)
-                    {
-                        if (iri->arg1->type->bit_size == 64)
-                        {
-                            dcArgDouble(runner->dyn_vm, arg_value->value.r64);
-                        }
-                        else if (iri->arg1->type->bit_size == 32)
-                        {
-                            dcArgDouble(runner->dyn_vm, (double)arg_value->value.r32);
-                        }
-                        else assert(false);
-                    }
-                    else
-                    {
-                        if (iri->arg1->type->bit_size == 64)
-                        {
-                            dcArgDouble(runner->dyn_vm, arg_value->value.r64);
-                        }
-                        else if (iri->arg1->type->bit_size == 32)
-                        {
-                            dcArgFloat(runner->dyn_vm, arg_value->value.r32);
-                        }
-                        else assert(false);
-                    }
-                }
-                else if (iri->arg1->type->kind == AST_TYPE_POINTER)
-                {
-                    dcArgPointer(runner->dyn_vm, arg_value->value.string);
-                }
-                else if (iri->arg1->type->flags & AST_TYPE_FLAG_INT ||
-                         iri->arg1->type->kind == AST_TYPE_ENUM)
-                {
-                    if (iri->arg1->type->bit_size == 8)
-                    {
-                        dcArgChar(runner->dyn_vm, arg_value->value.u8);
-                    }
-                    else if (iri->arg1->type->bit_size == 16)
-                    {
-                        dcArgShort(runner->dyn_vm, arg_value->value.u16);
-                    }
-                    else if (iri->arg1->type->bit_size == 32)
-                    {
-                        dcArgInt(runner->dyn_vm, arg_value->value.u32);
-                    }
-                    else if (iri->arg1->type->bit_size == 64)
-                    {
-                        dcArgLongLong(runner->dyn_vm, arg_value->value.u64);
-                    }
-                    else assert(false);
-                }
-                else assert(false);
-                break;
+            w   break;
             }
 
             case IR_OP_CALL_EX:
@@ -827,6 +842,8 @@ namespace Zodiac
                 uint64_t foreign_index = func->function->foreign_index;
                 assert(BUF_LENGTH(runner->loaded_foreign_symbols) > foreign_index);
 
+                ir_runner_push_ex_call_args(runner, iri->arg2);
+
                 DCint mode = DC_CALL_C_DEFAULT;
                 // if (func->function->flags & IR_FUNC_FLAG_VARARG)
                 // {
@@ -834,33 +851,31 @@ namespace Zodiac
                 // }
                 dcMode(runner->dyn_vm, mode);
 
+                void* foreign_symbol = runner->loaded_foreign_symbols[foreign_index];
+
                 assert(iri->result);
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
                 assert(result_value);
                 if (iri->result->type->flags & AST_TYPE_FLAG_INT)
                 {
-                    result_value->value.s64 = dcCallInt(runner->dyn_vm,
-                                                        runner->loaded_foreign_symbols[foreign_index]);
+                    result_value->value.s64 = dcCallInt(runner->dyn_vm, foreign_symbol);
                 }
                 else if (iri->result->type->kind == AST_TYPE_POINTER)
                 {
                     result_value->value.string = (uint8_t*)dcCallPointer(runner->dyn_vm,
-                                                               runner->loaded_foreign_symbols[foreign_index]);
+                                                                         foreign_symbol);
                 }
                 else if (iri->result->type == Builtin::type_void)
                 {
-                    dcCallVoid(runner->dyn_vm,
-                               runner->loaded_foreign_symbols[foreign_index]);
+                    dcCallVoid(runner->dyn_vm, foreign_symbol);
                 }
                 else if (iri->result->type == Builtin::type_double)
                 {
-                    result_value->value.r64 = dcCallDouble(runner->dyn_vm,
-                                                           runner->loaded_foreign_symbols[foreign_index]);
+                    result_value->value.r64 = dcCallDouble(runner->dyn_vm, foreign_symbol);
                 }
                 else if (iri->result->type == Builtin::type_float)
                 {
-                    result_value->value.r32 = dcCallFloat(runner->dyn_vm,
-                                                          runner->loaded_foreign_symbols[foreign_index]);
+                    result_value->value.r32 = dcCallFloat(runner->dyn_vm, foreign_symbol);
                 }
                 else assert(false);
                 dcReset(runner->dyn_vm);
@@ -870,6 +885,8 @@ namespace Zodiac
 			case IR_OP_CALL_PTR:
 			{
 				IR_Value* ptr_val = ir_runner_get_local_temporary(runner, iri->arg1);
+
+                ir_runner_push_ex_call_args(runner, iri->arg2);
 
 				dcMode(runner->dyn_vm, DC_CALL_C_DEFAULT);
 

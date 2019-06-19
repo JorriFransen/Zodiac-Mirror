@@ -25,13 +25,19 @@ namespace Zodiac
         DLLib* lib = nullptr;
     };
 
+    struct IR_Pushed_Arg
+    {
+        IR_Value arg_value = {};
+        bool is_vararg = false;
+    };
+
     struct IR_Runner
     {
         Context* context = nullptr;
         Arena arena = {};
         Stack<IR_Stack_Frame*> call_stack = {};
         IR_Stack_Frame* free_stack_frames = nullptr;
-        Stack<IR_Value> arg_stack = {};
+        Stack<IR_Pushed_Arg> arg_stack = {};
         IR_Block* jump_block = nullptr;
         bool returned = false;
 
@@ -51,6 +57,9 @@ namespace Zodiac
     IR_Value* ir_runner_get_local_temporary(IR_Runner* ir_runner, uint64_t temp_index);
     IR_Value* ir_runner_get_local_temporary(IR_Runner* ir_runner, IR_Value* code_value);
 
+    void ir_runner_push_ex_call_args(IR_Runner* runner, IR_Value* num_args_val);
+    void ir_runner_push_ex_call_arg(IR_Runner* runner, IR_Value* arg_value, AST_Type* arg_type,
+                                    bool is_vararg);
     IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, IR_Function* function,
                                             uint64_t num_args, IR_Value* return_value);
     void ir_runner_execute_block(IR_Runner* runner, IR_Block* block);
