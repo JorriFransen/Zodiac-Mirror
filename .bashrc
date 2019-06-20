@@ -32,4 +32,6 @@ PATH=$PATH:~/Downloads/4coder
 PATH=$PATH:~/dev/zodiac/build
 
 
-#eval $(keychain --eval --quiet id_rsa)
+eval $(keychain --eval --quiet id_rsa)
+# eval $(gnome-keyring-daemon --start)
+# export SSH_AUTH_SOCK
