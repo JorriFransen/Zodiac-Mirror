@@ -1,4 +1,3 @@
-
 while true
 do
     VOL=$(amixer get Master | tail -1 | sed 's/.*\[\([0-9]*%\)\].*/\1/')
@@ -10,12 +9,7 @@ do
     sleep 5s
 done &
 
-dbus-update-activation-environment DISPLAY
-eval $(/usr/bin/gnome-keyring-daemon --start --components=pkcs11,secrets,ssh)
+eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh)
 export SSH_AUTH_SOCK
 
-
-while true; do
-    ck-launch-session dbus-launch --sh-syntax --exit-with-x11 dwm
-done
-
+exec ck-launch-session dbus-launch --sh-syntax --exit-with-x11 dwm
