@@ -9,6 +9,9 @@ imap <F9> <ESC> :CMake<CR> :wa<CR> :make <CR>
 nmap <F2> :wa<CR> <Plug>(altr-forward)
 nmap <F3> :wa<CR> <Plug>(altr-back)
 
+let g:ycm_server_keep_logiles = 1
+let g:ycm_server_log_level = 'debug'
+
 " set colorcolumn=80
 set laststatus=2
 set updatetime=500
@@ -78,10 +81,13 @@ call plug#begin('~/.vim/plugged')
 
 call plug#end()
 
+set encoding=utf-8
+
 call altr#remove_all()
 call altr#define('%/source/%.cpp', '%/include/zodiac/%.h')
-9
-let g:airline_theme= 'oceanicnext'
+
+"let g:airline_powerline_fonts = 1
+"let g:airline_theme= 'oceanicnext'
 
 if (has("termguicolors"))
     set termguicolors
