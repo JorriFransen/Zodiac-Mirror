@@ -1,11 +1,10 @@
-#exec i3
 
-function run {
-    if ! pgrep $1 ;
-    then
-        $@&
-    fi
-}
+#function run {
+#if ! pgrep $1 ;
+#then
+#$@&
+#fi
+#}
 
 while true
 do
@@ -13,28 +12,35 @@ do
     LOCALTIME=$(date +%d-%m-%y\ %H:%M)
     TEMP="$(($(cat /sys/class/thermal/thermal_zone0/temp) / 1000))C"
 
-        xsetroot -name " $TEMP | $LOCALTIME"
+    xsetroot -name " $TEMP | $LOCALTIME"
 
     sleep 5s
 done &
 
-eval $(gnome-keyring-daemon --start)
-export SSH_AUTH_SOCK
 
 while true; do
-    run compton
-    run nm-applet
-    run blueman-applet
-    run cbatticon -n
-    run pasystray
+    killall compton; compton &
+    killall nm-applet; nm-applet &
+    killall blueman-applet; blueman-applet &
+    killall cbatticon; cbatticon -n &
+    killall pa-applet; pa-applet &
 
-    killall nextcloud
-    run nextcloud
-
-    run ~/.packages/arch_touchpad_setup/arch_touchpad_setup.bash
-    feh --randomize --bg-fill ~/wallpapers/*
-
-    dwm 2> ~/.dwm.log
-#dwm >/dev/null 2>&1
+    ck-launch-session dbus-launch --sh-syntax --exit-with-x11 dwm
 done
+
+#while true; do
+#run compton
+#run nm-applet
+#run blueman-applet
+#run cbatticon -n
+#run pasystray
+
+   # killall nextcloud
+   # run nextcloud
+
+   # feh --randomize --bg-fill ~/wallpapers/*
+
+    #dwm 2> ~/.dwm.log
+    #dwm >/dev/null 2>&1
+#done
 
