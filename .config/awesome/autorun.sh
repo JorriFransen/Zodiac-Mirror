@@ -13,5 +13,6 @@ run nm-applet
 run blueman-applet
 run cbatticon
 run pasystray
+run nextcloud
 
-feh --randomize --bg-scale ~/wallpapers/*
+feh --randomize --bg-fill ~/wallpapers/*
