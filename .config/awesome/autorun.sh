@@ -15,6 +15,6 @@ run cbatticon
 run pasystray
 
 killall nextcloud
-exec nextcloud
+nextcloud &
 
 feh --randomize --bg-fill ~/wallpapers/*
