@@ -1,7 +1,7 @@
 IMAPAccount gmail
 Host imap.gmail.com
 User jorrifransen@gmail.com
-PassCmd "gpg2 --for-your-eyes-only --no-tty -d ~/.mutt/mb_pass.gpg"
+PassCmd "imap-pass -g jorrifransen@gmail.com"
 SSLType IMAPS
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 

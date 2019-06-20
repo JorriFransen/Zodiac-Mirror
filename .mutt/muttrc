@@ -1,5 +1,5 @@
 
-source "gpg2 -d ~/.mutt/mutt_pass.gpg |"
+source "imap-pass -p 'set my_pass=' -g jorrifransen@gmail.com |"
 
 set editor=nvim
 

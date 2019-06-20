@@ -11,11 +11,15 @@ if __name__ == '__main__':
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--set', '-s', type=str, help='Account to save password')
     group.add_argument('--get', '-g', type=str, help='Account to get password')
+    parser.add_argument('--prefix', '-p', type=str, help='Output prefix')
 
     args = parser.parse_args()
 
     if args.set:
         password = getpass.getpass()
         keyring.set_password(SERVICE, args.set, password)
-    else:
+    elif args.get:
+        if args.prefix:
+            print(args.prefix, end='')
         print(keyring.get_password(SERVICE, args.get))
+
