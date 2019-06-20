@@ -14,6 +14,9 @@ local hotkeys_popup = require("awful.hotkeys_popup").widget
 -- when client with a matching name is opened:
 require("awful.hotkeys_popup.keys")
 
+local watch = require("awful.widget.watch");
+local nordvpn_widget = require("nordvpn_widget")
+
 awful.spawn.with_shell("~/.config/awesome/autorun.sh")
 
 local volume_control = require("volume-control")
@@ -50,7 +53,7 @@ end
 beautiful.init(awful.util.getdir("config") .. "/themes/default/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
-terminal = "termite"
+terminal = "st"
 editor = os.getenv("EDITOR") or "vim"
 editor_cmd = terminal .. " -e " .. editor
 
@@ -218,6 +221,7 @@ awful.screen.connect_for_each_screen(function(s)
         { -- Right widgets
             layout = wibox.layout.fixed.horizontal,
             -- mykeyboardlayout,
+            nordvpn_widget,
             mytextclock,
             wibox.widget.systray(),
             s.mylayoutbox,
@@ -284,6 +288,17 @@ globalkeys = gears.table.join(
     awful.key({ }, "XF86AudioLowerVolume", function() volumecfg:down() end),
     awful.key({ }, "XF86AudioMute", function() volumecfg:toggle() end),
 
+    awful.key({ modkey, "Shift" }, "b", function() awful.spawn("blueman-manager") end),
+    awful.key({ modkey, "Shift" }, "g", function() awful.spawn("google-chrome-stable") end),
+    awful.key({ modkey, "Shift" }, "v", function() awful.spawn("vivaldi-stable") end),
+    awful.key({ modkey, "Shift" }, "i", function() awful.spawn("brave --incognito") end),
+    awful.key({ modkey, "Shift" }, "e", function() awful.spawn("emacs") end),
+    awful.key({ modkey }, "q", function() awful.spawn("qutebrowser") end),
+    awful.key({ modkey, "Shift" }, "p",
+
+        function()
+            awful.spawn.with_shell("xclip -o -selection clipboard | xargs mpv &")
+        end),
 
     awful.key({ modkey }, "b",
         function ()
@@ -341,7 +356,7 @@ globalkeys = gears.table.join(
               {description = "open a terminal", group = "launcher"}),
     awful.key({ modkey, "Control" }, "r", awesome.restart,
               {description = "reload awesome", group = "awesome"}),
-    awful.key({ modkey, "Shift"   }, "e", awesome.quit,
+    awful.key({ modkey, "Shift"   }, "q", awesome.quit,
               {description = "quit awesome", group = "awesome"}),
 
     awful.key({ modkey,           }, "l",     function () awful.tag.incmwfact( 0.05)          end,

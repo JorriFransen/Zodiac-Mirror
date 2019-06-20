@@ -15,9 +15,7 @@ source /usr/lib/bash-git-prompt/gitprompt.sh
 
 PATH=$PATH:~/.scripts
 
-export ZODIAC_PATH='/home/jorri/dev/zodiac/tests'
-# PATH=$PATH:'~/dev/zodiac/build'
-
+export ZODIAC_MODULE_PATH='/home/jorri/dev/zodiac/tests'
 
 alias em='emacs -nw '
 alias vim='nvim '
@@ -28,3 +26,10 @@ alias grep='grep --color=auto'
 
 alias config='/usr/bin/git --git-dir=/home/jorri/.dotfiles/ --work-tree=/home/jorri'
 alias update_aur='packer -Syu --noconfirm --auronly'
+alias mutt='neomutt '
+
+PATH=$PATH:~/Downloads/4coder
+PATH=$PATH:~/dev/zodiac/build
+
+
+#eval $(keychain --eval --quiet id_rsa)
