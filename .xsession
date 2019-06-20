@@ -9,7 +9,7 @@ do
     sleep 5s
 done &
 
-eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh)
+eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
 export SSH_AUTH_SOCK
 
 exec ck-launch-session dbus-launch --sh-syntax --exit-with-x11 dwm

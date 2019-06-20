@@ -10,8 +10,6 @@ PS1='[\u@\h \W]\$ '
 GIT_PROMPT_ONLY_IN_REPO=1
 #source /usr/lib/bash-git-prompt/gitprompt.sh
 
-PATH=$PATH:~/.scripts
-
 export ZODIAC_MODULE_PATH='/home/jorri/dev/zodiac/tests'
 
 alias sd='sudo '
@@ -32,7 +30,8 @@ alias xroo='sudo xbps-remove -Oo '
 PATH=$PATH:~/dev/zodiac/build
 PATH=$PATH:~/.scripts
 
+export EDITOR='nvim'
 
 #eval $(keychain --eval --quiet id_rsa)
-eval $(gnome-keyring-daemon --start)
+export eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
 export SSH_AUTH_SOCK

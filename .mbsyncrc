@@ -1,7 +1,7 @@
 IMAPAccount gmail
 Host imap.gmail.com
 User jorrifransen@gmail.com
-PassCmd "imap-pass -g jorrifransen@gmail.com"
+PassCmd "/home/jorri/.scripts/imap-pass -g jorrifransen@gmail.com"
 SSLType IMAPS
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 
