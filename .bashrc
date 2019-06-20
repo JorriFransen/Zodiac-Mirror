@@ -30,6 +30,7 @@ alias xrr='sudo xbps-remove -R '
 alias xroo='sudo xbps-remove -Oo '
 
 PATH=$PATH:~/dev/zodiac/build
+PATH=$PATH:~/.scripts
 
 
 #eval $(keychain --eval --quiet id_rsa)
