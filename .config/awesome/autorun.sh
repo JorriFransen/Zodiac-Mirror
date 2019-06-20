@@ -13,3 +13,5 @@ run nm-applet
 run blueman-applet
 run cbatticon
 run pasystray
+
+feh --randomize --bg-scale ~/wallpapers/*
