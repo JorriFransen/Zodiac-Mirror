@@ -15,6 +15,7 @@ export ZODIAC_MODULE_PATH='/home/jorri/dev/zodiac/tests'
 alias sd='sudo '
 alias em='emacs -nw '
 alias vim='nvim '
+alias nb='newsboat '
 
 alias ls='ls -h --color=auto --group-directories-first'
 alias grep='grep --color=auto'
