@@ -1,4 +1,3 @@
-.dir-locals.el
 CMakeLists.txt.user
 
 build/

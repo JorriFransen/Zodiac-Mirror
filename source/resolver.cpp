@@ -1826,6 +1826,9 @@ namespace Zodiac
 
                     if (!member_decl)
                     {
+                        report_undeclared_identifier(resolver, member_expr->file_pos,
+                                                     resolver->module, member_expr->identifier);
+                        return false;
                         assert(false);
                     }
                     assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
@@ -2322,6 +2325,19 @@ namespace Zodiac
 		AST_Declaration* decl = ast_scope_find_declaration(context, scope, identifier);
 		if (decl)
 		{
+            // FIXME: TODO: This doesn't really seem like the best way to do this, but
+            //               I can't think of a better way to do it right now, without
+            //               majorly restructuring the resolver.
+            if (!scope->is_module_scope &&
+                (identifier->file_pos.file_name == decl->file_pos.file_name) &&
+                (identifier->file_pos.line < decl->file_pos.line ||
+                (identifier->file_pos.line == decl->file_pos.line &&
+                 identifier->file_pos.line_relative_char_pos <=
+                 decl->file_pos.line_relative_char_pos)))
+            {
+                // printf("Use before declare: %s\n", identifier->atom.data);
+                return nullptr;
+            }
 			return decl;
 		}
 

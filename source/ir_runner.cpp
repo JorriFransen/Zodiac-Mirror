@@ -832,7 +832,7 @@ namespace Zodiac
                                                                              result_value);
 
 
-            w   break;
+               break;
             }
 
             case IR_OP_CALL_EX:
