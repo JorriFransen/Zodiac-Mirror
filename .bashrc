@@ -27,3 +27,4 @@ alias ls='ls -h --color=auto --group-directories-first'
 alias grep='grep --color=auto'
 
 alias config='/usr/bin/git --git-dir=/home/jorri/.dotfiles/ --work-tree=/home/jorri'
+alias update_aur='packer -Syu --noconfirm --auronly'

@@ -11,7 +11,7 @@ run compton
 run ~/.packages/arch_touchpad_setup/arch_touchpad_setup.bash
 run nm-applet
 run blueman-applet
-run cbatticon
+run cbatticon -n
 run pasystray
 
 killall nextcloud
