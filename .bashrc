@@ -26,11 +26,12 @@ alias mutt='neomutt '
 
 alias xin='sudo xbps-install '
 alias xq='xbps-query -Rs '
+alias xrr='sudo xbps-remove -R '
+alias xroo='sudo xbps-remove -Oo '
 
-PATH=$PATH:~/Downloads/4coder
 PATH=$PATH:~/dev/zodiac/build
 
 
-eval $(keychain --eval --quiet id_rsa)
-# eval $(gnome-keyring-daemon --start)
-# export SSH_AUTH_SOCK
+#eval $(keychain --eval --quiet id_rsa)
+eval $(gnome-keyring-daemon --start)
+export SSH_AUTH_SOCK
