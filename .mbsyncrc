@@ -1,0 +1,22 @@
+IMAPAccount gmail
+Host imap.gmail.com
+User jorrifransen@gmail.com
+PassCmd "gpg2 --for-your-eyes-only --no-tty -d ~/.mutt/mb_pass.gpg"
+SSLType IMAPS
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore gmail-remote
+Account gmail
+
+MaildirStore gmail-local
+Subfolders Verbatim
+Path ~/.mail/gmail/
+Inbox ~/.mail/gmail/INBOX
+
+Channel gmail
+Master :gmail-remote:
+Slave :gmail-local:
+Patterns * ![Gmail]* "[Gmail]/Sent Mail" "[Gmail]/Starred" "[Gmail]/All Mail" "[Gmail]/Drafts" "[Gmail]/Bin"
+Create Both
+Expunge Both
+SyncState *
