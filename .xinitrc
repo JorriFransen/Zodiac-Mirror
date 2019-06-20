@@ -10,12 +10,12 @@ do
     sleep 5s
 done &
 
-dbus-update-activation-environment DISPLAY
+dbus-update-activation-environment --systemd DISPLAY
 eval $(/usr/bin/gnome-keyring-daemon --start --components=pkcs11,secrets,ssh)
-export SSH_AUTH_SOCK
+export SSH_AUTH_SOCK 
 
 
 while true; do
-    ck-launch-session dbus-launch --sh-syntax --exit-with-x11 dwm
+    dbus-launch --sh-syntax  dwm
 done
 

@@ -16,6 +16,7 @@ alias sd='sudo '
 alias em='emacs -nw '
 alias vim='nvim '
 alias nb='newsboat '
+alias yay='yay --color=auto '
 
 alias ls='ls -h --color=auto --group-directories-first'
 alias grep='grep --color=auto'
@@ -23,16 +24,11 @@ alias grep='grep --color=auto'
 alias config='/usr/bin/git --git-dir=/home/jorri/.dotfiles/ --work-tree=/home/jorri'
 alias mutt='neomutt '
 
-alias xin='sudo xbps-install '
-alias xq='xbps-query -Rs '
-alias xrr='sudo xbps-remove -R '
-alias xroo='sudo xbps-remove -Oo '
-
 PATH=$PATH:~/dev/zodiac/build
 PATH=$PATH:~/.scripts
 
 export EDITOR='nvim'
 
 #eval $(keychain --eval --quiet id_rsa)
-export eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
+eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
 export SSH_AUTH_SOCK

@@ -9,8 +9,9 @@ do
     sleep 5s
 done &
 
+dbus-update-activation-environment --systemd DISPLAY
 eval $(gnome-keyring-daemon --start --components=pkcs11,secrets,ssh,gpg)
-export SSH_AUTH_SOCK
+export SSH_AUTH_SOCK GNOME_KEYRING_CONTROL GNOME_KEYRING_PID GPG_AGENT_INFO
 
 
-exec ck-launch-session dbus-launch --sh-syntax --exit-with-x11 dwm
+exec dwm

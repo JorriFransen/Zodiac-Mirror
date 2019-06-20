@@ -7,5 +7,5 @@ blueman-applet &
 cbatticon -n &
 pasystray &
 
-flatpak run org.nextcloud.Nextcloud &
+nextcloud &
 mbsync gmail &
