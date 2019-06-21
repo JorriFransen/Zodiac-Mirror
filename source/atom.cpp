@@ -36,6 +36,8 @@ namespace Zodiac
 		uint64_t hash = get_atom_hash(string, string_length);
 		uint64_t hash_index = hash % atom_table->atom_count;
 
+        // printf("AG: %.*s:(h:%lu)(at:%p)\n", (int)string_length, string, hash, atom_table);
+
 		uint64_t index = hash_index;
 		uint64_t iterations = 0;
 		while (iterations < atom_table->atom_count)
@@ -234,7 +236,8 @@ namespace Zodiac
 
     bool operator==(const Atom& lhs, const Atom& rhs)
     {
-        return lhs.data == rhs.data;
+        bool result = lhs.data == rhs.data;
+        return result;
     }
 
     bool operator!=(const Atom& lhs, const Atom& rhs)

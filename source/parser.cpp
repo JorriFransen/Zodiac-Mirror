@@ -479,10 +479,11 @@ namespace Zodiac
 
         expect_token(parser, TOK_KW_USING);
 
-        AST_Identifier* ident = parse_identifier(parser);
+        AST_Expression* ident_expr = parse_expression(parser, scope);
         expect_token(parser, TOK_SEMICOLON);
 
-        return ast_using_declaration_new(parser->context, ft.file_pos, ident, location, global);
+        return ast_using_declaration_new(parser->context, ft.file_pos, ident_expr, location,
+                                         global);
     }
 
     static BUF(AST_Declaration*) parse_aggregate(Parser* parser, AST_Scope* scope,

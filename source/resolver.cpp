@@ -660,27 +660,35 @@ namespace Zodiac
         assert(declaration->kind == AST_DECL_USING);
         assert(scope);
 
-        AST_Identifier* using_ident = declaration->using_decl.identifier;
-
-        bool result = try_resolve_identifier(resolver, using_ident, scope);
-
+        AST_Expression* ident_expr = declaration->using_decl.ident_expression;
+        bool result = try_resolve_expression(resolver, ident_expr, scope);
         if (!result)
         {
-            report_undeclared_identifier(resolver, using_ident->file_pos, using_ident);
             return false;
         }
 
-        assert(using_ident->declaration);
-        AST_Declaration* using_decl = using_ident->declaration;
-
-        if (using_decl->kind == AST_DECL_IMPORT)
+        AST_Declaration* decl = nullptr;
+        if (ident_expr->kind == AST_EXPR_IDENTIFIER)
         {
-            assert(using_decl->import.module);
-            BUF_PUSH(scope->using_modules, using_decl->import.module);
+            assert(ident_expr->identifier->declaration);
+            decl = ident_expr->identifier->declaration;
         }
-        else if (using_decl->kind == AST_DECL_AGGREGATE_TYPE)
+        else if (ident_expr->kind == AST_EXPR_DOT)
         {
-            BUF_PUSH(scope->using_declarations, using_decl);
+            assert(ident_expr->dot.declaration);
+            decl = ident_expr->dot.declaration;
+        }
+        else assert(false);
+
+        assert(decl);
+        if (decl->kind == AST_DECL_IMPORT)
+        {
+            assert(decl->import.module);
+            BUF_PUSH(scope->using_modules, decl->import.module);
+        }
+        else if (decl->kind == AST_DECL_AGGREGATE_TYPE)
+        {
+            BUF_PUSH(scope->using_declarations, decl);
         }
         else assert(false);
 

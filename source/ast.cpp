@@ -391,17 +391,17 @@ namespace Zodiac
     }
 
     AST_Declaration* ast_using_declaration_new(Context* context, File_Pos file_pos,
-                                               AST_Identifier* identifier,
+                                               AST_Expression* ident_expr,
                                                AST_Declaration_Location location,
                                                bool global)
     {
         assert(context);
-        assert(identifier);
+        assert(ident_expr);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_USING,
                                                       location, nullptr, nullptr, global);
 
-        result->using_decl.identifier = identifier;
+        result->using_decl.ident_expression = ident_expr;
         result->using_decl.scope_decl = nullptr;
 
         return result;
@@ -939,6 +939,12 @@ namespace Zodiac
 			uint64_t ident_hash = hash_string(identifier->atom.data, identifier->atom.length);
 			uint64_t hash = hash_mix(scope_hash, ident_hash);
 			uint64_t hash_index = hash & (module->declaration_count - 1);
+
+            // if (scope->is_module_scope)
+            // {
+            //     printf("hash for %s in scope %s: %lu\n", identifier->atom.data,
+            //            scope->module->module_name, hash);
+            // }
 
 			uint64_t iterations = 0;
 			while (iterations <= module->declaration_count)

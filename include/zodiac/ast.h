@@ -402,7 +402,7 @@ namespace Zodiac
 
             struct
             {
-                AST_Identifier* identifier;
+                AST_Expression* ident_expression;
                 AST_Declaration* scope_decl;
             } using_decl;
         };
@@ -608,7 +608,7 @@ namespace Zodiac
                                                    AST_Declaration* then_declaration,
                                                    AST_Declaration* else_declaration);
     AST_Declaration* ast_using_declaration_new(Context* context, File_Pos file_pos,
-                                               AST_Identifier* identifier,
+                                               AST_Expression* ident_expr,
                                                AST_Declaration_Location location,
                                                bool global);
     AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos,
