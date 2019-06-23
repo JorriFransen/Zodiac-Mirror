@@ -29,6 +29,8 @@ namespace Zodiac
         resolver->unresolved_decl_count_last_cycle = UINT64_MAX;
         resolver->undeclared_decl_count = 0;
         resolver->undeclared_decl_count_last_cycle = UINT64_MAX;
+        resolver->resolving_auto_gen = false;
+        resolver->auto_gen_file_pos = {};
         resolver->unresolved_decls = nullptr;
 
         resolver->errors = nullptr;
@@ -1027,7 +1029,10 @@ namespace Zodiac
                 return -1;
             }
 
+            resolver->resolving_auto_gen = true;
+            resolver->auto_gen_file_pos = statement->file_pos;
             result &= try_resolve_statement(resolver, gen_stmt, scope, break_context);
+            resolver->resolving_auto_gen = false;
             if (result)
             {
                 statement->insert.gen_statement = gen_stmt;
@@ -2667,6 +2672,11 @@ namespace Zodiac
         message[message_length] = '\0';
 
         Resolve_Error error = { flags, message, file_pos };
+        if (resolver->resolving_auto_gen)
+        {
+            error.auto_gen = true;
+            error.auto_gen_file_pos = resolver->auto_gen_file_pos;
+        }
         BUF_PUSH(resolver->errors, error);
 
         Resolve_Error* result = &resolver->errors[BUF_LENGTH(resolver->errors) - 1];
@@ -2713,6 +2723,12 @@ namespace Zodiac
 
             if (report)
             {
+                if (error.auto_gen)
+                {
+                    fprintf(stderr, "Error:%s:%" PRIu64 ":%" PRIu64 ": Error generated from insert:\n\t",
+                            error.auto_gen_file_pos.file_name, error.auto_gen_file_pos.line,
+                            error.auto_gen_file_pos.line_relative_char_pos);
+                }
                 fprintf(stderr, "Error:%s:%" PRIu64 ":%" PRIu64 ": %s\n",
                         error.file_pos.file_name,
                         error.file_pos.line, error.file_pos.line_relative_char_pos,

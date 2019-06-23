@@ -17,6 +17,9 @@ namespace Zodiac
         char* message = nullptr;
         File_Pos file_pos = {};
         Atom identifier = {};
+
+        bool auto_gen = false;
+        File_Pos auto_gen_file_pos = {};
     };
 
     struct Resolver
@@ -32,6 +35,9 @@ namespace Zodiac
 
         uint64_t undeclared_decl_count = 0;
         uint64_t undeclared_decl_count_last_cycle = UINT64_MAX;
+
+        bool resolving_auto_gen = false;
+        File_Pos auto_gen_file_pos = {};
 
         BUF(AST_Declaration*) unresolved_decls = nullptr;
 

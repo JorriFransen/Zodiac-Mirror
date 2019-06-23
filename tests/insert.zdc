@@ -7,7 +7,7 @@ main :: ()
     printf("insert test\n");
     printf("%s\n", create_variable("my_int", "int"));
 
-    #insert create_variable("my_int", "int");
+    #insert create_variable("my_int", "iint");
 
     printf("my_int: %d\n", my_int);
 
