@@ -675,6 +675,20 @@ namespace Zodiac
         return result;
     }
 
+    AST_Statement* ast_insert_statement_new(Context* context, File_Pos file_pos, AST_Statement* statement)
+    {
+        assert(context);
+        assert(statement);
+
+        AST_Statement* result = arena_alloc(context->arena, AST_Statement);
+        result->kind = AST_STMT_INSERT;
+        result->file_pos = file_pos;
+
+        result->insert.statement = statement;
+
+        return result;
+    }
+
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
                            const char* name, uint64_t bit_size)
     {

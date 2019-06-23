@@ -1,5 +1,7 @@
 #include "parser.h"
 
+#include "builtin.h"
+
 #include <stdarg.h>
 #include <inttypes.h>
 
@@ -79,7 +81,20 @@ namespace Zodiac
         {
             kind = AST_DIREC_DYN_LINK;
         }
-        else assert(false);
+        else
+        {
+            auto t = current_token(parser);
+            if (t.kind == TOK_IDENTIFIER)
+            {
+                if (t.atom == Builtin::atom_insert)
+                {
+                    consume_token(parser);
+                    kind = AST_DIREC_INSERT;
+                }
+                else assert(false);
+            }
+            else assert(false);
+        }
 
         return ast_directive_new(parser->context, kind, ft.file_pos);
     }
@@ -522,7 +537,7 @@ namespace Zodiac
         return result;
     }
 
-    static AST_Statement* parse_statement(Parser* parser, AST_Scope* scope)
+    AST_Statement* parse_statement(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
         assert(scope);
@@ -583,6 +598,23 @@ namespace Zodiac
                 return ast_declaration_statement_new(parser->context, ft.file_pos, decl);
             }
 
+            case TOK_POUND:
+            {
+                auto ft = current_token(parser);
+                consume_token(parser);
+
+                // LEAK:
+                AST_Directive* directive = parse_directive(parser);
+
+                assert(directive);
+                assert(directive->kind == AST_DIREC_INSERT);
+
+                AST_Statement* stmt = parse_statement(parser, scope);
+                assert(stmt);
+
+                return ast_insert_statement_new(parser->context, ft.file_pos, stmt);
+            }
+
             default: break;
         }
 
@@ -617,12 +649,6 @@ namespace Zodiac
             expect_token(parser, TOK_SEMICOLON);
             return ast_call_statement_new(parser->context, lvalue_expr);
         }
-        // else if (is_token(parser, TOK_LPAREN))
-        // {
-        //     AST_Expression* call_expression = parse_call_expression(parser, lvalue_expr->identifier);
-        //     expect_token(parser, TOK_SEMICOLON);
-        //     return ast_call_statement_new(parser->context, call_expression);
-        // }
         else assert(false);
 
         assert(false);

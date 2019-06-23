@@ -47,7 +47,7 @@ namespace Zodiac
     };
 
     void ir_runner_init(Context* context, IR_Runner* ir_runner);
-    void ir_runner_execute(IR_Runner* ir_runner, AST_Module* ast_module, IR_Module* ir_module);
+    void ir_runner_execute_entry(IR_Runner* ir_runner, AST_Module* ast_module, IR_Module* ir_module);
 
     void ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* AST_Module,
                                      IR_Module* ir_module);

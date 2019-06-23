@@ -67,7 +67,7 @@ namespace Zodiac
     static BUF(AST_Declaration*) parse_aggregate(Parser* parser, AST_Scope* scope,
                                                  bool is_enum = false);
 
-    static AST_Statement* parse_statement(Parser* parser, AST_Scope* scope);
+    AST_Statement* parse_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_return_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_if_statement(Parser* parser, AST_Scope* scope);

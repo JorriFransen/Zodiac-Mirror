@@ -63,7 +63,10 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
         {
 			AST_Declaration* decl = module->global_declarations[i];
-			ir_builder_emit_decl_body(ir_builder, decl);
+            if (decl->flags & AST_DECL_FLAG_RESOLVED)
+            {
+                ir_builder_emit_decl_body(ir_builder, decl);
+            }
         }
 
         assert(module->gen_data == nullptr);
@@ -159,6 +162,11 @@ namespace Zodiac
     {
         assert(ir_builder);
         assert(global_decl);
+
+        if (!(global_decl->flags & AST_DECL_FLAG_RESOLVED))
+        {
+            return;
+        }
 
         assert(global_decl->location == AST_DECL_LOC_GLOBAL);
 
@@ -523,6 +531,13 @@ namespace Zodiac
             {
                 assert(break_block);
                 ir_builder_emit_jmp(ir_builder, break_block);
+                break;
+            }
+
+            case AST_STMT_INSERT:
+            {
+                assert(statement->insert.gen_statement);
+                ir_builder_emit_statement(ir_builder, statement->insert.gen_statement, break_block);
                 break;
             }
 

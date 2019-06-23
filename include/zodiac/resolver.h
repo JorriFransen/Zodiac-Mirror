@@ -78,6 +78,8 @@ namespace Zodiac
                                              AST_Scope* scope);
     static bool try_resolve_if_statement(Resolver* resolver, AST_Statement* statement,
                                          AST_Scope* scope, AST_Statement* break_context);
+    static bool try_resolve_insert_statement(Resolver* resolver, AST_Statement* statement, AST_Scope* scope,
+                                             AST_Statement* break_context);
 
     static bool try_resolve_expression(Resolver* resolver, AST_Expression* expression,
                                        AST_Scope* scope,
@@ -139,6 +141,8 @@ namespace Zodiac
                                       bool allow_import_check = true);
 
     bool is_valid_integer_promotion(AST_Type* source_type, AST_Type* target_type);
+
+    char* run_insert(Resolver* resolver, AST_Expression* call_expression);
 
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,
                                              AST_Identifier* identifier);

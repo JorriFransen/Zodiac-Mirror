@@ -27,6 +27,10 @@ stderr : *FILE = null;
 #foreign printf :: (format: *u8, ...) -> int;
 #foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
 
+#foreign strlen :: (str: *u8) -> int;
+
+#foreign malloc :: (size: int) -> *void;
+
 #foreign sqrt :: (x: double) -> double;
 #foreign sinf :: (x: float) -> float;
 #foreign cosf :: (x: float) -> float;

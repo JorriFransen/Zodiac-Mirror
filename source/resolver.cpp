@@ -3,6 +3,11 @@
 #include "builtin.h"
 #include "const_interpreter.h"
 
+#include "lexer.h"
+#include "parser.h"
+#include "ir.h"
+#include "ir_runner.h"
+
 #include <string.h>
 #include <stdarg.h>
 #include <inttypes.h>
@@ -86,7 +91,7 @@ namespace Zodiac
 
         if (!(declaration->flags & AST_DECL_FLAG_RESOLVED))
         {
-            if (declaration->identifier)
+            if (declaration->identifier && declaration->kind != AST_DECL_STATIC_IF)
             {
                 // printf("Checking for redecl: %s\n", declaration->identifier->atom.data);
                 auto redecl = find_declaration(resolver->context, scope, declaration->identifier);
@@ -793,7 +798,14 @@ namespace Zodiac
                         }
                         else
                         {
-                            assert(false);
+                            const char* format = "Mismatching types in assign statement\n\texpected: %s\n\tgot:\t%s";
+                            auto expected_type_string = ast_type_to_string(lvalue_expr->type);
+                            auto expr_type_string = ast_type_to_string(assign_expr->type);
+                            resolver_report_error(resolver, statement->file_pos, format,
+                                                  expected_type_string, expr_type_string);
+                            mem_free(expected_type_string);
+                            mem_free(expr_type_string);
+                            return false;
                         }
                     }
                 }
@@ -892,6 +904,12 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_INSERT:
+            {
+                result &= try_resolve_insert_statement(resolver, statement, scope, break_context);
+                break;
+            };
+
             default:
                 assert(false);
                 result = false;
@@ -954,6 +972,66 @@ namespace Zodiac
         {
             result &= try_resolve_statement(resolver, statement->if_stmt.else_statement, scope,
                 break_context);
+        }
+
+        return result;
+    }
+
+    static bool try_resolve_insert_statement(Resolver* resolver, AST_Statement* statement, AST_Scope* scope,
+                                             AST_Statement* break_context)
+    {
+        assert(resolver);
+        assert(statement);
+        assert(statement->kind == AST_STMT_INSERT);
+        assert(scope);
+
+        AST_Statement* insert_stmt = statement->insert.statement;
+
+        bool result = try_resolve_statement(resolver, insert_stmt, scope, break_context);
+        if (result)
+        {
+            assert(insert_stmt->kind == AST_STMT_CALL);
+            auto u8_ptr_type = ast_find_or_create_pointer_type(resolver->context, Builtin::type_u8);
+            assert(insert_stmt->call_expression->type == u8_ptr_type);
+
+            char* insert_string = run_insert(resolver, insert_stmt->call_expression);
+            assert(insert_string);
+
+            Lexer lexer;
+            init_lexer(&lexer, resolver->context);
+
+            Lex_Result lex_result = lex_file(&lexer, insert_string, "<insert_auto_gen>");
+            if (BUF_LENGTH(lex_result.errors) != 0)
+            {
+                lexer_report_errors(&lexer);
+
+                // We might want to continue here, to try and parse what we have?
+                return -1;
+            }
+
+            Parser parser;
+            parser_init(&parser, resolver->context);
+
+            parser.result.module_name = resolver->module->module_name;
+            parser.result.ast_module = resolver->module;
+            parser.tokens = lex_result.tokens;
+            parser.ti = 0;
+
+            AST_Statement* gen_stmt = parse_statement(&parser, scope);
+            Parse_Result parse_result = parser.result;
+            if (BUF_LENGTH(parse_result.errors) != 0)
+            {
+                parser_report_errors(&parser);
+
+                // Again, do we want to continue here?
+                return -1;
+            }
+
+            result &= try_resolve_statement(resolver, gen_stmt, scope, break_context);
+            if (result)
+            {
+                statement->insert.gen_statement = gen_stmt;
+            }
         }
 
         return result;
@@ -2436,6 +2514,94 @@ namespace Zodiac
         }
 
         return false;
+    }
+
+    char* run_insert(Resolver* resolver, AST_Expression* call_expression)
+    {
+        assert(resolver);
+        assert(call_expression);
+        assert(call_expression->kind == AST_EXPR_CALL);
+
+        IR_Builder ir_builder;
+        ir_builder_init(&ir_builder, resolver->context);
+
+        IR_Module ir_module = ir_builder_emit_module(&ir_builder, resolver->module);
+
+        if (ir_module.error_count)
+        {
+            fprintf(stderr, "Exiting with error(s)\n");
+            return nullptr;
+        }
+
+        IR_Validation_Result validation = ir_validate(&ir_builder);
+
+        if (resolver->context->options.print_ir)
+        {
+            ir_builder_print_result(&ir_builder);
+        }
+
+        if (!validation.messages)
+        {
+            IR_Runner ir_runner;
+            ir_runner_init(resolver->context, &ir_runner);
+
+            {
+                AST_Declaration* insert_decl = call_expression->call.callee_declaration;
+                assert(insert_decl);
+
+                IR_Value* func_value = ir_builder_value_for_declaration(&ir_builder, insert_decl);
+                assert(func_value);
+                assert(func_value->function);
+
+                ir_runner_load_dynamic_libs(&ir_runner, resolver->module, &ir_module);
+                ir_runner_load_foreigns(&ir_runner, &ir_module);
+
+                ir_runner_execute_block(&ir_runner, ir_runner.context->global_init_block->block);
+
+                auto num_args = BUF_LENGTH(call_expression->call.arg_expressions);
+                auto u8_ptr_type = ast_find_or_create_pointer_type(resolver->context, Builtin::type_u8);
+
+                for (uint64_t i = 0; i < num_args; i++)
+                {
+                    AST_Expression* arg_expr = call_expression->call.arg_expressions[i];
+                    assert(arg_expr->kind == AST_EXPR_STRING_LITERAL);
+
+                    IR_Value* arg_value = ir_string_literal(&ir_builder, u8_ptr_type, arg_expr->string_literal.atom);
+                    assert(arg_value);
+
+                    IR_Pushed_Arg pa = { *arg_value, false };
+                    stack_push(ir_runner.arg_stack, pa);
+                }
+
+                IR_Value return_value = {};
+                IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(&ir_runner,
+                                                                            func_value->function, num_args,
+                                                                            &return_value);
+
+                printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value->value.s64);
+                uint64_t arena_cap = 0;
+                auto block = ir_runner.arena.blocks;
+                while (block)
+                {
+                    arena_cap += block->data_length * sizeof(void*);
+                    block = block->next_block;
+                }
+                printf("Arena size: %.2fMB\n", (double)arena_cap / MB(1));
+
+                resolver->module->gen_data = nullptr;
+
+                return (char*)return_value.value.string;
+            }
+        }
+        else
+        {
+            for (uint64_t i = 0; i < BUF_LENGTH(validation.messages); i++)
+            {
+                fprintf(stderr, "%s\n", validation.messages[i]);
+            }
+        }
+
+        return nullptr;
     }
 
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,

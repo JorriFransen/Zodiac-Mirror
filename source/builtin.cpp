@@ -18,6 +18,7 @@ namespace Zodiac
     AST_Declaration* Builtin::decl_PLATFORM_LINUX = nullptr;
 
 	Atom Builtin::atom_main;
+    Atom Builtin::atom_insert;
 
     void init_builtin_types(Context* context)
     {
@@ -41,6 +42,7 @@ namespace Zodiac
         Builtin::pointer_size = Builtin::type_int->bit_size;
 
 		Builtin::atom_main = atom_get(context->atom_table, "main");
+        Builtin::atom_insert = atom_get(context->atom_table, "insert");
     }
 
     AST_Type* register_builtin_type(Context* context, AST_Type_Flags flags, uint64_t size, const char* name)

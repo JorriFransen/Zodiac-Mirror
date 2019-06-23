@@ -23,6 +23,7 @@ namespace Zodiac
         static AST_Declaration* decl_PLATFORM_LINUX;
 
 		static Atom atom_main;
+        static Atom atom_insert;
     };
 
     void init_builtin_types(Context* context);

@@ -138,7 +138,7 @@ int main(int argc, char** argv)
 
 		if (context->options.execute_ir)
 		{
-			ir_runner_execute(&ir_runner, parse_result.ast_module, &ir_module);
+			ir_runner_execute_entry(&ir_runner, parse_result.ast_module, &ir_module);
 		}
     }
     else

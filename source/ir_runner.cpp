@@ -27,7 +27,7 @@ namespace Zodiac
         ir_runner->loaded_foreign_symbols = nullptr;
     }
 
-    void ir_runner_execute(IR_Runner* ir_runner, AST_Module* ast_module, IR_Module* ir_module)
+    void ir_runner_execute_entry(IR_Runner* ir_runner, AST_Module* ast_module, IR_Module* ir_module)
     {
         assert(ir_runner);
         assert(ast_module);

@@ -371,6 +371,10 @@ namespace Zodiac
                         BUF_PUSH(new_literal, '\t');
                         break;
 
+                    case '0':
+                        BUF_PUSH(new_literal, '\0');
+                        break;
+
                     default: assert(false);
                 }
                 token_length--;
