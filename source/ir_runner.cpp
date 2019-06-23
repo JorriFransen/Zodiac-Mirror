@@ -45,15 +45,18 @@ namespace Zodiac
                                                                     ir_module->entry_function, 0,
                                                                     &return_value);
 
-        printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value->value.s64);
-        uint64_t arena_cap = 0;
-        auto block = ir_runner->arena.blocks;
-        while (block)
+        if (ir_runner->context->options.verbose)
         {
-            arena_cap += block->data_length * sizeof(void*);
-            block = block->next_block;
+            printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value->value.s64);
+            uint64_t arena_cap = 0;
+            auto block = ir_runner->arena.blocks;
+            while (block)
+            {
+                arena_cap += block->data_length * sizeof(void*);
+                block = block->next_block;
+            }
+            printf("Arena size: %.2fMB\n", (double)arena_cap / MB(1));
         }
-        printf("Arena size: %.2fMB\n", (double)arena_cap / MB(1));
     }
 
     void ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* ast_module,
@@ -264,7 +267,8 @@ namespace Zodiac
         assert(arg_value);
         assert(arg_type);
 
-        if (arg_type == Builtin::type_int)
+        if (arg_type == Builtin::type_int ||
+            arg_type == Builtin::type_u64)
         {
             dcArgLongLong(runner->dyn_vm, arg_value->value.s64);
         }
@@ -1267,6 +1271,10 @@ namespace Zodiac
                 {
                     dest_value->value.s64 = *((int64_t*)pointer_value->value.string);
                 }
+                else if (dest_type->kind == AST_TYPE_POINTER)
+                {
+                    dest_value->value.string = *((uint8_t**)pointer_value->value.string);
+                }
 
                 else assert(false);
 
@@ -1430,7 +1438,8 @@ namespace Zodiac
                 assert(iri->arg2);
                 assert(iri->arg2->kind == IRV_INT_LITERAL ||
                        iri->arg2->kind == IRV_TEMPORARY);
-                assert(iri->arg2->type == Builtin::type_int);
+                assert(iri->arg2->type == Builtin::type_int ||
+                       iri->arg2->type == Builtin::type_u64);
 
                 assert(iri->result);
                 assert(iri->result->kind == IRV_TEMPORARY);
@@ -1438,13 +1447,28 @@ namespace Zodiac
                 uint64_t index = 0;
                 if (iri->arg2->kind == IRV_INT_LITERAL)
                 {
-                    index = iri->arg2->value.s64;
+                    if (iri->arg2->type == Builtin::type_int)
+                    {
+                        index = iri->arg2->value.s64;
+                    }
+                    else
+                    {
+                        index = iri->arg2->value.u64;
+                    }
                 }
                 else
                 {
                     assert(iri->arg2->kind == IRV_TEMPORARY);
                     IR_Value* index_value = ir_runner_get_local_temporary(runner, iri->arg2);
-                    index = index_value->value.s64;
+                    if (iri->arg2->type == Builtin::type_int)
+                    {
+                        
+                        index = index_value->value.s64;
+                    }
+                    else
+                    {
+                        index = index_value->value.u64;
+                    }
                 }
 
                 IR_Value* base_pointer_value = ir_runner_get_local_temporary(runner, iri->arg1);

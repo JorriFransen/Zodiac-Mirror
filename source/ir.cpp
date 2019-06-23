@@ -1135,6 +1135,12 @@ namespace Zodiac
 				break;
 			}
 
+            case AST_EXPR_SIZEOF:
+            {
+                return ir_integer_literal(ir_builder, expression->type, expression->sizeof_expr.byte_size);
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -1920,7 +1926,8 @@ namespace Zodiac
                array_allocl->type->kind == AST_TYPE_POINTER);
         assert(offset_value);
         assert(offset_value->kind == IRV_TEMPORARY || IRV_INT_LITERAL);
-        assert(offset_value->type == Builtin::type_int);
+        assert(offset_value->type == Builtin::type_int ||
+               offset_value->type == Builtin::type_u64);
 
         AST_Type* result_type = nullptr;
         if (array_allocl->type->kind == AST_TYPE_STATIC_ARRAY)
@@ -2372,7 +2379,8 @@ namespace Zodiac
         assert(block_value);
         assert(block_value->kind == IRV_BLOCK);
 
-        assert(cond_value->type == Builtin::type_bool);
+        assert(cond_value->type == Builtin::type_bool ||
+               cond_value->type->kind == AST_TYPE_POINTER);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_JMP_IF, cond_value,
                                                  block_value, nullptr);
@@ -2482,7 +2490,8 @@ namespace Zodiac
                new_value->kind == IRV_ALLOCL ||
                new_value->kind == IRV_CHAR_LITERAL ||
                new_value->kind == IRV_FLOAT_LITERAL ||
-               new_value->kind == IRV_BOOL_LITERAL);
+               new_value->kind == IRV_BOOL_LITERAL ||
+               new_value->kind == IRV_NULL_LITERAL);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_STOREP, pointer_allocl,
                                                  new_value, nullptr);

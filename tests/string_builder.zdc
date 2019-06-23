@@ -1,0 +1,109 @@
+
+_c :: import c;
+// using _c;
+
+String_Builder :: struct
+{
+    first_block : *_String_Builder_Block;
+    initial_block_size : u64;
+}
+
+_String_Builder_Block :: struct
+{
+    data : *u8;
+    size : u64;
+    used_size : u64;
+    next_block : *_String_Builder_Block;
+}
+
+init :: (sb: *String_Builder, initial_block_size: u64)
+{
+    sb.initial_block_size = initial_block_size;
+    sb.first_block = create_block(initial_block_size);
+}
+
+create_block :: (block_size: u64) -> *_String_Builder_Block
+{
+    result := (:*_String_Builder_Block)_c.malloc((:int)sizeof(_String_Builder_Block));
+
+    result.data = _c.malloc((:int)block_size);
+    result.size = block_size;
+    result.used_size = 0;
+    result.next_block = null;
+
+    return result;
+}
+
+append :: (sb: *String_Builder, str: *u8)
+{
+    append_to_block(sb.first_block, str);
+}
+
+append_to_block :: (sb: *_String_Builder_Block, str: *u8) -> bool
+{
+    str_len := _c.strlen(str);
+    if (sb.used_size + (:u64)str_len < sb.size)
+    {
+        sbi := sb.used_size;
+        for (i := 0; i < str_len; i = i + 1)
+        {
+            sb.data[sbi] = str[i];
+            sbi = sbi + (:u64)1;
+        }
+
+        sb.used_size = sb.used_size + (:u64)str_len;
+
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+copy_to_string :: (sb: *String_Builder) -> *u8
+{
+    total_size := (:u64)1;
+
+    block := sb.first_block;
+    while (block)
+    {
+        total_size = total_size + block.used_size;
+        block = block.next_block;
+    }
+
+    // printf("total_size: %d\n", total_size);
+
+    result := (:*u8)_c.malloc((:int)total_size);
+    ri := (:u64)0;
+    block = sb.first_block;
+    while (block)
+    {
+        for (i := 0; (:u64)i < block.used_size; i = i + 1)
+        {
+            result[ri] = block.data[i];
+            ri = ri + (:u64)1;
+        }
+        block = block.next_block;
+    }
+
+    result[ri] = 0;
+
+    return result;
+}
+
+free :: (sb: *String_Builder)
+{
+    block := sb.first_block;
+    while (block)
+    {
+        next := block.next_block;
+
+        _c.free(block.data);
+        _c.free(block);
+
+        block = next;
+    }
+
+    sb.first_block = null;
+}

@@ -30,6 +30,7 @@ stderr : *FILE = null;
 #foreign strlen :: (str: *u8) -> int;
 
 #foreign malloc :: (size: int) -> *void;
+#foreign free   :: (mem: *void);
 
 #foreign sqrt :: (x: double) -> double;
 #foreign sinf :: (x: float) -> float;

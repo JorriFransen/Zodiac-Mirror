@@ -214,6 +214,16 @@ namespace Zodiac
         return result;
     }
 
+    AST_Expression* ast_sizeof_expression_new(Context* context, File_Pos file_pos, AST_Type_Spec* type_spec)
+    {
+        assert(context);
+        assert(type_spec);
+
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_SIZEOF);
+        result->sizeof_expr.type_spec = type_spec;
+        return result;
+    }
+
     AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos,
                                            AST_Expression* base_expr,
                                            AST_Expression* member_expr)
@@ -1252,7 +1262,23 @@ namespace Zodiac
                 {
                     AST_Declaration* member_decl = member_decls[i];
                     assert(member_decl->kind == AST_DECL_MUTABLE);
-                    uint64_t member_hash = ast_get_type_hash(member_decl->mutable_decl.type);
+                    uint64_t member_hash = 0;
+                    if (!member_decl->mutable_decl.type ||
+                        (member_decl->mutable_decl.type->kind == AST_TYPE_POINTER &&
+                         member_decl->mutable_decl.type->pointer.base == type))
+                    {
+                        assert(member_decl->mutable_decl.type_spec->kind == AST_TYPE_SPEC_POINTER);
+                        assert(member_decl->mutable_decl.type_spec->pointer.base->kind ==
+                               AST_TYPE_SPEC_IDENT);
+                        const char* member_type_str =
+                            member_decl->mutable_decl.type_spec->pointer.base->identifier->atom.data;
+                        const char* type_str = type->name;
+                        assert(strcmp(member_type_str, type_str) == 0);
+                    }
+                    else
+                    {
+                        member_hash = ast_get_type_hash(member_decl->mutable_decl.type);
+                    }
                     base_hash = hash_mix(base_hash, member_hash);
                 }
                 return base_hash;
@@ -1394,6 +1420,16 @@ namespace Zodiac
                 mem_free(base_string);
                 break;
             }
+
+        case AST_TYPE_STRUCT:
+        {
+            if (type->name)
+            {
+                result = string_append(type->name, "(struct)");
+            }
+            else assert(false);
+            break;
+        }
 
             default: assert(false);
         }

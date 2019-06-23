@@ -518,26 +518,58 @@ namespace Zodiac
         assert(!find_declaration(resolver->context, scope, declaration->identifier));
 
         auto aggregate_decls = declaration->aggregate_type.aggregate_declarations;
+        BUF(AST_Declaration*) pointers_to_self = nullptr;
         for (uint64_t i = 0; i < BUF_LENGTH(aggregate_decls); i++)
         {
             AST_Declaration* member_decl = aggregate_decls[i];
             assert(member_decl->kind == AST_DECL_MUTABLE);
             assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
-            result &= try_resolve_declaration(resolver, member_decl,
-                                              declaration->aggregate_type.scope);
+            bool mem_result = try_resolve_declaration(resolver, member_decl,
+                                                      declaration->aggregate_type.scope);
+
+            // Special case pointer to self
+            if (!mem_result)
+            {
+                AST_Type_Spec* mem_ts = member_decl->mutable_decl.type_spec;
+                assert(mem_ts);
+                if (mem_ts->kind == AST_TYPE_SPEC_POINTER &&
+                    mem_ts->pointer.base->kind == AST_TYPE_SPEC_IDENT)
+                {
+                    AST_Type_Spec* mem_base_ts = mem_ts->pointer.base;
+                    if (mem_base_ts->identifier->atom == declaration->identifier->atom)
+                    {
+                        mem_result = true;
+                        BUF_PUSH(pointers_to_self, member_decl);
+                    }
+                }
+            }
+
+            result &= mem_result;
         }
 
         if (result && !declaration->aggregate_type.type)
         {
             declaration->aggregate_type.type = create_struct_type(resolver,
                                                                   declaration->identifier,
-                aggregate_decls);
+                                                                  aggregate_decls);
+
+            auto self_pointer_type = ast_find_or_create_pointer_type(resolver->context,
+                                                                    declaration->aggregate_type.type);
+
+            for (uint64_t i = 0; i < BUF_LENGTH(pointers_to_self); i++)
+            {
+                AST_Declaration* pointer_to_self = pointers_to_self[i];
+                pointer_to_self->mutable_decl.type = self_pointer_type;
+                assert(try_resolve_declaration(resolver, pointer_to_self, declaration->aggregate_type.scope));
+            }
         }
 
         if (result)
         {
             assert(declaration->aggregate_type.type);
         }
+
+        BUF_FREE(pointers_to_self);
 
         return result;
     }
@@ -1161,6 +1193,19 @@ namespace Zodiac
 				result &= try_resolve_cast_expression(resolver, expression, scope);
 				break;
 			}
+
+            case AST_EXPR_SIZEOF:
+            {
+                AST_Type* type = nullptr;
+                result &= try_resolve_type_spec(resolver, expression->sizeof_expr.type_spec, &type, scope);
+                if (result)
+                {
+                    assert(type);
+                    expression->sizeof_expr.byte_size = type->bit_size / 8;
+                    expression->type = Builtin::type_u64;
+                }
+                break;
+            }
 
             default:
             {
@@ -2371,11 +2416,18 @@ namespace Zodiac
             AST_Declaration* decl = member_decls[i];
             assert(decl->kind == AST_DECL_MUTABLE);
             assert(decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
-            assert(decl->mutable_decl.type);
 
-            AST_Type* member_type = decl->mutable_decl.type;
-            assert(member_type->bit_size);
-            bit_size += member_type->bit_size;
+            if (decl->mutable_decl.type)
+            {
+                AST_Type* member_type = decl->mutable_decl.type;
+                assert(member_type->bit_size);
+                bit_size += member_type->bit_size;
+            }
+            else if (decl->mutable_decl.type_spec->kind == AST_TYPE_SPEC_POINTER)
+            {
+                bit_size += Builtin::pointer_size;
+            }
+            else assert(false);
         }
 
         AST_Type* struct_type = ast_type_struct_new(resolver->context, member_decls,
@@ -2583,15 +2635,15 @@ namespace Zodiac
                                                                             func_value->function, num_args,
                                                                             &return_value);
 
-                printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value->value.s64);
-                uint64_t arena_cap = 0;
-                auto block = ir_runner.arena.blocks;
-                while (block)
-                {
-                    arena_cap += block->data_length * sizeof(void*);
-                    block = block->next_block;
-                }
-                printf("Arena size: %.2fMB\n", (double)arena_cap / MB(1));
+                // printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value->value.s64);
+                // uint64_t arena_cap = 0;
+                // auto block = ir_runner.arena.blocks;
+                // while (block)
+                // {
+                //     arena_cap += block->data_length * sizeof(void*);
+                //     block = block->next_block;
+                // }
+                // printf("Arena size: %.2fMB\n", (double)arena_cap / MB(1));
 
                 resolver->module->gen_data = nullptr;
 
