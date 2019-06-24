@@ -298,6 +298,7 @@ namespace Zodiac
         AST_DECL_AGGREGATE_TYPE,
 		AST_DECL_TYPEDEF,
         AST_DECL_USING,
+        AST_DECL_INSERT,
     };
 
     struct AST_Function_Declaration
@@ -419,6 +420,12 @@ namespace Zodiac
                 AST_Expression* ident_expression;
                 AST_Declaration* scope_decl;
             } using_decl;
+
+            struct
+            {
+                AST_Statement* call_statement;
+                bool generated; 
+            } insert_decl;
         };
 
         void* gen_data = nullptr;
@@ -645,6 +652,8 @@ namespace Zodiac
 	AST_Declaration* ast_typedef_declaration_new(Context* context, File_Pos file_pos,
 		                                         AST_Identifier* identifier,
 		                                         AST_Type_Spec* type_spec);
+    AST_Declaration* ast_insert_declaration_new(Context* context, File_Pos file_pos,
+                                                AST_Statement* stmt);
 
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos,
                                                  AST_Declaration* declaration);
@@ -670,7 +679,8 @@ namespace Zodiac
                                             AST_Expression* switch_expr,
                                             BUF(AST_Switch_Case) cases);
     AST_Statement* ast_break_statement_new(Context* context, File_Pos file_pos);
-    AST_Statement* ast_insert_statement_new(Context* context, File_Pos file_pos, AST_Statement* statement);
+    AST_Statement* ast_insert_statement_new(Context* context, File_Pos file_pos,
+                                            AST_Statement* statement);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
                            const char* name, uint64_t bit_size);

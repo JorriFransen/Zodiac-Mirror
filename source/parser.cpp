@@ -99,8 +99,8 @@ namespace Zodiac
         return ast_directive_new(parser->context, kind, ft.file_pos);
     }
 
-    static AST_Declaration* parse_declaration(Parser* parser, AST_Scope* scope, bool global,
-                                              AST_Declaration_Location location/*= AST_DECL_LOC_INVALID*/)
+    AST_Declaration* parse_declaration(Parser* parser, AST_Scope* scope, bool global,
+                                       AST_Declaration_Location location/*= AST_DECL_LOC_INVALID*/)
     {
         assert(parser);
         assert(scope);
@@ -115,9 +115,9 @@ namespace Zodiac
         return parse_declaration(parser, scope, global, directive, location);
     }
 
-    static AST_Declaration* parse_declaration(Parser* parser, AST_Scope* scope, bool global,
-                                              AST_Directive* directive,
-                                              AST_Declaration_Location location/*= AST_DECL_LOC_INVALID*/)
+    AST_Declaration* parse_declaration(Parser* parser, AST_Scope* scope, bool global,
+                                       AST_Directive* directive,
+                                       AST_Declaration_Location location/*= AST_DECL_LOC_INVALID*/)
     {
         assert(parser);
         assert(scope);
@@ -125,6 +125,14 @@ namespace Zodiac
         if (directive && directive->kind == AST_DIREC_DYN_LINK)
         {
             return parse_link_declaration(parser, global, scope, directive);
+        }
+
+        if (directive && directive->kind == AST_DIREC_INSERT)
+        {
+            AST_Statement* stmt = parse_statement(parser, scope);
+            assert(stmt);
+
+            return ast_insert_declaration_new(parser->context, directive->file_pos, stmt);
         }
 
         if (is_token(parser, TOK_KW_STATIC_IF))
@@ -155,7 +163,7 @@ namespace Zodiac
         return parse_declaration(parser, identifier, scope, global, directive, location);
     }
 
-    static AST_Declaration* parse_declaration(Parser* parser, AST_Identifier* identifier,
+    AST_Declaration* parse_declaration(Parser* parser, AST_Identifier* identifier,
                                               AST_Scope* scope,
                                               bool global, AST_Directive* directive,
                                               AST_Declaration_Location location/*= AST_DECL_LOC_INVALID*/)
@@ -649,7 +657,11 @@ namespace Zodiac
             expect_token(parser, TOK_SEMICOLON);
             return ast_call_statement_new(parser->context, lvalue_expr);
         }
-        else assert(false);
+        else
+        {
+            parser_report_error(parser, lvalue_expr->file_pos, "Expected ':', '=' or '(' after identifier");
+            return nullptr;
+        }
 
         assert(false);
         return nullptr;

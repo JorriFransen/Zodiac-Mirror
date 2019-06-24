@@ -334,6 +334,11 @@ namespace Zodiac
                 break;
             }
 
+            case AST_DECL_INSERT:
+            {
+                break;
+            }
+
             default: assert(false);
         }
     }

@@ -26,6 +26,7 @@ stderr : *FILE = null;
 #foreign puts :: (string: *u8) -> int;
 #foreign printf :: (format: *u8, ...) -> int;
 #foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
+#foreign sprintf :: (buffer: *u8, format: *u8, ...) -> int;
 
 #foreign strlen :: (str: *u8) -> int;
 

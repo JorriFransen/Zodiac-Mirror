@@ -189,7 +189,13 @@ namespace Zodiac
                     case AST_DECL_USING:
                     {
                         result &= try_resolve_using_declaration(resolver, declaration, scope);
-                        break;;
+                        break;
+                    }
+
+                    case AST_DECL_INSERT:
+                    {
+                        result &= try_resolve_insert_declaration(resolver, declaration, scope);
+                        break;
                     }
 
                     default:
@@ -734,6 +740,85 @@ namespace Zodiac
         return true;
     }
 
+    static bool try_resolve_insert_declaration(Resolver* resolver, AST_Declaration* declaration,
+                                               AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(declaration);
+        assert(declaration->kind == AST_DECL_INSERT);
+        assert(scope);
+        assert(scope->is_module_scope);
+
+        if (declaration->insert_decl.generated)
+        {
+            return true;
+        }
+
+        AST_Statement* insert_stmt = declaration->insert_decl.call_statement;
+
+        bool result = try_resolve_statement(resolver, insert_stmt, scope, nullptr);
+        if (result)
+        {
+            assert(insert_stmt->kind == AST_STMT_CALL);
+            auto u8_ptr_type = ast_find_or_create_pointer_type(resolver->context, Builtin::type_u8);
+            assert(insert_stmt->call_expression->type == u8_ptr_type);
+
+            char* insert_string = run_insert(resolver, insert_stmt->call_expression);
+            // printf("Insert string: %s\n", insert_string);
+            assert(insert_string);
+
+            Lexer lexer;
+            init_lexer(&lexer, resolver->context);
+
+            Lex_Result lex_result = lex_file(&lexer, insert_string, "<insert_auto_gen>");
+            if (BUF_LENGTH(lex_result.errors) != 0)
+            {
+                lexer_report_errors(&lexer);
+
+                // We might want to continue here, to try and parse what we have?
+                return -1;
+            }
+
+            Parser parser;
+            parser_init(&parser, resolver->context);
+
+            parser.result.module_name = resolver->module->module_name;
+            parser.result.ast_module = resolver->module;
+            parser.tokens = lex_result.tokens;
+            parser.ti = 0;
+
+            AST_Declaration* gen_decl = nullptr;
+            do
+            {
+                gen_decl = parse_declaration(&parser, scope, true);
+                Parse_Result parse_result = parser.result;
+                if (BUF_LENGTH(parse_result.errors) != 0)
+                {
+                    parser_report_errors(&parser);
+
+                    // Again, do we want to continue here?
+                    return -1;
+                }
+
+                resolver->resolving_auto_gen = true;
+                resolver->auto_gen_file_pos = declaration->file_pos;
+                result &= try_resolve_declaration(resolver, gen_decl, scope);
+                resolver->resolving_auto_gen = false;
+                if (result)
+                {
+                    BUF_PUSH(resolver->module->global_declarations, gen_decl);
+                }
+            } while (gen_decl && parser.ti < BUF_LENGTH(parser.tokens) && result);
+
+            if (result)
+            {
+                declaration->insert_decl.generated = true;
+            }
+        }
+
+        return result;
+    }
+
     static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,
                                       AST_Scope* scope, AST_Statement* break_context)
     {
@@ -927,7 +1012,8 @@ namespace Zodiac
                         }
                     }
 
-                    result &= try_resolve_statement(resolver, switch_case.stmt, scope, break_context);
+                    result &= try_resolve_statement(resolver, switch_case.stmt, scope,
+                                                    break_context);
                 }
                 break;
             }
@@ -1243,6 +1329,7 @@ namespace Zodiac
         bool recursive = false;
 
         if (ident_expr->kind == AST_EXPR_IDENTIFIER &&
+            resolver->current_func_decl &&
             ident_expr->identifier->atom == resolver->current_func_decl->identifier->atom)
         {
             recursive = true;
@@ -2616,14 +2703,24 @@ namespace Zodiac
                 ir_runner_execute_block(&ir_runner, ir_runner.context->global_init_block->block);
 
                 auto num_args = BUF_LENGTH(call_expression->call.arg_expressions);
-                auto u8_ptr_type = ast_find_or_create_pointer_type(resolver->context, Builtin::type_u8);
+                auto u8_ptr_type = ast_find_or_create_pointer_type(resolver->context,
+                                                                   Builtin::type_u8);
 
                 for (uint64_t i = 0; i < num_args; i++)
                 {
                     AST_Expression* arg_expr = call_expression->call.arg_expressions[i];
-                    assert(arg_expr->kind == AST_EXPR_STRING_LITERAL);
 
-                    IR_Value* arg_value = ir_string_literal(&ir_builder, u8_ptr_type, arg_expr->string_literal.atom);
+                    IR_Value* arg_value = nullptr;
+                    if (arg_expr->kind == AST_EXPR_STRING_LITERAL)
+                    {
+                        arg_value = ir_string_literal(&ir_builder, u8_ptr_type,
+                                                      arg_expr->string_literal.atom);
+                    }
+                    else if (arg_expr->kind == AST_EXPR_INTEGER_LITERAL)
+                    {
+                        arg_value = ir_integer_literal(&ir_builder, arg_expr->type,
+                                                       arg_expr->integer_literal.u64);
+                    }
                     assert(arg_value);
 
                     IR_Pushed_Arg pa = { *arg_value, false };

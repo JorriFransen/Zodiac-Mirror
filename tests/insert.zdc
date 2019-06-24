@@ -4,7 +4,9 @@ using _c;
 
 SB :: import string_builder;
 
-//#insert gen_vector_definition(3);
+#insert gen_vector_definition(2);
+#insert gen_vector_definition(3);
+#insert gen_vector_definition(4);
 
 main :: ()
 {
@@ -18,6 +20,17 @@ main :: ()
     my_int = 4;
 
     printf("my_int: %d\n", my_int);
+
+    printf("sizeof(Vec3): %d\n", sizeof(Vec3));
+
+    v2 : Vec2 = { 1.2, 3.4 };
+    vec2_print(v2);
+
+    v3 : Vec3 = { 1.1, 2.2,  3.3 };
+    vec3_print(v3);
+
+    v4 : Vec4 = { 4.4, 5.5, 6.6, 7.7 };
+    vec4_print(v4);
 }
 
 
@@ -30,6 +43,82 @@ create_variable :: (name: *u8, type: *u8) -> *u8
     SB.append(*sb, " : ");
     SB.append(*sb, type);
     SB.append(*sb, ";");
+
+    result := SB.copy_to_string(*sb);
+    SB.free(*sb);
+    return result;
+}
+
+gen_vector_definition :: (element_count: u64) -> *u8
+{
+    sb : SB.String_Builder;
+    SB.init(*sb, 1024);
+
+    SB.append(*sb, "Vec");
+    SB.append_u64(*sb, element_count);
+    SB.append(*sb, " :: struct {\n");
+
+    if (element_count >= (:u64)1)
+    {
+        SB.append(*sb, "\tx: float;\n");
+    }
+    if (element_count >= (:u64)2)
+    {
+        SB.append(*sb, "\ty: float;\n");
+    }
+    if (element_count >= (:u64)3)
+    {
+        SB.append(*sb, "\tz: float;\n");
+    }
+    if (element_count >= (:u64)4)
+    {
+        SB.append(*sb, "\tw: float;\n");
+    }
+
+    SB.append(*sb, "}\n");
+
+    SB.append(*sb, "vec");
+    SB.append_u64(*sb, element_count);
+    SB.append(*sb, "_print :: (vec: Vec");
+    SB.append_u64(*sb, element_count);
+    SB.append(*sb, ")\n{\n");
+    SB.append(*sb, "\tprintf(\"Vec");
+    SB.append_u64(*sb, element_count);
+    SB.append(*sb, " {");
+    if (element_count >= (:u64)1)
+    {
+        SB.append(*sb, " x: %f");
+    }
+    if (element_count >= (:u64)2)
+    {
+        SB.append(*sb, ", y: %f");
+    }
+    if (element_count >= (:u64)3)
+    {
+        SB.append(*sb, ", z: %f");
+    }
+    if (element_count >= (:u64)4)
+    {
+        SB.append(*sb, ", w: %f");
+    }
+    SB.append(*sb, " }\n\"");
+    if (element_count >= (:u64)1)
+    {
+        SB.append(*sb, ", vec.x");
+    }
+    if (element_count >= (:u64)2)
+    {
+        SB.append(*sb, ", vec.y");
+    }
+    if (element_count >= (:u64)3)
+    {
+        SB.append(*sb, ", vec.z");
+    }
+    if (element_count >= (:u64)4)
+    {
+        SB.append(*sb, ", vec.w");
+    }
+    SB.append(*sb, ");\n}\n");
 
     result := SB.copy_to_string(*sb);
     SB.free(*sb);

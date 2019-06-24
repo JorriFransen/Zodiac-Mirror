@@ -39,6 +39,14 @@ append :: (sb: *String_Builder, str: *u8)
     append_to_block(sb.first_block, str);
 }
 
+append_u64 :: (sb: *String_Builder, number: u64)
+{
+    _buf: [128]u8;
+    buf := *_buf[0];
+    _c.sprintf(buf, "%lu", number);
+    append(sb, buf);
+}
+
 append_to_block :: (sb: *_String_Builder_Block, str: *u8) -> bool
 {
     str_len := _c.strlen(str);

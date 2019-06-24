@@ -127,8 +127,13 @@ namespace Zodiac
                 uint64_t length = 0;
                 while (current_char(lexer) != '"')
                 {
-                    length++;
+                    if (current_char(lexer) == '\\')
+                    {
+                        length++;
+                        lexer_consume_character(lexer);
+                    }
                     lexer_consume_character(lexer);
+                    length++;
                 }
                 lexer_consume_character(lexer);
 
@@ -375,6 +380,10 @@ namespace Zodiac
                         BUF_PUSH(new_literal, '\0');
                         break;
 
+                    case '"':
+                        BUF_PUSH(new_literal, '"');
+                        break;
+
                     default: assert(false);
                 }
                 token_length--;
@@ -506,7 +515,8 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(lexer->result.errors); i++)
         {
             Lex_Error error = lexer->result.errors[i];
-            fprintf(stderr, "Error: %s:%" PRIu64 ": %s\n", error.file_pos.file_name, error.file_pos.line, error.message);
+            fprintf(stderr, "Error: %s:%" PRIu64 ":%" PRIu64 ": %s\n", error.file_pos.file_name,
+                    error.file_pos.line, error.file_pos.line_relative_char_pos, error.message);
         }
     }
 }

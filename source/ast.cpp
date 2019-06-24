@@ -3,6 +3,8 @@
 #include "builtin.h"
 #include "const_interpreter.h"
 
+#include <inttypes.h>
+
 namespace Zodiac
 {
     AST_Module* ast_module_new(Context* context, const char* module_name)
@@ -518,6 +520,21 @@ namespace Zodiac
 
 		return result;
 	}
+
+    AST_Declaration* ast_insert_declaration_new(Context* context, File_Pos file_pos,
+                                                AST_Statement* stmt)
+    {
+        assert(context);
+        assert(stmt);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_INSERT,
+                                                      AST_DECL_LOC_GLOBAL, nullptr, nullptr, false);
+
+        result->insert_decl.call_statement = stmt;
+        result->insert_decl.generated = false;
+
+        return result;
+    }
 
     AST_Statement* ast_declaration_statement_new(Context* context, File_Pos file_pos,
                                                  AST_Declaration* declaration)
@@ -1421,15 +1438,32 @@ namespace Zodiac
                 break;
             }
 
-        case AST_TYPE_STRUCT:
-        {
-            if (type->name)
+            case AST_TYPE_STRUCT:
             {
-                result = string_append(type->name, "(struct)");
+                if (type->name)
+                {
+                    result = string_append(type->name, "(struct)");
+                }
+                else assert(false);
+                break;
             }
-            else assert(false);
-            break;
-        }
+
+            case AST_TYPE_STATIC_ARRAY:
+            {
+                char element_count_str[128];
+                auto sprf_res = sprintf(element_count_str, "%" PRIu64, type->static_array.count);
+                    assert(sprf_res);
+                auto s1 = string_append("[", element_count_str);
+                auto s2 = string_append(s1, "]");
+                auto base_type_str = ast_type_to_string(type->static_array.base);
+
+                result = string_append(s2, base_type_str);
+
+                mem_free(base_type_str);
+                mem_free(s2);
+                mem_free(s1);
+                break;
+            }
 
             default: assert(false);
         }
