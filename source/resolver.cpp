@@ -354,18 +354,20 @@ namespace Zodiac
             {
                 suggested_type = declaration->mutable_decl.type;
             }
-            if (init_expr->kind == AST_EXPR_INTEGER_LITERAL)
-            {
-                assert(declaration->mutable_decl.type->flags & AST_TYPE_FLAG_INT);
-                suggested_type = declaration->mutable_decl.type;
-            }
-            else if (declaration->mutable_decl.type == Builtin::type_double)
+
+            if (declaration->mutable_decl.type == Builtin::type_double)
             {
                 suggested_type = Builtin::type_double;
             }
             else if (declaration->mutable_decl.type == Builtin::type_float)
             {
                 suggested_type = Builtin::type_float;
+            }
+            else if (init_expr->kind == AST_EXPR_INTEGER_LITERAL)
+            {
+                if (declaration->mutable_decl.type)
+                    assert(declaration->mutable_decl.type->flags & AST_TYPE_FLAG_INT);
+                suggested_type = declaration->mutable_decl.type;
             }
             result &= try_resolve_expression(resolver, init_expr, scope, suggested_type);
 
