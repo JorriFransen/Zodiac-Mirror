@@ -976,51 +976,53 @@ namespace Zodiac
                     assert(switch_type->flags & AST_TYPE_FLAG_INT ||
                            (switch_type->kind == AST_TYPE_ENUM) &&
                             switch_type->aggregate_type.base_type->flags & AST_TYPE_FLAG_INT);
-                }
 
-                bool found_default = false;
+                    bool found_default = false;
 
-                auto cases = statement->switch_stmt.cases;
-                for (uint64_t i = 0; i < BUF_LENGTH(cases); i++)
-                {
-                    const AST_Switch_Case& switch_case = cases[i];
-                    if (switch_case.is_default)
+                    auto cases = statement->switch_stmt.cases;
+                    for (uint64_t i = 0; i < BUF_LENGTH(cases); i++)
                     {
-                        assert(!found_default);
-                        found_default = true;
-                    }
-                    else
-                    {
-                        for (uint64_t i = 0; i < BUF_LENGTH(switch_case.case_expressions); i++)
+                        const AST_Switch_Case& switch_case = cases[i];
+                        if (switch_case.is_default)
                         {
-                            AST_Expression* case_expr = switch_case.case_expressions[i];
-                            result &= try_resolve_expression(resolver, case_expr, scope);
-                            if (!result)
+                            assert(!found_default);
+                            found_default = true;
+                        }
+                        else
+                        {
+                            for (uint64_t i = 0; i < BUF_LENGTH(switch_case.case_expressions); i++)
                             {
-                                break;
+                                AST_Expression* case_expr = switch_case.case_expressions[i];
+                                result &= try_resolve_expression(resolver, case_expr, scope,
+                                                                 switch_expr->type);
+                                if (!result)
+                                {
+                                    break;
+                                }
+                                assert(case_expr->is_const);
                             }
-                            assert(case_expr->is_const);
+
+                            for (uint64_t i = 0; i < BUF_LENGTH(switch_case.range_expressions);
+                                 i += 2)
+                            {
+                                AST_Expression* min = switch_case.range_expressions[i];
+                                AST_Expression* max = switch_case.range_expressions[i + 1];
+
+                                result &= try_resolve_expression(resolver, min, scope);
+                                result &= try_resolve_expression(resolver, max, scope);
+
+                                if (result)
+                                {
+                                    assert(min->is_const);
+                                    assert(max->is_const);
+                                    assert(min->type == max->type);
+                                }
+                            }
                         }
 
-                        for (uint64_t i = 0; i < BUF_LENGTH(switch_case.range_expressions); i += 2)
-                        {
-                            AST_Expression* min = switch_case.range_expressions[i];
-                            AST_Expression* max = switch_case.range_expressions[i + 1];
-
-                            result &= try_resolve_expression(resolver, min, scope);
-                            result &= try_resolve_expression(resolver, max, scope);
-
-                            if (result)
-                            {
-                                assert(min->is_const);
-                                assert(max->is_const);
-                                assert(min->type == max->type);
-                            }
-                        }
+                        result &= try_resolve_statement(resolver, switch_case.stmt, scope,
+                                                        break_context);
                     }
-
-                    result &= try_resolve_statement(resolver, switch_case.stmt, scope,
-                                                    break_context);
                 }
                 break;
             }
