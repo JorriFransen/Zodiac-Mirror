@@ -354,6 +354,11 @@ namespace Zodiac
             {
                 suggested_type = declaration->mutable_decl.type;
             }
+            if (init_expr->kind == AST_EXPR_INTEGER_LITERAL)
+            {
+                assert(declaration->mutable_decl.type->flags & AST_TYPE_FLAG_INT);
+                suggested_type = declaration->mutable_decl.type;
+            }
             else if (declaration->mutable_decl.type == Builtin::type_double)
             {
                 suggested_type = Builtin::type_double;
@@ -1843,10 +1848,29 @@ namespace Zodiac
         AST_Expression* lhs = expression->binary.lhs;
         AST_Expression* rhs = expression->binary.rhs;
 
-        result &= try_resolve_expression(resolver, lhs, scope);
-        if (!result) return false;
-        result &= try_resolve_expression(resolver, rhs, scope);
-        if (!result) return false;
+        if (lhs->kind == AST_EXPR_INTEGER_LITERAL && rhs->kind != AST_EXPR_INTEGER_LITERAL)
+        {
+            result &= try_resolve_expression(resolver, rhs, scope);
+            if (!result) return false;
+            assert(rhs->type);
+            result &= try_resolve_expression(resolver, lhs, scope, rhs->type);
+            if (!result) return false;
+        }
+        else if (rhs->kind == AST_EXPR_INTEGER_LITERAL && lhs->kind != AST_EXPR_INTEGER_LITERAL)
+        {
+            result &= try_resolve_expression(resolver, lhs, scope);
+            if (!result) return false;
+            assert(lhs->type);
+            result &= try_resolve_expression(resolver, rhs, scope, lhs->type);
+            if (!result) return false;
+        }
+        else
+        {
+            result &= try_resolve_expression(resolver, lhs, scope);
+            if (!result) return false;
+            result &= try_resolve_expression(resolver, rhs, scope);
+            if (!result) return false;
+        }
 
         if (result && !expression->type)
         {

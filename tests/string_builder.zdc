@@ -11,9 +11,9 @@ String_Builder :: struct
 
 _String_Builder_Block :: struct
 {
-    data : *u8;
-    size : u64;
-    used_size : u64;
+    data       : *u8;
+    size       : u64;
+    used_size  : u64;
     next_block : *_String_Builder_Block;
 }
 
@@ -26,9 +26,9 @@ init :: (sb: *String_Builder, initial_block_size: u64)
 
 create_block :: (block_size: u64) -> *_String_Builder_Block
 {
-    result := (:*_String_Builder_Block)_c.malloc((:int)sizeof(_String_Builder_Block));
+    result := (:*_String_Builder_Block)_c.malloc(sizeof(_String_Builder_Block));
 
-    result.data = _c.malloc((:int)block_size);
+    result.data = _c.malloc(block_size);
     result.size = block_size;
     result.used_size = 0;
     result.next_block = null;
@@ -38,7 +38,7 @@ create_block :: (block_size: u64) -> *_String_Builder_Block
 
 append :: (sb: *String_Builder, str: *u8)
 {
-    length := (:u64)_c.strlen(str);
+    length := _c.strlen(str);
     block := sb.current_block;
 
     if (block.used_size + length < block.size)
@@ -50,7 +50,7 @@ append :: (sb: *String_Builder, str: *u8)
         block_size := sb.initial_block_size;
         if (length > block_size)
         {
-            block_size = length + (:u64)1;
+            block_size = length + 1;
         }
         block.next_block = create_block(sb.initial_block_size);
         sb.current_block = block.next_block;
@@ -71,10 +71,10 @@ append_to_block :: (sb: *_String_Builder_Block, str: *u8, length: u64) -> bool
     if (sb.used_size + length < sb.size)
     {
         sbi := sb.used_size;
-        for (i := 0; i < (:int)length; i = i + 1)
+        for (i: u64 = 0; i < length; i = i + 1)
         {
             sb.data[sbi] = str[i];
-            sbi = sbi + (:u64)1;
+            sbi = sbi + 1;
         }
 
         sb.used_size = sb.used_size + length;
@@ -89,7 +89,7 @@ append_to_block :: (sb: *_String_Builder_Block, str: *u8, length: u64) -> bool
 
 copy_to_string :: (sb: *String_Builder) -> *u8
 {
-    total_size := (:u64)1;
+    total_size: u64 = 1;
 
     block := sb.first_block;
     while (block)
@@ -100,15 +100,15 @@ copy_to_string :: (sb: *String_Builder) -> *u8
 
     // printf("total_size: %d\n", total_size);
 
-    result := (:*u8)_c.malloc((:int)total_size);
-    ri := (:u64)0;
+    result := (:*u8)_c.malloc(total_size);
+    ri: u64 = 0;
     block = sb.first_block;
     while (block)
     {
-        for (i := 0; (:u64)i < block.used_size; i = i + 1)
+        for (i: u64 = 0; i < block.used_size; i = i + 1)
         {
             result[ri] = block.data[i];
-            ri = ri + (:u64)1;
+            ri = ri + 1;
         }
         block = block.next_block;
     }
