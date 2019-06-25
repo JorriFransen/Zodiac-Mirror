@@ -1,27 +1,45 @@
 
-c :: import c;
+_c :: import c;
+using _c;
 
 main :: () -> void
 {
-    ch := c.getchar();
-    if (ch == 49)
+    if (true)
     {
-       c.printf("You choose number one\n");
-    }
-    else if (ch == 50)
-    {
-       c.printf("You choose number two\n");
-    }
-    else if (ch == 51)
-    {
-        c.printf("You choose number three\n");
-    }
-    else if (ch == 52)
-    {
-        c.printf("you choose number four\n");
+        printf("if level one\n");
+        if (true)
+        {
+            printf("if level two\n");
+        }
     }
     else
     {
-        c.printf("Invalid option\n");
+        if (false)
+        {
+            printf("else level one, if level two\n");
+        }
+        printf("else level one\n");
+    }
+
+    ch := getchar();
+    if (ch == 49)
+    {
+        printf("You choose number one\n");
+    }
+    else if (ch == 50)
+    {
+        printf("You choose number two\n");
+    }
+    else if (ch == 51)
+    {
+        printf("You choose number three\n");
+    }
+    else if (ch == 52)
+    {
+        printf("you choose number four\n");
+    }
+    else
+    {
+        printf("Invalid option\n");
     }
 }

@@ -4,7 +4,8 @@ _c :: import c;
 
 String_Builder :: struct
 {
-    first_block : *_String_Builder_Block;
+    first_block        : *_String_Builder_Block;
+    current_block      : *_String_Builder_Block;
     initial_block_size : u64;
 }
 
@@ -20,6 +21,7 @@ init :: (sb: *String_Builder, initial_block_size: u64)
 {
     sb.initial_block_size = initial_block_size;
     sb.first_block = create_block(initial_block_size);
+    sb.current_block = sb.first_block;
 }
 
 create_block :: (block_size: u64) -> *_String_Builder_Block
@@ -36,7 +38,24 @@ create_block :: (block_size: u64) -> *_String_Builder_Block
 
 append :: (sb: *String_Builder, str: *u8)
 {
-    append_to_block(sb.first_block, str);
+    length := (:u64)_c.strlen(str);
+    block := sb.current_block;
+
+    if (block.used_size + length < block.size)
+    {
+        append_to_block(block, str);
+    }
+    else
+    {
+        block_size := sb.initial_block_size;
+        if (length > block_size)
+        {
+            block_size = length + (:u64)1;
+        }
+        block.next_block = create_block(sb.initial_block_size);
+        sb.current_block = block.next_block;
+        append_to_block(block.next_block, str);
+    }
 }
 
 append_u64 :: (sb: *String_Builder, number: u64)

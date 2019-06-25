@@ -438,11 +438,11 @@ namespace Zodiac
                     ir_builder_set_insert_block(ir_builder, else_block_val);
                     ir_builder_emit_statement(ir_builder, statement->if_stmt.else_statement,
                                               break_block);
-                    if (!else_block_val->block->last_instruction ||
-                        !ir_instruction_is_terminator(else_block_val->block->last_instruction->op))
-                    {
+                    // if (!else_block_val->block->last_instruction ||
+                    //     !ir_instruction_is_terminator(else_block_val->block->last_instruction->op))
+                    // {
                         ir_builder_emit_jmp(ir_builder, post_if_block_val);
-                    }
+                    // }
                 }
 
                 // if (ir_builder->insert_block == else_block_val->block)
@@ -450,6 +450,7 @@ namespace Zodiac
                 //     ir_builder_append_block(ir_builder, cur_func, post_if_block_val->block);
                 //     ir_builder_set_insert_block(ir_builder, post_if_block_val);
                 // }
+
                 ir_builder_append_block(ir_builder, cur_func, post_if_block_val->block);
                 ir_builder_set_insert_block(ir_builder, post_if_block_val);
 
@@ -3043,7 +3044,7 @@ namespace Zodiac
         else
         {
             assert(ir_block->last_instruction);
-			
+
             bool ends_with_term = ir_instruction_is_terminator(ir_block->last_instruction->op);
             result &= ends_with_term;
 
