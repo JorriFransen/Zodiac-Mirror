@@ -43,7 +43,7 @@ append :: (sb: *String_Builder, str: *u8)
 
     if (block.used_size + length < block.size)
     {
-        append_to_block(block, str);
+        append_to_block(block, str, length);
     }
     else
     {
@@ -54,7 +54,7 @@ append :: (sb: *String_Builder, str: *u8)
         }
         block.next_block = create_block(sb.initial_block_size);
         sb.current_block = block.next_block;
-        append_to_block(block.next_block, str);
+        append_to_block(block.next_block, str, length);
     }
 }
 
@@ -66,19 +66,18 @@ append_u64 :: (sb: *String_Builder, number: u64)
     append(sb, buf);
 }
 
-append_to_block :: (sb: *_String_Builder_Block, str: *u8) -> bool
+append_to_block :: (sb: *_String_Builder_Block, str: *u8, length: u64) -> bool
 {
-    str_len := _c.strlen(str);
-    if (sb.used_size + (:u64)str_len < sb.size)
+    if (sb.used_size + length < sb.size)
     {
         sbi := sb.used_size;
-        for (i := 0; i < str_len; i = i + 1)
+        for (i := 0; i < (:int)length; i = i + 1)
         {
             sb.data[sbi] = str[i];
             sbi = sbi + (:u64)1;
         }
 
-        sb.used_size = sb.used_size + (:u64)str_len;
+        sb.used_size = sb.used_size + length;
 
         return true;
     }
