@@ -45,10 +45,3 @@ open_std_handles :: () -> void
     stdout = fdopen(1, "w");
     stderr = fdopen(2, "w");
 }
-
-newline :: () -> void { putchar(10); }
-
-print_digit :: (digit: int) -> void
-{
-    printf("%lu\n", digit);
-}

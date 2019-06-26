@@ -19,4 +19,5 @@ main :: ()
     printf("sizeof(Vec3f): %d\n", sizeof(Vec3f));
     printf("sizeof(Vec2d): %d\n", sizeof(Vec2d));
     printf("sizeof(Vec3d): %d\n", sizeof(Vec3d));
+
 }

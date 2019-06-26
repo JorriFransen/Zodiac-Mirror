@@ -70,29 +70,13 @@ main :: () -> int
 
 key_callback :: (window: *GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void
 {
-    using glfw_keys;
-    using GLFWkey;
-    // using glfw_keys.GLFWKey;
+    using glfw_keys.GLFWkey;
 
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
         c.printf("Exit requested by user\n");
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
-    // switch (action)
-    // {
-    //     case glfw.GLFW_RELEASE:
-    //         c.printf("released key: %lu\n", key);
-
-    //     case glfw.GLFW_PRESS:
-    //         c.printf("pressed key: %lu\n", key);
-
-    //     case glfw.GLFW_REPEAT:
-    //         c.printf("repeat key: %lu\n", key);
-
-    //     default:
-    //         c.printf("Unknown action: %lu, key: %lu\n", action, key);
-    // }
 }
 
 error_callback :: (error: int, description: *u8) -> void

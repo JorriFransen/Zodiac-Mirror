@@ -1,5 +1,6 @@
 
-c :: import c;
+_c :: import c;
+using _c;
 
 add :: (a: int, b: int) -> int
 {
@@ -12,13 +13,7 @@ plusone :: (x: int) -> int
     return x;
 }
 
-newline :: () -> void { c.putchar(10); }
-
-print_digit :: (digit: int) -> void
-{
-    c.putchar(digit + 48);
-    newline();
-}
+newline :: () { printf("\n"); }
 
 main :: () -> int
 {
@@ -29,11 +24,11 @@ main :: () -> int
 
     result := 1 + 2 + add(4, 5) + plusone(z);
 
-    c.putchar(50);
+    putchar(50);
     newline();
-    print_digit(7);
-    c1 := c.getchar();
-    c.putchar(c1);
+    printf("%ld\n", 70);
+    c1 := getchar();
+    putchar(c1);
     newline();
 
     // return 1;

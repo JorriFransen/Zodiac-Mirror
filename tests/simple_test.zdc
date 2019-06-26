@@ -1,5 +1,6 @@
 
-c :: import c;
+_c :: import c;
+using _c;
 
 Vec2i :: struct
 {
@@ -15,8 +16,8 @@ main :: () -> int
 
     size : Vec2i = { 3, pos.y };
 
-    c.printf("pos: %lu,%lu\n", pos.x, pos.y);
-    c.printf("size: %lu,%lu\n\n", size.x, size.y);
+    printf("pos: %lu,%lu\n", pos.x, pos.y);
+    printf("size: %lu,%lu\n\n", size.x, size.y);
 
     pos = size;
     size.x = 88;
@@ -24,17 +25,17 @@ main :: () -> int
     size_y_ptr := *size.y;
     <size_y_ptr = 99;
 
-    c.printf("pos: %lu,%lu\n", pos.x, pos.y);
+    printf("pos: %lu,%lu\n", pos.x, pos.y);
     print_vec("size", size);
 
     size_ptr : *Vec2i = *size;
-    c.printf("size_ptr: %p\n", size_ptr);
-    c.printf("size_x_ptr: %p\n", *size.x);
-    c.printf("size_y_ptr: %p\n", size_y_ptr);
-    c.printf("*size.y: %p\n", *size.y);
+    printf("size_ptr: %p\n", size_ptr);
+    printf("size_x_ptr: %p\n", *size.x);
+    printf("size_y_ptr: %p\n", size_y_ptr);
+    printf("*size.y: %p\n", *size.y);
     <size_ptr = { 34, 56 };
-    c.printf("size_ptr.x: %lu\n", size_ptr.x);
-    c.printf("size_ptr.y: %lu\n", size_ptr.y);
+    printf("size_ptr.x: %lu\n", size_ptr.x);
+    printf("size_ptr.y: %lu\n", size_ptr.y);
     print_vec("size", size);
     size_ptr.x = 11;
     size_ptr.y = 22;
@@ -52,52 +53,52 @@ main :: () -> int
 
 print_vec :: (name: *u8, vec: Vec2i) -> void
 {
-    c.printf("%s: %lu, %lu\n", name, vec.x, vec.y);
+    printf("%s: %lu, %lu\n", name, vec.x, vec.y);
 }
 
 print_vec_ptr :: (name: *u8, vec: *Vec2i) -> void
 {
-    c.printf("%s: %lu, %lu\n", name, vec.x, vec.y);
+    printf("%s: %lu, %lu\n", name, vec.x, vec.y);
 }
 
 array_test :: () -> void
 {
-    c.printf("array_test()\n");
+    printf("array_test()\n");
 
     int_array : [5]int = { 255, 256, 33, 44, 555 };
-    c.printf("Array length: %lu\n", array_length(int_array));
+    printf("Array length: %lu\n", array_length(int_array));
 
     for (i := 0; i < array_length(int_array); i = i + 1)
     {
-        c.printf("int_array[%ld] = %ld\n", i, int_array[i]);
+        printf("int_array[%ld] = %ld\n", i, int_array[i]);
     }
 
     int_array[3] = 444;
 
-    c.printf("\n");
+    printf("\n");
 
     for (i := 0; i < array_length(int_array); i = i + 1)
     {
-        c.printf("int_array[%ld] = %ld\n", i, int_array[i]);
+        printf("int_array[%ld] = %ld\n", i, int_array[i]);
     }
 
     int_array_3_ptr := *int_array[3];
     <int_array_3_ptr = 888;
 
-    c.printf("\n");
+    printf("\n");
 
     for (i := 0; i < array_length(int_array); i = i + 1)
     {
-        c.printf("int_array[%ld] = %ld\n", i, int_array[i]);
+        printf("int_array[%ld] = %ld\n", i, int_array[i]);
     }
 
     int_array = { 5, 4, 3, 2, 1 };
 
-    c.printf("\n");
+    printf("\n");
 
     for (i := 0; i < array_length(int_array); i = i + 1)
     {
-        c.printf("int_array[%ld] = %ld\n", i, int_array[i]);
+        printf("int_array[%ld] = %ld\n", i, int_array[i]);
     }
 }
 
@@ -106,7 +107,7 @@ loop :: () -> void
     i := 0;
     while (i < 10)
     {
-        c.print_digit(i);
+        printf("%ld\n", i);
         i = i + 1;
     }
 
@@ -114,24 +115,24 @@ loop :: () -> void
 
     while (i >= 0)
     {
-        c.print_digit(i);
+        printf("%ld\n", i);
         i = i - 1;
     }
 
     for (j := 0; j < 5; j = j + 1)
     {
-        c.print_digit(j);
+        printf("%ld\n", j);
     }
 
     for (y := 0; y < 10; y = y + 1)
     {
         for (x := 0; x < 10; x = x + 1)
         {
-            c.printf("%ld,%ld  ", x, y);
+            printf("%ld,%ld  ", x, y);
         }
 
-        c.printf("\n");
+        printf("\n");
     }
 
-    c.putchar('\n');
+    putchar('\n');
 }

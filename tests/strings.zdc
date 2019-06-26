@@ -1,13 +1,13 @@
 
-c :: import c;
-
-newline :: () -> void { c.putchar(10); }
+_c :: import c;
+using _c;
 
 print_digit :: (digit: int) -> void
 {
-    c.putchar(digit + 48);
-    newline();
+    printf("%ld\n", digit);
 }
+
+newline :: () { printf("\n"); }
 
 main :: () -> int
 {
@@ -30,22 +30,22 @@ pointer_test :: () -> void
     print_digit(x);
 
     ch : u8 = 'c';
-    c.putchar((:int)ch);
+    putchar((:int)ch);
     newline();
 
     hello_zodiac := "Hello zodiac!";
-    c.puts(hello_zodiac);
+    puts(hello_zodiac);
 
-    c.putchar((:int)hello_zodiac[1]);
+    putchar((:int)hello_zodiac[1]);
     newline();
 
     hello_zodiac[4] = 'x';
 
-    c.puts(hello_zodiac);
+    puts(hello_zodiac);
 
     z_ptr := *hello_zodiac[5];
     <z_ptr = 'z';
-    c.puts(hello_zodiac);
+    puts(hello_zodiac);
 
     return 0;
 }
