@@ -91,6 +91,8 @@ namespace Zodiac
 
         bool result = true;
 
+        AST_Declaration* overload_container = nullptr;
+
         if (!(declaration->flags & AST_DECL_FLAG_RESOLVED))
         {
             if (declaration->identifier && declaration->kind != AST_DECL_STATIC_IF)
@@ -99,13 +101,22 @@ namespace Zodiac
                 auto redecl = find_declaration(resolver->context, scope, declaration->identifier);
                 if (redecl)
                 {
-                    // printf("Found redecl: %s\n", declaration->identifier->atom.data);
-                    resolver_report_error(resolver, declaration->file_pos,
-                                        "Redeclaration of identifier '%s'\n\tPreviously defined here: '%s:%" PRIu64 ":%" PRIu64 "'",
-                                        declaration->identifier->atom.data,
-                                        redecl->file_pos.file_name, redecl->file_pos.line,
-                                        redecl->file_pos.line_relative_char_pos);
-                    result = false;
+                    if (declaration->kind == AST_DECL_FUNC && redecl->kind == AST_DECL_FUNC &&
+                        !function_signatures_match(resolver, declaration, redecl, scope))
+                    {
+                        overload_container = redecl;
+                        // assert(false);
+                    }
+                    else
+                    {
+                        // printf("Found redecl: %s\n", declaration->identifier->atom.data);
+                        resolver_report_error(resolver, declaration->file_pos,
+                                              "Redeclaration of identifier '%s'\n\tPreviously defined here: '%s:%" PRIu64 ":%" PRIu64 "'",
+                                              declaration->identifier->atom.data,
+                                              redecl->file_pos.file_name, redecl->file_pos.line,
+                                              redecl->file_pos.line_relative_char_pos);
+                        result = false;
+                    }
                 }
             }
 
@@ -116,6 +127,8 @@ namespace Zodiac
                     case AST_DECL_FUNC:
                     {
                         result &= try_resolve_function_declaration(resolver, declaration, scope);
+                        if (result && overload_container)
+                            BUF_PUSH(overload_container->function.overloads, declaration);
                         break;
                     }
 
@@ -212,14 +225,17 @@ namespace Zodiac
             else
             {
                 declaration->flags |= AST_DECL_FLAG_RESOLVED;
-                ast_scope_push_declaration(scope, declaration);
-                if (declaration->location != AST_DECL_LOC_AGGREGATE_MEMBER)
+                if (!overload_container)
                 {
-                    if (resolver->current_func_decl &&
-                        declaration->location == AST_DECL_LOC_LOCAL)
+                    ast_scope_push_declaration(scope, declaration);
+                    if (declaration->location != AST_DECL_LOC_AGGREGATE_MEMBER)
                     {
-                        BUF_PUSH(resolver->current_func_decl->function.locals,
-                                declaration);
+                        if (resolver->current_func_decl &&
+                            declaration->location == AST_DECL_LOC_LOCAL)
+                        {
+                            BUF_PUSH(resolver->current_func_decl->function.locals,
+                                     declaration);
+                        }
                     }
                 }
             }
@@ -665,7 +681,10 @@ namespace Zodiac
             // printf("module path: %s\n", module_path.data);
             AST_Module* import_module = resolver_add_import_to_module(resolver, resolver->module,
                                                                     module_path, module_name);
-            assert(import_module);
+            if (!import_module)
+            {
+                return false;
+            }
 
             declaration->import.module = import_module;
 
@@ -1372,6 +1391,11 @@ namespace Zodiac
         else assert(false);
 
         assert(func_decl);
+        if (func_decl->function.overloads)
+        {
+            func_decl = find_overload_signature_match(resolver, func_decl, expression, scope);
+            if (!func_decl) return false;
+        }
         AST_Type* func_type = nullptr;
 
 		if (func_decl->kind == AST_DECL_FUNC)
@@ -2473,7 +2497,10 @@ namespace Zodiac
 
         AST_Module* import_module = zodiac_compile_or_get_module(resolver->context, module_path,
                                                                  module_name);
-        assert(import_module);
+        if (!import_module)
+        {
+            return nullptr;
+        }
 
         bool found = false;
 
@@ -2686,6 +2713,106 @@ namespace Zodiac
         }
 
         return false;
+    }
+
+    bool function_signatures_match(Resolver* resolver, AST_Declaration* decl_a,
+                                   AST_Declaration* decl_b,
+                                   AST_Scope* scope)
+    {
+        assert(decl_a);
+        assert(decl_a->kind == AST_DECL_FUNC);
+        assert(decl_b);
+        assert(decl_b->kind == AST_DECL_FUNC);
+        assert(scope);
+
+        bool arg_count_match = BUF_LENGTH(decl_a->function.args) ==
+            BUF_LENGTH(decl_b->function.args);
+
+        if (!arg_count_match) return false;
+        if (decl_a->function.is_vararg != decl_b->function.is_vararg) return false;
+
+        for (uint64_t i = 0; i < BUF_LENGTH(decl_a->function.args); i++)
+        {
+            AST_Declaration* arg_a = decl_a->function.args[i];
+            AST_Declaration* arg_b = decl_b->function.args[i];
+
+            AST_Type* arg_a_type = nullptr;
+            AST_Type* arg_b_type = nullptr;
+
+            bool a_type_result = try_resolve_type_spec(resolver, arg_a->mutable_decl.type_spec,
+                                                       &arg_a_type, scope);
+            bool b_type_result = try_resolve_type_spec(resolver, arg_b->mutable_decl.type_spec,
+                                                       &arg_b_type, scope);
+
+            if (a_type_result && b_type_result)
+            {
+                assert(arg_a_type && arg_b_type);
+                if (arg_a_type != arg_b_type)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    AST_Declaration* find_overload_signature_match(Resolver* resolver,
+                                                   AST_Declaration* overload_decl,
+                                                   AST_Expression* call_expr, AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(overload_decl);
+        assert(overload_decl->kind == AST_DECL_FUNC);
+        assert(call_expr);
+        assert(call_expr->kind == AST_EXPR_CALL);
+        assert(scope);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(overload_decl->function.overloads); i++)
+        {
+            AST_Declaration* overload = overload_decl->function.overloads[i];
+
+            if (BUF_LENGTH(overload->function.args) != BUF_LENGTH(call_expr->call.arg_expressions))
+                continue;
+
+            bool match = true;
+            for (uint64_t ai = 0; ai < BUF_LENGTH(overload->function.args); ai++)
+            {
+                AST_Declaration* overload_arg = overload->function.args[ai];
+                AST_Expression* call_arg_expr = call_expr->call.arg_expressions[ai];
+
+                AST_Type* overload_arg_type = nullptr;
+                if (try_resolve_type_spec(resolver, overload_arg->mutable_decl.type_spec,
+                                          &overload_arg_type, overload->function.argument_scope))
+                {
+                    assert(overload_arg_type);
+                    if (try_resolve_expression(resolver, call_arg_expr, scope))
+                    {
+                        if (overload_arg_type != call_arg_expr->type)
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        return nullptr;
+                    }
+                }
+                else
+                {
+                    return nullptr;
+                }
+            }
+
+            if (match)
+            {
+                return overload;
+            }
+
+        }
+
+        return overload_decl;
     }
 
     char* run_insert(Resolver* resolver, AST_Expression* call_expression)

@@ -298,6 +298,7 @@ namespace Zodiac
         result->function.return_type = nullptr;
         result->function.inferred_return_type = nullptr;
         result->function.body_block = body_block;
+        result->function.overloads = nullptr;
 
         result->function.argument_scope = argument_scope;
         if (body_block)

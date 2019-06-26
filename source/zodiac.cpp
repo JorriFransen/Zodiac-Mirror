@@ -224,8 +224,22 @@ namespace Zodiac
             }
         }
 
+        for (uint64_t i = 0; i < BUF_LENGTH(context->modules_with_errors); i++)
+        {
+            const Compiled_Module& cm = context->modules_with_errors[i];
+            if (cm.module_path == module_path && cm.module_name == module_name)
+            {
+                return nullptr;
+            }
+        }
+
         AST_Module* module = zodiac_compile_module(context, module_path, module_name);
-		assert(module);
+        if (!module)
+        {
+            Compiled_Module cm = { module_name, module_path, nullptr };
+            BUF_PUSH(context->modules_with_errors, cm);
+            return nullptr;
+        }
 
 		Compiled_Module cm;
 		cm.module = module;

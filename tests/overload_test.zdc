@@ -1,0 +1,17 @@
+_c :: import c;
+using _c;
+
+
+print :: (str: *u8) { printf("%s\n", str); }
+print :: (num: int) { printf("%ld\n", num); }
+print :: (num: float) { printf("%f\n", num); }
+
+main :: ()
+{
+    printf("overload_test\n");
+
+    print("string argument");
+    print(5);
+    print(3.14);
+
+}

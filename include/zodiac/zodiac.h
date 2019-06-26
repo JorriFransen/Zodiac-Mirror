@@ -84,6 +84,7 @@ namespace Zodiac
         uint64_t type_count = 0;
 
         BUF(Compiled_Module) compiled_modules = nullptr;
+        BUF(Compiled_Module) modules_with_errors = nullptr;
         BUF(Atom) foreign_table = nullptr;
 
         IR_Value* global_init_block = nullptr;

@@ -24,13 +24,13 @@ main :: ()
     printf("sizeof(Vec3): %d\n", sizeof(Vec3));
 
     v2 : Vec2 = { 1.2, 3.4 };
-    vec2_print(v2);
+    vec_print(v2);
 
     v3 : Vec3 = { 1.1, 2.2,  3.3 };
-    vec3_print(v3);
+    vec_print(v3);
 
     v4 : Vec4 = { 4.4, 5.5, 6.6, 7.7 };
-    vec4_print(v4);
+    vec_print(v4);
 }
 
 
@@ -55,7 +55,7 @@ gen_vector_definition :: (element_count: u64) -> *u8
     SB.init(*sb, 1024);
 
     SB.append(*sb, "Vec");
-    SB.append_u64(*sb, element_count);
+    SB.append(*sb, element_count);
     SB.append(*sb, " :: struct {\n");
 
     if (element_count >= (:u64)1)
@@ -77,13 +77,11 @@ gen_vector_definition :: (element_count: u64) -> *u8
 
     SB.append(*sb, "}\n");
 
-    SB.append(*sb, "vec");
-    SB.append_u64(*sb, element_count);
-    SB.append(*sb, "_print :: (vec: Vec");
-    SB.append_u64(*sb, element_count);
+    SB.append(*sb, "vec_print :: (vec: Vec");
+    SB.append(*sb, element_count);
     SB.append(*sb, ")\n{\n");
     SB.append(*sb, "\tprintf(\"Vec");
-    SB.append_u64(*sb, element_count);
+    SB.append(*sb, element_count);
     SB.append(*sb, " {");
     if (element_count >= (:u64)1)
     {

@@ -150,6 +150,12 @@ namespace Zodiac
 
     bool is_valid_integer_promotion(AST_Type* source_type, AST_Type* target_type);
 
+    bool function_signatures_match(Resolver* resolver, AST_Declaration* decl_a,
+                                   AST_Declaration* decl_b, AST_Scope* scope);
+    AST_Declaration* find_overload_signature_match(Resolver* resolver,
+                                                   AST_Declaration* overload_decl,
+                                                   AST_Expression* call_expr, AST_Scope* scope);
+
     char* run_insert(Resolver* resolver, AST_Expression* call_expression);
 
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,

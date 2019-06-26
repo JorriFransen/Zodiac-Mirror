@@ -315,6 +315,8 @@ namespace Zodiac
         AST_Scope* argument_scope = nullptr;
 
 		AST_Type* type = nullptr;
+
+        BUF(AST_Declaration*) overloads = nullptr;
     };
 
     struct AST_Mutable_Declaration

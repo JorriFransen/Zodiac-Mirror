@@ -58,7 +58,7 @@ append :: (sb: *String_Builder, str: *u8)
     }
 }
 
-append_u64 :: (sb: *String_Builder, number: u64)
+append :: (sb: *String_Builder, number: u64)
 {
     _buf: [128]u8;
     buf := *_buf[0];
