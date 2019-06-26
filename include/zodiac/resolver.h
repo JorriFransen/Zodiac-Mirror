@@ -37,6 +37,7 @@ namespace Zodiac
         uint64_t undeclared_decl_count_last_cycle = UINT64_MAX;
 
         bool silent = false;
+        bool import_error = false;
         bool resolving_auto_gen = false;
         File_Pos auto_gen_file_pos = {};
 

@@ -125,7 +125,7 @@ int main(int argc, char** argv)
 
     }
 
-    if (!resolver.done)
+    if (!resolver.done || resolver.import_error)
     {
         resolver_report_errors(&resolver);
         fprintf(stderr, "Exitting with resolve error(s)\n");

@@ -30,6 +30,7 @@ namespace Zodiac
         resolver->undeclared_decl_count = 0;
         resolver->undeclared_decl_count_last_cycle = UINT64_MAX;
         resolver->silent = false;
+        resolver->import_error = false;
         resolver->resolving_auto_gen = false;
         resolver->auto_gen_file_pos = {};
         resolver->unresolved_decls = nullptr;
@@ -65,7 +66,9 @@ namespace Zodiac
             unres_hdr->length = 0;
         }
 
-        for (uint64_t i = 0; i < BUF_LENGTH(resolver->module->global_declarations); i++)
+        for (uint64_t i = 0;
+             (i < BUF_LENGTH(resolver->module->global_declarations) && !resolver->import_error);
+             i++)
         {
             AST_Declaration* global_decl = resolver->module->global_declarations[i];
             if (!(global_decl->flags & AST_DECL_FLAG_RESOLVED))
@@ -2583,6 +2586,7 @@ namespace Zodiac
                                                                  module_name);
         if (!import_module)
         {
+            resolver->import_error = true;
             return nullptr;
         }
 
@@ -2983,16 +2987,6 @@ namespace Zodiac
                 IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(&ir_runner,
                                                                             func_value->function, num_args,
                                                                             &return_value);
-
-                // printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value->value.s64);
-                // uint64_t arena_cap = 0;
-                // auto block = ir_runner.arena.blocks;
-                // while (block)
-                // {
-                //     arena_cap += block->data_length * sizeof(void*);
-                //     block = block->next_block;
-                // }
-                // printf("Arena size: %.2fMB\n", (double)arena_cap / MB(1));
 
                 resolver->module->gen_data = nullptr;
 
