@@ -1,10 +1,12 @@
 _c :: import c;
 using _c;
 
+Vec3 :: struct { x: float; y: float; z: float; }
 
 print :: (str: *u8) { printf("%s\n", str); }
 print :: (num: int) { printf("%ld\n", num); }
 print :: (num: float) { printf("%f\n", num); }
+print :: (vec: Vec3) { printf("{ %f, %f, %f }\n", vec.x, vec.y, vec.z); }
 
 main :: ()
 {
@@ -14,4 +16,6 @@ main :: ()
     print(5);
     print(3.14);
 
+    v : Vec3 = { 1.2, 2.3, 3.4};
+    print(v);
 }

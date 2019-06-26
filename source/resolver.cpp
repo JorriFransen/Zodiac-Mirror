@@ -128,7 +128,7 @@ namespace Zodiac
                     {
                         result &= try_resolve_function_declaration(resolver, declaration, scope);
                         if (result && overload_container)
-                            BUF_PUSH(overload_container->function.overloads, declaration);
+                            add_overload(resolver, overload_container, declaration);
                         break;
                     }
 
@@ -2813,6 +2813,22 @@ namespace Zodiac
         }
 
         return overload_decl;
+    }
+
+    void add_overload(Resolver* resolver, AST_Declaration* container, AST_Declaration* overload)
+    {
+        assert(resolver);
+        assert(container);
+        assert(container->kind == AST_DECL_FUNC);
+        assert(overload);
+        assert(overload->kind == AST_DECL_FUNC);
+        assert(container->identifier->atom == overload->identifier->atom);
+
+        overload->identifier->atom = atom_append(resolver->context->atom_table,
+                                                 overload->identifier->atom,
+                                                 BUF_LENGTH(container->function.overloads));
+
+        BUF_PUSH(container->function.overloads, overload);
     }
 
     char* run_insert(Resolver* resolver, AST_Expression* call_expression)

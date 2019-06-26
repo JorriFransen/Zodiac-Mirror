@@ -155,6 +155,7 @@ namespace Zodiac
     AST_Declaration* find_overload_signature_match(Resolver* resolver,
                                                    AST_Declaration* overload_decl,
                                                    AST_Expression* call_expr, AST_Scope* scope);
+    void add_overload(Resolver* resolver, AST_Declaration* container, AST_Declaration* overload);
 
     char* run_insert(Resolver* resolver, AST_Expression* call_expression);
 
