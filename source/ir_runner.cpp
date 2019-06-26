@@ -76,12 +76,21 @@ namespace Zodiac
             assert(import_ast_module->gen_data);
             IR_Builder* import_ir_builder = (IR_Builder*)import_ast_module->gen_data;
             IR_Module* import_ir_module = &import_ir_builder->result;
-
-            for (uint64_t ni = 0; ni < BUF_LENGTH(import_ir_module->dynamic_lib_names); ni++)
-            {
-                ir_runner_load_dynamic_lib(ir_runner, import_ir_module->dynamic_lib_names[ni]);
-            }
+            ir_runner_load_dynamic_libs(ir_runner, import_ast_module, import_ir_module);
         }
+
+        // for (uint64_t i = 0; i < BUF_LENGTH(ast_module->import_modules); i++)
+        // {
+        //     AST_Module* import_ast_module = ast_module->import_modules[i];
+        //     assert(import_ast_module->gen_data);
+        //     IR_Builder* import_ir_builder = (IR_Builder*)import_ast_module->gen_data;
+        //     IR_Module* import_ir_module = &import_ir_builder->result;
+
+        //     for (uint64_t ni = 0; ni < BUF_LENGTH(import_ir_module->dynamic_lib_names); ni++)
+        //     {
+        //         ir_runner_load_dynamic_lib(ir_runner, import_ir_module->dynamic_lib_names[ni]);
+        //     }
+        // }
     }
 
     void ir_runner_load_dynamic_lib(IR_Runner* ir_runner, Atom lib_name)

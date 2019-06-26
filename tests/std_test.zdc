@@ -1,0 +1,14 @@
+
+std :: import std;
+using std;
+
+main :: ()
+{
+    c_string := "This is a test string";
+    test_str : String = { c_string, _c.strlen(c_string) };
+
+    print(test_str);
+
+    // print("This should work as well");
+
+}

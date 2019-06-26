@@ -582,14 +582,18 @@ namespace Zodiac
                                                                   declaration->identifier,
                                                                   aggregate_decls);
 
-            auto self_pointer_type = ast_find_or_create_pointer_type(resolver->context,
-                                                                    declaration->aggregate_type.type);
-
-            for (uint64_t i = 0; i < BUF_LENGTH(pointers_to_self); i++)
+            if (pointers_to_self)
             {
-                AST_Declaration* pointer_to_self = pointers_to_self[i];
-                pointer_to_self->mutable_decl.type = self_pointer_type;
-                assert(try_resolve_declaration(resolver, pointer_to_self, declaration->aggregate_type.scope));
+                auto self_pointer_type = ast_find_or_create_pointer_type(resolver->context,
+                                                                        declaration->aggregate_type.type);
+
+                for (uint64_t i = 0; i < BUF_LENGTH(pointers_to_self); i++)
+                {
+                    AST_Declaration* pointer_to_self = pointers_to_self[i];
+                    pointer_to_self->mutable_decl.type = self_pointer_type;
+                    assert(try_resolve_declaration(resolver, pointer_to_self,
+                                                declaration->aggregate_type.scope));
+                }
             }
         }
 

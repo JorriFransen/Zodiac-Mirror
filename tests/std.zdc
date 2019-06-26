@@ -1,0 +1,14 @@
+
+_c :: import c;
+
+String :: struct
+{
+    data   : *u8;
+    length : u64;
+}
+
+print :: (str: String)
+{
+    _c.printf("%.*s\n", str.length, str.data);
+}
+

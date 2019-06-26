@@ -523,6 +523,7 @@ namespace Zodiac
         {
             AST_Declaration* member_decl = nullptr;
             AST_Identifier* ident = parse_identifier(parser);
+
             if (!ident) assert(false);
             if (is_enum && match_token(parser, TOK_SEMICOLON))
             {

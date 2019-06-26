@@ -1,6 +1,6 @@
 
 _c :: import c;
-// using _c;
+using _c;
 
 String_Builder :: struct
 {
@@ -26,9 +26,9 @@ init :: (sb: *String_Builder, initial_block_size: u64)
 
 create_block :: (block_size: u64) -> *_String_Builder_Block
 {
-    result := (:*_String_Builder_Block)_c.malloc(sizeof(_String_Builder_Block));
+    result := (:*_String_Builder_Block)malloc(sizeof(_String_Builder_Block));
 
-    result.data = _c.malloc(block_size);
+    result.data = malloc(block_size);
     result.size = block_size;
     result.used_size = 0;
     result.next_block = null;
@@ -38,7 +38,7 @@ create_block :: (block_size: u64) -> *_String_Builder_Block
 
 append :: (sb: *String_Builder, str: *u8)
 {
-    length := _c.strlen(str);
+    length := strlen(str);
     block := sb.current_block;
 
     if (block.used_size + length < block.size)
@@ -60,9 +60,9 @@ append :: (sb: *String_Builder, str: *u8)
 
 append :: (sb: *String_Builder, number: u64)
 {
-    _buf: [128]u8;
+    _buf: [32]u8;
     buf := *_buf[0];
-    _c.sprintf(buf, "%lu", number);
+    sprintf(buf, "%lu", number);
     append(sb, buf);
 }
 
@@ -100,7 +100,7 @@ copy_to_string :: (sb: *String_Builder) -> *u8
 
     // printf("total_size: %d\n", total_size);
 
-    result := (:*u8)_c.malloc(total_size);
+    result := (:*u8)malloc(total_size);
     ri: u64 = 0;
     block = sb.first_block;
     while (block)
@@ -125,8 +125,8 @@ free :: (sb: *String_Builder)
     {
         next := block.next_block;
 
-        _c.free(block.data);
-        _c.free(block);
+        free(block.data);
+        free(block);
 
         block = next;
     }
