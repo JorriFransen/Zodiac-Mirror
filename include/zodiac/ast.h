@@ -28,6 +28,7 @@ namespace Zodiac
         BUF(AST_Declaration*) import_decls = nullptr;
         BUF(AST_Module*) import_modules = nullptr;
 
+        bool resolved = false;
         void* gen_data = nullptr;
     };
 
@@ -717,8 +718,8 @@ namespace Zodiac
 		                     bool is_module_scope);
 
 	void ast_scope_push_declaration(AST_Scope* scope, AST_Declaration* declaration);
-	AST_Declaration* ast_scope_find_declaration(Context* context, AST_Scope* scope, AST_Identifier*
-                                                identifier);
+	AST_Declaration* ast_scope_find_declaration(Context* context, AST_Scope* scope,
+                                                const Atom& ident_atom);
 
 	void ast_module_grow_declaration_hash(AST_Module* module);
 

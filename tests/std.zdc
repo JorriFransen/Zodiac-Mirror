@@ -7,8 +7,29 @@ String :: struct
     length : u64;
 }
 
+string_length :: (c_str: *u8) -> u64
+{
+    length : u64 = 0;
+    i : u64 = 0;
+
+    while (c_str[i] != 0)
+    {
+        i = i + 1;
+        length = length + 1;
+    }
+
+    return length;
+}
+
 print :: (str: String)
 {
     _c.printf("%.*s\n", str.length, str.data);
 }
 
+print :: (num: u64)
+{
+    _buf: [32]u8;
+    buf := *_buf[0];
+    length := _c.sprintf(buf, "%llu", num);
+    print({ buf, (:u64)length });
+}

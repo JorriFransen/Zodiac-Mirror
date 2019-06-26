@@ -12,15 +12,18 @@ namespace Zodiac
     AST_Type* Builtin::type_float = nullptr;
     AST_Type* Builtin::type_double = nullptr;
     AST_Type* Builtin::type_pointer_to_u8 = nullptr;
+    AST_Type* Builtin::type_String = nullptr;
 
     uint64_t Builtin::pointer_size = 0;
 
     AST_Declaration* Builtin::decl_PLATFORM_WINDOWS = nullptr;
     AST_Declaration* Builtin::decl_PLATFORM_LINUX = nullptr;
+    AST_Declaration* Builtin::decl_string_length = nullptr;
 
 	Atom Builtin::atom_main;
     Atom Builtin::atom_insert;
     Atom Builtin::atom_String;
+    Atom Builtin::atom_string_length;
 
     void init_builtin_types(Context* context)
     {
@@ -49,6 +52,7 @@ namespace Zodiac
 		Builtin::atom_main = atom_get(context->atom_table, "main");
         Builtin::atom_insert = atom_get(context->atom_table, "insert");
         Builtin::atom_String = atom_get(context->atom_table, "String");
+        Builtin::atom_string_length = atom_get(context->atom_table, "string_length");
     }
 
     AST_Type* register_builtin_type(Context* context, AST_Type_Flags flags, uint64_t size, const char* name)

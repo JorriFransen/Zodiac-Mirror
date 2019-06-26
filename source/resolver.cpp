@@ -29,6 +29,7 @@ namespace Zodiac
         resolver->unresolved_decl_count_last_cycle = UINT64_MAX;
         resolver->undeclared_decl_count = 0;
         resolver->undeclared_decl_count_last_cycle = UINT64_MAX;
+        resolver->silent = false;
         resolver->resolving_auto_gen = false;
         resolver->auto_gen_file_pos = {};
         resolver->unresolved_decls = nullptr;
@@ -42,6 +43,12 @@ namespace Zodiac
     {
         assert(resolver);
         assert(resolver->progressed_on_last_cycle);
+
+        if (resolver->module->resolved)
+        {
+            resolver->done = true;
+            return;
+        }
 
         resolver->unresolved_decl_count = 0;
         resolver->undeclared_decl_count = 0;
@@ -79,6 +86,7 @@ namespace Zodiac
             resolver->undeclared_decl_count == 0)
         {
             resolver->done = true;
+            resolver->module->resolved = true;
         }
     }
 
@@ -1491,6 +1499,46 @@ namespace Zodiac
                     arg_expr->cast_expr.type_spec = nullptr;
                     arg_expr->cast_expr.expr = old_arg_expr;
                 }
+                else if (specified_arg_type == Builtin::type_String &&
+                         arg_expr->type == Builtin::type_pointer_to_u8)
+                {
+                    AST_Expression* old_arg_expr = ast_expression_new(resolver->context,
+                                                                     arg_expr->file_pos,
+                                                                     arg_expr->kind);
+                    *old_arg_expr = *arg_expr;
+
+                    arg_expr->kind = AST_EXPR_COMPOUND_LITERAL;
+                    arg_expr->type = specified_arg_type;
+                    arg_expr->compound_literal.expressions = nullptr;
+                    BUF_PUSH(arg_expr->compound_literal.expressions, old_arg_expr);
+
+                    AST_Expression* length_expr = nullptr;
+                    if (old_arg_expr->kind == AST_EXPR_STRING_LITERAL)
+                    {
+                        auto str_length = old_arg_expr->string_literal.atom.length;
+                        length_expr =
+                            ast_integer_literal_expression_new(resolver->context,
+                                                               arg_expr->file_pos,
+                                                               str_length);
+                        length_expr->type = Builtin::type_u64;
+                    }
+                    else
+                    {
+                        BUF(AST_Expression*) args = nullptr;
+                        BUF_PUSH(args, old_arg_expr);
+                        auto strlen_ident_expr =
+                            ast_ident_expression_new(resolver->context,
+                                                     old_arg_expr->file_pos,
+                                                     Builtin::decl_string_length->identifier);
+
+                        length_expr = ast_call_expression_new(resolver->context, old_arg_expr->file_pos,
+                                                              strlen_ident_expr, args);
+                        length_expr->call.callee_declaration = Builtin::decl_string_length;
+                    }
+
+                    assert(length_expr);
+                    BUF_PUSH(arg_expr->compound_literal.expressions, length_expr);
+                }
                 else
                 {
                     const char* format = "Mismatching type for argument %lu\n\tExpected type: %s\n\tGot type: %s";
@@ -1603,7 +1651,7 @@ namespace Zodiac
         assert(expression);
         assert(expression->kind == AST_EXPR_INTEGER_LITERAL);
 
-        if (!expression->type)
+        if (!expression->type || suggested_type != expression->type)
         {
             if (suggested_type)
             {
@@ -1638,11 +1686,9 @@ namespace Zodiac
         assert(expression);
         assert(expression->kind == AST_EXPR_FLOAT_LITERAL);
 
-        if (suggested_type) assert(suggested_type->flags & AST_TYPE_FLAG_FLOAT);
-
         if (!expression->type)
         {
-            if (suggested_type)
+            if (suggested_type && suggested_type->flags & AST_TYPE_FLAG_FLOAT)
             {
                 expression->type = suggested_type;
             }
@@ -1726,14 +1772,14 @@ namespace Zodiac
                 for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions); i++)
                 {
                     AST_Expression* expr = expression->compound_literal.expressions[i];
-                    if (!try_resolve_expression(resolver, expr, scope))
+                    AST_Declaration* struct_member_decl =
+                        suggested_type->aggregate_type.member_declarations[i];
+                    AST_Type* member_type = struct_member_decl->mutable_decl.type;
+                    if (!try_resolve_expression(resolver, expr, scope, member_type))
                     {
                         return false;
                     }
                     assert(expr->type);
-                    AST_Declaration* struct_member_decl = suggested_type->aggregate_type.member_declarations[i];
-
-                    AST_Type* member_type = struct_member_decl->mutable_decl.type;
 
                     if (expr->type != member_type)
                     {
@@ -1774,11 +1820,22 @@ namespace Zodiac
                 }
             }
         }
-        else
+        else if (suggested_type && suggested_type->kind == AST_TYPE_STATIC_ARRAY)
         {
             assert(same_type);
+            // if (!same_type)
+            // {
+            //     resolver_report_error(resolver, expression->file_pos,
+            //                           "Elements of array compound expression are not of the same type");
+            //     return false;
+            // }
             expression->type = ast_find_or_create_array_type(resolver->context, first_type,
                                                              BUF_LENGTH(expression->compound_literal.expressions));
+        }
+        else
+        {
+            resolver_report_error(resolver, expression->file_pos, "Could not infer type for compound literal");
+            return false;
         }
 
         return result;
@@ -2599,7 +2656,7 @@ namespace Zodiac
     }
 
     AST_Declaration* find_declaration(Context* context, AST_Scope* scope,
-									  AST_Identifier* identifier,
+                                      AST_Identifier* identifier,
                                       bool allow_import_check/*=true*/)
     {
         assert(scope);
@@ -2611,7 +2668,7 @@ namespace Zodiac
 			return identifier->declaration;
 		}
 
-		AST_Declaration* decl = ast_scope_find_declaration(context, scope, identifier);
+		AST_Declaration* decl = ast_scope_find_declaration(context, scope, identifier->atom);
 		if (decl)
 		{
             // FIXME: TODO: This doesn't really seem like the best way to do this, but
@@ -2633,7 +2690,7 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(scope->using_modules); i++)
         {
             AST_Module* um = scope->using_modules[i];
-            decl = ast_scope_find_declaration(context, um->module_scope, identifier);
+            decl = ast_scope_find_declaration(context, um->module_scope, identifier->atom);
             if (decl)
             {
                 return decl;
@@ -2779,34 +2836,27 @@ namespace Zodiac
             if (BUF_LENGTH(overload->function.args) != BUF_LENGTH(call_expr->call.arg_expressions))
                 continue;
 
-            bool match = true;
+            bool match = false;
             for (uint64_t ai = 0; ai < BUF_LENGTH(overload->function.args); ai++)
             {
                 AST_Declaration* overload_arg = overload->function.args[ai];
                 AST_Expression* call_arg_expr = call_expr->call.arg_expressions[ai];
 
                 AST_Type* overload_arg_type = nullptr;
+                resolver->silent = true;
                 if (try_resolve_type_spec(resolver, overload_arg->mutable_decl.type_spec,
                                           &overload_arg_type, overload->function.argument_scope))
                 {
                     assert(overload_arg_type);
-                    if (try_resolve_expression(resolver, call_arg_expr, scope))
+                    if (try_resolve_expression(resolver, call_arg_expr, scope, overload_arg_type))
                     {
-                        if (overload_arg_type != call_arg_expr->type)
+                        if (overload_arg_type == call_arg_expr->type)
                         {
-                            match = false;
-                            break;
+                            match = true;
                         }
                     }
-                    else
-                    {
-                        return nullptr;
-                    }
                 }
-                else
-                {
-                    return nullptr;
-                }
+                resolver->silent = false;
             }
 
             if (match)
@@ -2984,27 +3034,34 @@ namespace Zodiac
         assert(resolver);
         assert(format);
 
-        const size_t print_buf_size = 2048;
-        static char print_buf[print_buf_size];
-
-        vsprintf(print_buf, format, args);
-
-        auto message_length = strlen(print_buf);
-        char* message = (char*)mem_alloc(message_length + 1);
-		assert(message);
-        memcpy(message, print_buf, message_length);
-        message[message_length] = '\0';
-
-        Resolve_Error error = { flags, message, file_pos };
-        if (resolver->resolving_auto_gen)
+        if (!resolver->silent)
         {
-            error.auto_gen = true;
-            error.auto_gen_file_pos = resolver->auto_gen_file_pos;
-        }
-        BUF_PUSH(resolver->errors, error);
+            const size_t print_buf_size = 2048;
+            static char print_buf[print_buf_size];
 
-        Resolve_Error* result = &resolver->errors[BUF_LENGTH(resolver->errors) - 1];
-        return result;
+            vsprintf(print_buf, format, args);
+
+            auto message_length = strlen(print_buf);
+            char* message = (char*)mem_alloc(message_length + 1);
+            assert(message);
+            memcpy(message, print_buf, message_length);
+            message[message_length] = '\0';
+
+            Resolve_Error error = { flags, message, file_pos };
+            if (resolver->resolving_auto_gen)
+            {
+                error.auto_gen = true;
+                error.auto_gen_file_pos = resolver->auto_gen_file_pos;
+            }
+            BUF_PUSH(resolver->errors, error);
+
+            Resolve_Error* result = &resolver->errors[BUF_LENGTH(resolver->errors) - 1];
+            return result;
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 
     static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,

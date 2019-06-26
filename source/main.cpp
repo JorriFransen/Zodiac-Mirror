@@ -2,6 +2,7 @@
 
 #include "common.h"
 
+#include "builtin.h"
 #include "zodiac.h"
 #include "lexer.h"
 #include "parser.h"
@@ -50,6 +51,29 @@ int main(int argc, char** argv)
         fprintf(stderr, "Path is not a file: %s\n", file_name);
         return -1;
     }
+
+    Atom std_module_name = atom_get(context->atom_table, "std");
+    Atom std_module_path = {};
+    bool std_found = zodiac_find_module_path(context, std_module_name, &std_module_path);
+    assert(std_found);
+    // printf("std_module_path: %s\n", std_module_path.data);
+    AST_Module* std_ast_module = zodiac_compile_or_get_module(context, std_module_path, std_module_name);
+    assert(std_ast_module);
+    AST_Declaration* string_type_decl = ast_scope_find_declaration(context,
+                                                                   std_ast_module->module_scope,
+                                                                   Builtin::atom_String);
+    assert(string_type_decl->kind == AST_DECL_AGGREGATE_TYPE);
+    AST_Type* string_type = string_type_decl->aggregate_type.type;
+    assert(string_type->kind == AST_TYPE_STRUCT);
+    Builtin::type_String = string_type;
+
+    AST_Declaration* string_length_decl = ast_scope_find_declaration(context,
+                                                                     std_ast_module->module_scope,
+                                                                     Builtin::atom_string_length);
+    assert(string_length_decl);
+    assert(string_length_decl->identifier);
+    assert(string_length_decl->kind == AST_DECL_FUNC);
+    Builtin::decl_string_length = string_length_decl;
 
     const char* file_string = read_file_string(file_name);
     // fprintf(stderr, "File contents:\n%s\n", file_string);

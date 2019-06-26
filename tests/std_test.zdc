@@ -5,10 +5,14 @@ using std;
 main :: ()
 {
     c_string := "This is a test string";
+    print(std.string_length("abc"));
     test_str : String = { c_string, _c.strlen(c_string) };
 
     print(test_str);
 
-    // print("This should work as well");
+    print({ "This should work as well", 5 });
+    print("This should work as well");
+    print(c_string);
+
 
 }

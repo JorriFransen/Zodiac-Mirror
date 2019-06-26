@@ -23,6 +23,7 @@ namespace Zodiac
         result->module_name = module_name;
         result->import_decls = nullptr;
         result->import_modules = nullptr;
+        result->resolved = false;
         result->gen_data = nullptr;
 
         return result;
@@ -967,10 +968,9 @@ namespace Zodiac
 	}
 
 	AST_Declaration* ast_scope_find_declaration(Context* context, AST_Scope* scope,
-		                                        AST_Identifier* identifier)
+		                                        const Atom& ident_atom)
 	{
 		assert(scope);
-		assert(identifier);
 
 		if (scope->module)
 		{
@@ -978,7 +978,7 @@ namespace Zodiac
 			auto module = scope->module;
 
 			uint64_t scope_hash = hash_pointer(scope);
-			uint64_t ident_hash = hash_string(identifier->atom.data, identifier->atom.length);
+			uint64_t ident_hash = hash_string(ident_atom.data, ident_atom.length);
 			uint64_t hash = hash_mix(scope_hash, ident_hash);
 			uint64_t hash_index = hash & (module->declaration_count - 1);
 
@@ -995,7 +995,7 @@ namespace Zodiac
 				if (decl)
 				{
 					if (decl->scope == scope &&
-						decl->identifier->atom == identifier->atom)
+						decl->identifier->atom == ident_atom)
 					{
 						return decl;
 					}
@@ -1021,7 +1021,7 @@ namespace Zodiac
 			{
 				AST_Declaration* builtin_decl = context->builtin_decls[i];
 				if (builtin_decl->scope == scope &&
-					builtin_decl->identifier->atom == identifier->atom)
+					builtin_decl->identifier->atom == ident_atom)
 				{
 					return builtin_decl;
 				}

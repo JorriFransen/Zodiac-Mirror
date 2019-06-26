@@ -333,6 +333,36 @@ namespace Zodiac
         return parse_result.ast_module;
     }
 
+    bool zodiac_find_module_path(Context* context, const Atom& module_name, Atom* module_path_dest)
+    {
+        assert(context);
+        assert(module_path_dest);
+
+        Atom module_file_name = atom_append(context->atom_table, module_name, ".zdc");
+
+        bool found = false;
+
+        for (uint64_t i = 0; i < BUF_LENGTH(context->module_search_path); i++)
+        {
+            Atom module_search_path = context->module_search_path[i];
+            Atom module_path = atom_append(context->atom_table, module_search_path,
+                                           module_file_name);
+
+            if (!file_exists(module_path.data))
+            {
+                continue;
+            }
+            else
+            {
+                found = true;
+                *module_path_dest = module_path;
+                break;
+            }
+        }
+
+        return found;
+    }
+
 #define DEFINE_KW(string, kw_kind) \
     { \
         Atom atom_for_string = atom_get(context->atom_table, string); \

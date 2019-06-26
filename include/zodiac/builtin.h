@@ -17,15 +17,18 @@ namespace Zodiac
         static AST_Type* type_float;
         static AST_Type* type_double;
         static AST_Type* type_pointer_to_u8;
+        static AST_Type* type_String;
 
         static uint64_t pointer_size;
 
         static AST_Declaration* decl_PLATFORM_WINDOWS;
         static AST_Declaration* decl_PLATFORM_LINUX;
+        static AST_Declaration* decl_string_length;
 
 		static Atom atom_main;
         static Atom atom_insert;
         static Atom atom_String;
+        static Atom atom_string_length;
     };
 
     void init_builtin_types(Context* context);

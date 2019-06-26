@@ -104,6 +104,7 @@ namespace Zodiac
                                              const Atom& module_name);
     AST_Module* zodiac_compile_module(Context* context, const Atom& module_path,
                                       const Atom& module_name);
+    bool zodiac_find_module_path(Context* context, const Atom& module_name, Atom* module_path_dest);
 
     static void context_init_keywords(Context* context);
     static bool init_module_search_path(Context* context, Atom first_file_path);
