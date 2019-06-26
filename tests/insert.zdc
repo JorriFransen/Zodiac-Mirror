@@ -46,7 +46,7 @@ create_variable :: (name: *u8, type: *u8) -> *u8
 
     result := SB.copy_to_string(*sb);
     SB.free(*sb);
-    return result;
+    return result.data;
 }
 
 gen_vector_definition :: (element_count: u64) -> *u8
@@ -120,5 +120,5 @@ gen_vector_definition :: (element_count: u64) -> *u8
 
     result := SB.copy_to_string(*sb);
     SB.free(*sb);
-    return result;
+    return result.data;
 }

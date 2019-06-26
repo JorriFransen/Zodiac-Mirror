@@ -1258,7 +1258,15 @@ namespace Zodiac
                     {
                         expression->type = base_expr->type->static_array.base;
                     }
-                    else assert(false);
+                    else
+                    {
+                        auto got_type_str = ast_type_to_string(base_expr->type);
+                        resolver_report_error(resolver, base_expr->file_pos,
+                                              "lvalue of subscript must be of pointer or array type, got: %s\n",
+                                              got_type_str);
+                        mem_free(got_type_str);
+                        return false;
+                    }
                 }
                 break;
             }
@@ -1813,9 +1821,14 @@ namespace Zodiac
                         else
                         {
                             match = false;
+                            auto expected_type_str = ast_type_to_string(member_type);
+                            auto got_type_str = ast_type_to_string(expr->type);
                             resolver_report_error(resolver, expr->file_pos,
-                                                  "Type of compound member does not match type of struct member: %s",
-                                                  struct_member_decl->identifier->atom.data);
+                                                  "Type of compound member does not match type of struct member: %s\n\texpected: %s\n\tgot: %s",
+                                                  struct_member_decl->identifier->atom.data,
+                                                  expected_type_str, got_type_str);
+                            mem_free(expected_type_str);
+                            mem_free(got_type_str);
                         }
                     }
                 }
