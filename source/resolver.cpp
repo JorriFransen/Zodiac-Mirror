@@ -374,12 +374,12 @@ namespace Zodiac
         {
             AST_Type* suggested_type = nullptr;
             if (declaration->mutable_decl.type &&
-                declaration->mutable_decl.type->kind == AST_TYPE_STRUCT)
+                (declaration->mutable_decl.type->kind == AST_TYPE_STRUCT ||
+                 declaration->mutable_decl.type->kind == AST_TYPE_STATIC_ARRAY))
             {
                 suggested_type = declaration->mutable_decl.type;
             }
-
-            if (declaration->mutable_decl.type == Builtin::type_double)
+            else if (declaration->mutable_decl.type == Builtin::type_double)
             {
                 suggested_type = Builtin::type_double;
             }
@@ -914,11 +914,17 @@ namespace Zodiac
                 }
 
                 AST_Type* suggested_type = nullptr;
-                if (result &&
-                    lvalue_expr->type->kind == AST_TYPE_STRUCT &&
-                    statement->assign.expression->kind == AST_EXPR_COMPOUND_LITERAL)
+                if (result)
                 {
-                    suggested_type = statement->assign.lvalue_expression->type;
+                    if (lvalue_expr->type->kind == AST_TYPE_STRUCT &&
+                        statement->assign.expression->kind == AST_EXPR_COMPOUND_LITERAL)
+                    {
+                        suggested_type = statement->assign.lvalue_expression->type;
+                    }
+                    else if (lvalue_expr->type->kind == AST_TYPE_STATIC_ARRAY)
+                    {
+                        suggested_type = lvalue_expr->type;
+                    }
                 }
                 result &= try_resolve_expression(resolver, statement->assign.expression,
                                                  scope, suggested_type);
@@ -1739,6 +1745,10 @@ namespace Zodiac
                 AST_Declaration* member_decl = suggested_type->aggregate_type.member_declarations[i];
                 assert(member_decl->kind == AST_DECL_MUTABLE);
                 suggested_member_type = member_decl->mutable_decl.type;
+            }
+            else if (suggested_type && suggested_type->kind == AST_TYPE_STATIC_ARRAY)
+            {
+                suggested_member_type = suggested_type->static_array.base;
             }
             AST_Expression* expr = expression->compound_literal.expressions[i];
             result &= try_resolve_expression(resolver, expr, scope, suggested_member_type);
@@ -2836,7 +2846,7 @@ namespace Zodiac
             if (BUF_LENGTH(overload->function.args) != BUF_LENGTH(call_expr->call.arg_expressions))
                 continue;
 
-            bool match = false;
+            bool match = true;
             for (uint64_t ai = 0; ai < BUF_LENGTH(overload->function.args); ai++)
             {
                 AST_Declaration* overload_arg = overload->function.args[ai];
@@ -2850,12 +2860,16 @@ namespace Zodiac
                     assert(overload_arg_type);
                     if (try_resolve_expression(resolver, call_arg_expr, scope, overload_arg_type))
                     {
-                        if (overload_arg_type == call_arg_expr->type)
+                        if (overload_arg_type != call_arg_expr->type)
                         {
-                            match = true;
+                            match = false;
                         }
                     }
-                }
+                    else {
+
+                        match = false;
+                    }
+                } else match = false;
                 resolver->silent = false;
             }
 
