@@ -35,6 +35,7 @@ namespace Zodiac
     DEFINE_TOKEN(TOK_LBRACK),     /* [ */ \
     DEFINE_TOKEN(TOK_RBRACK),     /* ] */ \
     DEFINE_TOKEN(TOK_BANG),       /* ! */ \
+    DEFINE_TOKEN(TOK_DOLLAR),     /* $ */ \
     DEFINE_TOKEN(TOK_RARROW),     /* -> */ \
     DEFINE_TOKEN(TOK_DOT),        /* . */ \
     DEFINE_TOKEN(TOK_DOUBLE_DOT), /* .. */ \

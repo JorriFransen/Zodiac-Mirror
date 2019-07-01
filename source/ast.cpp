@@ -279,7 +279,7 @@ namespace Zodiac
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
-                                                  bool is_vararg,
+                                                  bool is_vararg, bool is_poly,
                                                   AST_Type_Spec* return_type_spec,
                                                   AST_Statement* body_block,
                                                   AST_Scope* argument_scope)
@@ -300,6 +300,8 @@ namespace Zodiac
         result->function.inferred_return_type = nullptr;
         result->function.body_block = body_block;
         result->function.overloads = nullptr;
+        result->function.is_poly = is_poly;
+        result->function.poly_count = 0;
 
         result->function.argument_scope = argument_scope;
         if (body_block)
@@ -841,6 +843,16 @@ namespace Zodiac
         result->identifier.identifier = identifier;
         result->identifier.poly_args = poly_args;
 
+        for (uint64_t i = 0; i < BUF_LENGTH(poly_args); i++)
+        {
+            auto poly_arg = poly_args[i];
+            if (poly_arg->flags & AST_TYPE_SPEC_FLAG_POLY)
+            {
+                result->_flags |= AST_TYPE_SPEC_FLAG_POLY;
+                break;
+            }
+        }
+
         return result;
     }
 
@@ -867,6 +879,11 @@ namespace Zodiac
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_POINTER);
         result->pointer.base = base_type_spec;
 
+        if (base_type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
+        {
+            result->_flags |= AST_TYPE_SPEC_FLAG_POLY;
+        }
+
         return result;
     }
 
@@ -881,6 +898,11 @@ namespace Zodiac
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_STATIC_ARRAY);
         result->static_array.count_expr = count_expr;
         result->static_array.base = base_type_spec;
+
+        if (base_type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
+        {
+            result->_flags |= AST_TYPE_SPEC_FLAG_POLY;
+        }
 
         return result;
     }

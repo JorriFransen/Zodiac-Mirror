@@ -318,6 +318,8 @@ namespace Zodiac
 		AST_Type* type = nullptr;
 
         BUF(AST_Declaration*) overloads = nullptr;
+        bool is_poly = false;
+        uint64_t poly_count = 0;
     };
 
     struct AST_Mutable_Declaration
@@ -509,9 +511,20 @@ namespace Zodiac
         AST_TYPE_SPEC_FUNCTION,
     };
 
+    enum AST_Type_Spec_Flags : uint64_t
+    {
+        AST_TYPE_SPEC_FLAG_NONE = 0,
+        AST_TYPE_SPEC_FLAG_POLY = (1 << 0),
+    };
+
     struct AST_Type_Spec
     {
         AST_Type_Spec_Kind kind;
+        union
+        {
+            AST_Type_Spec_Flags flags;
+            uint64_t _flags;
+        };
         File_Pos file_pos;
 
         union
@@ -623,7 +636,7 @@ namespace Zodiac
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
-                                                  bool is_vararg,
+                                                  bool is_vararg, bool is_poly,
                                                   AST_Type_Spec* return_type_spec,
                                                   AST_Statement* body_block,
                                                   AST_Scope* argument_scope);

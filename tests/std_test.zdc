@@ -15,41 +15,42 @@ main :: ()
     // print(c_string);
 
     int_array : Array(int);
-    int_array.data = (:*int)_c.malloc(sizeof(int) * 5);
-    int_array.capacity = 5;
-    int_array.count = 5;
+    array_init(*int_array, 5);
+    // int_array.data = (:*int)_c.malloc(sizeof(int) * 5);
+    // int_array.capacity = 5;
+    // int_array.count = 5;
 
-    float_array : Array(float);
-    float_array.data = (:*float)_c.malloc(sizeof(float) * 5);
-    float_array.capacity = 5;
-    float_array.count = 5;
+    // float_array : Array(float);
+    // float_array.data = (:*float)_c.malloc(sizeof(float) * 5);
+    // float_array.capacity = 5;
+    // float_array.count = 5;
 
-    int_array2 : Array(int);
-    int_array2.data = (:*int)_c.malloc(sizeof(int) * 5);
-    int_array2.capacity = 5;
-    int_array2.count = 5;
+    // int_array2 : Array(int);
+    // int_array2.data = (:*int)_c.malloc(sizeof(int) * 5);
+    // int_array2.capacity = 5;
+    // int_array2.count = 5;
 
-    for (i : u64 = 0; i < float_array.count; i = i + 1)
-    {
-        j := i + 1;
-        int_array.data[i] = j * j;
-        int_array2.data[i] = j + j;
-        float_array.data[i] = j * j / 3.0;
-    }
+    // for (i : u64 = 0; i < float_array.count; i = i + 1)
+    // {
+    //     j := i + 1;
+    //     int_array.data[i] = j * j;
+    //     int_array2.data[i] = j + j;
+    //     float_array.data[i] = j * j / 3.0;
+    // }
 
-    for (i : u64 = 0; i < int_array.count; i = i + 1)
-    {
-        _c.printf("int_array[%d]: %d\n", i, int_array.data[i]);
-    }
+    // for (i : u64 = 0; i < int_array.count; i = i + 1)
+    // {
+    //     _c.printf("int_array[%d]: %d\n", i, int_array.data[i]);
+    // }
 
-    for (i : u64 = 0; i < float_array.count; i = i + 1)
-    {
-        _c.printf("float_array[%d]: %f\n", i, float_array.data[i]);
-    }
+    // for (i : u64 = 0; i < float_array.count; i = i + 1)
+    // {
+    //     _c.printf("float_array[%d]: %f\n", i, float_array.data[i]);
+    // }
 
-    for (i : u64 = 0; i < int_array2.count; i = i + 1)
-    {
-        _c.printf("int_array2[%d]: %d\n", i, int_array2.data[i]);
-    }
+    // for (i : u64 = 0; i < int_array2.count; i = i + 1)
+    // {
+    //     _c.printf("int_array2[%d]: %d\n", i, int_array2.data[i]);
+    // }
 }
 

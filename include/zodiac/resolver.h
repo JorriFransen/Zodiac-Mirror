@@ -91,7 +91,7 @@ namespace Zodiac
     static bool try_resolve_insert_statement(Resolver* resolver, AST_Statement* statement, AST_Scope* scope,
                                              AST_Statement* break_context);
 
-    static bool try_resolve_expression(Resolver* resolver, AST_Expression* expression,
+    bool try_resolve_expression(Resolver* resolver, AST_Expression* expression,
                                        AST_Scope* scope,
                                        AST_Type* suggested_type = nullptr);
     static bool try_resolve_call_expression(Resolver* resolver, AST_Expression* expression,

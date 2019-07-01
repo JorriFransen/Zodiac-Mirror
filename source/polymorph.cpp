@@ -2,6 +2,52 @@
 
 namespace Zodiac
 {
+    bool find_or_create_poly_function(Resolver* resolver, AST_Expression* call_expression,
+                                      AST_Declaration** func_decl_dest, AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(call_expression);
+        assert(call_expression->kind == AST_EXPR_CALL);
+        assert(func_decl_dest);
+
+        AST_Declaration* poly_func_decl = *func_decl_dest;
+        assert(poly_func_decl);
+        assert(poly_func_decl->kind == AST_DECL_FUNC);
+
+        bool result = true;
+        uint64_t poly_hash = 0;
+
+        auto call_args = call_expression->call.arg_expressions;
+        assert(BUF_LENGTH(call_args));
+
+        for (uint64_t i = 0; i < BUF_LENGTH(call_args); i++)
+        {
+            auto call_arg = call_args[i];
+            result &= try_resolve_expression(resolver, call_arg, scope);
+
+            if (result)
+            {
+                assert(call_arg->type);
+                poly_hash = hash_mix(poly_hash, ast_get_type_hash(call_arg->type));
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        AST_Declaration* poly_function_instance = nullptr;
+        if (find_poly_function_instance(poly_func_decl, poly_hash, &poly_function_instance))
+        {
+            *func_decl_dest = poly_function_instance;
+            return true;
+        }
+
+        poly_function_instance = create_poly_function_instance(resolver, poly_func_decl);
+
+        assert(false);
+    }
+
     bool find_or_create_poly_struct_type(Resolver* resolver, AST_Declaration* type_decl,
                                          AST_Type_Spec* type_spec, AST_Type** type_dest,
                                          AST_Scope* scope)
@@ -90,6 +136,19 @@ namespace Zodiac
         return true;
     }
 
+    bool find_poly_function_instance(AST_Declaration* poly_func_decl, uint64_t poly_hash,
+                                     AST_Declaration** poly_func_decl_dest)
+    {
+        assert(poly_func_decl);
+        assert(poly_func_decl->kind == AST_DECL_FUNC);
+        assert(poly_func_decl->function.is_poly);
+
+        assert(poly_func_decl_dest);
+        assert(*poly_func_decl_dest == nullptr);
+
+        return false;
+    }
+
     bool find_poly_struct_instance(AST_Declaration* type_decl, uint64_t poly_hash,
                                                AST_Declaration** decl_dest)
     {
@@ -111,6 +170,59 @@ namespace Zodiac
         }
 
         return false;
+    }
+
+    AST_Declaration* create_poly_function_instance(Resolver* resolver,
+                                                   AST_Declaration* poly_func_decl)
+    {
+        assert(resolver);
+        assert(poly_func_decl);
+        assert(poly_func_decl->kind == AST_DECL_FUNC);
+        assert(poly_func_decl->function.is_poly);
+
+        auto poly_atom = atom_append(resolver->context->atom_table,
+                                     "_poly_", poly_func_decl->function.poly_count++);
+        poly_atom = atom_append(resolver->context->atom_table,
+                                poly_func_decl->identifier->atom, poly_atom);
+
+        AST_Identifier* poly_identifier = ast_identifier_new(resolver->context, poly_atom,
+                                                             poly_func_decl->identifier->file_pos);
+
+        AST_Declaration* instance = ast_declaration_new(resolver->context,
+                                                        poly_func_decl->file_pos,
+                                                        AST_DECL_FUNC, poly_func_decl->location,
+                                                        poly_identifier, nullptr, true);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(poly_func_decl->function.args); i++)
+        {
+            AST_Declaration* arg_copy = copy_declaration(resolver->context,
+                                                         poly_func_decl->function.args[i]);
+            BUF_PUSH(instance->function.args, arg_copy);
+        }
+
+        if (poly_func_decl->function.return_type_spec)
+        {
+            instance->function.return_type_spec =
+                copy_type_spec(resolver->context, poly_func_decl->function.return_type_spec);
+        }
+
+        instance->function.argument_scope =
+            ast_scope_new(resolver->context,
+                          poly_func_decl->function.argument_scope->parent,
+                          poly_func_decl->function.argument_scope->module,
+                          false);
+
+        AST_Scope* block_scope =
+            ast_scope_new(resolver->context, instance->function.argument_scope,
+                          poly_func_decl->function.body_block->block.scope->module,
+                          false);
+
+        instance->function.body_block = copy_statement(resolver->context,
+                                                       poly_func_decl->function.body_block,
+                                                       block_scope);
+
+        return instance;
+
     }
 
     AST_Declaration* create_poly_struct_instance(Resolver* resolver, AST_Declaration* type_decl,
@@ -164,8 +276,56 @@ namespace Zodiac
         AST_Identifier* identifier = copy_identifier(context, declaration->identifier);
         AST_Type_Spec* type_spec = copy_type_spec(context, declaration->mutable_decl.type_spec);
 
-        return ast_mutable_declaration_new(context, declaration->file_pos, identifier, type_spec, nullptr,
+        return ast_mutable_declaration_new(context, declaration->file_pos, identifier,
+                                           type_spec, nullptr,
                                            declaration->location);
+    }
+
+    AST_Statement* copy_statement(Context* context, AST_Statement* statement,
+                                  AST_Scope* scope)
+    {
+        assert(context);
+        assert(statement);
+
+        switch (statement->kind)
+        {
+            case AST_STMT_BLOCK:
+            {
+                assert(scope);
+                BUF(AST_Statement*) block_statements = nullptr;
+                for (uint64_t i = 0; i < BUF_LENGTH(statement->block.statements); i++)
+                {
+                    auto block_stmt_copy = copy_statement(context, statement->block.statements[i],
+                                                          nullptr);
+                    BUF_PUSH(block_statements, block_stmt_copy);
+                }
+                return ast_block_statement_new(context, statement->file_pos, block_statements,
+                                               scope);
+                break;
+            }
+
+            case AST_STMT_ASSIGN:
+            {
+                auto lvalue_copy = copy_expression(context, statement->assign.lvalue_expression);
+                auto expr_copy = copy_expression(context, statement->assign.expression);
+                return ast_assign_statement_new(context, statement->file_pos,
+                                                lvalue_copy, expr_copy);
+                break;
+            }
+
+            default: assert(false);
+        }
+    }
+
+    AST_Expression* copy_expression(Context* context, AST_Expression* expression)
+    {
+        assert(context);
+        assert(expression);
+
+        switch (expression->kind)
+        {
+            default: assert(false);
+        }
     }
 
     AST_Type_Spec* copy_type_spec(Context* context, AST_Type_Spec* type_spec)

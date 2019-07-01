@@ -244,6 +244,7 @@ namespace Zodiac
             BUF(AST_Declaration*) arg_decls = nullptr;
             expect_token(parser, TOK_LPAREN);
             bool is_vararg = false;
+            bool is_poly = false;
             while (!match_token(parser, TOK_RPAREN))
             {
                 // No arguments allowed after this
@@ -265,6 +266,11 @@ namespace Zodiac
                     if (!decl)
                     {
                         return nullptr;
+                    }
+                    assert(decl->kind == AST_DECL_MUTABLE);
+                    if (decl->mutable_decl.type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
+                    {
+                        is_poly = true;
                     }
                     BUF_PUSH(arg_decls, decl);
                 }
@@ -288,9 +294,9 @@ namespace Zodiac
             }
 
             AST_Declaration* result = ast_function_declaration_new(parser->context, fp, identifier,
-                                                                arg_decls, is_vararg,
-                                                                return_type_spec,
-                                                                body_block, argument_scope);
+                                                                   arg_decls, is_vararg, is_poly,
+                                                                   return_type_spec,
+                                                                   body_block, argument_scope);
             return result;
         }
         else if (match_token(parser, TOK_KW_IMPORT))
@@ -1426,6 +1432,12 @@ namespace Zodiac
                                                     base_ident);
             }
             assert(false);
+        }
+        else if (match_token(parser, TOK_DOLLAR))
+        {
+            AST_Type_Spec* result = parse_type_spec(parser, scope);
+            result->_flags |= AST_TYPE_SPEC_FLAG_POLY;
+            return result;
         }
         else assert(false);
 

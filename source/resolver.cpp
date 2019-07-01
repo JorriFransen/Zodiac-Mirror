@@ -138,9 +138,17 @@ namespace Zodiac
                 {
                     case AST_DECL_FUNC:
                     {
-                        result &= try_resolve_function_declaration(resolver, declaration, scope);
-                        if (result && overload_container)
-                            add_overload(resolver, overload_container, declaration);
+                        if (declaration->function.is_poly)
+                        {
+                            // Polymorph
+                        }
+                        else
+                        {
+                            result &= try_resolve_function_declaration(resolver, declaration,
+                                                                       scope);
+                            if (result && overload_container)
+                                add_overload(resolver, overload_container, declaration);
+                        }
                         break;
                     }
 
@@ -1217,7 +1225,7 @@ namespace Zodiac
         return result;
     }
 
-    static bool try_resolve_expression(Resolver* resolver, AST_Expression* expression,
+    bool try_resolve_expression(Resolver* resolver, AST_Expression* expression,
                                        AST_Scope* scope,
                                        AST_Type* suggested_type/*=nullptr*/)
     {
@@ -1370,6 +1378,9 @@ namespace Zodiac
         {
             assert(expression->type ||
                    (expression->kind == AST_EXPR_IDENTIFIER &&
+                    expression->identifier->declaration->kind == AST_DECL_FUNC &&
+                    expression->identifier->declaration->function.is_poly) ||
+                   (expression->kind == AST_EXPR_IDENTIFIER &&
                     expression->identifier->declaration->kind == AST_DECL_IMPORT) ||
                    (expression->kind == AST_EXPR_IDENTIFIER &&
                        expression->identifier->declaration->kind == AST_DECL_AGGREGATE_TYPE &&
@@ -1428,6 +1439,16 @@ namespace Zodiac
         else assert(false);
 
         assert(func_decl);
+        if (func_decl->function.is_poly)
+        {
+            assert(!recursive);
+            if (!find_or_create_poly_function(resolver, expression, &func_decl, scope))
+            {
+                resolver_report_error(resolver, expression->file_pos, "Could not create polymorphic function instance");
+                return false;
+            }
+        }
+
         if (func_decl->function.overloads)
         {
             func_decl = find_overload_signature_match(resolver, func_decl, expression, scope);
@@ -1952,7 +1973,8 @@ namespace Zodiac
 
             assert(expression->type || decl->kind == AST_DECL_IMPORT ||
                    (decl->kind == AST_DECL_AGGREGATE_TYPE &&
-                    decl->aggregate_type.kind == AST_AGG_DECL_ENUM));
+                    decl->aggregate_type.kind == AST_AGG_DECL_ENUM) ||
+                   (decl->kind == AST_DECL_FUNC && decl->function.is_poly));
         }
 
         return result;
@@ -2366,7 +2388,7 @@ namespace Zodiac
         }
 		else if (decl->kind == AST_DECL_FUNC)
 		{
-			if (!decl->function.type)
+			if (!decl->function.type && !decl->function.is_poly)
 			{
 				return false;
 			}

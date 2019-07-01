@@ -83,6 +83,10 @@ namespace Zodiac
 		{
 			case AST_DECL_FUNC:
 			{
+                if (decl->function.is_poly)
+                {
+                    return;
+                }
 				IR_Value* ir_value = ir_builder_value_for_declaration(ir_builder, decl);
 				assert(ir_value);
 				assert(ir_value->kind == IRV_FUNCTION);
@@ -174,11 +178,17 @@ namespace Zodiac
         {
             case AST_DECL_FUNC:
             {
+                if (global_decl->function.is_poly)
+                {
+                    return;
+                }
+
                 AST_Identifier* ident = global_decl->identifier;
                 AST_Type* return_type = global_decl->function.return_type;
                 IR_Value* func_value = ir_builder_begin_function(ir_builder,
                                                                     ident->atom.data,
                                                                     global_decl->function.type);
+
                 if (global_decl->function.body_block)
                 {
                     IR_Value* entry_block = ir_builder_create_block(ir_builder, "entry",
