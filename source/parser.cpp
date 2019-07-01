@@ -326,10 +326,26 @@ namespace Zodiac
                                                     parser->result.ast_module,
                                                     false);
 
+            BUF(AST_Identifier*) parameters = nullptr;
+
+            if (match_token(parser, TOK_LPAREN))
+            {
+                while (!match_token(parser, TOK_RPAREN))
+                {
+                    if (parameters)
+                    {
+                        expect_token(parser, TOK_COMMA);
+                    }
+
+                    AST_Identifier* param_ident = parse_identifier(parser);
+                    BUF_PUSH(parameters, param_ident);
+                }
+            }
+
             BUF(AST_Declaration*) aggregate_declarations = parse_aggregate(parser, struct_scope);
 
             return ast_struct_declaration_new(parser->context, identifier->file_pos, identifier,
-                                              aggregate_declarations, struct_scope);
+                                              aggregate_declarations, parameters, struct_scope);
         }
         else if (match_token(parser, TOK_KW_ENUM))
         {
@@ -1386,6 +1402,23 @@ namespace Zodiac
                                                  member_ident);
                 return ast_type_spec_dot_new(parser->context, base_ident->file_pos, base_ident,
                                              member_type_spec);
+            }
+            else if (match_token(parser, TOK_LPAREN))
+            {
+                BUF(AST_Type_Spec*) poly_args = nullptr;
+                while (!match_token(parser, TOK_RPAREN))
+                {
+                    if (poly_args)
+                    {
+                        expect_token(parser, TOK_COMMA);
+                    }
+
+                    AST_Type_Spec* poly_arg = parse_type_spec(parser, scope);
+                    BUF_PUSH(poly_args, poly_arg);
+                }
+
+                return ast_type_spec_identifier_new(parser->context, base_ident->file_pos,
+                                                    base_ident, poly_args);
             }
             else
             {

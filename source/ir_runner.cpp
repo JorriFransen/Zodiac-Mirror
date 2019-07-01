@@ -1035,6 +1035,12 @@ namespace Zodiac
                         break;
                     }
 
+                    case 32:
+                    {
+                        result_value->value.u32 = *((uint32_t*)source_pointer);
+                        break;
+                    }
+
                     case 64:
                     {
                         result_value->value.s64 = *((uint64_t*)source_pointer);

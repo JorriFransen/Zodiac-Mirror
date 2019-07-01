@@ -351,6 +351,12 @@ namespace Zodiac
         AST_AGG_DECL_ENUM,
     };
 
+    struct AST_Aggregate_Poly
+    {
+        uint64_t hash = 0;
+        AST_Declaration* instance;
+    };
+
     struct AST_Declaration
     {
         AST_Declaration_Kind kind;
@@ -409,6 +415,9 @@ namespace Zodiac
                 AST_Aggregate_Declaration_Kind kind;
                 AST_Type* type;
                 BUF(AST_Declaration*) aggregate_declarations;
+                BUF(AST_Identifier*) parameter_idents;
+                BUF(AST_Aggregate_Poly) poly_instances;
+                uint64_t poly_count;
                 AST_Scope* scope;
             } aggregate_type;
 
@@ -507,7 +516,11 @@ namespace Zodiac
 
         union
         {
-            AST_Identifier* identifier;
+            struct
+            {
+                AST_Identifier* identifier;
+                BUF(AST_Type_Spec*) poly_args;
+            } identifier;
 
             struct
             {
@@ -647,6 +660,7 @@ namespace Zodiac
     AST_Declaration* ast_struct_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
                                                 BUF(AST_Declaration*) member_decls,
+                                                BUF(AST_Identifier*) parameters,
                                                 AST_Scope* scope);
     AST_Declaration* ast_enum_declaration_new(Context* context, File_Pos file_pos,
                                               AST_Identifier* identifier,
@@ -700,7 +714,8 @@ namespace Zodiac
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind);
     AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos,
-                                                AST_Identifier* identifier);
+                                                AST_Identifier* identifier,
+                                                BUF(AST_Type_Spec*) poly_args = nullptr);
     AST_Type_Spec* ast_type_spec_dot_new(Context* context, File_Pos file_pos,
                                          AST_Identifier* module_ident,
                                          AST_Type_Spec* member_type_spec);

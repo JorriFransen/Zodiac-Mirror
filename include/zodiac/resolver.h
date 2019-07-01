@@ -52,7 +52,7 @@ namespace Zodiac
 
     void resolver_do_cycle(Resolver* resolver);
 
-    static bool try_resolve_declaration(Resolver* resolver, AST_Declaration* declaration,
+    bool try_resolve_declaration(Resolver* resolver, AST_Declaration* declaration,
                                         AST_Scope* scope);
     static bool try_resolve_function_declaration(Resolver* resolver, AST_Declaration* declaration,
                                                  AST_Scope* scope);
@@ -130,7 +130,7 @@ namespace Zodiac
     static bool try_resolve_identifier(Resolver* resolver, AST_Identifier* identifier,
                                        AST_Scope* scope);
 
-    static bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec,
+    bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec,
                                       AST_Type** type_dest,
                                       AST_Scope* scope);
 
@@ -166,11 +166,11 @@ namespace Zodiac
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,
                                              AST_Module* module,
                                              AST_Identifier* identifier);
-    static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
+    Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
                                       const char* format, ...);
-    static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
+    Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
                                       Resolve_Error_Flag flags, const char* format, va_list args);
-    static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
+    Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
                                       Resolve_Error_Flag flags, const char* format,
                                       ...);
     void resolver_report_errors(Resolver* resolver);

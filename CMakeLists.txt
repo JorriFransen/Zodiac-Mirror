@@ -32,6 +32,7 @@ set (ZODIAC_COMPILER_SOURCE
     source/lexer.cpp
     source/parser.cpp
     source/platform.cpp
+    source/polymorph.cpp
     source/resolver.cpp
     source/token.cpp
 )

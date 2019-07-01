@@ -33,3 +33,10 @@ print :: (num: u64)
     length := _c.sprintf(buf, "%llu", num);
     print({ buf, (:u64)length });
 }
+
+Array :: struct(T)
+{
+    data     : *T;
+    count    : u64;
+    capacity : u64;
+}

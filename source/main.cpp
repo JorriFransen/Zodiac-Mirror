@@ -58,7 +58,11 @@ int main(int argc, char** argv)
     assert(std_found);
     // printf("std_module_path: %s\n", std_module_path.data);
     AST_Module* std_ast_module = zodiac_compile_or_get_module(context, std_module_path, std_module_name);
-    assert(std_ast_module);
+    if (!std_ast_module)
+    {
+        fprintf(stderr, "Compilation for std module for builtins failed, aborting\n");
+        return -1;
+    }
     AST_Declaration* string_type_decl = ast_scope_find_declaration(context,
                                                                    std_ast_module->module_scope,
                                                                    Builtin::atom_String);

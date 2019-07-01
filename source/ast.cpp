@@ -465,11 +465,13 @@ namespace Zodiac
     AST_Declaration* ast_struct_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
                                                 BUF(AST_Declaration*) member_decls,
+                                                BUF(AST_Identifier*) parameters,
                                                 AST_Scope* scope)
     {
         assert(context);
         assert(identifier);
         // assert(member_decls);
+
         assert(scope);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
@@ -478,6 +480,9 @@ namespace Zodiac
         result->aggregate_type.kind = AST_AGG_DECL_STRUCT;
         result->aggregate_type.type = nullptr;
         result->aggregate_type.aggregate_declarations = member_decls;
+        result->aggregate_type.parameter_idents = parameters;
+        result->aggregate_type.poly_count = 0;
+        result->aggregate_type.poly_instances = nullptr;
         result->aggregate_type.scope = scope;
 
         return result;
@@ -826,13 +831,15 @@ namespace Zodiac
     }
 
     AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos,
-                                                AST_Identifier* identifier)
+                                                AST_Identifier* identifier,
+                                                BUF(AST_Type_Spec*) poly_args/*=nullptr*/)
     {
         assert(context);
         assert(identifier);
 
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_IDENT);
-        result->identifier = identifier;
+        result->identifier.identifier = identifier;
+        result->identifier.poly_args = poly_args;
 
         return result;
     }
@@ -1289,7 +1296,7 @@ namespace Zodiac
                         assert(member_decl->mutable_decl.type_spec->pointer.base->kind ==
                                AST_TYPE_SPEC_IDENT);
                         const char* member_type_str =
-                            member_decl->mutable_decl.type_spec->pointer.base->identifier->atom.data;
+                            member_decl->mutable_decl.type_spec->pointer.base->identifier.identifier->atom.data;
                         const char* type_str = type->name;
                         assert(strcmp(member_type_str, type_str) == 0);
                     }

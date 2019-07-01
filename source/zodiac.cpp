@@ -261,7 +261,7 @@ namespace Zodiac
         Lexer lexer;
         init_lexer(&lexer, context);
 
-        Lex_Result lex_result = lex_file(&lexer, module_string, module_name.data);
+        Lex_Result lex_result = lex_file(&lexer, module_string, module_path.data);
         if (BUF_LENGTH(lex_result.errors) != 0)
         {
             lexer_report_errors(&lexer);

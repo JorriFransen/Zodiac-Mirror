@@ -32,6 +32,7 @@ namespace Zodiac
     const Atom& atom_append(Atom_Table* atom_table, const Atom& lhs, const Atom& rhs);
 
     const Atom& atom_append(Atom_Table* atom_table, const Atom& lhs, uint64_t u64);
+    const Atom& atom_append(Atom_Table* atom_table, const char* lhs, uint64_t u64);
 
     uint64_t atom_to_u64(const Atom& atom, uint64_t base = 10);
     double atom_to_double(const Atom& atom);

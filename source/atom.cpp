@@ -153,6 +153,13 @@ namespace Zodiac
         return result;
     }
 
+    const Atom& atom_append(Atom_Table* atom_table, const char* lhs, uint64_t u64)
+    {
+        assert(atom_table);
+
+        return atom_append(atom_table, atom_get(atom_table, lhs), u64);
+    }
+
     static uint64_t _digit_value(char c)
     {
         if (c >= '0' && c <= '9')

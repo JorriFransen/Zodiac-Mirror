@@ -7,6 +7,7 @@
 #include "parser.h"
 #include "ir.h"
 #include "ir_runner.h"
+#include "polymorph.h"
 
 #include <string.h>
 #include <stdarg.h>
@@ -93,7 +94,7 @@ namespace Zodiac
         }
     }
 
-    static bool try_resolve_declaration(Resolver* resolver, AST_Declaration* declaration,
+    bool try_resolve_declaration(Resolver* resolver, AST_Declaration* declaration,
                                         AST_Scope* scope)
     {
         assert(resolver);
@@ -197,9 +198,16 @@ namespace Zodiac
                         }
                         else
                         {
-                            result &= try_resolve_aggregate_type_declaration(resolver,
-                                                                             declaration,
-                                                                             scope);
+                            if (declaration->aggregate_type.parameter_idents)
+                            {
+                                // Polymorph
+                            }
+                            else
+                            {
+                                result &= try_resolve_aggregate_type_declaration(resolver,
+                                                                                 declaration,
+                                                                                 scope);
+                            }
                         }
                         break;
                     }
@@ -576,7 +584,7 @@ namespace Zodiac
                     mem_ts->pointer.base->kind == AST_TYPE_SPEC_IDENT)
                 {
                     AST_Type_Spec* mem_base_ts = mem_ts->pointer.base;
-                    if (mem_base_ts->identifier->atom == declaration->identifier->atom)
+                    if (mem_base_ts->identifier.identifier->atom == declaration->identifier->atom)
                     {
                         mem_result = true;
                         BUF_PUSH(pointers_to_self, member_decl);
@@ -2378,7 +2386,7 @@ namespace Zodiac
         return true;
     }
 
-    static bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec,
+    bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec,
                                       AST_Type** type_dest, AST_Scope* scope)
     {
         assert(resolver);
@@ -2391,11 +2399,19 @@ namespace Zodiac
         {
             case AST_TYPE_SPEC_IDENT:
             {
-                assert(type_spec->identifier);
-                AST_Identifier* identifier = type_spec->identifier;
+                assert(type_spec->identifier.identifier);
+                AST_Identifier* identifier = type_spec->identifier.identifier;
 
                 AST_Declaration* type_decl = find_declaration(resolver->context, scope,
-					                                          type_spec->identifier);
+					                                          type_spec->identifier.identifier);
+                if (type_decl && type_decl->kind == AST_DECL_AGGREGATE_TYPE &&
+                    type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT &&
+                    type_decl->aggregate_type.parameter_idents)
+                {
+                    return find_or_create_poly_struct_type(resolver, type_decl, type_spec,
+                                                           type_dest, scope);
+                }
+
                 if (!type_decl)
                 {
                     report_undeclared_identifier(resolver, identifier->file_pos, identifier);
@@ -3036,7 +3052,7 @@ namespace Zodiac
         error->identifier = identifier->atom;
     }
 
-    static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
+    Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
                                       const char* format, ...)
     {
         va_list args;
@@ -3048,7 +3064,7 @@ namespace Zodiac
         return result;
     }
 
-    static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
+    Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
                                                 Resolve_Error_Flag flags, const char* format,
                                                 va_list args)
     {
@@ -3085,7 +3101,7 @@ namespace Zodiac
         }
     }
 
-    static Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
+    Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
                                                 Resolve_Error_Flag flags,
                                                 const char* format, ...)
     {
