@@ -621,7 +621,8 @@ namespace Zodiac
                                                         BUF(AST_Expression*) expressions);
     AST_Expression* ast_array_length_expression_new(Context* context, File_Pos file_pos,
                                                     AST_Expression* ident_expr);
-    AST_Expression* ast_sizeof_expression_new(Context* context, File_Pos file_pos, AST_Type_Spec* type_spec);
+    AST_Expression* ast_sizeof_expression_new(Context* context, File_Pos file_pos,
+                                              AST_Type_Spec* type_spec);
     AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos,
                                            AST_Expression* base_expr,
                                            AST_Expression* member_expr);

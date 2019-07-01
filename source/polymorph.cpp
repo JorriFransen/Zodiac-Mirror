@@ -301,7 +301,6 @@ namespace Zodiac
                 }
                 return ast_block_statement_new(context, statement->file_pos, block_statements,
                                                scope);
-                break;
             }
 
             case AST_STMT_ASSIGN:
@@ -310,7 +309,6 @@ namespace Zodiac
                 auto expr_copy = copy_expression(context, statement->assign.expression);
                 return ast_assign_statement_new(context, statement->file_pos,
                                                 lvalue_copy, expr_copy);
-                break;
             }
 
             default: assert(false);
@@ -324,6 +322,53 @@ namespace Zodiac
 
         switch (expression->kind)
         {
+            case AST_EXPR_IDENTIFIER:
+            {
+                auto ident_copy = copy_identifier(context, expression->identifier);
+                return ast_ident_expression_new(context, expression->file_pos, ident_copy);
+            }
+
+            case AST_EXPR_DOT:
+            {
+                auto base_copy = copy_expression(context, expression->dot.base_expression);
+                auto member_copy = copy_expression(context, expression->dot.member_expression);
+                return ast_dot_expression_new(context, expression->file_pos, base_copy,
+                                              member_copy);
+            }
+
+            case AST_EXPR_CALL:
+            {
+                auto ident_expr_copy = copy_expression(context, expression->call.ident_expression);
+                BUF(AST_Expression*) arg_exprs_copy = nullptr;
+                for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
+                {
+                    auto arg_copy = copy_expression(context, expression->call.arg_expressions[i]);
+                    BUF_PUSH(arg_exprs_copy, arg_copy);
+                }
+                return ast_call_expression_new(context, expression->file_pos, ident_expr_copy,
+                                               arg_exprs_copy);
+            }
+
+            case AST_EXPR_BINARY:
+            {
+                auto lhs_copy = copy_expression(context, expression->binary.lhs);
+                auto rhs_copy = copy_expression(context, expression->binary.rhs);
+                return ast_binary_expression_new(context, expression->file_pos, lhs_copy,
+                                                 expression->binary.op, rhs_copy);
+            }
+
+            case AST_EXPR_SIZEOF:
+            {
+                auto type_spec_copy = copy_type_spec(context, expression->sizeof_expr.type_spec);
+                return ast_sizeof_expression_new(context, expression->file_pos, type_spec_copy);
+            }
+
+        case AST_EXPR_INTEGER_LITERAL:
+        {
+            return ast_integer_literal_expression_new(context, expression->file_pos,
+                                                      expression->integer_literal.u64);
+        }
+
             default: assert(false);
         }
     }
@@ -340,14 +385,12 @@ namespace Zodiac
                 auto ident_copy = copy_identifier(context, type_spec->identifier.identifier);
                 return ast_type_spec_identifier_new(context, type_spec->file_pos, ident_copy,
                                                     type_spec->identifier.poly_args);
-                break;
             }
 
             case AST_TYPE_SPEC_POINTER:
             {
                 auto base_copy = copy_type_spec(context, type_spec->pointer.base);
                 return ast_type_spec_pointer_new(context, type_spec->file_pos, base_copy);
-                break;
             }
 
             default: assert(false);
