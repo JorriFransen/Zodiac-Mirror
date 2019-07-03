@@ -302,6 +302,12 @@ namespace Zodiac
         AST_DECL_INSERT,
     };
 
+    struct AST_Poly_Instance
+    {
+        uint64_t hash = 0;
+        AST_Declaration* instance;
+    };
+
     struct AST_Function_Declaration
     {
         BUF(AST_Declaration*) args = nullptr;
@@ -320,6 +326,7 @@ namespace Zodiac
         BUF(AST_Declaration*) overloads = nullptr;
         bool is_poly = false;
         uint64_t poly_count = 0;
+        BUF(AST_Poly_Instance) poly_instances;
     };
 
     struct AST_Mutable_Declaration
@@ -351,12 +358,6 @@ namespace Zodiac
     {
         AST_AGG_DECL_STRUCT,
         AST_AGG_DECL_ENUM,
-    };
-
-    struct AST_Aggregate_Poly
-    {
-        uint64_t hash = 0;
-        AST_Declaration* instance;
     };
 
     struct AST_Declaration
@@ -418,7 +419,7 @@ namespace Zodiac
                 AST_Type* type;
                 BUF(AST_Declaration*) aggregate_declarations;
                 BUF(AST_Identifier*) parameter_idents;
-                BUF(AST_Aggregate_Poly) poly_instances;
+                BUF(AST_Poly_Instance) poly_instances;
                 uint64_t poly_count;
                 AST_Scope* scope;
             } aggregate_type;
@@ -491,6 +492,8 @@ namespace Zodiac
             {
                 BUF(AST_Declaration*) member_declarations;
                 AST_Type* base_type; // for enums
+                AST_Declaration* poly_from;
+                BUF(AST_Type_Spec*) poly_types;
             } aggregate_type;
 
             struct
@@ -742,6 +745,7 @@ namespace Zodiac
                                               bool is_vararg, BUF(AST_Declaration*) arg_decls,
                                               AST_Type_Spec* return_type_spec,
                                               AST_Scope* arg_scope);
+    AST_Type_Spec* ast_type_spec_from_type_new(Context* context, File_Pos file_pos, AST_Type* type);
 
 	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
 		                     bool is_module_scope);

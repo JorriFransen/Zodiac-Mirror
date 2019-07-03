@@ -2,55 +2,55 @@
 std :: import std;
 using std;
 
+add :: (a: $T, b: T) -> T
+{
+    return a + b;
+}
+
 main :: ()
 {
-    // c_string := "This is a test string";
-    // print(std.string_length("abc"));
-    // test_str : String = { c_string, _c.strlen(c_string) };
+    _c.printf("add(1, 2): %d\n", add(1, 2));
+    _c.printf("add(4, 8): %d\n", add(4, 8));
+    _c.printf("add(1.2, 3.4): %f\n", add(1.2, 3.4));
 
-    // print(test_str);
+    c_string := "This is a test string";
+    print(std.string_length("abc"));
+    test_str : String = { c_string, _c.strlen(c_string) };
 
-    // print({ "This should work as well", 5 });
-    // print("This should work as well");
-    // print(c_string);
+    print(test_str);
+
+    print({ "This should work as well", 5 });
+    print("This should work as well");
+    print(c_string);
 
     int_array : Array(int);
+    float_array : Array(float);
+    int_array2 : Array(int);
     array_init(*int_array, 5);
-    // int_array.data = (:*int)_c.malloc(sizeof(int) * 5);
-    // int_array.capacity = 5;
-    // int_array.count = 5;
+    array_init(*int_array2, 5);
+    array_init(*float_array, 5);
 
-    // float_array : Array(float);
-    // float_array.data = (:*float)_c.malloc(sizeof(float) * 5);
-    // float_array.capacity = 5;
-    // float_array.count = 5;
+    for (i : u64 = 0; i < 5; i = i + 1)
+    {
+        j := i + 1;
+        array_add(*int_array, (:int)(j * j));
+        array_add(*int_array2, (:int)(j + j));
+        array_add(*float_array, j * j / 3.0);
+    }
 
-    // int_array2 : Array(int);
-    // int_array2.data = (:*int)_c.malloc(sizeof(int) * 5);
-    // int_array2.capacity = 5;
-    // int_array2.count = 5;
+    for (i : u64 = 0; i < int_array.count; i = i + 1)
+    {
+        _c.printf("int_array[%d]: %d\n", i, int_array.data[i]);
+    }
 
-    // for (i : u64 = 0; i < float_array.count; i = i + 1)
-    // {
-    //     j := i + 1;
-    //     int_array.data[i] = j * j;
-    //     int_array2.data[i] = j + j;
-    //     float_array.data[i] = j * j / 3.0;
-    // }
+    for (i : u64 = 0; i < float_array.count; i = i + 1)
+    {
+        _c.printf("float_array[%d]: %f\n", i, float_array.data[i]);
+    }
 
-    // for (i : u64 = 0; i < int_array.count; i = i + 1)
-    // {
-    //     _c.printf("int_array[%d]: %d\n", i, int_array.data[i]);
-    // }
-
-    // for (i : u64 = 0; i < float_array.count; i = i + 1)
-    // {
-    //     _c.printf("float_array[%d]: %f\n", i, float_array.data[i]);
-    // }
-
-    // for (i : u64 = 0; i < int_array2.count; i = i + 1)
-    // {
-    //     _c.printf("int_array2[%d]: %d\n", i, int_array2.data[i]);
-    // }
+    for (i : u64 = 0; i < int_array2.count; i = i + 1)
+    {
+        _c.printf("int_array2[%d]: %d\n", i, int_array2.data[i]);
+    }
 }
 

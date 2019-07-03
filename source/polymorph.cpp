@@ -2,6 +2,107 @@
 
 namespace Zodiac
 {
+    BUF(Poly_Type_Spec_Replacement) find_type_spec_replacements(Context* context,
+                                                                AST_Declaration* poly_decl,
+                                                                AST_Expression* call_expr)
+    {
+        assert(context);
+        assert(poly_decl);
+        assert(call_expr);
+        assert(call_expr->kind == AST_EXPR_CALL);
+
+
+        BUF(Poly_Type_Spec_Replacement) replacements = nullptr;
+
+        switch (poly_decl->kind)
+        {
+            case AST_DECL_FUNC:
+            {
+                auto arg_decls = poly_decl->function.args;
+                auto call_exprs = call_expr->call.arg_expressions;
+
+                for (uint64_t i = 0; i < BUF_LENGTH(arg_decls); i++)
+                {
+                    auto arg_decl = arg_decls[i];
+                    auto call_expr = call_exprs[i];
+
+                    if (arg_decl->mutable_decl.type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
+                    {
+                        find_type_spec_replacements(context,
+                                                    arg_decl->mutable_decl.type_spec,
+                                                    arg_decl->mutable_decl.type_spec->file_pos,
+                                                    call_expr->type, &replacements);
+                    }
+                }
+                break;
+            }
+
+            default: assert(false);
+        }
+
+
+        return replacements;
+    }
+
+    void find_type_spec_replacements(Context* context, AST_Type_Spec* type_spec,
+                                     File_Pos file_pos, AST_Type* given_type,
+                                     BUF(Poly_Type_Spec_Replacement)* replacements)
+    {
+        assert(context);
+        assert(type_spec);
+        assert(given_type);
+
+        switch (type_spec->kind)
+        {
+            case AST_TYPE_SPEC_IDENT:
+            {
+                if (type_spec->identifier.poly_args)
+                {
+                    assert(given_type->kind == AST_TYPE_STRUCT);
+                    assert(given_type->aggregate_type.poly_from);
+
+                    auto poly_args = type_spec->identifier.poly_args;
+                    auto poly_types = given_type->aggregate_type.poly_types;
+                    assert(BUF_LENGTH(poly_args) == BUF_LENGTH(poly_types));
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(poly_args); i++)
+                    {
+                        auto poly_arg = poly_args[i];
+                        assert(poly_arg->kind == AST_TYPE_SPEC_IDENT);
+
+                        Poly_Type_Spec_Replacement replacement;
+                        replacement.poly_name = poly_args[i]->identifier.identifier->atom;
+                        replacement.replacement = poly_types[i];
+                        BUF_PUSH(*replacements, replacement);
+                    }
+                }
+                else
+                {
+                    Poly_Type_Spec_Replacement replacement;
+                    replacement.poly_name = type_spec->identifier.identifier->atom;
+
+                    AST_Type_Spec* replacement_ts = ast_type_spec_from_type_new(context,
+                                                                                file_pos,
+                                                                                given_type);
+                    replacement.replacement = replacement_ts;
+                    BUF_PUSH(*replacements, replacement);
+                }
+                break;
+            }
+
+            case AST_TYPE_SPEC_POINTER:
+            {
+                assert(given_type->kind == AST_TYPE_POINTER);
+                find_type_spec_replacements(context, type_spec->pointer.base,
+                                            file_pos, given_type->pointer.base,
+                                            replacements);
+                break;
+            }
+
+            default: assert(false);
+        }
+    }
+
     bool find_or_create_poly_function(Resolver* resolver, AST_Expression* call_expression,
                                       AST_Declaration** func_decl_dest, AST_Scope* scope)
     {
@@ -44,8 +145,33 @@ namespace Zodiac
         }
 
         poly_function_instance = create_poly_function_instance(resolver, poly_func_decl);
+        auto replacements = find_type_spec_replacements(resolver->context, poly_func_decl,
+                                                        call_expression);
+        replace_poly_type_specs(poly_function_instance, replacements);
 
-        assert(false);
+
+        auto was_resolving = resolver->current_func_decl;
+        resolver->current_func_decl = nullptr;
+        result &= try_resolve_declaration(resolver, poly_function_instance,
+                                          poly_func_decl->function.argument_scope->parent);
+        resolver->current_func_decl = was_resolving;
+
+
+        if (result)
+        {
+            if (poly_func_decl->location == AST_DECL_LOC_GLOBAL)
+            {
+                BUF_PUSH(resolver->module->global_declarations, poly_function_instance);
+            }
+
+            assert(poly_function_instance->function.type);
+            *func_decl_dest = poly_function_instance;
+
+            AST_Poly_Instance pi = { poly_hash, poly_function_instance };
+            BUF_PUSH(poly_func_decl->function.poly_instances, pi);
+        }
+
+        return result;
     }
 
     bool find_or_create_poly_struct_type(Resolver* resolver, AST_Declaration* type_decl,
@@ -99,17 +225,27 @@ namespace Zodiac
 
         poly_struct_decl = create_poly_struct_instance(resolver, type_decl, scope);
         assert(poly_struct_decl);
-        replace_poly_type_specs(type_decl, poly_struct_decl, type_spec);
+        replace_poly_type_specs(type_decl->aggregate_type.parameter_idents, poly_struct_decl,
+                                type_spec->identifier.poly_args);
 
         result &= try_resolve_declaration(resolver, poly_struct_decl, scope);
 
         if (result)
         {
             assert(poly_struct_decl->aggregate_type.type);
-            *type_dest = poly_struct_decl->aggregate_type.type;
+            auto poly_struct_type = poly_struct_decl->aggregate_type.type;
+            *type_dest = poly_struct_type;
 
-            AST_Aggregate_Poly ap = { poly_hash, poly_struct_decl };
-            BUF_PUSH(type_decl->aggregate_type.poly_instances, ap);
+            poly_struct_type->aggregate_type.poly_from = type_decl;
+
+            for (uint64_t i = 0; i < BUF_LENGTH(type_spec->identifier.poly_args); i++)
+            {
+                BUF_PUSH(poly_struct_type->aggregate_type.poly_types,
+                         type_spec->identifier.poly_args[i]);
+            }
+
+            AST_Poly_Instance pi = { poly_hash, poly_struct_decl };
+            BUF_PUSH(type_decl->aggregate_type.poly_instances, pi);
         }
 
         return result;
@@ -145,6 +281,17 @@ namespace Zodiac
 
         assert(poly_func_decl_dest);
         assert(*poly_func_decl_dest == nullptr);
+
+        auto instances = poly_func_decl->function.poly_instances;
+        for (uint64_t i = 0; i < BUF_LENGTH(instances); i++)
+        {
+            auto instance = instances[i];
+            if (poly_hash == instance.hash)
+            {
+                *poly_func_decl_dest = instance.instance;
+                return true;
+            }
+        }
 
         return false;
     }
@@ -311,6 +458,12 @@ namespace Zodiac
                                                 lvalue_copy, expr_copy);
             }
 
+            case AST_STMT_RETURN:
+            {
+                auto expr_copy = copy_expression(context, statement->return_expression);
+                return ast_return_statement_new(context, statement->file_pos, expr_copy);
+            }
+
             default: assert(false);
         }
     }
@@ -363,11 +516,19 @@ namespace Zodiac
                 return ast_sizeof_expression_new(context, expression->file_pos, type_spec_copy);
             }
 
-        case AST_EXPR_INTEGER_LITERAL:
-        {
-            return ast_integer_literal_expression_new(context, expression->file_pos,
-                                                      expression->integer_literal.u64);
-        }
+            case AST_EXPR_INTEGER_LITERAL:
+            {
+                return ast_integer_literal_expression_new(context, expression->file_pos,
+                                                        expression->integer_literal.u64);
+            }
+
+            case AST_EXPR_SUBSCRIPT:
+            {
+                auto base_copy = copy_expression(context, expression->subscript.base_expression);
+                auto index_copy = copy_expression(context, expression->subscript.index_expression);
+                return ast_subscript_expression_new(context, expression->file_pos,
+                                                    base_copy, index_copy);
+            }
 
             default: assert(false);
         }
@@ -383,8 +544,15 @@ namespace Zodiac
             case AST_TYPE_SPEC_IDENT:
             {
                 auto ident_copy = copy_identifier(context, type_spec->identifier.identifier);
+                BUF(AST_Type_Spec*) poly_args = nullptr;
+                for (uint64_t i = 0; i < BUF_LENGTH(type_spec->identifier.poly_args); i++)
+                {
+                    BUF_PUSH(poly_args, copy_type_spec(context,
+                                                       type_spec->identifier.poly_args[i]));
+                }
+
                 return ast_type_spec_identifier_new(context, type_spec->file_pos, ident_copy,
-                                                    type_spec->identifier.poly_args);
+                                                    poly_args);
             }
 
             case AST_TYPE_SPEC_POINTER:
@@ -405,46 +573,60 @@ namespace Zodiac
         return ast_identifier_new(context, identifier->atom, identifier->file_pos);
     }
 
-    void replace_poly_type_specs(AST_Declaration* poly_type_decl, AST_Declaration* type_decl,
-                                 AST_Type_Spec* type_spec)
+    void replace_poly_type_specs(AST_Declaration* poly_decl_instance,
+                                 BUF(Poly_Type_Spec_Replacement) replacements)
     {
-        assert(poly_type_decl);
-        assert(poly_type_decl->kind == AST_DECL_AGGREGATE_TYPE);
-        assert(poly_type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
-        assert(type_decl);
-        assert(type_decl->kind == AST_DECL_AGGREGATE_TYPE);
-        assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
-        assert(type_spec);
-        assert(type_spec->kind == AST_TYPE_SPEC_IDENT);
+        assert(poly_decl_instance);
+        assert(poly_decl_instance->kind == AST_DECL_FUNC);
+        assert(replacements);
 
-        auto poly_args = poly_type_decl->aggregate_type.parameter_idents;
-        auto agg_decls = type_decl->aggregate_type.aggregate_declarations;
-
-        for (uint64_t i = 0; i < BUF_LENGTH(poly_args); i++)
+        auto arg_decls = poly_decl_instance->function.args;
+        for (uint64_t i = 0; i < BUF_LENGTH(arg_decls); i++)
         {
-            auto poly_arg = poly_args[i];
-
-            for (uint64_t j = 0; j < BUF_LENGTH(agg_decls); j++)
-            {
-                auto agg_decl = agg_decls[j];
-                maybe_replace_poly_arg(poly_arg, i, agg_decl, type_spec);
-            }
+            auto arg_decl = arg_decls[i];
+            maybe_replace_poly_type_spec(&arg_decl->mutable_decl.type_spec, replacements);
         }
+
+        if (poly_decl_instance->function.return_type_spec)
+        {
+            maybe_replace_poly_type_spec(&poly_decl_instance->function.return_type_spec,
+                                         replacements);
+        }
+
+        if (poly_decl_instance->function.body_block)
+        {
+            replace_poly_type_specs(poly_decl_instance->function.body_block, replacements);
+        }
+
     }
 
-    void maybe_replace_poly_arg(AST_Identifier* poly_name, uint64_t poly_index,
-                                AST_Declaration* poly_decl, AST_Type_Spec* poly_args_ts)
+    void replace_poly_type_specs(AST_Statement* statement,
+                                 BUF(Poly_Type_Spec_Replacement) replacements)
     {
-        assert(poly_name);
-        assert(poly_decl);
-        assert(poly_args_ts);
+        assert(statement);
+        assert(replacements);
 
-        switch (poly_decl->kind)
+        switch (statement->kind)
         {
-            case AST_DECL_MUTABLE:
+            case AST_STMT_BLOCK:
             {
-                maybe_replace_poly_arg(poly_name, poly_index, &poly_decl->mutable_decl.type_spec,
-                                       poly_args_ts);
+                for (uint64_t i = 0; i < BUF_LENGTH(statement->block.statements); i++)
+                {
+                    replace_poly_type_specs(statement->block.statements[i], replacements);
+                }
+                break;
+            }
+
+            case AST_STMT_ASSIGN:
+            {
+                replace_poly_type_specs(statement->assign.lvalue_expression, replacements);
+                replace_poly_type_specs(statement->assign.expression, replacements);
+                break;
+            }
+
+            case AST_STMT_RETURN:
+            {
+                replace_poly_type_specs(statement->return_expression, replacements);
                 break;
             }
 
@@ -452,20 +634,191 @@ namespace Zodiac
         }
     }
 
-    void maybe_replace_poly_arg(AST_Identifier* poly_name, uint64_t poly_index,
-                                AST_Type_Spec** poly_type_spec, AST_Type_Spec* poly_args_ts)
+    void replace_poly_type_specs(AST_Expression* expression,
+                                 BUF(Poly_Type_Spec_Replacement) replacements)
+    {
+        assert(expression);
+        assert(replacements);
+
+        switch (expression->kind)
+        {
+            case AST_EXPR_DOT:
+            {
+                replace_poly_type_specs(expression->dot.base_expression, replacements);
+                replace_poly_type_specs(expression->dot.member_expression, replacements);
+                break;
+            }
+
+            case AST_EXPR_CALL:
+            {
+                replace_poly_type_specs(expression->call.ident_expression, replacements);
+                for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
+                {
+                    replace_poly_type_specs(expression->call.arg_expressions[i], replacements);
+                }
+                break;
+            }
+
+            case AST_EXPR_BINARY:
+            {
+                replace_poly_type_specs(expression->binary.lhs, replacements);
+                replace_poly_type_specs(expression->binary.rhs, replacements);
+                break;
+            }
+
+            case AST_EXPR_SIZEOF:
+            {
+                maybe_replace_poly_type_spec(&expression->sizeof_expr.type_spec, replacements);
+                break;
+            }
+
+            case AST_EXPR_SUBSCRIPT:
+            {
+                replace_poly_type_specs(expression->subscript.base_expression, replacements);
+                replace_poly_type_specs(expression->subscript.index_expression, replacements);
+                break;
+            }
+
+            case AST_EXPR_IDENTIFIER:
+            case AST_EXPR_INTEGER_LITERAL:
+            {
+                break;
+            }
+
+            default: assert(false);
+        }
+    }
+
+    void replace_poly_type_specs(BUF(AST_Identifier*) poly_type_names, AST_Declaration* type_decl,
+                                 BUF(AST_Type_Spec*) given_type_specs)
+    {
+        assert(poly_type_names);
+        assert(type_decl);
+        assert(given_type_specs);
+        assert(BUF_LENGTH(poly_type_names) == BUF_LENGTH(given_type_specs));
+
+        switch (type_decl->kind)
+        {
+            case AST_DECL_AGGREGATE_TYPE:
+            {
+                assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
+
+                auto agg_decls = type_decl->aggregate_type.aggregate_declarations;
+
+
+                for (uint64_t i = 0; i < BUF_LENGTH(poly_type_names); i++)
+                {
+                    auto poly_arg = poly_type_names[i];
+
+                    for (uint64_t j = 0; j < BUF_LENGTH(agg_decls); j++)
+                    {
+                        auto agg_decl = agg_decls[j];
+                        maybe_replace_poly_arg(poly_arg, agg_decl, given_type_specs[i]);
+                    }
+                }
+                break;
+            }
+
+            case AST_DECL_FUNC:
+            {
+                for (uint64_t i = 0; i < BUF_LENGTH(poly_type_names); i++)
+                {
+                    auto poly_name = poly_type_names[i];
+                    auto arg_decls=  type_decl->function.args;
+
+                    for (uint64_t j = 0; j < BUF_LENGTH(arg_decls); j++)
+                    {
+                        auto arg_decl = arg_decls[j];
+                        maybe_replace_poly_arg(poly_name, arg_decl, given_type_specs[i]);
+                    }
+                }
+                break;
+            }
+
+            default: assert(false);
+        }
+
+    }
+
+    void maybe_replace_poly_type_spec(AST_Type_Spec** target_ts,
+                                      BUF(Poly_Type_Spec_Replacement) replacements)
+    {
+        assert(target_ts);
+        assert(replacements);
+
+        AST_Type_Spec* type_spec = *target_ts;
+
+        switch (type_spec->kind)
+        {
+            case AST_TYPE_SPEC_IDENT:
+            {
+                if (type_spec->identifier.poly_args)
+                {
+                    for (uint64_t i = 0; i < BUF_LENGTH(type_spec->identifier.poly_args); i++)
+                    {
+                        maybe_replace_poly_type_spec(&type_spec->identifier.poly_args[i],
+                                                     replacements);
+                    }
+                }
+                else
+                {
+                    for (uint64_t i = 0; i < BUF_LENGTH(replacements); i++)
+                    {
+                        auto replacement = replacements[i];
+                        if (replacement.poly_name == type_spec->identifier.identifier->atom)
+                        {
+                            *target_ts = replacement.replacement;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+
+            case AST_TYPE_SPEC_POINTER:
+            {
+                maybe_replace_poly_type_spec(&type_spec->pointer.base, replacements);
+                break;
+            }
+
+            default: assert(false);
+        }
+    }
+
+    void maybe_replace_poly_arg(AST_Identifier* poly_name, AST_Declaration* poly_decl,
+                                AST_Type_Spec* given_type_spec)
+    {
+        assert(poly_name);
+        assert(poly_decl);
+        assert(given_type_spec);
+
+        switch (poly_decl->kind)
+        {
+            case AST_DECL_MUTABLE:
+            {
+                maybe_replace_poly_arg(poly_name, &poly_decl->mutable_decl.type_spec,
+                                       given_type_spec);
+                break;
+            }
+
+            default: assert(false);
+        }
+    }
+
+    void maybe_replace_poly_arg(AST_Identifier* poly_name, AST_Type_Spec** poly_type_spec,
+                                AST_Type_Spec* given_type_spec)
     {
         assert(poly_name);
         assert(poly_type_spec);
         auto pts = *poly_type_spec;
-        assert(poly_args_ts);
-        assert(poly_args_ts->kind == AST_TYPE_SPEC_IDENT);
+        assert(given_type_spec);
+        // assert(given_type_spec->kind == AST_TYPE_SPEC_IDENT);
 
         switch (pts->kind)
         {
             case AST_TYPE_SPEC_POINTER:
             {
-                maybe_replace_poly_arg(poly_name, poly_index, &pts->pointer.base, poly_args_ts);
+                maybe_replace_poly_arg(poly_name, &pts->pointer.base, given_type_spec);
                 break;
             }
 
@@ -473,7 +826,7 @@ namespace Zodiac
             {
                 if (poly_name->atom == pts->identifier.identifier->atom)
                 {
-                    *poly_type_spec = poly_args_ts->identifier.poly_args[poly_index];
+                    *poly_type_spec = given_type_spec;
                 }
                 break;
             }

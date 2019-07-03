@@ -41,9 +41,15 @@ Array :: struct(T)
     capacity : u64;
 }
 
-array_init :: (array: *Array($T), initial_size: u64)
+array_init :: (array: *Array($T), initial_capacity: u64)
 {
     array.data = _c.malloc(sizeof(T)  * initial_capacity);
     array.count = 0;
     array.capacity = initial_capacity;
+}
+
+array_add :: (array: *Array($T), element: T)
+{
+    array.data[array.count] = element;
+    array.count = array.count + 1;
 }

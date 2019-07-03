@@ -302,6 +302,7 @@ namespace Zodiac
         result->function.overloads = nullptr;
         result->function.is_poly = is_poly;
         result->function.poly_count = 0;
+        result->function.poly_instances = nullptr;
 
         result->function.argument_scope = argument_scope;
         if (body_block)
@@ -786,6 +787,8 @@ namespace Zodiac
         AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE, name,
                                         bit_size);
         result->aggregate_type.member_declarations = member_declarations;
+        result->aggregate_type.poly_from = nullptr;
+        result->aggregate_type.poly_types = nullptr;
 
         return result;
     }
@@ -922,6 +925,54 @@ namespace Zodiac
         result->function.arg_scope = arg_scope;
 
         return result;
+    }
+
+    AST_Type_Spec* ast_type_spec_from_type_new(Context* context, File_Pos file_pos, AST_Type* type)
+    {
+        assert(context);
+        assert(type);
+
+        switch (type->kind)
+        {
+            case AST_TYPE_POINTER:
+            {
+                auto base_type_spec = ast_type_spec_from_type_new(context, file_pos,
+                                                                  type->pointer.base);
+                return ast_type_spec_pointer_new(context, file_pos, base_type_spec);
+            }
+
+            case AST_TYPE_STRUCT:
+            {
+                assert(type->name);
+                BUF(AST_Type_Spec*) poly_args = nullptr;
+                AST_Identifier* identifier = nullptr;
+                if (type->aggregate_type.poly_from)
+                {
+                    assert(type->aggregate_type.poly_from->identifier);
+                    identifier =
+                        ast_identifier_new(context,
+                                           type->aggregate_type.poly_from->identifier->atom,
+                                           file_pos);
+                }
+                else
+                {
+                    auto ident_atom = atom_get(context->atom_table, type->name);
+                    identifier = ast_identifier_new(context, ident_atom, file_pos);
+                }
+                assert(identifier);
+                return ast_type_spec_identifier_new(context, file_pos, identifier, poly_args);
+            }
+
+            case AST_TYPE_BASE:
+            {
+                assert(type->name);
+                Atom ident_atom = atom_get(context->atom_table, type->name);
+                AST_Identifier* identifier = ast_identifier_new(context, ident_atom, file_pos);
+                return ast_type_spec_identifier_new(context, file_pos, identifier);
+            }
+
+            default: assert(false);
+        }
     }
 
 	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
