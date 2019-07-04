@@ -18,6 +18,7 @@ namespace Zodiac
         stack_init(&ir_runner->arg_stack, 8);
         ir_runner->jump_block = nullptr;
         ir_runner->returned = false;
+        ir_runner->asserted = false;
 
         ir_runner->dyn_vm = dcNewCallVM(MB(4));
         dcMode(ir_runner->dyn_vm, DC_CALL_C_DEFAULT);
@@ -314,6 +315,10 @@ namespace Zodiac
             ir_runner_push_ex_call_arg(runner, arg_value, arg_type->aggregate_type.base_type,
                                        is_vararg);
         }
+        else if (arg_type == Builtin::type_bool)
+        {
+            dcArgBool(runner->dyn_vm, arg_value->value.boolean);
+        }
         else assert(false);
     }
 
@@ -377,6 +382,11 @@ namespace Zodiac
             if (runner->returned)
             {
                 runner->returned = false;
+                break;
+            }
+
+            if (runner->asserted)
+            {
                 break;
             }
 
@@ -1625,6 +1635,29 @@ namespace Zodiac
                 assert(iri->result->type->kind == AST_TYPE_POINTER);
                 result_pointer_value->type = iri->result->type;
                 result_pointer_value->value.struct_pointer = result_pointer;
+                break;
+            }
+
+            case IR_OP_ASSERT:
+            {
+                IR_Value* assert_value = ir_runner_get_local_temporary(runner, iri->arg1);
+                if (!assert_value->value.u64)
+                {
+                    IR_Function* ir_func = stack_top(runner->call_stack)->function;
+                    const char* function_name = ir_func->name;
+                    if (ir_func->type->function.poly_from)
+                    {
+                        function_name = ir_func->type->function.poly_from->identifier->atom.data;
+                    }
+
+                    fprintf(stderr, "Assertion failed in function: %s\n", function_name);
+
+                    runner->asserted = true;
+                    while (stack_count(runner->call_stack))
+                    {
+                        stack_pop(runner->call_stack);
+                    }
+                }
                 break;
             }
 

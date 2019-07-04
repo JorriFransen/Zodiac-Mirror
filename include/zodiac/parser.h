@@ -96,7 +96,7 @@ namespace Zodiac
 
     static bool is_add_op(Parser* parser);
     static bool is_mul_op(Parser* parser);
-    static bool is_cmp_op(Parser* parser);
+    bool is_cmp_op(Parser* parser);
     static bool is_unary_op(Parser* parser);
     static AST_Binop_Kind parse_add_op(Parser* parser);
     static AST_Binop_Kind parse_mul_op(Parser* parser);

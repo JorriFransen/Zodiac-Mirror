@@ -940,7 +940,7 @@ namespace Zodiac
                     {
                         suggested_type = statement->assign.lvalue_expression->type;
                     }
-                    else if (lvalue_expr->type->kind == AST_TYPE_STATIC_ARRAY)
+                    else 
                     {
                         suggested_type = lvalue_expr->type;
                     }
@@ -1000,6 +1000,9 @@ namespace Zodiac
                                                  scope);
                 break;
             }
+
+
+
 
             case AST_STMT_WHILE:
             {
@@ -1094,6 +1097,20 @@ namespace Zodiac
                 result &= try_resolve_insert_statement(resolver, statement, scope, break_context);
                 break;
             };
+
+            case AST_STMT_ASSERT:
+            {
+                auto assert_expr = statement->assert_expression;
+                result &= try_resolve_expression(resolver, assert_expr, scope);
+                if (result)
+                {
+                    assert(assert_expr->type);
+                    assert(assert_expr->type == Builtin::type_bool ||
+                           assert_expr->type->kind == AST_TYPE_POINTER ||
+                           assert_expr->type->flags & AST_TYPE_FLAG_INT);
+                }
+                break;
+            }
 
             default:
                 assert(false);
@@ -2019,7 +2036,11 @@ namespace Zodiac
 
         if (result && !expression->type)
         {
-            if (lhs->type == rhs->type)
+            if (is_cmp_op(expression->binary.op))
+            {
+                expression->type = Builtin::type_bool;
+            }
+            else if (lhs->type == rhs->type)
             {
                 expression->type = lhs->type;
             }

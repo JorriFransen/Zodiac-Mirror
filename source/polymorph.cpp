@@ -164,6 +164,9 @@ namespace Zodiac
                 BUF_PUSH(resolver->module->global_declarations, poly_function_instance);
             }
 
+            auto func_type = poly_function_instance->function.type;
+            func_type->function.poly_from = poly_func_decl;
+
             assert(poly_function_instance->function.type);
             *func_decl_dest = poly_function_instance;
 
@@ -496,6 +499,12 @@ namespace Zodiac
                 return ast_call_statement_new(context, call_expr_copy);
             }
 
+            case AST_STMT_ASSERT:
+            {
+                auto assert_expr_copy = copy_expression(context, statement->assert_expression);
+                return ast_assert_statement_new(context, statement->file_pos, assert_expr_copy);
+            }
+
             default: assert(false);
         }
     }
@@ -569,6 +578,30 @@ namespace Zodiac
                 auto expr_copy = copy_expression(context, expression->cast_expr.expr);
                 return ast_cast_expression_new(context, expression->file_pos, type_spec_copy,
                                                expr_copy);
+            }
+
+            case AST_EXPR_NULL_LITERAL:
+            {
+                return ast_null_literal_expression_new(context, expression->file_pos);
+            }
+
+            case AST_EXPR_STRING_LITERAL:
+            {
+                return ast_string_literal_expression_new(context, expression->file_pos,
+                                                         expression->string_literal.atom);
+            }
+
+            case AST_EXPR_BOOL_LITERAL:
+            {
+                return ast_boolean_literal_expression_new(context, expression->file_pos,
+                                                        expression->bool_literal.boolean);
+            }
+
+            case AST_EXPR_FLOAT_LITERAL:
+            {
+                return ast_float_literal_expression_new(context, expression->file_pos,
+                                                        expression->float_literal.r32,
+                                                        expression->float_literal.r64);
             }
 
             default: assert(false);
@@ -717,6 +750,11 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_ASSERT:
+            {
+                replace_poly_type_specs(statement->assert_expression, replacements);
+                break;
+            }
             default: assert(false);
         }
     }
@@ -775,6 +813,10 @@ namespace Zodiac
 
             case AST_EXPR_IDENTIFIER:
             case AST_EXPR_INTEGER_LITERAL:
+            case AST_EXPR_NULL_LITERAL:
+            case AST_EXPR_FLOAT_LITERAL:
+            case AST_EXPR_STRING_LITERAL:
+            case AST_EXPR_BOOL_LITERAL:
             {
                 break;
             }

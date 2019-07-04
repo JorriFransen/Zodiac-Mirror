@@ -1,3 +1,8 @@
+//
+//    overloading poly functions
+//    operator overloading
+//    asserts
+//
 
 std :: import std;
 using std;
@@ -9,11 +14,13 @@ add :: (a: $T, b: T) -> T
 
 main :: ()
 {
-    // test : u64 = 4;
-    // test = 8;
+    // assert(false);
+
     _c.printf("add(1, 2): %d\n", add(1, 2));
     _c.printf("add(4, 8): %d\n", add(4, 8));
     _c.printf("add(1.2, 3.4): %f\n", add(1.2, 3.4));
+
+    print(" ");
 
     c_string := "This is a test string";
     print(std.string_length("abc"));
@@ -25,12 +32,11 @@ main :: ()
     print("This should work as well");
     print(c_string);
 
+    print(" ");
+
     int_array : Array(int);
     float_array : Array(float);
     int_array2 : Array(int);
-    // array_init(*int_array, 5);
-    // array_init(*int_array2, 5);
-    // array_init(*float_array, 5);
 
     for (i : u64 = 0; i < 5; i = i + 1)
     {
@@ -43,16 +49,26 @@ main :: ()
     for (i : u64 = 0; i < int_array.count; i = i + 1)
     {
         _c.printf("int_array[%d]: %d\n", i, int_array.data[i]);
+        array_add(*int_array2, array_index(int_array, i));
     }
+
+    print(" ");
 
     for (i : u64 = 0; i < float_array.count; i = i + 1)
     {
         _c.printf("float_array[%d]: %f\n", i, float_array.data[i]);
+        array_add(*int_array2, (:int)float_array.data[i]);
     }
+
+    print(" ");
 
     for (i : u64 = 0; i < int_array2.count; i = i + 1)
     {
         _c.printf("int_array2[%d]: %d\n", i, int_array2.data[i]);
     }
+
+    array_free(*int_array);
+    array_free(*int_array2);
+    array_free(*float_array);
 }
 

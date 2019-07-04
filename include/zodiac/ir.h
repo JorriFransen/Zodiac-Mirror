@@ -136,6 +136,7 @@ namespace Zodiac
         IR_OP_AGGREGATE_OFFSET_POINTER,
 
 		IR_OP_CAST,
+        IR_OP_ASSERT,
     };
 
     struct IR_Instruction
@@ -334,6 +335,8 @@ namespace Zodiac
     IR_Value* ir_builder_emit_lvalue(IR_Builder* ir_builder, AST_Expression* lvalue_expr);
 
     IR_Value* ir_builder_emit_cast(IR_Builder* ir_builder, IR_Value* value, AST_Type* type);
+
+    void ir_builder_emit_assert(IR_Builder* ir_builder, IR_Value* assert_value);
 
     IR_Value* ir_builder_emit_zero_literal(IR_Builder* ir_builder, AST_Type* type);
     IR_Value* ir_boolean_literal(IR_Builder* ir_builder, AST_Type* type, bool value);

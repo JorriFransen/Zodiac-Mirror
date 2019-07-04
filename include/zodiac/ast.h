@@ -206,6 +206,7 @@ namespace Zodiac
         AST_STMT_SWITCH,
         AST_STMT_BREAK,
         AST_STMT_INSERT,
+        AST_STMT_ASSERT,
     };
 
     typedef uint64_t _AST_STMT_FLAGS_;
@@ -282,6 +283,8 @@ namespace Zodiac
                 AST_Statement* statement;
                 AST_Statement* gen_statement;
             } insert;
+
+            AST_Expression* assert_expression;
         };
     };
 
@@ -501,6 +504,7 @@ namespace Zodiac
                 bool is_vararg;
                 BUF(AST_Type*) arg_types;
                 AST_Type* return_type;
+                AST_Declaration* poly_from;
             } function;
         };
     };
@@ -716,6 +720,8 @@ namespace Zodiac
     AST_Statement* ast_break_statement_new(Context* context, File_Pos file_pos);
     AST_Statement* ast_insert_statement_new(Context* context, File_Pos file_pos,
                                             AST_Statement* statement);
+    AST_Statement* ast_assert_statement_new(Context* context, File_Pos file_pos,
+                                            AST_Expression* assert_expr);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
                            const char* name, uint64_t bit_size);
@@ -773,4 +779,6 @@ namespace Zodiac
     void ast_grow_type_hash(Context* context);
 
     const char* ast_type_to_string(AST_Type* type);
+
+    bool is_cmp_op(AST_Binop_Kind binop);
 }

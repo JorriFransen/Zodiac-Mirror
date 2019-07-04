@@ -726,6 +726,21 @@ namespace Zodiac
         return result;
     }
 
+    AST_Statement* ast_assert_statement_new(Context* context, File_Pos file_pos,
+                                            AST_Expression* assert_expr)
+    {
+        assert(context);
+        assert(assert_expr);
+
+        AST_Statement* result = arena_alloc(context->arena, AST_Statement);
+        result->kind = AST_STMT_ASSERT;
+        result->file_pos = file_pos;
+
+        result->assert_expression = assert_expr;
+
+        return result;
+    }
+
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
                            const char* name, uint64_t bit_size)
     {
@@ -820,6 +835,7 @@ namespace Zodiac
         result->function.is_vararg = is_vararg;
         result->function.arg_types = arg_types;
         result->function.return_type = return_type;
+        result->function.poly_from = nullptr;
 
         return result;
     }
@@ -1550,5 +1566,24 @@ namespace Zodiac
         }
 
         return  result;
+    }
+
+    bool is_cmp_op(AST_Binop_Kind binop)
+    {
+        switch (binop)
+        {
+            case AST_BINOP_EQ:
+            case AST_BINOP_LT:
+            case AST_BINOP_LTEQ:
+            case AST_BINOP_GT:
+            case AST_BINOP_GTEQ:
+            case AST_BINOP_NEQ:
+            case AST_BINOP_AND_AND:
+            case AST_BINOP_OR_OR:
+                return true;
+
+            default:
+                return false;
+        }
     }
 }

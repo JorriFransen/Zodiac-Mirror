@@ -553,7 +553,17 @@ namespace Zodiac
             case AST_STMT_INSERT:
             {
                 assert(statement->insert.gen_statement);
-                ir_builder_emit_statement(ir_builder, statement->insert.gen_statement, break_block);
+                ir_builder_emit_statement(ir_builder, statement->insert.gen_statement,
+                                          break_block);
+                break;
+            }
+
+            case AST_STMT_ASSERT:
+            {
+                IR_Value* assert_value = ir_builder_emit_expression(ir_builder,
+                                                                    statement->assert_expression);
+                ir_builder_emit_assert(ir_builder, assert_value);
+
                 break;
             }
 
@@ -2759,6 +2769,16 @@ namespace Zodiac
         return result;
     }
 
+    void ir_builder_emit_assert(IR_Builder* ir_builder, IR_Value* assert_value)
+    {
+        assert(ir_builder);
+        assert(assert_value);
+
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_ASSERT, assert_value, nullptr,
+                                                 nullptr);
+        ir_builder_emit_instruction(ir_builder, iri);
+    }
+
     IR_Value* ir_builder_emit_zero_literal(IR_Builder* ir_builder, AST_Type* type)
     {
         assert(ir_builder);
@@ -3506,6 +3526,13 @@ namespace Zodiac
 				ir_print_type(instruction->result->type);
 				break;
 			}
+
+            case IR_OP_ASSERT:
+            {
+                printf("ASSERT ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
 
             default: assert(false);
 

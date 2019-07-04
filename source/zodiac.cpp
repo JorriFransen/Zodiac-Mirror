@@ -386,6 +386,7 @@ namespace Zodiac
         DEFINE_KW("while", TOK_KW_WHILE);
         DEFINE_KW("for", TOK_KW_FOR);
         DEFINE_KW("array_length", TOK_KW_ARRAY_LENGTH);
+        DEFINE_KW("assert", TOK_KW_ASSERT);
         DEFINE_KW("static_assert", TOK_KW_STATIC_ASSERT);
         DEFINE_KW("import", TOK_KW_IMPORT);
         DEFINE_KW("struct", TOK_KW_STRUCT);

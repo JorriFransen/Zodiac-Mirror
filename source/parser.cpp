@@ -629,6 +629,21 @@ namespace Zodiac
                 return ast_declaration_statement_new(parser->context, ft.file_pos, decl);
             }
 
+            case TOK_KW_ASSERT:
+            {
+                auto ft = current_token(parser);
+                consume_token(parser);
+
+                expect_token(parser, TOK_LPAREN);
+
+                AST_Expression* assert_expr = parse_expression(parser, scope);
+
+                expect_token(parser, TOK_RPAREN);
+                expect_token(parser, TOK_SEMICOLON);
+
+                return ast_assert_statement_new(parser->context, ft.file_pos, assert_expr);
+            };
+
             case TOK_POUND:
             {
                 auto ft = current_token(parser);
@@ -1269,6 +1284,7 @@ namespace Zodiac
     static AST_Expression* parse_compound_literal_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
+        assert(scope);
 
         auto ft = current_token(parser);
         expect_token(parser, TOK_LBRACE);
@@ -1513,7 +1529,7 @@ namespace Zodiac
         return ct.kind == TOK_MUL || ct.kind == TOK_DIV || ct.kind == TOK_PERCENT;
     }
 
-    static bool is_cmp_op(Parser* parser)
+    bool is_cmp_op(Parser* parser)
     {
         assert(parser);
 
