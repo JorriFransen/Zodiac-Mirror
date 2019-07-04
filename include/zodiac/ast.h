@@ -179,11 +179,11 @@ namespace Zodiac
                 AST_Declaration* declaration;
             } dot;
 
-			struct
-			{
-				AST_Type_Spec* type_spec;
-				AST_Expression* expr;
-			} cast_expr;
+            struct
+            {
+                AST_Type_Spec* type_spec;
+                AST_Expression* expr;
+            } cast_expr;
 
             struct
             {
@@ -629,8 +629,9 @@ namespace Zodiac
     AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos,
                                            AST_Expression* base_expr,
                                            AST_Expression* member_expr);
-	AST_Expression* ast_cast_expression_new(Context* context, File_Pos file_pos,
-		AST_Type_Spec* type_spec, AST_Expression* cast_expr);
+    AST_Expression* ast_cast_expression_new(Context* context, File_Pos file_pos,
+                                            AST_Type_Spec* type_spec,
+                                            AST_Expression* cast_expr);
 
     AST_Declaration* ast_declaration_new(Context* context, File_Pos file_Pos,
                                          AST_Declaration_Kind kind,

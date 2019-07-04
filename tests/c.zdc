@@ -32,6 +32,7 @@ stderr : *FILE = null;
 
 #foreign malloc :: (size: u64) -> *void;
 #foreign free   :: (mem: *void);
+#foreign memcpy :: (dest: *void, source: *void, count: u64) -> *void;
 
 #foreign sqrt :: (x: double) -> double;
 #foreign sinf :: (x: float) -> float;

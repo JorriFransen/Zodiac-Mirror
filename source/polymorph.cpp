@@ -416,16 +416,23 @@ namespace Zodiac
     {
         assert(context);
         assert(declaration);
-        assert(declaration->kind == AST_DECL_MUTABLE);
 
-        assert(!declaration->mutable_decl.init_expression);
+        switch (declaration->kind)
+        {
+            case AST_DECL_MUTABLE:
+            {
+                AST_Identifier* identifier = copy_identifier(context, declaration->identifier);
+                AST_Type_Spec* type_spec = copy_type_spec(context,
+                                                          declaration->mutable_decl.type_spec);
+                auto init_copy = copy_expression(context,
+                                                 declaration->mutable_decl.init_expression);
+                return ast_mutable_declaration_new(context, declaration->file_pos, identifier,
+                                                   type_spec, init_copy,
+                                                   declaration->location);
+            }
 
-        AST_Identifier* identifier = copy_identifier(context, declaration->identifier);
-        AST_Type_Spec* type_spec = copy_type_spec(context, declaration->mutable_decl.type_spec);
-
-        return ast_mutable_declaration_new(context, declaration->file_pos, identifier,
-                                           type_spec, nullptr,
-                                           declaration->location);
+            default: assert(false);
+        }
     }
 
     AST_Statement* copy_statement(Context* context, AST_Statement* statement,
@@ -443,7 +450,7 @@ namespace Zodiac
                 for (uint64_t i = 0; i < BUF_LENGTH(statement->block.statements); i++)
                 {
                     auto block_stmt_copy = copy_statement(context, statement->block.statements[i],
-                                                          nullptr);
+                                                          scope);
                     BUF_PUSH(block_statements, block_stmt_copy);
                 }
                 return ast_block_statement_new(context, statement->file_pos, block_statements,
@@ -464,6 +471,31 @@ namespace Zodiac
                 return ast_return_statement_new(context, statement->file_pos, expr_copy);
             }
 
+            case AST_STMT_IF:
+            {
+                auto cond_copy = copy_expression(context, statement->if_stmt.if_expression);
+                auto then_copy = copy_statement(context, statement->if_stmt.then_statement, scope);
+                AST_Statement* else_copy = nullptr;
+                if (statement->if_stmt.else_statement)
+                {
+                    else_copy = copy_statement(context, statement->if_stmt.else_statement, scope);
+                }
+                return ast_if_statement_new(context, statement->file_pos, cond_copy,
+                                            then_copy, else_copy);
+            }
+
+            case AST_STMT_DECLARATION:
+            {
+                auto decl_copy = copy_declaration(context, statement->declaration);
+                return ast_declaration_statement_new(context, statement->file_pos, decl_copy);
+            }
+
+            case AST_STMT_CALL:
+            {
+                auto call_expr_copy = copy_expression(context, statement->call_expression);
+                return ast_call_statement_new(context, call_expr_copy);
+            }
+
             default: assert(false);
         }
     }
@@ -471,7 +503,8 @@ namespace Zodiac
     AST_Expression* copy_expression(Context* context, AST_Expression* expression)
     {
         assert(context);
-        assert(expression);
+
+        if (!expression) return nullptr;
 
         switch (expression->kind)
         {
@@ -530,6 +563,14 @@ namespace Zodiac
                                                     base_copy, index_copy);
             }
 
+            case AST_EXPR_CAST:
+            {
+                auto type_spec_copy = copy_type_spec(context, expression->cast_expr.type_spec);
+                auto expr_copy = copy_expression(context, expression->cast_expr.expr);
+                return ast_cast_expression_new(context, expression->file_pos, type_spec_copy,
+                                               expr_copy);
+            }
+
             default: assert(false);
         }
     }
@@ -537,7 +578,8 @@ namespace Zodiac
     AST_Type_Spec* copy_type_spec(Context* context, AST_Type_Spec* type_spec)
     {
         assert(context);
-        assert(type_spec);
+
+        if (!type_spec) return nullptr;
 
         switch (type_spec->kind)
         {
@@ -577,27 +619,49 @@ namespace Zodiac
                                  BUF(Poly_Type_Spec_Replacement) replacements)
     {
         assert(poly_decl_instance);
-        assert(poly_decl_instance->kind == AST_DECL_FUNC);
         assert(replacements);
 
-        auto arg_decls = poly_decl_instance->function.args;
-        for (uint64_t i = 0; i < BUF_LENGTH(arg_decls); i++)
+        switch (poly_decl_instance->kind)
         {
-            auto arg_decl = arg_decls[i];
-            maybe_replace_poly_type_spec(&arg_decl->mutable_decl.type_spec, replacements);
-        }
+            case AST_DECL_FUNC:
+            {
+                auto arg_decls = poly_decl_instance->function.args;
+                for (uint64_t i = 0; i < BUF_LENGTH(arg_decls); i++)
+                {
+                    auto arg_decl = arg_decls[i];
+                    maybe_replace_poly_type_spec(&arg_decl->mutable_decl.type_spec, replacements);
+                }
 
-        if (poly_decl_instance->function.return_type_spec)
-        {
-            maybe_replace_poly_type_spec(&poly_decl_instance->function.return_type_spec,
-                                         replacements);
-        }
+                if (poly_decl_instance->function.return_type_spec)
+                {
+                    maybe_replace_poly_type_spec(&poly_decl_instance->function.return_type_spec,
+                                                 replacements);
+                }
 
-        if (poly_decl_instance->function.body_block)
-        {
-            replace_poly_type_specs(poly_decl_instance->function.body_block, replacements);
-        }
+                if (poly_decl_instance->function.body_block)
+                {
+                    replace_poly_type_specs(poly_decl_instance->function.body_block, replacements);
+                }
+                break;
+            }
 
+            case AST_DECL_MUTABLE:
+            {
+                auto mut = &poly_decl_instance->mutable_decl;
+                if (mut->type_spec)
+                {
+                    maybe_replace_poly_type_spec(&mut->type_spec, replacements);
+                }
+
+                if (mut->init_expression)
+                {
+                    replace_poly_type_specs(mut->init_expression, replacements);
+                }
+                break;
+            }
+
+            default: assert(false);
+        }
     }
 
     void replace_poly_type_specs(AST_Statement* statement,
@@ -627,6 +691,29 @@ namespace Zodiac
             case AST_STMT_RETURN:
             {
                 replace_poly_type_specs(statement->return_expression, replacements);
+                break;
+            }
+
+            case AST_STMT_IF:
+            {
+                replace_poly_type_specs(statement->if_stmt.if_expression, replacements);
+                replace_poly_type_specs(statement->if_stmt.then_statement, replacements);
+                if (statement->if_stmt.else_statement)
+                {
+                    replace_poly_type_specs(statement->if_stmt.else_statement, replacements);
+                }
+                break;
+            }
+
+            case AST_STMT_DECLARATION:
+            {
+                replace_poly_type_specs(statement->declaration, replacements);
+                break;
+            }
+
+            case AST_STMT_CALL:
+            {
+                replace_poly_type_specs(statement->call_expression, replacements);
                 break;
             }
 
@@ -676,6 +763,13 @@ namespace Zodiac
             {
                 replace_poly_type_specs(expression->subscript.base_expression, replacements);
                 replace_poly_type_specs(expression->subscript.index_expression, replacements);
+                break;
+            }
+
+            case AST_EXPR_CAST:
+            {
+                maybe_replace_poly_type_spec(&expression->cast_expr.type_spec, replacements);
+                replace_poly_type_specs(expression->cast_expr.expr, replacements);
                 break;
             }
 

@@ -9,6 +9,8 @@ add :: (a: $T, b: T) -> T
 
 main :: ()
 {
+    // test : u64 = 4;
+    // test = 8;
     _c.printf("add(1, 2): %d\n", add(1, 2));
     _c.printf("add(4, 8): %d\n", add(4, 8));
     _c.printf("add(1.2, 3.4): %f\n", add(1.2, 3.4));
@@ -26,9 +28,9 @@ main :: ()
     int_array : Array(int);
     float_array : Array(float);
     int_array2 : Array(int);
-    array_init(*int_array, 5);
-    array_init(*int_array2, 5);
-    array_init(*float_array, 5);
+    // array_init(*int_array, 5);
+    // array_init(*int_array2, 5);
+    // array_init(*float_array, 5);
 
     for (i : u64 = 0; i < 5; i = i + 1)
     {

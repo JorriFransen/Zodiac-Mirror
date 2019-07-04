@@ -41,15 +41,35 @@ Array :: struct(T)
     capacity : u64;
 }
 
-array_init :: (array: *Array($T), initial_capacity: u64)
-{
-    array.data = _c.malloc(sizeof(T)  * initial_capacity);
-    array.count = 0;
-    array.capacity = initial_capacity;
-}
+// array_init :: (array: *Array($T), initial_capacity: u64)
+// {
+//     array.data = _c.malloc(sizeof(T)  * initial_capacity);
+//     array.count = 0;
+//     array.capacity = initial_capacity;
+// }
 
 array_add :: (array: *Array($T), element: T)
 {
+    if (array.count >= array.capacity)
+    {
+        new_cap := array.capacity * 2;
+        if (new_cap < 8) new_cap = (:u64)8;
+        array_grow(array, new_cap);
+    }
+
     array.data[array.count] = element;
     array.count = array.count + 1;
+}
+
+array_grow :: (array: *Array($T), new_cap: u64)
+{
+    new_data := _c.malloc(sizeof(T) * new_cap);
+    if (array.data)
+    {
+        _c.memcpy(new_data, array.data, array.capacity * sizeof(T));
+        _c.free(array.data);
+    }
+    array.data = new_data;
+    array.capacity = new_cap;
+
 }

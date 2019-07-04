@@ -1166,6 +1166,7 @@ namespace Zodiac
                 IR_Value* pointer_value = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value* source_value = ir_runner_get_local_temporary(runner, iri->arg2);
                 void* pointer = (void*)pointer_value->value.s64;
+                assert(pointer);
                 AST_Type* dest_type = iri->arg1->type->pointer.base;
                 AST_Type* pointer_type = pointer_value->type;
                 AST_Type* pointer_base_type = pointer_type->pointer.base;
