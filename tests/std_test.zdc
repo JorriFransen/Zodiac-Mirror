@@ -26,6 +26,12 @@ main :: ()
     print(std.string_length("abc"));
     test_str : String = { c_string, _c.strlen(c_string) };
 
+    _c.printf("test_str.length: %llu\n", test_str.length);
+    _c.printf("test_str[2]: %c\n", test_str[2]);
+
+    // test_str_ptr := *test_str;
+    // tsp2 := test_str_ptr[2];
+
     print(test_str);
 
     print({ "This should work as well", 5 });
@@ -65,6 +71,7 @@ main :: ()
     for (i : u64 = 0; i < int_array2.count; i = i + 1)
     {
         _c.printf("int_array2[%d]: %d\n", i, int_array2[i]);
+
     }
 
     array_free(*int_array);

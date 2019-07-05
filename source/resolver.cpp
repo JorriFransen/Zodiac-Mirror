@@ -573,7 +573,8 @@ namespace Zodiac
 
         assert(!find_declaration(resolver->context, scope, declaration->identifier));
 
-        auto aggregate_decls = declaration->aggregate_type.aggregate_decl->members;
+        auto aggregate_decl = declaration->aggregate_type.aggregate_decl;
+        auto aggregate_decls = aggregate_decl->members;
         BUF(AST_Declaration*) pointers_to_self = nullptr;
         for (uint64_t i = 0; i < BUF_LENGTH(aggregate_decls); i++)
         {
@@ -607,12 +608,14 @@ namespace Zodiac
         {
             declaration->aggregate_type.type = create_struct_type(resolver,
                                                                   declaration->identifier,
-                                                                  aggregate_decls);
+                                                                  aggregate_decls,
+                                                                  aggregate_decl->index_overload);
 
             if (pointers_to_self)
             {
-                auto self_pointer_type = ast_find_or_create_pointer_type(resolver->context,
-                                                                        declaration->aggregate_type.type);
+                auto self_pointer_type =
+                    ast_find_or_create_pointer_type(resolver->context,
+                                                    declaration->aggregate_type.type);
 
                 for (uint64_t i = 0; i < BUF_LENGTH(pointers_to_self); i++)
                 {
@@ -1293,6 +1296,21 @@ namespace Zodiac
                     else if (base_expr->type->kind == AST_TYPE_STATIC_ARRAY)
                     {
                         expression->type = base_expr->type->static_array.base;
+                    }
+                    else if (base_expr->type->kind == AST_TYPE_STRUCT &&
+                        base_expr->type->aggregate_type.index_overload)
+                    {
+                        AST_Expression* call_expression = try_resolve_index_overload(resolver, expression,
+                                                                                     scope);
+                        if (!call_expression) return false;
+
+                        assert(call_expression->call.callee_declaration);
+                        AST_Declaration* callee_decl = call_expression->call.callee_declaration;
+                        assert(callee_decl->flags & AST_DECL_FLAG_RESOLVED);
+
+                        expression->type = callee_decl->function.return_type;
+
+                        expression->subscript.call_expression = call_expression;
                     }
                     else
                     {
@@ -2692,7 +2710,8 @@ namespace Zodiac
     }
 
     AST_Type* create_struct_type(Resolver* resolver, AST_Identifier* identifier,
-        BUF(AST_Declaration*) member_decls)
+                                 BUF(AST_Declaration*) member_decls,
+                                 AST_Identifier* index_overload)
     {
         assert(resolver);
         assert(identifier);
@@ -2721,7 +2740,7 @@ namespace Zodiac
 
         AST_Type* struct_type = ast_type_struct_new(resolver->context, member_decls,
                                                     identifier->atom.data,
-                                                    bit_size);
+                                                    bit_size, index_overload);
 
         assert(struct_type->bit_size || BUF_LENGTH(member_decls) == 0);
         return struct_type;
@@ -2973,6 +2992,55 @@ namespace Zodiac
                                                  BUF_LENGTH(container->function.overloads));
 
         BUF_PUSH(container->function.overloads, overload);
+    }
+
+    AST_Expression* try_resolve_index_overload(Resolver* resolver, AST_Expression* subscript_expr,
+                                               AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(subscript_expr);
+        assert(subscript_expr->kind == AST_EXPR_SUBSCRIPT);
+        assert(scope);
+
+        AST_Expression* lvalue_expr = subscript_expr->subscript.base_expression;
+        assert(lvalue_expr->type);
+        AST_Type* lvalue_type = lvalue_expr->type;
+        assert(lvalue_type->kind == AST_TYPE_STRUCT);
+        assert(lvalue_type->aggregate_type.index_overload);
+        AST_Identifier* overload_ident = lvalue_type->aggregate_type.index_overload;
+
+        bool result = try_resolve_identifier(resolver, overload_ident, scope);
+        if (!result) return nullptr;
+        assert(overload_ident->declaration);
+
+        AST_Declaration* overload_decl = overload_ident->declaration;
+        assert(overload_decl->flags & AST_DECL_FLAG_RESOLVED);
+        assert(overload_decl->kind == AST_DECL_FUNC);
+        assert(BUF_LENGTH(overload_decl->function.args) == 2);
+
+        AST_Expression* index_expr = subscript_expr->subscript.index_expression;
+
+        BUF(AST_Expression*) args = nullptr;
+        BUF_PUSH(args, lvalue_expr);
+        BUF_PUSH(args, index_expr);
+
+        AST_Expression* overload_ident_expr = ast_ident_expression_new(resolver->context,
+                                                                       lvalue_expr->file_pos,
+                                                                       overload_ident);
+
+        AST_Expression* call_expression = ast_call_expression_new(resolver->context,
+                                                                  subscript_expr->file_pos,
+                                                                  overload_ident_expr, args);
+
+        result &= try_resolve_expression(resolver, call_expression, scope);
+        if (result)
+        {
+            return call_expression;
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 
     char* run_insert(Resolver* resolver, AST_Expression* call_expression)

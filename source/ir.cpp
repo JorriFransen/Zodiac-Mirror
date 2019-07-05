@@ -1079,13 +1079,20 @@ namespace Zodiac
 
             case AST_EXPR_SUBSCRIPT:
             {
-                AST_Expression* base_expr = expression->subscript.base_expression;
-                AST_Expression* index_expr = expression->subscript.index_expression;
-                IR_Value* index_value = ir_builder_emit_expression(ir_builder,
-                                                                   index_expr);
-                IR_Value* base_value = ir_builder_emit_expression(ir_builder,
-                                                                  base_expr);
-                return ir_builder_emit_subscript(ir_builder, base_value, index_value);
+                if (expression->subscript.call_expression)
+                {
+                    return ir_builder_emit_expression(ir_builder, expression->subscript.call_expression);
+                }
+                else
+                {
+                    AST_Expression* base_expr = expression->subscript.base_expression;
+                    AST_Expression* index_expr = expression->subscript.index_expression;
+                    IR_Value* index_value = ir_builder_emit_expression(ir_builder,
+                                                                    index_expr);
+                    IR_Value* base_value = ir_builder_emit_expression(ir_builder,
+                                                                    base_expr);
+                    return ir_builder_emit_subscript(ir_builder, base_value, index_value);
+                }
                 break;
             }
 

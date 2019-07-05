@@ -810,7 +810,8 @@ namespace Zodiac
     }
 
     AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations,
-                                  const char* name, uint64_t bit_size)
+                                  const char* name, uint64_t bit_size,
+                                  AST_Identifier* index_overload)
     {
         assert(context);
         // assert(member_declarations);
@@ -820,6 +821,7 @@ namespace Zodiac
         result->aggregate_type.member_declarations = member_declarations;
         result->aggregate_type.poly_from = nullptr;
         result->aggregate_type.poly_types = nullptr;
+        result->aggregate_type.index_overload = index_overload;
 
         return result;
     }

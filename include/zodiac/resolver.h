@@ -142,7 +142,8 @@ namespace Zodiac
                                             AST_Type* source_type);
 
     AST_Type* create_struct_type(Resolver* resolver, AST_Identifier* identifier,
-                                 BUF(AST_Declaration*) member_decls);
+                                 BUF(AST_Declaration*) member_decls,
+                                 AST_Identifier* index_overload);
     AST_Type* create_enum_type(Resolver* resolver, AST_Identifier* identifier,
                                BUF(AST_Declaration*) member_decls);
 
@@ -158,6 +159,9 @@ namespace Zodiac
                                                    AST_Declaration* overload_decl,
                                                    AST_Expression* call_expr, AST_Scope* scope);
     void add_overload(Resolver* resolver, AST_Declaration* container, AST_Declaration* overload);
+
+    AST_Expression* try_resolve_index_overload(Resolver* resolver, AST_Expression* subscript_expr,
+                                               AST_Scope* scope);
 
     char* run_insert(Resolver* resolver, AST_Expression* call_expression);
 

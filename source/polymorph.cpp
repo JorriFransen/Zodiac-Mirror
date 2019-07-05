@@ -406,6 +406,13 @@ namespace Zodiac
         instance->aggregate_type.scope = ast_scope_new(resolver->context, scope, scope->module,
                                                        false);
 
+        if (type_decl->aggregate_type.aggregate_decl->index_overload)
+        {
+            instance->aggregate_type.aggregate_decl->index_overload =
+                copy_identifier(resolver->context,
+                                type_decl->aggregate_type.aggregate_decl->index_overload);
+        }
+
         return instance;
     }
 

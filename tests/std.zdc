@@ -5,6 +5,8 @@ String :: struct
 {
     data   : *u8;
     length : u64;
+
+    #overload_index string_index;
 }
 
 string_length :: (c_str: *u8) -> u64
@@ -19,6 +21,20 @@ string_length :: (c_str: *u8) -> u64
     }
 
     return length;
+}
+
+string_index :: (str: String, index: u64) -> u8
+{
+    assert(index < str.length);
+
+    return str.data[index];
+}
+
+string_index :: (str: *String, index: u64) -> u8
+{
+    assert(index < str.length);
+
+    return str.data[index];
 }
 
 print :: (str: String)
