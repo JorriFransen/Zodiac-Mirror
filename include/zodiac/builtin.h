@@ -29,6 +29,7 @@ namespace Zodiac
         static Atom atom_insert;
         static Atom atom_String;
         static Atom atom_string_length;
+        static Atom atom_overload_index;
     };
 
     void init_builtin_types(Context* context);

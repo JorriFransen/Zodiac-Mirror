@@ -384,7 +384,7 @@ namespace Zodiac
         assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
         assert(scope);
 
-        auto agg_decls = type_decl->aggregate_type.aggregate_declarations;
+        auto agg_decls = type_decl->aggregate_type.aggregate_decl->members;
 
         auto poly_atom = atom_append(resolver->context->atom_table,
                                      "_poly_", type_decl->aggregate_type.poly_count++);
@@ -399,16 +399,10 @@ namespace Zodiac
                                                         poly_identifier,
                                                         nullptr, true);
 
-        instance->aggregate_type.kind = AST_AGG_DECL_STRUCT;
+        instance->aggregate_type.aggregate_decl =
+            copy_aggregate_declaration(resolver->context,
+                                       type_decl->aggregate_type.aggregate_decl);
 
-        BUF(AST_Declaration*) instance_agg_decls = nullptr;
-        for (uint64_t i = 0; i < BUF_LENGTH(agg_decls); i++)
-        {
-            AST_Declaration* agg_decl_copy = copy_declaration(resolver->context, agg_decls[i]);
-            BUF_PUSH(instance_agg_decls, agg_decl_copy);
-        }
-
-        instance->aggregate_type.aggregate_declarations = instance_agg_decls;
         instance->aggregate_type.scope = ast_scope_new(resolver->context, scope, scope->module,
                                                        false);
 
@@ -648,6 +642,28 @@ namespace Zodiac
         return ast_identifier_new(context, identifier->atom, identifier->file_pos);
     }
 
+    AST_Aggregate_Declaration* copy_aggregate_declaration(Context* context,
+                                                          AST_Aggregate_Declaration* agg_decl)
+    {
+        assert(context);
+        assert(agg_decl);
+
+        BUF(AST_Declaration*) members_copy = nullptr;
+        for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->members); i++)
+        {
+            BUF_PUSH(members_copy, copy_declaration(context, agg_decl->members[i]));
+        }
+
+        AST_Identifier* index_overload_copy = nullptr;
+        if (agg_decl->index_overload)
+        {
+            index_overload_copy = copy_identifier(context, agg_decl->index_overload);
+        }
+
+        return ast_aggregate_declaration_new(context, agg_decl->file_pos, members_copy,
+                                             index_overload_copy);
+    }
+
     void replace_poly_type_specs(AST_Declaration* poly_decl_instance,
                                  BUF(Poly_Type_Spec_Replacement) replacements)
     {
@@ -839,8 +855,7 @@ namespace Zodiac
             {
                 assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
 
-                auto agg_decls = type_decl->aggregate_type.aggregate_declarations;
-
+                auto agg_decls = type_decl->aggregate_type.aggregate_decl->members;
 
                 for (uint64_t i = 0; i < BUF_LENGTH(poly_type_names); i++)
                 {

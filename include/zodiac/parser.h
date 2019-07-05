@@ -60,8 +60,8 @@ namespace Zodiac
     static AST_Declaration* parse_using_declaration(Parser* parser, AST_Declaration_Location location,
                                                     bool global, AST_Scope* scope);
 
-    static BUF(AST_Declaration*) parse_aggregate(Parser* parser, AST_Scope* scope,
-                                                 bool is_enum = false);
+    static AST_Aggregate_Declaration* parse_aggregate(Parser* parser, AST_Scope* scope,
+                                                      bool is_enum = false);
 
     AST_Statement* parse_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope);

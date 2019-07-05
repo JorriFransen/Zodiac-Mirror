@@ -256,6 +256,22 @@ namespace Zodiac
 		return result;
 	}
 
+    AST_Aggregate_Declaration* ast_aggregate_declaration_new(Context* context, File_Pos file_pos,
+                                                             BUF(AST_Declaration*) members,
+                                                             AST_Identifier* index_overload_ident)
+    {
+        assert(context);
+        assert(members);
+
+        auto result = arena_alloc(context->arena, AST_Aggregate_Declaration);
+
+        result->file_pos = file_pos;
+        result->members = members;
+        result->index_overload = index_overload_ident;
+
+        return result;
+    }
+
     AST_Declaration* ast_declaration_new(Context* context, File_Pos file_pos,
                                          AST_Declaration_Kind kind,
                                          AST_Declaration_Location location,
@@ -467,13 +483,13 @@ namespace Zodiac
 
     AST_Declaration* ast_struct_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
-                                                BUF(AST_Declaration*) member_decls,
+                                                AST_Aggregate_Declaration* aggregate_decl,
                                                 BUF(AST_Identifier*) parameters,
                                                 AST_Scope* scope)
     {
         assert(context);
         assert(identifier);
-        // assert(member_decls);
+        assert(aggregate_decl);
 
         assert(scope);
 
@@ -482,7 +498,7 @@ namespace Zodiac
                                                       nullptr, true);
         result->aggregate_type.kind = AST_AGG_DECL_STRUCT;
         result->aggregate_type.type = nullptr;
-        result->aggregate_type.aggregate_declarations = member_decls;
+        result->aggregate_type.aggregate_decl = aggregate_decl;
         result->aggregate_type.parameter_idents = parameters;
         result->aggregate_type.poly_count = 0;
         result->aggregate_type.poly_instances = nullptr;
@@ -493,12 +509,12 @@ namespace Zodiac
 
     AST_Declaration* ast_enum_declaration_new(Context* context, File_Pos file_pos,
                                               AST_Identifier* identifier,
-                                              BUF(AST_Declaration*) member_decls,
+                                              AST_Aggregate_Declaration* aggregate_decl,
                                               AST_Scope* scope)
     {
         assert(context);
         assert(identifier);
-        assert(member_decls);
+        assert(aggregate_decl);
         assert(scope);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
@@ -507,7 +523,7 @@ namespace Zodiac
 
         result->aggregate_type.kind = AST_AGG_DECL_ENUM;
         result->aggregate_type.type = nullptr;
-        result->aggregate_type.aggregate_declarations = member_decls;
+        result->aggregate_type.aggregate_decl = aggregate_decl;
         result->aggregate_type.scope = scope;
 
         return result;
@@ -1541,6 +1557,7 @@ namespace Zodiac
                 {
                     result = string_append(type->name, "(struct)");
                 }
+
                 else assert(false);
                 break;
             }

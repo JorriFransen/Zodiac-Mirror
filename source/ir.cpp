@@ -321,7 +321,7 @@ namespace Zodiac
             {
                 if (global_decl->aggregate_type.kind == AST_AGG_DECL_ENUM)
                 {
-                    auto agg_members = global_decl->aggregate_type.aggregate_declarations;
+                    auto agg_members = global_decl->aggregate_type.aggregate_decl->members;
                     for (uint64_t i = 0; i < BUF_LENGTH(agg_members); i++)
                     {
                         AST_Declaration* enum_mem = agg_members[i];
@@ -1206,7 +1206,7 @@ namespace Zodiac
                      base_decl->aggregate_type.kind == AST_AGG_DECL_ENUM)
             {
                 AST_Declaration* member = nullptr;
-                auto agg_decls = base_decl->aggregate_type.aggregate_declarations;
+                auto agg_decls = base_decl->aggregate_type.aggregate_decl->members;
                 for (uint64_t i = 0; i < BUF_LENGTH(agg_decls); i++)
                 {
                     AST_Declaration* member_decl = agg_decls[i];

@@ -573,7 +573,7 @@ namespace Zodiac
 
         assert(!find_declaration(resolver->context, scope, declaration->identifier));
 
-        auto aggregate_decls = declaration->aggregate_type.aggregate_declarations;
+        auto aggregate_decls = declaration->aggregate_type.aggregate_decl->members;
         BUF(AST_Declaration*) pointers_to_self = nullptr;
         for (uint64_t i = 0; i < BUF_LENGTH(aggregate_decls); i++)
         {
@@ -644,7 +644,7 @@ namespace Zodiac
         assert(declaration->aggregate_type.kind == AST_AGG_DECL_ENUM);
         assert(scope);
 
-        auto aggregate_decls = declaration->aggregate_type.aggregate_declarations;
+        auto aggregate_decls = declaration->aggregate_type.aggregate_decl->members;
 
         int64_t index_value = 0;
         bool result = true;
@@ -2789,7 +2789,7 @@ namespace Zodiac
             if (ud->kind == AST_DECL_AGGREGATE_TYPE &&
                 ud->aggregate_type.kind == AST_AGG_DECL_ENUM)
             {
-                auto agg_decls = ud->aggregate_type.aggregate_declarations;
+                auto agg_decls = ud->aggregate_type.aggregate_decl->members;
                 for (uint64_t j = 0; j < BUF_LENGTH(agg_decls); j++)
                 {
                     AST_Declaration* member_decl = agg_decls[j];

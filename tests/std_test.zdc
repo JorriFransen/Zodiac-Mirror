@@ -64,7 +64,7 @@ main :: ()
 
     for (i : u64 = 0; i < int_array2.count; i = i + 1)
     {
-        _c.printf("int_array2[%d]: %d\n", i, int_array2.data[i]);
+        _c.printf("int_array2[%d]: %d\n", i, int_array2[i]);
     }
 
     array_free(*int_array);

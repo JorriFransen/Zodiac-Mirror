@@ -40,6 +40,8 @@ namespace Zodiac
     AST_Expression* copy_expression(Context* context, AST_Expression* expression);
     AST_Identifier* copy_identifier(Context* context, AST_Identifier* identifier);
     AST_Type_Spec* copy_type_spec(Context* context, AST_Type_Spec* type_spec);
+    AST_Aggregate_Declaration* copy_aggregate_declaration(Context* context,
+                                                          AST_Aggregate_Declaration* agg_decl);
 
     void replace_poly_type_specs(AST_Declaration* poly_decl_instance,
                                  BUF(Poly_Type_Spec_Replacement) replacements);

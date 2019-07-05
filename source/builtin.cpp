@@ -24,6 +24,7 @@ namespace Zodiac
     Atom Builtin::atom_insert;
     Atom Builtin::atom_String;
     Atom Builtin::atom_string_length;
+    Atom Builtin::atom_overload_index;
 
     void init_builtin_types(Context* context)
     {
@@ -53,9 +54,11 @@ namespace Zodiac
         Builtin::atom_insert = atom_get(context->atom_table, "insert");
         Builtin::atom_String = atom_get(context->atom_table, "String");
         Builtin::atom_string_length = atom_get(context->atom_table, "string_length");
+        Builtin::atom_overload_index = atom_get(context->atom_table, "overload_index");
     }
 
-    AST_Type* register_builtin_type(Context* context, AST_Type_Flags flags, uint64_t size, const char* name)
+    AST_Type* register_builtin_type(Context* context, AST_Type_Flags flags, uint64_t size,
+                                    const char* name)
     {
         assert(context);
         assert(name);
