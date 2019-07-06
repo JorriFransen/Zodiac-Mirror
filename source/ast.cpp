@@ -767,6 +767,7 @@ namespace Zodiac
         result->flags = type_flags;
         result->bit_size = bit_size;
         result->name = name;
+        result->index_overload = nullptr;;
 
         return result;
     }
@@ -790,6 +791,8 @@ namespace Zodiac
         AST_Type* result = ast_type_new(context, AST_TYPE_POINTER, AST_TYPE_FLAG_NONE,
                                         {}, Builtin::pointer_size);
         result->pointer.base = base_type;
+
+        result->index_overload = base_type->index_overload;
 
         return result;
     }
@@ -821,7 +824,7 @@ namespace Zodiac
         result->aggregate_type.member_declarations = member_declarations;
         result->aggregate_type.poly_from = nullptr;
         result->aggregate_type.poly_types = nullptr;
-        result->aggregate_type.index_overload = index_overload;
+        result->index_overload = index_overload;
 
         return result;
     }

@@ -32,9 +32,7 @@ string_index :: (str: String, index: u64) -> u8
 
 string_index :: (str: *String, index: u64) -> u8
 {
-    assert(index < str.length);
-
-    return str.data[index];
+    return string_index(<str, index);
 }
 
 print :: (str: String)
@@ -84,6 +82,11 @@ array_index :: (array: Array($T), index: u64) -> T
     }
 
     assert(false);
+}
+
+array_index :: (array: *Array($T), index: u64) -> T
+{
+    return array_index(<array, index);
 }
 
 array_grow :: (array: *Array($T), new_cap: u64)

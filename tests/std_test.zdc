@@ -12,9 +12,51 @@ add :: (a: $T, b: T) -> T
     return a + b;
 }
 
+Person :: struct
+{
+    name: String;
+    age: u32;
+    id : u32;
+}
+
+Pet :: struct
+{
+    name: String;
+    age: u32;
+    owner: *Person;
+}
+
+print_person_and_thing :: (person: Person, thing: $T)
+{
+    print("print_person_and_thing");
+    _c.printf("  name: %s\n", person.name.data);
+    _c.printf("  thing: %x\n", thing);
+}
+
+print_person_and_thing :: (pet: Pet, thing: $T)
+{
+    print("print_person_and_thing (but person is a pet)");
+    _c.printf("  name: %s\n", pet.name.data);
+    _c.printf("  owner: %x\n", pet.owner);
+    _c.printf("  thing: %x\n", thing);
+}
+
 main :: ()
 {
     // assert(false);
+
+    name := "Jorri Fransen";
+    me : Person = { { name, _c.strlen(name) }, 23, 1 };
+    print_person_and_thing(me, 1);
+    print_person_and_thing(me, *me);
+
+    pet_name := "Josh";
+    pet : Pet = { { pet_name, _c.strlen(pet_name) }, 3, *me };
+    print_person_and_thing(pet, 2);
+    print_person_and_thing(pet, *me);
+    print_person_and_thing(pet, *pet);
+
+    print(" ");
 
     _c.printf("add(1, 2): %d\n", add(1, 2));
     _c.printf("add(4, 8): %d\n", add(4, 8));
@@ -27,10 +69,10 @@ main :: ()
     test_str : String = { c_string, _c.strlen(c_string) };
 
     _c.printf("test_str.length: %llu\n", test_str.length);
-    _c.printf("test_str[2]: %c\n", test_str[2]);
+    _c.printf("test_str[2]: '%c'\n", test_str[2]);
 
-    // test_str_ptr := *test_str;
-    // tsp2 := test_str_ptr[2];
+    test_str_ptr := *test_str;
+    _c.printf("test_str_ptr[2]: '%c'\n", test_str_ptr[2]);
 
     print(test_str);
 
@@ -54,16 +96,16 @@ main :: ()
 
     for (i : u64 = 0; i < int_array.count; i = i + 1)
     {
-        _c.printf("int_array[%d]: %d\n", i, int_array.data[i]);
-        array_add(*int_array2, array_index(int_array, i));
+        _c.printf("int_array[%d]: %d\n", i, int_array[i]);
+        array_add(*int_array2, int_array[i]);
     }
 
     print(" ");
 
     for (i : u64 = 0; i < float_array.count; i = i + 1)
     {
-        _c.printf("float_array[%d]: %f\n", i, float_array.data[i]);
-        array_add(*int_array2, (:int)float_array.data[i]);
+        _c.printf("float_array[%d]: %f\n", i, float_array[i]);
+        array_add(*int_array2, (:int)float_array[i]);
     }
 
     print(" ");
@@ -73,6 +115,10 @@ main :: ()
         _c.printf("int_array2[%d]: %d\n", i, int_array2[i]);
 
     }
+
+    int_array_ptr := *int_array;
+    // x := int_array_ptr[2];
+    // _c.printf("int_array[2]: %l\n", int_array_ptr[2]);
 
     array_free(*int_array);
     array_free(*int_array2);

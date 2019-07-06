@@ -1081,7 +1081,8 @@ namespace Zodiac
             {
                 if (expression->subscript.call_expression)
                 {
-                    return ir_builder_emit_expression(ir_builder, expression->subscript.call_expression);
+                    return ir_builder_emit_expression(ir_builder,
+                                                      expression->subscript.call_expression);
                 }
                 else
                 {

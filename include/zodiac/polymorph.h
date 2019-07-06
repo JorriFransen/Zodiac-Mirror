@@ -43,6 +43,8 @@ namespace Zodiac
     AST_Aggregate_Declaration* copy_aggregate_declaration(Context* context,
                                                           AST_Aggregate_Declaration* agg_decl);
 
+    bool poly_type_spec_matches_type(AST_Type_Spec* poly_type_spec, AST_Type* type);
+
     void replace_poly_type_specs(AST_Declaration* poly_decl_instance,
                                  BUF(Poly_Type_Spec_Replacement) replacements);
     void replace_poly_type_specs(AST_Statement* statement,

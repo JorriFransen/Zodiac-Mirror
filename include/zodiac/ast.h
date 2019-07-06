@@ -485,6 +485,7 @@ namespace Zodiac
         uint64_t bit_size = 0;
 
         const char* name;
+        AST_Identifier* index_overload;
 
         union
         {
@@ -505,7 +506,6 @@ namespace Zodiac
                 AST_Type* base_type; // for enums
                 AST_Declaration* poly_from;
                 BUF(AST_Type_Spec*) poly_types;
-                AST_Identifier* index_overload;
             } aggregate_type;
 
             struct

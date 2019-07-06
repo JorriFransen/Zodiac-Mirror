@@ -140,7 +140,10 @@ namespace Zodiac
                     {
                         if (declaration->function.is_poly)
                         {
-                            // Polymorph
+                            if (overload_container)
+                            {
+                                add_overload(resolver, overload_container, declaration);
+                            }
                         }
                         else
                         {
@@ -1289,18 +1292,10 @@ namespace Zodiac
                 result &= try_resolve_expression(resolver, base_expr, scope);
                 if (result)
                 {
-                    if (base_expr->type->kind == AST_TYPE_POINTER)
+                    if (base_expr->type->index_overload)
                     {
-                        expression->type = base_expr->type->pointer.base;
-                    }
-                    else if (base_expr->type->kind == AST_TYPE_STATIC_ARRAY)
-                    {
-                        expression->type = base_expr->type->static_array.base;
-                    }
-                    else if (base_expr->type->kind == AST_TYPE_STRUCT &&
-                        base_expr->type->aggregate_type.index_overload)
-                    {
-                        AST_Expression* call_expression = try_resolve_index_overload(resolver, expression,
+                        AST_Expression* call_expression = try_resolve_index_overload(resolver,
+                                                                                     expression,
                                                                                      scope);
                         if (!call_expression) return false;
 
@@ -1311,6 +1306,14 @@ namespace Zodiac
                         expression->type = callee_decl->function.return_type;
 
                         expression->subscript.call_expression = call_expression;
+                    }
+                    else if (base_expr->type->kind == AST_TYPE_POINTER)
+                    {
+                        expression->type = base_expr->type->pointer.base;
+                    }
+                    else if (base_expr->type->kind == AST_TYPE_STATIC_ARRAY)
+                    {
+                        expression->type = base_expr->type->static_array.base;
                     }
                     else
                     {
@@ -1474,6 +1477,13 @@ namespace Zodiac
         else assert(false);
 
         assert(func_decl);
+
+        if (func_decl->function.overloads)
+        {
+            func_decl = find_overload_signature_match(resolver, func_decl, expression, scope);
+            if (!func_decl) return false;
+        }
+
         if (func_decl->function.is_poly)
         {
             assert(!recursive);
@@ -1484,11 +1494,6 @@ namespace Zodiac
             }
         }
 
-        if (func_decl->function.overloads)
-        {
-            func_decl = find_overload_signature_match(resolver, func_decl, expression, scope);
-            if (!func_decl) return false;
-        }
         AST_Type* func_type = nullptr;
 
 		if (func_decl->kind == AST_DECL_FUNC)
@@ -2918,6 +2923,13 @@ namespace Zodiac
                     return false;
                 }
             }
+            else
+            {
+                // BUG: TODO: FIXME: This will signal a mismatch when the type(s)
+                //                    is/are polymophic. We should check polymorphic
+                //                    arguments here as well.
+                return false;
+            }
         }
 
         return true;
@@ -2949,23 +2961,45 @@ namespace Zodiac
 
                 AST_Type* overload_arg_type = nullptr;
                 resolver->silent = true;
-                if (try_resolve_type_spec(resolver, overload_arg->mutable_decl.type_spec,
-                                          &overload_arg_type, overload->function.argument_scope))
+                if (overload_arg->mutable_decl.type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
                 {
-                    assert(overload_arg_type);
-                    if (try_resolve_expression(resolver, call_arg_expr, scope, overload_arg_type))
+                    if (try_resolve_expression(resolver, call_arg_expr, scope, nullptr))
                     {
-                        if (overload_arg_type != call_arg_expr->type)
+                        match = poly_type_spec_matches_type(overload_arg->mutable_decl.type_spec,
+                                                            call_arg_expr->type);
+                    }
+                    else
+                    {
+                        match = false;
+                    }
+                }
+                else
+                {
+                    if (try_resolve_type_spec(resolver, overload_arg->mutable_decl.type_spec,
+                                            &overload_arg_type, overload->function.argument_scope))
+                    {
+                        assert(overload_arg_type);
+                        if (try_resolve_expression(resolver, call_arg_expr, scope,
+                                                   overload_arg_type))
+                        {
+                            if (overload_arg_type != call_arg_expr->type)
+                            {
+                                match = false;
+                            }
+                        }
+                        else
                         {
                             match = false;
                         }
                     }
-                    else {
-
+                    else
+                    {
                         match = false;
                     }
-                } else match = false;
+                }
                 resolver->silent = false;
+
+                if (!match) break;
             }
 
             if (match)
@@ -2987,6 +3021,14 @@ namespace Zodiac
         assert(overload->kind == AST_DECL_FUNC);
         assert(container->identifier->atom == overload->identifier->atom);
 
+        if (overload == container) return;
+
+        for (uint64_t i = 0; i < BUF_LENGTH(container->function.overloads); i++)
+        {
+            auto ex_overload = container->function.overloads[i];
+            if (ex_overload == overload) return;
+        }
+
         overload->identifier->atom = atom_append(resolver->context->atom_table,
                                                  overload->identifier->atom,
                                                  BUF_LENGTH(container->function.overloads));
@@ -3005,9 +3047,8 @@ namespace Zodiac
         AST_Expression* lvalue_expr = subscript_expr->subscript.base_expression;
         assert(lvalue_expr->type);
         AST_Type* lvalue_type = lvalue_expr->type;
-        assert(lvalue_type->kind == AST_TYPE_STRUCT);
-        assert(lvalue_type->aggregate_type.index_overload);
-        AST_Identifier* overload_ident = lvalue_type->aggregate_type.index_overload;
+        assert(lvalue_type->index_overload);
+        AST_Identifier* overload_ident = lvalue_type->index_overload;
 
         bool result = try_resolve_identifier(resolver, overload_ident, scope);
         if (!result) return nullptr;
@@ -3143,7 +3184,10 @@ namespace Zodiac
                                            "Reference to undeclared identifier: %s",
                                            identifier->atom.data);
 
-        error->identifier = identifier->atom;
+        if (error)
+        {
+            error->identifier = identifier->atom;
+        }
     }
 
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,

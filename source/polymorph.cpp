@@ -605,6 +605,14 @@ namespace Zodiac
                                                         expression->float_literal.r64);
             }
 
+            case AST_EXPR_UNARY:
+            {
+                auto operand_copy = copy_expression(context, expression->unary.operand);
+                return ast_unary_expression_new(context, expression->file_pos,
+                                                expression->unary.op,
+                                                operand_copy);
+            }
+
             default: assert(false);
         }
     }
@@ -669,6 +677,50 @@ namespace Zodiac
 
         return ast_aggregate_declaration_new(context, agg_decl->file_pos, members_copy,
                                              index_overload_copy);
+    }
+
+    bool poly_type_spec_matches_type(AST_Type_Spec* poly_type_spec, AST_Type* type)
+    {
+        assert(poly_type_spec);
+        assert(poly_type_spec->flags & AST_TYPE_SPEC_FLAG_POLY);
+        assert(type);
+
+        switch (poly_type_spec->kind)
+        {
+            case AST_TYPE_SPEC_IDENT:
+            {
+                if (type->kind == AST_TYPE_BASE)
+                {
+                    return true;
+                }
+                else if (type->kind == AST_TYPE_POINTER)
+                {
+                    return true;
+                }
+                else if (type->kind == AST_TYPE_STRUCT)
+                {
+                    // if the struct is not poly, return true
+                    // if the struct is poly, check the poly args
+                    assert(false);
+                }
+                else assert(false);
+
+                return false;
+            }
+
+            case AST_TYPE_SPEC_POINTER:
+            {
+                if (type->kind != AST_TYPE_POINTER)
+                {
+                    return false;
+                }
+
+                return poly_type_spec_matches_type(poly_type_spec->pointer.base,
+                                                    type->pointer.base);
+            }
+
+            default: assert(false);
+        }
     }
 
     void replace_poly_type_specs(AST_Declaration* poly_decl_instance,
