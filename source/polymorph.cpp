@@ -701,7 +701,14 @@ namespace Zodiac
                 {
                     // if the struct is not poly, return true
                     // if the struct is poly, check the poly args
-                    assert(false);
+
+                    if (type->aggregate_type.poly_from)
+                    {
+                        return BUF_LENGTH(type->aggregate_type.poly_types) ==
+                               BUF_LENGTH(poly_type_spec->identifier.poly_args);
+                    }
+
+                    return true;
                 }
                 else assert(false);
 
@@ -883,6 +890,12 @@ namespace Zodiac
             {
                 maybe_replace_poly_type_spec(&expression->cast_expr.type_spec, replacements);
                 replace_poly_type_specs(expression->cast_expr.expr, replacements);
+                break;
+            }
+
+            case AST_EXPR_UNARY:
+            {
+                replace_poly_type_specs(expression->unary.operand, replacements);
                 break;
             }
 

@@ -261,7 +261,6 @@ namespace Zodiac
                                                              AST_Identifier* index_overload_ident)
     {
         assert(context);
-        assert(members);
 
         auto result = arena_alloc(context->arena, AST_Aggregate_Declaration);
 

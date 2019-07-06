@@ -113,12 +113,15 @@ main :: ()
     for (i : u64 = 0; i < int_array2.count; i = i + 1)
     {
         _c.printf("int_array2[%d]: %d\n", i, int_array2[i]);
-
     }
 
+    print(" ");
+
     int_array_ptr := *int_array;
-    // x := int_array_ptr[2];
-    // _c.printf("int_array[2]: %l\n", int_array_ptr[2]);
+    _c.printf("int_array_ptr[2]: %d\n", int_array_ptr[2]);
+
+    float_array_ptr := *float_array;
+    _c.printf("float_array_ptr[3]: %f\n", float_array_ptr[3]);
 
     array_free(*int_array);
     array_free(*int_array2);
