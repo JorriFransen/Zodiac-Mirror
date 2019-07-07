@@ -331,7 +331,7 @@ namespace Zodiac
         assert(poly_func_decl->function.is_poly);
 
         auto poly_atom = atom_append(resolver->context->atom_table,
-                                     "_poly_", poly_func_decl->function.poly_count++);
+                                     "_poly", poly_func_decl->function.poly_count++);
         poly_atom = atom_append(resolver->context->atom_table,
                                 poly_func_decl->identifier->atom, poly_atom);
 

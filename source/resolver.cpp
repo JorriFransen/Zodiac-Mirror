@@ -3030,9 +3030,13 @@ namespace Zodiac
             if (ex_overload == overload) return;
         }
 
-        overload->identifier->atom = atom_append(resolver->context->atom_table,
-                                                 overload->identifier->atom,
-                                                 BUF_LENGTH(container->function.overloads));
+        Atom overload_ident = atom_append(resolver->context->atom_table,
+                                          overload->identifier->atom,
+                                          "_overload");
+        overload_ident = atom_append(resolver->context->atom_table, overload_ident,
+                                     BUF_LENGTH(container->function.overloads));
+
+        overload->identifier->atom = overload_ident;
 
         BUF_PUSH(container->function.overloads, overload);
     }
