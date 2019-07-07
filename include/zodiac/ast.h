@@ -94,7 +94,8 @@ namespace Zodiac
     enum AST_Expression_Flag : _AST_EXPR_FLAGS_
     {
         AST_EXPR_FLAG_NONE      = 0x00,
-        AST_EXPR_FLAG_GENERATED = 0x01,
+        AST_EXPR_FLAG_GENERATED = (1 << 0),
+        AST_EXPR_FLAG_LITERAL   = (1 << 1),
     };
 
     struct AST_Expression

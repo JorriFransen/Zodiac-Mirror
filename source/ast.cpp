@@ -92,6 +92,11 @@ namespace Zodiac
         result->unary.op = op;
         result->unary.operand = operand;
 
+        if (operand->flags & AST_EXPR_FLAG_LITERAL)
+        {
+            result->flags |= AST_EXPR_FLAG_LITERAL;
+        }
+
         return result;
     }
 
@@ -142,6 +147,7 @@ namespace Zodiac
 
         auto result = ast_expression_new(context, file_pos, AST_EXPR_BOOL_LITERAL);
         result->bool_literal.boolean = value;
+        result->flags |= AST_EXPR_FLAG_LITERAL;
         return result;
     }
 
@@ -149,7 +155,9 @@ namespace Zodiac
     {
         assert(context);
 
-        return ast_expression_new(context, file_pos, AST_EXPR_NULL_LITERAL);
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_NULL_LITERAL);
+        result->flags |= AST_EXPR_FLAG_LITERAL;
+        return result;
     }
 
     AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos,
@@ -159,6 +167,7 @@ namespace Zodiac
 
         auto result = ast_expression_new(context, file_pos, AST_EXPR_STRING_LITERAL);
         result->string_literal.atom = value;
+        result->flags |= AST_EXPR_FLAG_LITERAL;
         return result;
     }
 
@@ -170,6 +179,7 @@ namespace Zodiac
         auto result = ast_expression_new(context, file_pos, AST_EXPR_INTEGER_LITERAL);
 
         result->integer_literal.u64 = value;
+        result->flags |= AST_EXPR_FLAG_LITERAL;
 
         return result;
     }
@@ -183,6 +193,7 @@ namespace Zodiac
 
         result->float_literal.r64 = r64;
         result->float_literal.r32 = r32;
+        result->flags |= AST_EXPR_FLAG_LITERAL;
 
         return result;
     }
@@ -194,6 +205,7 @@ namespace Zodiac
 
         auto result = ast_expression_new(context, file_pos, AST_EXPR_CHAR_LITERAL);
         result->character_literal.c = value;
+        result->flags |= AST_EXPR_FLAG_LITERAL;
         return result;
     }
 
@@ -203,6 +215,7 @@ namespace Zodiac
         assert(context);
         auto result = ast_expression_new(context, file_pos, AST_EXPR_COMPOUND_LITERAL);
         result->compound_literal.expressions = expressions;
+        result->flags |= AST_EXPR_FLAG_LITERAL;
         return result;
     }
 

@@ -1268,7 +1268,8 @@ namespace Zodiac
 
             case AST_EXPR_UNARY:
             {
-                result &= try_resolve_unary_expression(resolver, expression, scope);
+                result &= try_resolve_unary_expression(resolver, expression, scope,
+                                                       suggested_type);
                 break;
             }
 
@@ -2033,7 +2034,7 @@ namespace Zodiac
         AST_Expression* lhs = expression->binary.lhs;
         AST_Expression* rhs = expression->binary.rhs;
 
-        if (lhs->kind == AST_EXPR_INTEGER_LITERAL && rhs->kind != AST_EXPR_INTEGER_LITERAL)
+        if ((lhs->flags & AST_EXPR_FLAG_LITERAL) && !(rhs->flags & AST_EXPR_FLAG_LITERAL))
         {
             result &= try_resolve_expression(resolver, rhs, scope);
             if (!result) return false;
@@ -2041,7 +2042,7 @@ namespace Zodiac
             result &= try_resolve_expression(resolver, lhs, scope, rhs->type);
             if (!result) return false;
         }
-        else if (rhs->kind == AST_EXPR_INTEGER_LITERAL && lhs->kind != AST_EXPR_INTEGER_LITERAL)
+        else if ((rhs->flags & AST_EXPR_FLAG_LITERAL) && !(lhs->flags & AST_EXPR_FLAG_LITERAL))
         {
             result &= try_resolve_expression(resolver, lhs, scope);
             if (!result) return false;
@@ -2126,7 +2127,7 @@ namespace Zodiac
     }
 
     static bool try_resolve_unary_expression(Resolver* resolver, AST_Expression* expression,
-                                             AST_Scope* scope)
+                                             AST_Scope* scope, AST_Type* suggested_type)
     {
         assert(resolver);
         assert(expression);
@@ -2134,7 +2135,7 @@ namespace Zodiac
         assert(scope);
 
         AST_Expression* operand_expr = expression->unary.operand;
-        bool result = try_resolve_expression(resolver, operand_expr, scope);
+        bool result = try_resolve_expression(resolver, operand_expr, scope, suggested_type);
 
         if (result)
         {

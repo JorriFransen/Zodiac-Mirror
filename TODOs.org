@@ -19,12 +19,12 @@
   - [ ] Continue counting after custom values
   - [ ] Allow custom values to be an identifier representing another member
     
-* Pointers [3/5]
+* Pointers [4/5]
    - [X] Basic pointers
    - [X] Index expressions on pointers
    - [ ] Pointer math
    - [X] Member expressions on pointers
-   - [ ] String type
+   - [X] String type
      
 * Statements [4/5]
    - [X] While

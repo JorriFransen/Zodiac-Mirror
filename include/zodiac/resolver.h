@@ -121,7 +121,7 @@ namespace Zodiac
     static bool try_resolve_binary_expression(Resolver* resolver, AST_Expression* expression,
                                               AST_Scope* scope);
     static bool try_resolve_unary_expression(Resolver* resolver, AST_Expression* expression,
-                                             AST_Scope* scope);
+                                             AST_Scope* scope, AST_Type* suggested_type);
     static bool try_resolve_dot_expression(Resolver* resolver, AST_Expression* expression,
         AST_Scope* scope);
 	static bool try_resolve_cast_expression(Resolver* resolver, AST_Expression* expression,
