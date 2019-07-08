@@ -506,6 +506,12 @@ namespace Zodiac
                 return ast_assert_statement_new(context, statement->file_pos, assert_expr_copy);
             }
 
+            case AST_STMT_DEFER:
+            {
+                auto defer_stmt_copy = copy_statement(context, statement->defer_statement, scope);
+                return ast_defer_statement_new(context, statement->file_pos, defer_stmt_copy);
+            }
+
             default: assert(false);
         }
     }
@@ -837,6 +843,13 @@ namespace Zodiac
                 replace_poly_type_specs(statement->assert_expression, replacements);
                 break;
             }
+
+            case AST_STMT_DEFER:
+            {
+                replace_poly_type_specs(statement->defer_statement, replacements);
+                break;
+            }
+
             default: assert(false);
         }
     }

@@ -70,6 +70,7 @@ namespace Zodiac
     DEFINE_TOKEN(TOK_KW_TYPEDEF), \
     DEFINE_TOKEN(TOK_KW_USING), \
     DEFINE_TOKEN(TOK_KW_SIZEOF), \
+    DEFINE_TOKEN(TOK_KW_DEFER), \
     DEFINE_TOKEN(TOK_COUNT), \
 
     enum Token_Kind

@@ -398,6 +398,7 @@ namespace Zodiac
 		DEFINE_KW("typedef", TOK_KW_TYPEDEF);
         DEFINE_KW("using", TOK_KW_USING);
         DEFINE_KW("sizeof", TOK_KW_SIZEOF);
+        DEFINE_KW("defer", TOK_KW_DEFER);
     }
 
 #undef DEFINE_KW

@@ -242,10 +242,10 @@ namespace Zodiac
 	void ir_builder_emit_decl_body(IR_Builder* ir_builder, AST_Declaration* func_decl);
     void ir_builder_emit_global_declaration(IR_Builder* ir_builder, AST_Declaration* global_decl);
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement,
-                                   IR_Value* break_block);
+                                   AST_Scope* scope, IR_Value* break_block);
     void ir_builder_emit_assign_statement(IR_Builder* ir_builder, AST_Statement* statement);
 	void ir_builder_emit_switch_statement(IR_Builder* ir_builder, AST_Statement* statement,
-                                          IR_Value* break_block);
+                                          AST_Scope* scope, IR_Value* break_block);
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_dot_expression(IR_Builder* ir_builder, AST_Expression* expression);
 	IR_Value* ir_builder_emit_cast_expression(IR_Builder* ir_builder, AST_Expression* expression);
@@ -306,6 +306,10 @@ namespace Zodiac
     IR_Value* ir_builder_emit_and_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     IR_Value* ir_builder_emit_or_or(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val);
+    void ir_builder_emit_defer_statements_before_return(IR_Builder* ir_builder, AST_Scope* scope,
+                                                        File_Pos return_file_pos);
+    void ir_builder_emit_defer_statements_before_break(IR_Builder* ir_builder, AST_Scope* scope,
+                                                       File_Pos break_file_pos);
     void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value,
                                   bool is_vararg = false);
     IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value,

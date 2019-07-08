@@ -159,6 +159,7 @@ namespace Zodiac
                                                    AST_Declaration* overload_decl,
                                                    AST_Expression* call_expr, AST_Scope* scope);
     void add_overload(Resolver* resolver, AST_Declaration* container, AST_Declaration* overload);
+    void add_defer_statement(AST_Scope* scope, AST_Statement* statement);
 
     AST_Expression* try_resolve_index_overload(Resolver* resolver, AST_Expression* subscript_expr,
                                                AST_Scope* scope);

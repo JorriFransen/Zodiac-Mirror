@@ -628,12 +628,13 @@ namespace Zodiac
             {
                 auto ft = current_token(parser);
                 AST_Declaration_Location location = AST_DECL_LOC_LOCAL;
-                if (scope->is_module_scope)
+                bool is_module_scope = scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE;
+                if (is_module_scope)
                 {
                     location = AST_DECL_LOC_GLOBAL;
                 }
                 AST_Declaration* decl = parse_using_declaration(parser, location,
-                                                                scope->is_module_scope,
+                                                                is_module_scope,
                                                                 scope);
                 if (!decl)
                 {
@@ -655,7 +656,16 @@ namespace Zodiac
                 expect_token(parser, TOK_SEMICOLON);
 
                 return ast_assert_statement_new(parser->context, ft.file_pos, assert_expr);
-            };
+            }
+
+            case TOK_KW_DEFER:
+            {
+                auto ft = current_token(parser);
+                consume_token(parser);
+
+                AST_Statement* defer_statement = parse_statement(parser, scope);
+                return ast_defer_statement_new(parser->context, ft.file_pos, defer_statement);
+            }
 
             case TOK_POUND:
             {

@@ -287,7 +287,7 @@ namespace Zodiac
 
         bool result = true;
         AST_Scope* arg_scope  = declaration->function.argument_scope;
-        assert(!arg_scope->is_module_scope);
+        assert(!(arg_scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE));
         assert(arg_scope->parent == scope);
 
 		AST_Type* func_type = nullptr;
@@ -810,7 +810,7 @@ namespace Zodiac
         assert(declaration);
         assert(declaration->kind == AST_DECL_INSERT);
         assert(scope);
-        assert(scope->is_module_scope);
+        assert(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE);
 
         if (declaration->insert_decl.generated)
         {
@@ -1007,14 +1007,15 @@ namespace Zodiac
                 break;
             }
 
-
-
-
             case AST_STMT_WHILE:
             {
                 result &= try_resolve_expression(resolver, statement->while_stmt.cond_expr, scope);
                 result &= try_resolve_statement(resolver, statement->while_stmt.body_stmt, scope,
                                                 statement);
+                if (result)
+                {
+                    scope->flags |= AST_SCOPE_FLAG_BREAK_SCOPE;
+                }
                 break;
             }
 
@@ -1023,11 +1024,17 @@ namespace Zodiac
                 AST_Scope* for_scope = statement->for_stmt.scope;
                 result &= try_resolve_statement(resolver, statement->for_stmt.init_stmt, for_scope,
                                                 break_context);
-                result &= try_resolve_expression(resolver, statement->for_stmt.cond_expr, for_scope);
+                result &= try_resolve_expression(resolver, statement->for_stmt.cond_expr,
+                                                 for_scope);
                 result &= try_resolve_statement(resolver, statement->for_stmt.step_stmt, for_scope,
                                                 break_context);
                 result &= try_resolve_statement(resolver, statement->for_stmt.body_stmt, for_scope,
                                                 statement);
+
+                if (result)
+                {
+                    scope->flags |= AST_SCOPE_FLAG_BREAK_SCOPE;
+                }
                 break;
             }
 
@@ -1088,6 +1095,11 @@ namespace Zodiac
                         result &= try_resolve_statement(resolver, switch_case.stmt, scope,
                                                         break_context);
                     }
+
+                    if (result)
+                    {
+                        scope->flags |= AST_SCOPE_FLAG_BREAK_SCOPE;
+                    }
                 }
                 break;
             }
@@ -1114,6 +1126,17 @@ namespace Zodiac
                     assert(assert_expr->type == Builtin::type_bool ||
                            assert_expr->type->kind == AST_TYPE_POINTER ||
                            assert_expr->type->flags & AST_TYPE_FLAG_INT);
+                }
+                break;
+            }
+
+            case AST_STMT_DEFER:
+            {
+                result &= try_resolve_statement(resolver, statement->defer_statement, scope,
+                                                nullptr);
+                if (result)
+                {
+                    add_defer_statement(scope, statement->defer_statement);
                 }
                 break;
             }
@@ -2609,7 +2632,7 @@ namespace Zodiac
 				BUF(AST_Type*) arg_types = nullptr;
                 AST_Scope* arg_scope = type_spec->function.arg_scope;
                 assert(arg_scope);
-                assert(!arg_scope->is_module_scope);
+                assert(!(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE));
 				for (uint64_t i = 0; i < BUF_LENGTH(type_spec->function.args); i++)
 				{
 					AST_Declaration* arg_decl = type_spec->function.args[i];
@@ -2785,7 +2808,7 @@ namespace Zodiac
             // FIXME: TODO: This doesn't really seem like the best way to do this, but
             //               I can't think of a better way to do it right now, without
             //               majorly restructuring the resolver.
-            if (!scope->is_module_scope &&
+            if (!(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE) &&
                 (identifier->file_pos.file_name == decl->file_pos.file_name) &&
                 (identifier->file_pos.line < decl->file_pos.line ||
                 (identifier->file_pos.line == decl->file_pos.line &&
@@ -3039,6 +3062,20 @@ namespace Zodiac
         overload->identifier->atom = overload_ident;
 
         BUF_PUSH(container->function.overloads, overload);
+    }
+
+    void add_defer_statement(AST_Scope* scope, AST_Statement* statement)
+    {
+        assert(scope);
+        assert(statement);
+
+        auto defer_stmts = &scope->defer_statements;
+        for (uint64_t i = 0; i < BUF_LENGTH(*defer_stmts); i++)
+        {
+            if ((*defer_stmts)[i] == statement) return;
+        }
+
+        BUF_PUSH(*defer_stmts, statement);
     }
 
     AST_Expression* try_resolve_index_overload(Resolver* resolver, AST_Expression* subscript_expr,

@@ -99,7 +99,8 @@ namespace Zodiac
 					ir_builder->current_function = func;
 					ir_builder_set_insert_block(ir_builder, entry_block);
 
-					ir_builder_emit_statement(ir_builder, decl->function.body_block, nullptr);
+					ir_builder_emit_statement(ir_builder, decl->function.body_block,
+                                              decl->function.body_block->block.scope, nullptr);
 
 					auto insert_block = ir_builder->insert_block;
 					auto first_instruction = insert_block->first_instruction;
@@ -354,7 +355,7 @@ namespace Zodiac
     }
 
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement,
-                                   IR_Value* break_block)
+                                   AST_Scope* scope, IR_Value* break_block)
     {
         assert(ir_builder);
         assert(statement);
@@ -390,19 +391,38 @@ namespace Zodiac
 
             case AST_STMT_RETURN:
             {
-                assert(statement->return_expression);
-                IR_Value* return_value = ir_builder_emit_expression(ir_builder,
-                                                                    statement->return_expression);
+                IR_Value* return_value = nullptr;
+                if (statement->return_expression)
+                {
+                    return_value = ir_builder_emit_expression(ir_builder,
+                                                              statement->return_expression);
+                }
+                auto return_file_pos = statement->file_pos;
+                ir_builder_emit_defer_statements_before_return(ir_builder, scope,
+                                                               return_file_pos);
                 ir_builder_emit_return(ir_builder, return_value);
                 break;
             }
 
             case AST_STMT_BLOCK:
             {
+                auto block_scope = statement->block.scope;
                 for (uint64_t i = 0; i < BUF_LENGTH(statement->block.statements); i++)
                 {
                     AST_Statement* block_member_stmt = statement->block.statements[i];
-                    ir_builder_emit_statement(ir_builder, block_member_stmt, break_block);
+                    ir_builder_emit_statement(ir_builder, block_member_stmt, block_scope,
+                                              break_block);
+                }
+
+                auto defer_statements = statement->block.scope->defer_statements;
+                if (defer_statements)
+                {
+                    for (uint64_t i = 0; i < BUF_LENGTH(defer_statements); i++)
+                    {
+                        uint64_t index = BUF_LENGTH(defer_statements) - 1 - i;
+                        AST_Statement* defer_stmt = defer_statements[index];
+                        ir_builder_emit_statement(ir_builder, defer_stmt, scope, nullptr);
+                    }
                 }
                 break;
             }
@@ -436,7 +456,7 @@ namespace Zodiac
                 IR_Block* then_block = ir_builder->insert_block;
                 assert(statement->if_stmt.then_statement);
                 ir_builder_emit_statement(ir_builder, statement->if_stmt.then_statement,
-                                          break_block);
+                                          scope, break_block);
                 // if (!ir_instruction_is_terminator(then_block->last_instruction->op))
                 // {
                     ir_builder_emit_jmp(ir_builder, post_if_block_val);
@@ -447,7 +467,7 @@ namespace Zodiac
                     ir_builder_append_block(ir_builder, cur_func, else_block_val->block);
                     ir_builder_set_insert_block(ir_builder, else_block_val);
                     ir_builder_emit_statement(ir_builder, statement->if_stmt.else_statement,
-                                              break_block);
+                                              scope, break_block);
                     // if (!else_block_val->block->last_instruction ||
                     //     !ir_instruction_is_terminator(else_block_val->block->last_instruction->op))
                     // {
@@ -499,7 +519,7 @@ namespace Zodiac
 
                 ir_builder_set_insert_block(ir_builder, while_body_block_value);
                 ir_builder_emit_statement(ir_builder, statement->while_stmt.body_stmt,
-                                          post_while_block_value);
+                                          scope, post_while_block_value);
                 ir_builder_emit_jmp(ir_builder, while_cond_block_value);
 
                 ir_builder_append_block(ir_builder, cur_func, post_while_block_value->block);
@@ -517,7 +537,7 @@ namespace Zodiac
                 IR_Value* post_for_block_value = ir_builder_create_block(ir_builder, "post_for");
 
 
-                ir_builder_emit_statement(ir_builder, statement->for_stmt.init_stmt, break_block);
+                ir_builder_emit_statement(ir_builder, statement->for_stmt.init_stmt, scope, break_block);
                 ir_builder_emit_jmp(ir_builder, for_cond_block_value);
 
                 ir_builder_set_insert_block(ir_builder, for_cond_block_value);
@@ -527,9 +547,10 @@ namespace Zodiac
                 ir_builder_emit_jmp(ir_builder, post_for_block_value);
 
                 ir_builder_set_insert_block(ir_builder, for_body_block_value);
-                ir_builder_emit_statement(ir_builder, statement->for_stmt.body_stmt,
+                ir_builder_emit_statement(ir_builder, statement->for_stmt.body_stmt, scope,
                                           post_for_block_value);
-                ir_builder_emit_statement(ir_builder, statement->for_stmt.step_stmt, break_block);
+                ir_builder_emit_statement(ir_builder, statement->for_stmt.step_stmt, scope,
+                                          break_block);
                 ir_builder_emit_jmp(ir_builder, for_cond_block_value);
 
                 ir_builder_append_block(ir_builder, cur_func, post_for_block_value->block);
@@ -539,13 +560,15 @@ namespace Zodiac
 
 			case AST_STMT_SWITCH:
 			{
-				ir_builder_emit_switch_statement(ir_builder, statement, break_block);
+				ir_builder_emit_switch_statement(ir_builder, statement, scope, break_block);
 				break;
 			}
 
             case AST_STMT_BREAK:
             {
                 assert(break_block);
+                ir_builder_emit_defer_statements_before_break(ir_builder, scope,
+                                                              statement->file_pos);
                 ir_builder_emit_jmp(ir_builder, break_block);
                 break;
             }
@@ -554,7 +577,7 @@ namespace Zodiac
             {
                 assert(statement->insert.gen_statement);
                 ir_builder_emit_statement(ir_builder, statement->insert.gen_statement,
-                                          break_block);
+                                          scope, break_block);
                 break;
             }
 
@@ -564,6 +587,12 @@ namespace Zodiac
                                                                     statement->assert_expression);
                 ir_builder_emit_assert(ir_builder, assert_value);
 
+                break;
+            }
+
+            case AST_STMT_DEFER:
+            {
+                // These are handled at the end of blocks and functions
                 break;
             }
 
@@ -584,162 +613,6 @@ namespace Zodiac
                                                          statement->assign.expression);
         ir_builder_emit_store(ir_builder, lvalue, new_value);
 
-        // if (lvalue_expr->kind == AST_EXPR_IDENTIFIER)
-        // {
-        //     AST_Declaration* lvalue_decl = lvalue_expr->identifier->declaration;
-        //     IR_Value* target_alloc = ir_builder_value_for_declaration(ir_builder, lvalue_decl);
-        //     assert(target_alloc);
-        //     IR_Value* new_value = ir_builder_emit_expression(ir_builder,
-        //                                                      statement->assign.expression);
-
-        //     switch (target_alloc->kind)
-        //     {
-        //         case IRV_ALLOCL:
-        //         {
-        //             ir_builder_emit_storel(ir_builder, target_alloc, new_value);
-        //             break;
-        //         }
-
-        //         case IRV_ARGUMENT:
-        //         {
-        //             ir_builder_emit_storea(ir_builder, target_alloc, new_value);
-        //             break;
-        //         }
-
-        //         case IRV_GLOBAL:
-        //         {
-        //             ir_builder_emit_storeg(ir_builder, target_alloc, new_value);
-        //             break;
-        //         }
-
-        //         default: assert(false);
-        //     }
-        // }
-        // else if (lvalue_expr->kind == AST_EXPR_UNARY)
-        // {
-        //     assert(lvalue_expr->unary.op == AST_UNOP_DEREF);
-        //     AST_Expression* operand_expr = lvalue_expr->unary.operand;
-        //     assert(operand_expr->type->kind == AST_TYPE_POINTER);
-        //     assert(operand_expr->kind == AST_EXPR_IDENTIFIER);
-        //     IR_Value* pointer_alloc =
-        //         ir_builder_value_for_declaration(ir_builder,
-        //                                          operand_expr->identifier->declaration);
-        //     IR_Value* new_value = ir_builder_emit_expression(ir_builder,
-        //                                                      statement->assign.expression);
-        //     ir_builder_emit_storep(ir_builder, pointer_alloc, new_value);
-        // }
-        // else if (lvalue_expr->kind == AST_EXPR_SUBSCRIPT)
-        // {
-        //     AST_Expression* base_expression = lvalue_expr->subscript.base_expression;
-        //     AST_Expression* index_expression = lvalue_expr->subscript.index_expression;
-        //     IR_Value* index_value = ir_builder_emit_expression(ir_builder, index_expression);
-        //     IR_Value* new_value = ir_builder_emit_expression(ir_builder,
-        //                                                      statement->assign.expression);
-
-        //     AST_Declaration* base_decl = nullptr;
-        //     if (base_expression->kind == AST_EXPR_IDENTIFIER)
-        //     {
-        //         base_decl = base_expression->identifier->declaration;
-        //     }
-        //     else if (base_expression->kind == AST_EXPR_DOT)
-        //     {
-        //         base_decl = base_expression->dot.declaration;
-        //     }
-        //     else assert(false);
-
-        //     assert(base_decl);
-
-        //     if (base_expression->type->kind == AST_TYPE_STATIC_ARRAY)
-        //     {
-        //         AST_Type* element_type = base_expression->type->static_array.base;
-        //         IR_Value* array_value = ir_builder_emit_expression(ir_builder, base_expression);
-        //         IR_Value* dest_pointer_value = ir_builder_emit_array_offset_pointer(ir_builder,
-        //                                                                             array_value,
-        //                                                                             index_value);
-        //         ir_builder_emit_storep(ir_builder, dest_pointer_value, new_value);
-        //     }
-        //     else if (base_expression->type->kind == AST_TYPE_POINTER)
-        //     {
-        //         AST_Type* element_type = base_expression->type->pointer.base;
-
-        //         IR_Value* pointer_alloc = ir_builder_value_for_declaration(ir_builder, base_decl);
-        //         assert(pointer_alloc->kind == IRV_ALLOCL);
-        //         IR_Value* base_pointer_value = ir_builder_emit_loadl(ir_builder, pointer_alloc);
-        //         IR_Value* target_addr = ir_builder_emit_array_offset_pointer(ir_builder,
-        //                                                                      base_pointer_value,
-        //                                                                      index_value);
-
-        //         ir_builder_emit_storep(ir_builder, target_addr, new_value);
-        //     }
-        //     else assert(false);
-        // }
-        // else if (lvalue_expr->kind == AST_EXPR_DOT)
-        // {
-        //     AST_Expression* base_expression = lvalue_expr->dot.base_expression;
-        //     AST_Expression* member_expression = lvalue_expr->dot.member_expression;
-
-        //     AST_Declaration* base_decl = nullptr;
-        //     if (base_expression->kind == AST_EXPR_IDENTIFIER)
-        //     {
-        //         base_decl = base_expression->identifier->declaration;
-        //     }
-        //     else if (base_expression->kind == AST_EXPR_DOT)
-        //     {
-        //         IR_Value* base_val = ir_builder_emit_expression(ir_builder, base_expression);
-        //         base_decl = base_expression->dot.declaration;
-        //     }
-        //     else assert(false);
-        //     assert(base_decl);
-
-        //     IR_Value* struct_value = ir_builder_value_for_declaration(ir_builder,
-        //                                                               base_decl);
-        //     assert(struct_value);
-        //     AST_Type* struct_type = nullptr;
-        //     bool is_pointer = false;
-        //     if (base_expression->type->kind == AST_TYPE_STRUCT)
-        //     {
-        //         struct_type = base_expression->type;
-        //     }
-        //     else if (base_expression->type->kind == AST_TYPE_POINTER)
-        //     {
-        //         struct_type = base_expression->type->pointer.base;
-        //         assert(struct_type->kind == AST_TYPE_STRUCT);
-        //         is_pointer = true;
-        //     }
-        //     else assert(false);
-
-        //     uint64_t member_index = 0;
-        //     bool found = false;
-
-        //     auto agg_members = struct_type->aggregate_type.member_declarations;
-
-        //     for (uint64_t i = 0; i < BUF_LENGTH(agg_members); i++)
-        //     {
-        //         AST_Declaration* member_decl = agg_members[i];
-        //         if (member_expression->identifier->atom == member_decl->identifier->atom)
-        //         {
-        //             member_index = i;
-        //             found = true;
-        //             break;
-        //         }
-        //     }
-
-        //     assert(found);
-
-        //     if (is_pointer)
-        //     {
-        //         struct_value = ir_builder_emit_load(ir_builder, struct_value);
-        //         struct_value = ir_builder_emit_loadp(ir_builder, struct_value, struct_type);
-        //     }
-
-        //     IR_Value* target_pointer = ir_builder_emit_aggregate_offset_pointer(ir_builder,
-        //                                                                         struct_value,
-        //                                                                         member_index);
-        //     IR_Value* new_value = ir_builder_emit_expression(ir_builder,
-        //                                                      statement->assign.expression);
-        //     ir_builder_emit_storep(ir_builder, target_pointer, new_value);
-        // }
-        // else assert(false);
     }
 
 	struct _IR_Case
@@ -748,7 +621,7 @@ namespace Zodiac
 	};
 
 	void ir_builder_emit_switch_statement(IR_Builder* ir_builder, AST_Statement* statement,
-                                          IR_Value* break_block)
+                                          AST_Scope* scope, IR_Value* break_block)
 	{
 		assert(ir_builder);
 		assert(statement);
@@ -814,7 +687,7 @@ namespace Zodiac
 			}
 
 			ir_builder_set_insert_block(ir_builder, ir_case.case_block);
-			ir_builder_emit_statement(ir_builder, switch_case.stmt, break_block);
+			ir_builder_emit_statement(ir_builder, switch_case.stmt, scope, break_block);
 			ir_builder_emit_jmp(ir_builder, post_switch_block_val);
 
 			BUF_PUSH(cases, ir_case);
@@ -1049,9 +922,11 @@ namespace Zodiac
 				else if (callee_decl->kind == AST_DECL_MUTABLE)
 				{
 					assert(callee_decl->mutable_decl.type->kind == AST_TYPE_POINTER);
-					assert(callee_decl->mutable_decl.type->pointer.base->kind == AST_TYPE_FUNCTION);
+					assert(callee_decl->mutable_decl.type->pointer.base->kind ==
+                           AST_TYPE_FUNCTION);
 
-					IR_Value* callee_value = ir_builder_value_for_declaration(ir_builder, callee_decl);
+					IR_Value* callee_value = ir_builder_value_for_declaration(ir_builder,
+                                                                              callee_decl);
 					IR_Value* func_ptr_value = ir_builder_emit_load(ir_builder, callee_value);
 
                     AST_Type* func_type = callee_decl->mutable_decl.type->pointer.base;
@@ -2285,6 +2160,90 @@ namespace Zodiac
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_RETURN, ret_val,
                                                  nullptr, nullptr);
         ir_builder_emit_instruction(ir_builder, iri);
+    }
+
+    void ir_builder_emit_defer_statements_before_return(IR_Builder* ir_builder, AST_Scope* scope,
+                                                        File_Pos return_file_pos)
+    {
+        assert(ir_builder);
+        assert(scope);
+
+        // Always emit the current scope
+        for (uint64_t i = 0; i < BUF_LENGTH(scope->defer_statements); i++)
+        {
+            uint64_t index = BUF_LENGTH(scope->defer_statements) - 1 - i;
+            AST_Statement* defer_stmt = scope->defer_statements[index];
+            ir_builder_emit_statement(ir_builder, defer_stmt, scope, nullptr);
+        }
+
+        scope = scope->parent;
+        while (!(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE))
+        {
+            for (uint64_t i = 0; i < BUF_LENGTH(scope->defer_statements); i++)
+            {
+                uint64_t index = BUF_LENGTH(scope->defer_statements) - 1 - i;
+                AST_Statement* defer_statement = scope->defer_statements[index];
+                bool emit = true;
+                if (defer_statement->file_pos.line > return_file_pos.line)
+                {
+                    emit = false;
+                }
+                else if (defer_statement->file_pos.line == return_file_pos.line)
+                {
+                    if (defer_statement->file_pos.line_relative_char_pos >
+                        return_file_pos.line_relative_char_pos)
+                    {
+                        emit = false;
+                    }
+                }
+
+                if (emit)
+                {
+                    ir_builder_emit_statement(ir_builder, defer_statement, scope, nullptr);
+                }
+            }
+            scope = scope->parent;
+        }
+
+    }
+
+    void ir_builder_emit_defer_statements_before_break(IR_Builder* ir_builder, AST_Scope* scope,
+                                                       File_Pos break_file_pos)
+    {
+        assert(ir_builder);
+        assert(scope);
+
+        while (!(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE) &&
+               !(scope->flags & AST_SCOPE_FLAG_BREAK_SCOPE))
+        {
+            for (uint64_t i = 0; i < BUF_LENGTH(scope->defer_statements); i++)
+            {
+                uint64_t index = BUF_LENGTH(scope->defer_statements) - 1 - i;
+                AST_Statement* defer_stmt = scope->defer_statements[index];
+
+                bool emit = true;
+
+                if (defer_stmt->file_pos.line > break_file_pos.line)
+                {
+                    emit = false;
+                }
+                else if (defer_stmt->file_pos.line == break_file_pos.line)
+                {
+                    if (defer_stmt->file_pos.line_relative_char_pos >
+                        break_file_pos.line_relative_char_pos)
+                    {
+                        emit = false;
+                    }
+                }
+
+                if (emit)
+                {
+                    ir_builder_emit_statement(ir_builder, defer_stmt, scope, nullptr);
+                }
+            }
+
+            scope = scope->parent;
+        }
     }
 
     void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value,

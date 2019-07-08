@@ -209,6 +209,7 @@ namespace Zodiac
         AST_STMT_BREAK,
         AST_STMT_INSERT,
         AST_STMT_ASSERT,
+        AST_STMT_DEFER,
     };
 
     typedef uint64_t _AST_STMT_FLAGS_;
@@ -287,6 +288,7 @@ namespace Zodiac
             } insert;
 
             AST_Expression* assert_expression;
+            AST_Statement* defer_statement;
         };
     };
 
@@ -579,11 +581,21 @@ namespace Zodiac
         };
     };
 
+    typedef uint64_t _AST_Scope_Flags_;
+    enum AST_Scope_Flags : _AST_Scope_Flags_
+    {
+        AST_SCOPE_FLAG_NONE            = 0,
+        AST_SCOPE_FLAG_IS_MODULE_SCOPE = (1 << 0),
+        AST_SCOPE_FLAG_BREAK_SCOPE     = (1 << 1),
+    };
+
     struct AST_Scope
     {
+        _AST_Scope_Flags_ flags = AST_SCOPE_FLAG_NONE;
         AST_Scope* parent = nullptr;
-        bool is_module_scope = false;
         AST_Module* module = nullptr;
+
+        BUF(AST_Statement*) defer_statements = nullptr;
 
         BUF(AST_Module*) using_modules = nullptr;
         BUF(AST_Declaration*) using_declarations = nullptr;
@@ -736,6 +748,8 @@ namespace Zodiac
                                             AST_Statement* statement);
     AST_Statement* ast_assert_statement_new(Context* context, File_Pos file_pos,
                                             AST_Expression* assert_expr);
+    AST_Statement* ast_defer_statement_new(Context* context, File_Pos file_pos,
+                                           AST_Statement* defer_statement);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
                            const char* name, uint64_t bit_size);

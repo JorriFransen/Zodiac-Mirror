@@ -100,7 +100,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_ident_expression_new(Context* context, File_Pos file_pos, AST_Identifier* identifier)
+    AST_Expression* ast_ident_expression_new(Context* context, File_Pos file_pos,
+                                             AST_Identifier* identifier)
     {
         assert(context);
         assert(identifier);
@@ -112,7 +113,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_call_expression_new(Context* context, File_Pos file_pos, AST_Expression* ident_expr,
+    AST_Expression* ast_call_expression_new(Context* context, File_Pos file_pos,
+                                            AST_Expression* ident_expr,
         BUF(AST_Expression*) arg_exprs)
     {
         assert(context);
@@ -769,6 +771,21 @@ namespace Zodiac
         return result;
     }
 
+    AST_Statement* ast_defer_statement_new(Context* context, File_Pos file_pos,
+                                           AST_Statement* defer_statement)
+    {
+        assert(context);
+        assert(defer_statement);
+
+        AST_Statement* result = arena_alloc(context->arena, AST_Statement);
+        result->kind = AST_STMT_DEFER;
+        result->file_pos = file_pos;
+
+        result->defer_statement = defer_statement;
+
+        return result;
+    }
+
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
                            const char* name, uint64_t bit_size)
     {
@@ -1024,7 +1041,7 @@ namespace Zodiac
         }
     }
 
-	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
+    AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
 		                     bool is_module_scope)
 
     {
@@ -1033,7 +1050,11 @@ namespace Zodiac
 
         AST_Scope* result = arena_alloc(context->arena, AST_Scope);
         result->parent = parent_scope;
-        result->is_module_scope = is_module_scope;
+        result->flags = AST_SCOPE_FLAG_NONE;
+        if (is_module_scope)
+        {
+            result->flags |= AST_SCOPE_FLAG_IS_MODULE_SCOPE;
+        }
         result->module = module;
         result->using_modules = nullptr;
         result->using_declarations = nullptr;
