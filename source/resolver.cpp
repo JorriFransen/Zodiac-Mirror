@@ -1771,7 +1771,8 @@ namespace Zodiac
         {
             if (suggested_type)
             {
-                if (suggested_type->flags & AST_TYPE_FLAG_INT)
+                if (suggested_type->flags & AST_TYPE_FLAG_INT ||
+                    suggested_type->kind == AST_TYPE_POINTER)
                 {}
                 else if (suggested_type->flags & AST_TYPE_FLAG_FLOAT)
                 {
@@ -1782,7 +1783,14 @@ namespace Zodiac
                 }
                 else assert(false);
 
-                expression->type = suggested_type;
+                if (suggested_type->kind != AST_TYPE_POINTER)
+                {
+                    expression->type = suggested_type;
+                }
+                else
+                {
+                    expression->type = Builtin::type_int;
+                }
             }
             else
             {
@@ -2089,6 +2097,18 @@ namespace Zodiac
 
         if (result && !expression->type)
         {
+            if (lhs->type->kind == AST_TYPE_POINTER && (rhs->type->flags & AST_TYPE_FLAG_INT))
+            {
+                // Pointer math
+                expression->type = lhs->type;
+                expression->flags |= AST_EXPR_FLAG_POINTER_MATH;
+            }
+            else if (rhs->type->kind == AST_TYPE_POINTER && (lhs->type->flags & AST_TYPE_FLAG_INT))
+            {
+                // Pointer math
+                expression->type = rhs->type;
+                expression->flags |= AST_EXPR_FLAG_POINTER_MATH;
+            }
             if (is_cmp_op(expression->binary.op))
             {
                 expression->type = Builtin::type_bool;
@@ -2231,7 +2251,6 @@ namespace Zodiac
 
                 case AST_UNOP_DEREF:
                 {
-                    assert(operand_expr->kind == AST_EXPR_IDENTIFIER);
                     assert(operand_expr->type->kind == AST_TYPE_POINTER);
                     expression->type = operand_expr->type->pointer.base;
                     break;

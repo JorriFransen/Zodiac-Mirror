@@ -501,6 +501,10 @@ namespace Zodiac
                 {
                     dest->value.r32 = arg1->value.r32 + arg2->value.r32;
                 }
+                else if (type->kind == AST_TYPE_POINTER)
+                {
+                    dest->value.u64 = arg1->value.u64 + arg2->value.u64;
+                }
                 else assert(false);
 
                 break;
@@ -529,6 +533,10 @@ namespace Zodiac
                 else if (type == Builtin::type_double)
                 {
                     dest->value.r64 = arg1->value.r64 - arg2->value.r64;
+                }
+                else if (type->kind == AST_TYPE_POINTER)
+                {
+                    dest->value.u64 = arg1->value.u64 - arg2->value.u64;
                 }
                 else assert(false);
 
@@ -1589,6 +1597,11 @@ namespace Zodiac
                          iri->result->type->kind == AST_TYPE_ENUM)
                 {
                     dest->value.u64 = source->value.u64;
+                }
+                else if ((iri->arg1->type->flags & AST_TYPE_FLAG_INT) &&
+                         (iri->result->type->kind == AST_TYPE_POINTER))
+                {
+                    dest->value.string = (uint8_t*)source->value.u64;
                 }
                 else assert(false);
 

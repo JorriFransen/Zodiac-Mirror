@@ -1,0 +1,28 @@
+
+std :: import std;
+using std;
+
+main :: ()
+{
+    print("pointer math test");
+
+    count : u64 = 5;
+
+    int_buf : *int = (:*int)_c.malloc(sizeof(int) * count);
+
+    int_cur := int_buf;
+
+    for (i : u64 = 0; i < count; i = i + 1)
+    {
+        <int_cur = (i + 1) * 5;
+        int_cur = int_cur + 1;
+    }
+
+    int_cur = int_cur - 1;
+
+    for (i : u64 = 0; i < count; i = i + 1)
+    {
+        _c.printf("int_buf[%d] = %d\n", 4 - i, <int_cur);
+        int_cur = int_cur - 1;
+    }
+}

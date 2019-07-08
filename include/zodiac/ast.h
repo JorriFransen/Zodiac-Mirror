@@ -93,10 +93,11 @@ namespace Zodiac
     typedef uint64_t _AST_EXPR_FLAGS_;
     enum AST_Expression_Flag : _AST_EXPR_FLAGS_
     {
-        AST_EXPR_FLAG_NONE      = 0x00,
-        AST_EXPR_FLAG_GENERATED = (1 << 0),
-        AST_EXPR_FLAG_LITERAL   = (1 << 1),
-        AST_EXPR_FLAG_CONST     = (1 << 2),
+        AST_EXPR_FLAG_NONE         = 0x00,
+        AST_EXPR_FLAG_GENERATED    = (1 << 0),
+        AST_EXPR_FLAG_LITERAL      = (1 << 1),
+        AST_EXPR_FLAG_CONST        = (1 << 2),
+        AST_EXPR_FLAG_POINTER_MATH = (1 << 3),
     };
 
     struct AST_Expression

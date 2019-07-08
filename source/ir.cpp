@@ -744,6 +744,24 @@ namespace Zodiac
                 IR_Value* rhs_value = ir_builder_emit_expression(ir_builder,
                                                                  expression->binary.rhs);
 
+                if (expression->flags & AST_EXPR_FLAG_POINTER_MATH)
+                {
+                    if (lhs_value->type->kind == AST_TYPE_POINTER)
+                    {
+                        assert(rhs_value->type->flags & AST_TYPE_FLAG_INT);
+                        auto size_lit = ir_integer_literal(ir_builder, rhs_value->type,
+                                                           lhs_value->type->pointer.base->bit_size / 8);
+                        rhs_value = ir_builder_emit_mul(ir_builder, rhs_value, size_lit);
+                        rhs_value = ir_builder_emit_cast(ir_builder, rhs_value, lhs_value->type);
+                    }
+                    else
+                    {
+                        assert(rhs_value->type->kind == AST_TYPE_POINTER);
+                        assert(lhs_value->type->flags & AST_TYPE_FLAG_INT);
+                        assert(false);
+                    }
+                }
+
                 switch (expression->binary.op)
                 {
                     case AST_BINOP_ADD:
