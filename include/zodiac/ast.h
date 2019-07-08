@@ -96,6 +96,7 @@ namespace Zodiac
         AST_EXPR_FLAG_NONE      = 0x00,
         AST_EXPR_FLAG_GENERATED = (1 << 0),
         AST_EXPR_FLAG_LITERAL   = (1 << 1),
+        AST_EXPR_FLAG_CONST     = (1 << 2),
     };
 
     struct AST_Expression
@@ -105,7 +106,6 @@ namespace Zodiac
         File_Pos file_pos;
 
         AST_Type* type = nullptr;
-        bool is_const = false;
 
         union
         {
@@ -318,7 +318,6 @@ namespace Zodiac
     struct AST_Function_Declaration
     {
         BUF(AST_Declaration*) args = nullptr;
-        bool is_vararg = false;
         BUF(AST_Declaration*) locals = nullptr;
         AST_Type_Spec* return_type_spec = nullptr;
         AST_Type* return_type = nullptr;
@@ -331,7 +330,6 @@ namespace Zodiac
 		AST_Type* type = nullptr;
 
         BUF(AST_Declaration*) overloads = nullptr;
-        bool is_poly = false;
         uint64_t poly_count = 0;
         BUF(AST_Poly_Instance) poly_instances;
     };
@@ -353,10 +351,13 @@ namespace Zodiac
     typedef uint64_t _AST_DECL_FLAG_TYPE_;
     enum AST_Declaration_Flags : _AST_DECL_FLAG_TYPE_
     {
-        AST_DECL_FLAG_NONE      = 0x00,
-        AST_DECL_FLAG_RESOLVED  = 0x01,
-        AST_DECL_FLAG_GENERATED = 0x02,
-        AST_DECL_FLAG_FOREIGN   = 0x04,
+        AST_DECL_FLAG_NONE             = 0x00,
+        AST_DECL_FLAG_RESOLVED         = (1 << 0),
+        AST_DECL_FLAG_GENERATED        = (1 << 1),
+        AST_DECL_FLAG_FOREIGN          = (1 << 2),
+        AST_DECL_FLAG_FUNC_POLY        = (1 << 3),
+        AST_DECL_FLAG_FUNC_VARARG      = (1 << 4),
+        AST_DECL_FLAG_INSERT_GENERATED = (1 << 5),
     };
 
     enum AST_Declaration_Location
@@ -384,8 +385,6 @@ namespace Zodiac
         AST_Identifier* identifier = nullptr;
         AST_Directive* directive = nullptr;
 		AST_Scope* scope = nullptr;
-
-        bool constant = false;
 
         union
         {
@@ -453,7 +452,6 @@ namespace Zodiac
             struct
             {
                 AST_Statement* call_statement;
-                bool generated; 
             } insert_decl;
         };
 
@@ -473,11 +471,12 @@ namespace Zodiac
     typedef uint64_t AST_Type_Flags;
     enum _AST_TYPE_FLAG_TYPE_ : AST_Type_Flags
     {
-        AST_TYPE_FLAG_NONE   = 0x00,
-        AST_TYPE_FLAG_INT    = 0x01,
-        AST_TYPE_FLAG_SIGNED = 0x02,
-        AST_TYPE_FLAG_VOID   = 0x04,
-        AST_TYPE_FLAG_FLOAT  = 0x08,
+        AST_TYPE_FLAG_NONE        = 0x00,
+        AST_TYPE_FLAG_INT         = (1 << 0),
+        AST_TYPE_FLAG_SIGNED      = (1 << 1),
+        AST_TYPE_FLAG_VOID        = (1 << 2),
+        AST_TYPE_FLAG_FLOAT       = (1 << 3),
+        AST_TYPE_FLAG_FUNC_VARARG = (1 << 4),
     };
 
     struct AST_Type
@@ -513,7 +512,6 @@ namespace Zodiac
 
             struct
             {
-                bool is_vararg;
                 BUF(AST_Type*) arg_types;
                 AST_Type* return_type;
                 AST_Declaration* poly_from;
@@ -530,20 +528,18 @@ namespace Zodiac
         AST_TYPE_SPEC_FUNCTION,
     };
 
-    enum AST_Type_Spec_Flags : uint64_t
+    typedef uint64_t _AST_Type_Spec_Flags_;
+    enum AST_Type_Spec_Flags : _AST_Type_Spec_Flags_
     {
-        AST_TYPE_SPEC_FLAG_NONE = 0,
-        AST_TYPE_SPEC_FLAG_POLY = (1 << 0),
+        AST_TYPE_SPEC_FLAG_NONE        = 0,
+        AST_TYPE_SPEC_FLAG_POLY        = (1 << 0),
+        AST_TYPE_SPEC_FLAG_FUNC_VARARG = (1 << 1),
     };
 
     struct AST_Type_Spec
     {
         AST_Type_Spec_Kind kind;
-        union
-        {
-            AST_Type_Spec_Flags flags;
-            uint64_t _flags;
-        };
+        _AST_Type_Spec_Flags_ flags;
         File_Pos file_pos;
 
         union
@@ -567,7 +563,6 @@ namespace Zodiac
 
             struct
             {
-                bool is_vararg;
                 BUF(AST_Declaration*) args;
                 AST_Type_Spec* return_type_spec;
                 AST_Scope* arg_scope;
@@ -666,8 +661,7 @@ namespace Zodiac
     AST_Declaration* ast_declaration_new(Context* context, File_Pos file_Pos,
                                          AST_Declaration_Kind kind,
                                          AST_Declaration_Location location,
-                                         AST_Identifier* identifier, AST_Directive* directive,
-                                         bool constant);
+                                         AST_Identifier* identifier, AST_Directive* directive);
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
@@ -696,8 +690,7 @@ namespace Zodiac
                                                    AST_Declaration* else_declaration);
     AST_Declaration* ast_using_declaration_new(Context* context, File_Pos file_pos,
                                                AST_Expression* ident_expr,
-                                               AST_Declaration_Location location,
-                                               bool global);
+                                               AST_Declaration_Location location);
     AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos,
                                                BUF(AST_Declaration*) block_decls);
     AST_Declaration* ast_static_assert_declaration_new(Context* context, File_Pos file_pos,
@@ -781,7 +774,8 @@ namespace Zodiac
                                               bool is_vararg, BUF(AST_Declaration*) arg_decls,
                                               AST_Type_Spec* return_type_spec,
                                               AST_Scope* arg_scope);
-    AST_Type_Spec* ast_type_spec_from_type_new(Context* context, File_Pos file_pos, AST_Type* type);
+    AST_Type_Spec* ast_type_spec_from_type_new(Context* context, File_Pos file_pos,
+                                               AST_Type* type);
 
 	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
 		                     bool is_module_scope);

@@ -83,7 +83,7 @@ namespace Zodiac
 		{
 			case AST_DECL_FUNC:
 			{
-                if (decl->function.is_poly)
+                if (decl->flags & AST_DECL_FLAG_FUNC_POLY)
                 {
                     return;
                 }
@@ -179,7 +179,7 @@ namespace Zodiac
         {
             case AST_DECL_FUNC:
             {
-                if (global_decl->function.is_poly)
+                if (global_decl->flags & AST_DECL_FLAG_FUNC_POLY)
                 {
                     return;
                 }
@@ -213,7 +213,7 @@ namespace Zodiac
                 else
                 {
                     func_value->function->flags |= IR_FUNC_FLAG_FOREIGN;
-                    if (global_decl->function.is_vararg)
+                    if (global_decl->flags & AST_DECL_FLAG_FUNC_VARARG)
                     {
                         func_value->function->flags |= IR_FUNC_FLAG_VARARG;
                     }
@@ -917,7 +917,7 @@ namespace Zodiac
                         bool is_vararg = false;
                         if (i >= BUF_LENGTH(func_type->function.arg_types))
                         {
-                            assert(func_type->function.is_vararg);
+                            assert(func_type->flags & AST_TYPE_FLAG_FUNC_VARARG);
                             is_vararg = true;
                         }
 						AST_Expression* arg_expr = expression->call.arg_expressions[i];
@@ -947,7 +947,7 @@ namespace Zodiac
                         bool is_vararg = false;
                         if (i >= BUF_LENGTH(func_type->function.arg_types))
                         {
-                            assert(func_type->function.is_vararg);
+                            assert(func_type->flags & AST_TYPE_FLAG_FUNC_VARARG);
                             is_vararg = true;
                         }
 						AST_Expression* arg_expr = expression->call.arg_expressions[i];

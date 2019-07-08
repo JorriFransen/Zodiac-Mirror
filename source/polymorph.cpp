@@ -280,7 +280,7 @@ namespace Zodiac
     {
         assert(poly_func_decl);
         assert(poly_func_decl->kind == AST_DECL_FUNC);
-        assert(poly_func_decl->function.is_poly);
+        assert(poly_func_decl->flags & AST_DECL_FLAG_FUNC_POLY);
 
         assert(poly_func_decl_dest);
         assert(*poly_func_decl_dest == nullptr);
@@ -328,7 +328,7 @@ namespace Zodiac
         assert(resolver);
         assert(poly_func_decl);
         assert(poly_func_decl->kind == AST_DECL_FUNC);
-        assert(poly_func_decl->function.is_poly);
+        assert(poly_func_decl->flags & AST_DECL_FLAG_FUNC_POLY);
 
         auto poly_atom = atom_append(resolver->context->atom_table,
                                      "_poly", poly_func_decl->function.poly_count++);
@@ -341,7 +341,7 @@ namespace Zodiac
         AST_Declaration* instance = ast_declaration_new(resolver->context,
                                                         poly_func_decl->file_pos,
                                                         AST_DECL_FUNC, poly_func_decl->location,
-                                                        poly_identifier, nullptr, true);
+                                                        poly_identifier, nullptr);
 
         for (uint64_t i = 0; i < BUF_LENGTH(poly_func_decl->function.args); i++)
         {
@@ -396,8 +396,7 @@ namespace Zodiac
         AST_Declaration* instance = ast_declaration_new(resolver->context, type_decl->file_pos,
                                                         AST_DECL_AGGREGATE_TYPE,
                                                         type_decl->location,
-                                                        poly_identifier,
-                                                        nullptr, true);
+                                                        poly_identifier, nullptr);
 
         instance->aggregate_type.aggregate_decl =
             copy_aggregate_declaration(resolver->context,

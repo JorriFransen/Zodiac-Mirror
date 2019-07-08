@@ -138,7 +138,7 @@ namespace Zodiac
                 {
                     case AST_DECL_FUNC:
                     {
-                        if (declaration->function.is_poly)
+                        if (declaration->flags & AST_DECL_FLAG_FUNC_POLY)
                         {
                             if (overload_container)
                             {
@@ -341,7 +341,7 @@ namespace Zodiac
         }
         else
         {
-            assert(declaration->flags &= AST_DECL_FLAG_FOREIGN);
+            assert(declaration->flags & AST_DECL_FLAG_FOREIGN);
         }
 
         if (result)
@@ -350,10 +350,11 @@ namespace Zodiac
             {
                 declaration->function.return_type = Builtin::type_void;
             }
-			declaration->function.type = ast_find_or_create_function_type(resolver->context,
-
-				declaration->function.is_vararg, arg_types,
-				declaration->function.return_type);
+            bool is_vararg = declaration->flags & AST_DECL_FLAG_FUNC_VARARG;
+			declaration->function.type =
+                ast_find_or_create_function_type(resolver->context,
+                                                 is_vararg, arg_types,
+                                                 declaration->function.return_type);
 
             auto main_atom = Builtin::atom_main;
             if (main_atom == declaration->identifier->atom)
@@ -474,7 +475,7 @@ namespace Zodiac
             return false;
         }
 
-        assert(init_expr->is_const);
+        assert(init_expr->flags & AST_EXPR_FLAG_CONST);
 
         if (specified_type)
         {
@@ -555,7 +556,7 @@ namespace Zodiac
 
         if (result)
         {
-            assert(assert_expr->is_const);
+            assert(assert_expr->flags & AST_EXPR_FLAG_CONST);
         }
 
         return result;
@@ -812,7 +813,7 @@ namespace Zodiac
         assert(scope);
         assert(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE);
 
-        if (declaration->insert_decl.generated)
+        if (declaration->flags & AST_DECL_FLAG_INSERT_GENERATED)
         {
             return true;
         }
@@ -875,7 +876,7 @@ namespace Zodiac
 
             if (result)
             {
-                declaration->insert_decl.generated = true;
+                declaration->flags |= AST_DECL_FLAG_INSERT_GENERATED;
             }
         }
 
@@ -931,7 +932,7 @@ namespace Zodiac
                     return false;
                 }
 
-                if (result && lvalue_expr->is_const)
+                if (result && lvalue_expr->flags & AST_EXPR_FLAG_CONST)
                 {
                     resolver_report_error(resolver, statement->file_pos,
                                           "Cannot assign to constant expression");
@@ -1071,7 +1072,7 @@ namespace Zodiac
                                 {
                                     break;
                                 }
-                                assert(case_expr->is_const);
+                                assert(case_expr->flags & AST_EXPR_FLAG_CONST);
                             }
 
                             for (uint64_t i = 0; i < BUF_LENGTH(switch_case.range_expressions);
@@ -1085,8 +1086,8 @@ namespace Zodiac
 
                                 if (result)
                                 {
-                                    assert(min->is_const);
-                                    assert(max->is_const);
+                                    assert(min->flags & AST_EXPR_FLAG_CONST);
+                                    assert(max->flags & AST_EXPR_FLAG_CONST);
                                     assert(min->type == max->type);
                                 }
                             }
@@ -1445,7 +1446,7 @@ namespace Zodiac
             assert(expression->type ||
                    (expression->kind == AST_EXPR_IDENTIFIER &&
                     expression->identifier->declaration->kind == AST_DECL_FUNC &&
-                    expression->identifier->declaration->function.is_poly) ||
+                    (expression->identifier->declaration->flags & AST_DECL_FLAG_FUNC_POLY)) ||
                    (expression->kind == AST_EXPR_IDENTIFIER &&
                     expression->identifier->declaration->kind == AST_DECL_IMPORT) ||
                    (expression->kind == AST_EXPR_IDENTIFIER &&
@@ -1512,7 +1513,7 @@ namespace Zodiac
             if (!func_decl) return false;
         }
 
-        if (func_decl->function.is_poly)
+        if (func_decl->flags & AST_DECL_FLAG_FUNC_POLY)
         {
             assert(!recursive);
             if (!find_or_create_poly_function(resolver, expression, &func_decl, scope))
@@ -1545,7 +1546,8 @@ namespace Zodiac
 
             if (arg_count != expected_arg_count)
             {
-                if ((arg_count > expected_arg_count && !func_type->function.is_vararg) ||
+                if ((arg_count > expected_arg_count &&
+                     !(func_type->flags & AST_TYPE_FLAG_FUNC_VARARG)) ||
                     arg_count < expected_arg_count)
                 {
                     resolver_report_error(resolver, expression->file_pos,
@@ -1568,7 +1570,7 @@ namespace Zodiac
                 }
                 else
                 {
-                    assert(func_type->function.is_vararg);
+                    assert(func_type->flags & AST_TYPE_FLAG_FUNC_VARARG);
                 }
             }
 
@@ -1721,7 +1723,7 @@ namespace Zodiac
         {
             expression->type = Builtin::type_bool;
         }
-        expression->is_const = true;
+        expression->flags |= AST_EXPR_FLAG_CONST;
 
         return true;
     }
@@ -1736,7 +1738,7 @@ namespace Zodiac
         {
             expression->type = ast_find_or_create_pointer_type(resolver->context, Builtin::type_void);
         }
-        expression->is_const = true;
+        expression->flags |= AST_EXPR_FLAG_CONST;
 
         return true;
     }
@@ -1752,7 +1754,7 @@ namespace Zodiac
             expression->type = ast_find_or_create_pointer_type(resolver->context,
                                                                Builtin::type_u8);
         }
-        expression->is_const = true;
+        expression->flags |= AST_EXPR_FLAG_CONST;
 
         return true;
     }
@@ -1787,7 +1789,7 @@ namespace Zodiac
                 expression->type = Builtin::type_int;
             }
         }
-        expression->is_const = true;
+        expression->flags |= AST_EXPR_FLAG_CONST;
 
         return true;
     }
@@ -1812,7 +1814,7 @@ namespace Zodiac
             }
         }
 
-        expression->is_const = true;
+        expression->flags |= AST_EXPR_FLAG_CONST;
 
         return true;
     }
@@ -1827,7 +1829,7 @@ namespace Zodiac
         {
             expression->type = Builtin::type_u8;
         }
-        expression->is_const = true;
+        expression->flags |= AST_EXPR_FLAG_CONST;
 
         return true;
     }
@@ -2020,29 +2022,29 @@ namespace Zodiac
             else if (decl->kind == AST_DECL_CONSTANT_VAR)
             {
                 expression->type = ident->declaration->constant_var.type;
-                expression->is_const = true;
+                expression->flags |= AST_EXPR_FLAG_CONST;
             }
             else if (decl->kind == AST_DECL_IMPORT)
             {
                 expression->type = nullptr;
-                expression->is_const = true;
+                expression->flags |= AST_EXPR_FLAG_CONST;
             }
             else if (decl->kind == AST_DECL_FUNC)
             {
                 expression->type = decl->function.type;
-                expression->is_const = true;
+                expression->flags |= AST_EXPR_FLAG_CONST;
             }
             else if (decl->kind == AST_DECL_AGGREGATE_TYPE &&
                      decl->aggregate_type.kind == AST_AGG_DECL_ENUM)
             {
-                expression->is_const = true;
+                expression->flags |= AST_EXPR_FLAG_CONST;
             }
             else assert(false);
 
             assert(expression->type || decl->kind == AST_DECL_IMPORT ||
                    (decl->kind == AST_DECL_AGGREGATE_TYPE &&
                     decl->aggregate_type.kind == AST_AGG_DECL_ENUM) ||
-                   (decl->kind == AST_DECL_FUNC && decl->function.is_poly));
+                   (decl->kind == AST_DECL_FUNC && (decl->flags & AST_DECL_FLAG_FUNC_POLY)));
         }
 
         return result;
@@ -2115,7 +2117,10 @@ namespace Zodiac
                 rhs->type = lhs->type;
                 rhs->cast_expr.type_spec = nullptr;
                 rhs->cast_expr.expr = old_rhs;
-                rhs->is_const = old_rhs->is_const;
+                if (old_rhs->flags & AST_EXPR_FLAG_CONST)
+                {
+                    rhs->flags |= AST_EXPR_FLAG_CONST;
+                }
 
                 expression->type = lhs->type;
             }
@@ -2129,7 +2134,10 @@ namespace Zodiac
                 lhs->type = rhs->type;
                 lhs->cast_expr.type_spec = nullptr;
                 lhs->cast_expr.expr = old_lhs;
-                lhs->is_const = old_lhs->is_const;
+                if (old_lhs->flags & AST_EXPR_FLAG_CONST)
+                {
+                    lhs->flags |= AST_EXPR_FLAG_CONST;
+                }
 
                 expression->type = rhs->type;
             }
@@ -2144,9 +2152,9 @@ namespace Zodiac
             }
 
 
-            if (lhs->is_const && rhs->is_const)
+            if ((lhs->flags & AST_EXPR_FLAG_CONST) && (rhs->flags & AST_EXPR_FLAG_CONST))
             {
-                expression->is_const = true;
+                expression->flags |= AST_EXPR_FLAG_CONST;
             }
         }
 
@@ -2173,7 +2181,7 @@ namespace Zodiac
                     assert((operand_expr->type->flags & AST_TYPE_FLAG_INT) ||
                            (operand_expr->type->flags & AST_TYPE_FLAG_FLOAT));
 
-                    if (operand_expr->is_const)
+                    if (operand_expr->flags & AST_EXPR_FLAG_CONST)
                     {
                         if (operand_expr->type == Builtin::type_int)
                         {
@@ -2197,7 +2205,11 @@ namespace Zodiac
                     {
                         expression->type = operand_expr->type;
                     }
-                    expression->is_const = operand_expr->is_const;
+
+                    if (operand_expr->flags & AST_EXPR_FLAG_CONST)
+                    {
+                        expression->flags |= AST_EXPR_FLAG_CONST;
+                    }
                     break;
                 }
 
@@ -2298,7 +2310,7 @@ namespace Zodiac
                     assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
 
                     expression->type = member_decl->constant_var.type;
-                    expression->is_const = true;
+                    expression->flags |= AST_EXPR_FLAG_CONST;
                     expression->dot.declaration = member_decl;
                 }
                 else assert(false);
@@ -2371,7 +2383,10 @@ namespace Zodiac
                 if (result)
                 {
                     expression->type = member_expr->type;
-                    expression->is_const = member_expr->is_const;
+                    if (member_expr->flags & AST_EXPR_FLAG_CONST)
+                    {
+                        expression->flags |= AST_EXPR_FLAG_CONST;
+                    }
                     assert(member_expr->identifier->declaration);
                     expression->dot.declaration = member_expr->identifier->declaration;
                 }
@@ -2417,9 +2432,10 @@ namespace Zodiac
 			expression->type = type;
 		}
 
-        if (result)
+        if (result && (expression->cast_expr.expr->flags & AST_EXPR_FLAG_CONST))
         {
-            expression->is_const = expression->cast_expr.expr->is_const;
+
+            expression->flags |= AST_EXPR_FLAG_CONST;
         }
 
 		return result;
@@ -2460,7 +2476,7 @@ namespace Zodiac
         }
 		else if (decl->kind == AST_DECL_FUNC)
 		{
-			if (!decl->function.type && !decl->function.is_poly)
+			if (!decl->function.type && !(decl->flags & AST_DECL_FLAG_FUNC_POLY))
 			{
 				return false;
 			}
@@ -2668,7 +2684,8 @@ namespace Zodiac
 				{
 					AST_Type* result_type =
 						ast_find_or_create_function_type(resolver->context,
-                                                         type_spec->function.is_vararg,
+                                                         (type_spec->flags &
+                                                          AST_TYPE_SPEC_FLAG_FUNC_VARARG),
 						                                 arg_types, return_type);
 					*type_dest = result_type;
 					return true;
@@ -2928,7 +2945,9 @@ namespace Zodiac
             BUF_LENGTH(decl_b->function.args);
 
         if (!arg_count_match) return false;
-        if (decl_a->function.is_vararg != decl_b->function.is_vararg) return false;
+        bool a_is_vararg = decl_a->flags & AST_DECL_FLAG_FUNC_VARARG;
+        bool b_is_vararg = decl_b->flags & AST_DECL_FLAG_FUNC_VARARG;
+        if (a_is_vararg != b_is_vararg) return false;
 
         for (uint64_t i = 0; i < BUF_LENGTH(decl_a->function.args); i++)
         {

@@ -60,7 +60,7 @@ namespace Zodiac
         result->file_pos = file_pos;
         result->kind = kind;
         result->type = nullptr;
-        result->is_const = false;
+        result->flags = AST_EXPR_FLAG_NONE;
 
         return result;
     }
@@ -289,8 +289,7 @@ namespace Zodiac
     AST_Declaration* ast_declaration_new(Context* context, File_Pos file_pos,
                                          AST_Declaration_Kind kind,
                                          AST_Declaration_Location location,
-                                         AST_Identifier* identifier, AST_Directive* directive,
-                                         bool constant)
+                                         AST_Identifier* identifier, AST_Directive* directive)
     {
         assert(context);
 
@@ -300,7 +299,6 @@ namespace Zodiac
         result->location = location;
         result->identifier = identifier;
         result->directive = directive;
-        result->constant = constant;
         result->gen_data = nullptr;
 
         return result;
@@ -320,17 +318,23 @@ namespace Zodiac
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_FUNC,
                                                       AST_DECL_LOC_GLOBAL,
-                                                      identifier, nullptr, true);
+                                                      identifier, nullptr);
 
         result->function.args = args;
-        result->function.is_vararg = is_vararg;
+        if (is_vararg)
+        {
+            result->flags |= AST_DECL_FLAG_FUNC_VARARG;
+        }
         result->function.locals = nullptr;
         result->function.return_type_spec = return_type_spec;
         result->function.return_type = nullptr;
         result->function.inferred_return_type = nullptr;
         result->function.body_block = body_block;
         result->function.overloads = nullptr;
-        result->function.is_poly = is_poly;
+        if (is_poly)
+        {
+            result->flags |= AST_DECL_FLAG_FUNC_POLY;
+        }
         result->function.poly_count = 0;
         result->function.poly_instances = nullptr;
 
@@ -358,7 +362,7 @@ namespace Zodiac
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_MUTABLE,
                                                       location,
-                                                      identifier, nullptr, false);
+                                                      identifier, nullptr);
 
         result->mutable_decl.type_spec = type_spec;
         result->mutable_decl.init_expression = init_expr;
@@ -378,7 +382,7 @@ namespace Zodiac
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_CONSTANT_VAR,
                                                       location,
-                                                      identifier, nullptr, true);
+                                                      identifier, nullptr);
 
         result->constant_var.type_spec = type_spec;
         result->constant_var.init_expression = init_expr;
@@ -395,7 +399,7 @@ namespace Zodiac
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_TYPE,
                                                       AST_DECL_LOC_INVALID,
-                                                      identifier, nullptr, true);
+                                                      identifier, nullptr);
 
         result->type.type = type;
 
@@ -410,7 +414,7 @@ namespace Zodiac
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_DYN_LINK,
                                                       location,
-                                                      nullptr, nullptr, false);
+                                                      nullptr, nullptr);
 
         result->dyn_link_name = link_name;
 
@@ -428,7 +432,7 @@ namespace Zodiac
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_STATIC_IF,
                                                       AST_DECL_LOC_GLOBAL,
-                                                      nullptr, nullptr, true);
+                                                      nullptr, nullptr);
 
         result->static_if.cond_expr = cond_expr;
         result->static_if.then_declaration = then_declaration;
@@ -439,14 +443,13 @@ namespace Zodiac
 
     AST_Declaration* ast_using_declaration_new(Context* context, File_Pos file_pos,
                                                AST_Expression* ident_expr,
-                                               AST_Declaration_Location location,
-                                               bool global)
+                                               AST_Declaration_Location location)
     {
         assert(context);
         assert(ident_expr);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_USING,
-                                                      location, nullptr, nullptr, global);
+                                                      location, nullptr, nullptr);
 
         result->using_decl.ident_expression = ident_expr;
         result->using_decl.scope_decl = nullptr;
@@ -461,7 +464,7 @@ namespace Zodiac
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_BLOCK,
                                                       AST_DECL_LOC_GLOBAL,
-                                                      nullptr, nullptr, false);
+                                                      nullptr, nullptr);
 
         result->block.decls = block_decls;
 
@@ -475,7 +478,7 @@ namespace Zodiac
         assert(assert_expr);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_STATIC_ASSERT,
-                                                      AST_DECL_LOC_GLOBAL, nullptr, nullptr, true);
+                                                      AST_DECL_LOC_GLOBAL, nullptr, nullptr);
         result->static_assert_expression = assert_expr;
         return result;
     }
@@ -489,8 +492,7 @@ namespace Zodiac
         assert(import_module_identifier);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_IMPORT,
-                                                      AST_DECL_LOC_GLOBAL, identifier,
-                                                      nullptr, true);
+                                                      AST_DECL_LOC_GLOBAL, identifier, nullptr);
         result->import.module_identifier = import_module_identifier;
         return result;
     }
@@ -508,8 +510,7 @@ namespace Zodiac
         assert(scope);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
-                                                      AST_DECL_LOC_GLOBAL, identifier,
-                                                      nullptr, true);
+                                                      AST_DECL_LOC_GLOBAL, identifier, nullptr);
         result->aggregate_type.kind = AST_AGG_DECL_STRUCT;
         result->aggregate_type.type = nullptr;
         result->aggregate_type.aggregate_decl = aggregate_decl;
@@ -532,8 +533,7 @@ namespace Zodiac
         assert(scope);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
-                                                      AST_DECL_LOC_GLOBAL, identifier,
-                                                      nullptr, true);
+                                                      AST_DECL_LOC_GLOBAL, identifier, nullptr);
 
         result->aggregate_type.kind = AST_AGG_DECL_ENUM;
         result->aggregate_type.type = nullptr;
@@ -552,8 +552,7 @@ namespace Zodiac
 		assert(type_spec);
 
 		AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_TYPEDEF,
-			                                          AST_DECL_LOC_GLOBAL, identifier,
-			                                          nullptr, true);
+			                                          AST_DECL_LOC_GLOBAL, identifier, nullptr);
 
 		result->typedef_decl.type_spec = type_spec;
 		result->typedef_decl.type = nullptr;
@@ -568,10 +567,10 @@ namespace Zodiac
         assert(stmt);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_INSERT,
-                                                      AST_DECL_LOC_GLOBAL, nullptr, nullptr, false);
+                                                      AST_DECL_LOC_GLOBAL, nullptr, nullptr);
 
         result->insert_decl.call_statement = stmt;
-        result->insert_decl.generated = false;
+        assert(!(result->flags & AST_DECL_FLAG_INSERT_GENERATED));
 
         return result;
     }
@@ -882,7 +881,10 @@ namespace Zodiac
         assert(return_type);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_FUNCTION, AST_TYPE_FLAG_NONE, {}, 64);
-        result->function.is_vararg = is_vararg;
+        if (is_vararg)
+        {
+            result->flags |= AST_TYPE_FLAG_FUNC_VARARG;
+        }
         result->function.arg_types = arg_types;
         result->function.return_type = return_type;
         result->function.poly_from = nullptr;
@@ -917,7 +919,7 @@ namespace Zodiac
             auto poly_arg = poly_args[i];
             if (poly_arg->flags & AST_TYPE_SPEC_FLAG_POLY)
             {
-                result->_flags |= AST_TYPE_SPEC_FLAG_POLY;
+                result->flags |= AST_TYPE_SPEC_FLAG_POLY;
                 break;
             }
         }
@@ -950,7 +952,7 @@ namespace Zodiac
 
         if (base_type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
         {
-            result->_flags |= AST_TYPE_SPEC_FLAG_POLY;
+            result->flags |= AST_TYPE_SPEC_FLAG_POLY;
         }
 
         return result;
@@ -970,7 +972,7 @@ namespace Zodiac
 
         if (base_type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
         {
-            result->_flags |= AST_TYPE_SPEC_FLAG_POLY;
+            result->flags |= AST_TYPE_SPEC_FLAG_POLY;
         }
 
         return result;
@@ -985,7 +987,10 @@ namespace Zodiac
         assert(arg_scope);
 
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_FUNCTION);
-        result->function.is_vararg = is_vararg;
+        if (is_vararg)
+        {
+            result->flags |= AST_TYPE_SPEC_FLAG_FUNC_VARARG;
+        }
         result->function.args = arg_decls;
         result->function.return_type_spec = return_type_spec;
         result->function.arg_scope = arg_scope;
@@ -1258,7 +1263,7 @@ namespace Zodiac
         assert(context);
         assert(base_type);
         assert(count_expr);
-        assert(count_expr->is_const);
+        assert(count_expr->flags & AST_EXPR_FLAG_CONST);
         assert(count_expr->type == Builtin::type_int);
         assert(scope);
 
@@ -1331,7 +1336,8 @@ namespace Zodiac
                 if (ex_type->kind == AST_TYPE_FUNCTION)
                 {
                     bool ret_match = ex_type->function.return_type == return_type;
-                    bool var_match = ex_type->function.is_vararg == is_vararg;
+                    bool var_match = (ex_type->flags & AST_TYPE_FLAG_FUNC_VARARG) ==
+                                     is_vararg;
                     bool ac_match = BUF_LENGTH(ex_type->function.arg_types) ==
                         BUF_LENGTH(arg_types);
 
@@ -1417,7 +1423,7 @@ namespace Zodiac
 
             case AST_TYPE_FUNCTION:
             {
-                return ast_get_function_type_hash(type->function.is_vararg,
+                return ast_get_function_type_hash((type->flags & AST_TYPE_FLAG_FUNC_VARARG),
                                                   type->function.arg_types,
                                                   type->function.return_type);
                 break;

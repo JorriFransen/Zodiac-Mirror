@@ -152,7 +152,7 @@ namespace Zodiac
 
         if (is_token(parser, TOK_KW_USING))
         {
-            return parse_using_declaration(parser, location, global, scope);
+            return parse_using_declaration(parser, location, scope);
         }
 
         AST_Identifier* identifier = parse_identifier(parser);
@@ -511,7 +511,7 @@ namespace Zodiac
 
     static AST_Declaration* parse_using_declaration(Parser* parser,
                                                     AST_Declaration_Location location,
-                                                    bool global, AST_Scope* scope)
+                                                    AST_Scope* scope)
     {
         assert(parser);
         assert(location != AST_DECL_LOC_INVALID);
@@ -524,8 +524,7 @@ namespace Zodiac
         AST_Expression* ident_expr = parse_expression(parser, scope);
         expect_token(parser, TOK_SEMICOLON);
 
-        return ast_using_declaration_new(parser->context, ft.file_pos, ident_expr, location,
-                                         global);
+        return ast_using_declaration_new(parser->context, ft.file_pos, ident_expr, location);
     }
 
     AST_Aggregate_Declaration* parse_aggregate(Parser* parser, AST_Scope* scope,
@@ -633,9 +632,7 @@ namespace Zodiac
                 {
                     location = AST_DECL_LOC_GLOBAL;
                 }
-                AST_Declaration* decl = parse_using_declaration(parser, location,
-                                                                is_module_scope,
-                                                                scope);
+                AST_Declaration* decl = parse_using_declaration(parser, location, scope);
                 if (!decl)
                 {
                     return nullptr;
@@ -1475,7 +1472,7 @@ namespace Zodiac
         else if (match_token(parser, TOK_DOLLAR))
         {
             AST_Type_Spec* result = parse_type_spec(parser, scope);
-            result->_flags |= AST_TYPE_SPEC_FLAG_POLY;
+            result->flags |= AST_TYPE_SPEC_FLAG_POLY;
             return result;
         }
         else assert(false);
