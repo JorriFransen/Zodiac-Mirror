@@ -610,10 +610,21 @@ namespace Zodiac
 
         if (result && !declaration->aggregate_type.type)
         {
-            declaration->aggregate_type.type = create_struct_type(resolver,
-                                                                  declaration->identifier,
-                                                                  aggregate_decls,
-                                                                  aggregate_decl->index_overload);
+            if (declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT)
+            {
+                declaration->aggregate_type.type = create_struct_type(resolver,
+                                                                      declaration->identifier,
+                                                                      aggregate_decls,
+                                                                      aggregate_decl->index_overload);
+            }
+            else if (declaration->aggregate_type.kind == AST_AGG_DECL_UNION)
+            {
+                declaration->aggregate_type.type = create_union_type(resolver,
+                                                                     declaration->identifier,
+                                                                     aggregate_decls,
+                                                                     aggregate_decl->index_overload);
+            }
+            else assert(false);
 
             if (pointers_to_self)
             {
@@ -2338,28 +2349,29 @@ namespace Zodiac
 
             case AST_DECL_MUTABLE:
             {
-                AST_Type* struct_type = nullptr;
-                bool is_struct_type = false;
-                if (base_decl->mutable_decl.type->kind == AST_TYPE_STRUCT)
+                AST_Type* aggregate_type = nullptr;
+                bool is_aggregate_type = false;
+                if (base_decl->mutable_decl.type->kind == AST_TYPE_STRUCT ||
+                    base_decl->mutable_decl.type->kind == AST_TYPE_UNION)
                 {
-                    struct_type = base_decl->mutable_decl.type;
-                    is_struct_type = true;
+                    aggregate_type = base_decl->mutable_decl.type;
+                    is_aggregate_type = true;
                 }
                 else if (base_decl->mutable_decl.type->kind == AST_TYPE_POINTER)
                 {
                     AST_Type* pointer_type = base_decl->mutable_decl.type;
                     if (pointer_type->pointer.base->kind == AST_TYPE_STRUCT)
                     {
-                        struct_type = pointer_type->pointer.base;
-                        is_struct_type = true;
+                        aggregate_type = pointer_type->pointer.base;
+                        is_aggregate_type = true;
                     }
                 }
                 else assert(false);
 
-                if (is_struct_type)
+                if (is_aggregate_type)
                 {
-                    assert(struct_type);
-                    auto struct_members = struct_type->aggregate_type.member_declarations;
+                    assert(aggregate_type);
+                    auto struct_members = aggregate_type->aggregate_type.member_declarations;
 
                     bool found = false;
                     for (uint64_t i = 0; i < BUF_LENGTH(struct_members); i++)
@@ -2383,7 +2395,7 @@ namespace Zodiac
                         resolver_report_error(resolver, expression->file_pos,
                                               "Reference to undeclared struct member '%s' in struct '%s'",
                                               member_expr->identifier->atom.data,
-                                              struct_type->name);
+                                              aggregate_type->name);
                         return false;
                     }
                 }
@@ -2813,6 +2825,43 @@ namespace Zodiac
 
         assert(struct_type->bit_size || BUF_LENGTH(member_decls) == 0);
         return struct_type;
+    }
+
+    AST_Type* create_union_type(Resolver* resolver, AST_Identifier* identifier,
+                                BUF(AST_Declaration*) member_decls,
+                                AST_Identifier* index_overload)
+    {
+        assert(resolver);
+        assert(identifier);
+
+        uint64_t bit_size = 0;
+        for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+        {
+            AST_Declaration* decl = member_decls[i];
+            assert(decl->kind == AST_DECL_MUTABLE);
+            assert(decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
+
+            uint64_t member_bit_size = 0;
+
+            if (decl->mutable_decl.type)
+            {
+                AST_Type* member_type = decl->mutable_decl.type;
+                assert(member_type->bit_size);
+                member_bit_size = member_type->bit_size;
+            }
+            else if (decl->mutable_decl.type_spec->kind == AST_TYPE_SPEC_POINTER)
+            {
+                member_bit_size = Builtin::pointer_size;
+            }
+            else assert(false);
+
+            if (member_bit_size > bit_size) bit_size = member_bit_size;
+        }
+
+        AST_Type* union_type = ast_type_union_new(resolver->context, member_decls, identifier->atom.data,
+                                                  bit_size, index_overload);
+        assert(union_type->bit_size || BUF_LENGTH(member_decls) == 0);
+        return union_type;
     }
 
     AST_Type* create_enum_type(Resolver* resolver, AST_Identifier* identifier,

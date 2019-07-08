@@ -1140,7 +1140,7 @@ namespace Zodiac
         }
         else
         {
-            AST_Type* struct_type = nullptr;
+            AST_Type* aggregate_type = nullptr;
             IR_Value* base_value = nullptr;
             AST_Declaration* base_decl = nullptr;
             bool is_pointer = false;
@@ -1149,13 +1149,14 @@ namespace Zodiac
             {
                 base_decl = base_expression->identifier->declaration;
                 base_value = ir_builder_value_for_declaration(ir_builder, base_decl);
-                if (base_expression->type->kind == AST_TYPE_STRUCT)
+                if (base_expression->type->kind == AST_TYPE_STRUCT ||
+                    base_expression->type->kind == AST_TYPE_UNION)
                 {
-                    struct_type = base_expression->type;
+                    aggregate_type = base_expression->type;
                 }
                 else if (base_expression->type->kind == AST_TYPE_POINTER)
                 {
-                    struct_type = base_expression->type->pointer.base;
+                    aggregate_type = base_expression->type->pointer.base;
                     is_pointer = true;
                 }
                 else assert(false);
@@ -1164,22 +1165,23 @@ namespace Zodiac
             {
                 base_value = ir_builder_emit_dot_expression(ir_builder,
                                                                       base_expression);
-                struct_type = base_value->type;
+                aggregate_type = base_value->type;
                 base_decl = base_expression->dot.declaration;
             }
 
-            while (struct_type->kind == AST_TYPE_POINTER)
+            while (aggregate_type->kind == AST_TYPE_POINTER)
             {
-                struct_type = struct_type->pointer.base;
+                aggregate_type = aggregate_type->pointer.base;
                 is_pointer = true;
             }
 
-            assert(struct_type->kind == AST_TYPE_STRUCT);
+            assert(aggregate_type->kind == AST_TYPE_STRUCT ||
+                   aggregate_type->kind == AST_TYPE_UNION);
 
             uint64_t member_index = 0;
             AST_Type* member_type = nullptr;
 
-            auto member_decls = struct_type->aggregate_type.member_declarations;
+            auto member_decls = aggregate_type->aggregate_type.member_declarations;
             for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
             {
                 AST_Declaration* member_decl = member_decls[i];
@@ -1895,23 +1897,31 @@ namespace Zodiac
         assert(struct_value->kind == IRV_ALLOCL ||
                struct_value->kind == IRV_ARGUMENT ||
                struct_value->kind == IRV_TEMPORARY);
-        assert(struct_value->type->kind == AST_TYPE_STRUCT);
+        assert(struct_value->type->kind == AST_TYPE_STRUCT ||
+               struct_value->type->kind == AST_TYPE_UNION);
         AST_Type* struct_type = struct_value->type;
-        assert(struct_type->kind == AST_TYPE_STRUCT);
 
         assert(BUF_LENGTH(struct_type->aggregate_type.member_declarations) > offset);
         AST_Declaration* member_decl = struct_type->aggregate_type.member_declarations[offset];
         assert(member_decl->kind == AST_DECL_MUTABLE);
         assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
 
-        IR_Value* offset_value_literal = ir_integer_literal(ir_builder, Builtin::type_int,
-                                                            offset);
+        IR_Value* offset_value_literal = nullptr;
+        if (struct_value->type->kind == AST_TYPE_STRUCT)
+        {
+            offset_value_literal = ir_integer_literal(ir_builder, Builtin::type_int, offset);
+        }
+        else if (struct_value->type->kind == AST_TYPE_UNION)
+        {
+            offset_value_literal = ir_integer_literal(ir_builder, Builtin::type_int, 0);
+        }
+
         AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,
                                                                 member_decl->mutable_decl.type);
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_AGGREGATE_OFFSET_POINTER,
-                                                 struct_value,
-                                                 offset_value_literal, result_value);
+                                                 struct_value, offset_value_literal,
+                                                 result_value);
         ir_builder_emit_instruction(ir_builder, iri);
         return result_value;
     }
@@ -2611,7 +2621,7 @@ namespace Zodiac
                 break;
             }
 
-			default: 
+			default:
 			{
                 assert(store->type->kind == AST_TYPE_POINTER);
                 return ir_builder_emit_loadp(ir_builder, store);
@@ -2677,17 +2687,19 @@ namespace Zodiac
             IR_Value* base_value = ir_builder_emit_lvalue(ir_builder,
                                                           lvalue_expr->dot.base_expression);
 
-            while (base_value->type->kind != AST_TYPE_STRUCT)
+            while (base_value->type->kind != AST_TYPE_STRUCT &&
+                   base_value->type->kind != AST_TYPE_UNION)
             {
                 base_value = ir_builder_emit_load(ir_builder, base_value);
             }
 
             AST_Type* base_type = base_value->type;
-            AST_Type* struct_type = nullptr;
+            AST_Type* aggregate_type = nullptr;
 
-            if (base_type->kind == AST_TYPE_STRUCT)
+            if (base_type->kind == AST_TYPE_STRUCT ||
+                base_type->kind == AST_TYPE_UNION)
             {
-                struct_type = base_type;
+                aggregate_type = base_type;
             }
             else if (base_type->kind == AST_TYPE_POINTER)
             {
@@ -2699,12 +2711,11 @@ namespace Zodiac
                 assert(base_type->pointer.base->kind == AST_TYPE_STRUCT ||
                        base_type->pointer.base->kind == AST_TYPE_POINTER);
                 base_value = ir_builder_emit_loadp(ir_builder, base_value);
-                struct_type = base_type->pointer.base;
+                aggregate_type = base_type->pointer.base;
             }
             else assert(false);
 
-
-            auto agg_members = struct_type->aggregate_type.member_declarations;
+            auto agg_members = aggregate_type->aggregate_type.member_declarations;
             uint64_t member_index = 0;
             bool found = false;
             for (uint64_t i = 0; i < BUF_LENGTH(agg_members); i++)
@@ -3702,10 +3713,18 @@ namespace Zodiac
             }
 
             case AST_TYPE_STRUCT:
+            case AST_TYPE_UNION:
             {
                 if (type->name)
                 {
-                    printf("struct(%s)", type->name);
+                    if (type->kind == AST_TYPE_STRUCT)
+                    {
+                        printf("struct(%s)", type->name);
+                    }
+                    else if (type->kind == AST_TYPE_UNION)
+                    {
+                        printf("union(%s)", type->name);
+                    }
                 }
                 else
                 {

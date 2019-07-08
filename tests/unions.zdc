@@ -1,0 +1,35 @@
+
+std :: import std;
+using std;
+
+Value :: union
+{
+    uint64 : u64;
+    int64  : int;
+    real64 : double;
+}
+
+main :: ()
+{
+    print("union test");
+
+    _c.printf("sizeof(Value) = %lu\n", sizeof(Value));
+
+    value1 : Value;
+    value1.uint64 = 888;
+
+    value2 : Value;
+    value2.int64 = -888;
+
+    value3 : Value;
+    value3.real64 = 88.88;
+
+    print_value("value1", value1);
+    print_value("value2", value2);
+    print_value("value3", value3);
+}
+
+print_value :: (name: *u8, value: Value)
+{
+    _c.printf("%s: %lu, %ld, %f\n", name, value.uint64, value.int64, value.real64);
+}

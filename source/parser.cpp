@@ -353,6 +353,35 @@ namespace Zodiac
             return ast_struct_declaration_new(parser->context, identifier->file_pos, identifier,
                                               agg_decl, parameters, struct_scope);
         }
+        else if (match_token(parser, TOK_KW_UNION))
+        {
+            assert(!type_spec);
+
+            AST_Scope* union_scope = ast_scope_new(parser->context, scope,
+                                                   parser->result.ast_module,
+                                                   false);
+
+            BUF(AST_Identifier*) parameters = nullptr;
+
+            if (match_token(parser, TOK_LPAREN))
+            {
+                while (!match_token(parser, TOK_RPAREN))
+                {
+                    if (parameters)
+                    {
+                        expect_token(parser, TOK_COMMA);
+                    }
+
+                    AST_Identifier* param_ident = parse_identifier(parser);
+                    BUF_PUSH(parameters, param_ident);
+                }
+            }
+
+            AST_Aggregate_Declaration* agg_decl = parse_aggregate(parser, union_scope);
+
+            return ast_union_declaration_new(parser->context, identifier->file_pos, identifier,
+                                             agg_decl, parameters, union_scope);
+        }
         else if (match_token(parser, TOK_KW_ENUM))
         {
             AST_Scope* enum_scope = ast_scope_new(parser->context, scope,

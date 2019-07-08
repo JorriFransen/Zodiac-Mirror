@@ -390,6 +390,7 @@ namespace Zodiac
         DEFINE_KW("static_assert", TOK_KW_STATIC_ASSERT);
         DEFINE_KW("import", TOK_KW_IMPORT);
         DEFINE_KW("struct", TOK_KW_STRUCT);
+        DEFINE_KW("union", TOK_KW_UNION);
         DEFINE_KW("enum", TOK_KW_ENUM);
         DEFINE_KW("switch", TOK_KW_SWITCH);
         DEFINE_KW("case", TOK_KW_CASE);

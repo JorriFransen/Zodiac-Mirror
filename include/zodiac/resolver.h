@@ -144,6 +144,9 @@ namespace Zodiac
     AST_Type* create_struct_type(Resolver* resolver, AST_Identifier* identifier,
                                  BUF(AST_Declaration*) member_decls,
                                  AST_Identifier* index_overload);
+    AST_Type* create_union_type(Resolver* resolver, AST_Identifier* identifier,
+                                 BUF(AST_Declaration*) member_decls,
+                                 AST_Identifier* index_overload);
     AST_Type* create_enum_type(Resolver* resolver, AST_Identifier* identifier,
                                BUF(AST_Declaration*) member_decls);
 

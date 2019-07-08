@@ -373,6 +373,7 @@ namespace Zodiac
     enum AST_Aggregate_Declaration_Kind
     {
         AST_AGG_DECL_STRUCT,
+        AST_AGG_DECL_UNION,
         AST_AGG_DECL_ENUM,
     };
 
@@ -465,6 +466,7 @@ namespace Zodiac
         AST_TYPE_POINTER,
         AST_TYPE_STATIC_ARRAY,
         AST_TYPE_STRUCT,
+        AST_TYPE_UNION,
         AST_TYPE_ENUM,
         AST_TYPE_FUNCTION,
     };
@@ -704,6 +706,11 @@ namespace Zodiac
                                                AST_Aggregate_Declaration* aggregate_decl,
                                                 BUF(AST_Identifier*) parameters,
                                                 AST_Scope* scope);
+    AST_Declaration* ast_union_declaration_new(Context* context, File_Pos file_pos,
+                                                AST_Identifier* identifier,
+                                                AST_Aggregate_Declaration* aggregate_decl,
+                                                BUF(AST_Identifier*) parameters,
+                                                AST_Scope* scope);
     AST_Declaration* ast_enum_declaration_new(Context* context, File_Pos file_pos,
                                               AST_Identifier* identifier,
                                               AST_Aggregate_Declaration* aggregate_decl,
@@ -754,6 +761,9 @@ namespace Zodiac
     AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations,
                                   const char* name, uint64_t bit_size,
                                   AST_Identifier* index_overload);
+    AST_Type* ast_type_union_new(Context* context, BUF(AST_Declaration*) member_declarations,
+                                 const char* name, uint64_t bit_size,
+                                 AST_Identifier* index_overload);
     AST_Type* ast_type_enum_new(Context* context, BUF(AST_Declaration*) member_decls,
                                 AST_Type* base_type);
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,

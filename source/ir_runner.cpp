@@ -1190,7 +1190,8 @@ namespace Zodiac
                 AST_Type* pointer_base_type = pointer_type->pointer.base;
                 assert(dest_type == pointer_base_type);
 
-                if (pointer_base_type->kind == AST_TYPE_STRUCT)
+                if (pointer_base_type->kind == AST_TYPE_STRUCT ||
+                    pointer_base_type->kind == AST_TYPE_UNION)
                 {
                     uint64_t struct_byte_size = pointer_base_type->bit_size / 8;
                     assert(struct_byte_size);
@@ -1614,7 +1615,8 @@ namespace Zodiac
                 assert(iri->arg1->kind == IRV_ALLOCL ||
                        iri->arg1->kind == IRV_ARGUMENT ||
                        iri->arg1->kind == IRV_TEMPORARY);
-                assert(iri->arg1->type->kind == AST_TYPE_STRUCT);
+                assert(iri->arg1->type->kind == AST_TYPE_STRUCT ||
+                       iri->arg1->type->kind == AST_TYPE_UNION);
 
                 assert(iri->arg2);
                 assert(iri->arg2->kind == IRV_INT_LITERAL);
@@ -1718,7 +1720,8 @@ namespace Zodiac
                                                                 array_byte_size);
             }
             else if (code_temp->kind == IRV_ALLOCL &&
-                     code_temp->type->kind == AST_TYPE_STRUCT)
+                     (code_temp->type->kind == AST_TYPE_STRUCT ||
+                      code_temp->type->kind == AST_TYPE_UNION))
             {
                 AST_Type* struct_type = code_temp->type;
                 uint64_t struct_byte_size = struct_type->bit_size / 8;
@@ -1727,7 +1730,8 @@ namespace Zodiac
                                                                   struct_byte_size);
             }
             else if (code_temp->kind == IRV_TEMPORARY &&
-                     code_temp->type->kind == AST_TYPE_STRUCT)
+                     (code_temp->type->kind == AST_TYPE_STRUCT ||
+                      code_temp->type->kind == AST_TYPE_UNION))
             {
                 AST_Type* struct_type = code_temp->type;
                 uint64_t struct_byte_size = struct_type->bit_size / 8;

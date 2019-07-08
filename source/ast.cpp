@@ -506,12 +506,35 @@ namespace Zodiac
         assert(context);
         assert(identifier);
         assert(aggregate_decl);
-
         assert(scope);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
                                                       AST_DECL_LOC_GLOBAL, identifier, nullptr);
         result->aggregate_type.kind = AST_AGG_DECL_STRUCT;
+        result->aggregate_type.type = nullptr;
+        result->aggregate_type.aggregate_decl = aggregate_decl;
+        result->aggregate_type.parameter_idents = parameters;
+        result->aggregate_type.poly_count = 0;
+        result->aggregate_type.poly_instances = nullptr;
+        result->aggregate_type.scope = scope;
+
+        return result;
+    }
+
+    AST_Declaration* ast_union_declaration_new(Context* context, File_Pos file_pos,
+                                               AST_Identifier* identifier,
+                                               AST_Aggregate_Declaration* aggregate_decl,
+                                               BUF(AST_Identifier*) parameters,
+                                               AST_Scope* scope)
+    {
+        assert(context);
+        assert(identifier);
+        assert(aggregate_decl);
+        assert(scope);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
+                                                      AST_DECL_LOC_GLOBAL, identifier, nullptr);
+        result->aggregate_type.kind = AST_AGG_DECL_UNION;
         result->aggregate_type.type = nullptr;
         result->aggregate_type.aggregate_decl = aggregate_decl;
         result->aggregate_type.parameter_idents = parameters;
@@ -848,6 +871,23 @@ namespace Zodiac
         // assert(member_declarations);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE, name,
+                                        bit_size);
+        result->aggregate_type.member_declarations = member_declarations;
+        result->aggregate_type.poly_from = nullptr;
+        result->aggregate_type.poly_types = nullptr;
+        result->index_overload = index_overload;
+
+        return result;
+    }
+
+    AST_Type* ast_type_union_new(Context* context, BUF(AST_Declaration*) member_declarations,
+                                 const char* name, uint64_t bit_size,
+                                 AST_Identifier* index_overload)
+    {
+        assert(context);
+        assert(name);
+
+        AST_Type* result = ast_type_new(context, AST_TYPE_UNION, AST_TYPE_FLAG_NONE, name,
                                         bit_size);
         result->aggregate_type.member_declarations = member_declarations;
         result->aggregate_type.poly_from = nullptr;
@@ -1430,6 +1470,7 @@ namespace Zodiac
             }
 
             case AST_TYPE_STRUCT:
+            case AST_TYPE_UNION:
             {
                 auto member_decls = type->aggregate_type.member_declarations;
                 for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
