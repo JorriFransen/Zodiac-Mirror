@@ -2652,7 +2652,7 @@ namespace Zodiac
 				BUF(AST_Type*) arg_types = nullptr;
                 AST_Scope* arg_scope = type_spec->function.arg_scope;
                 assert(arg_scope);
-                assert(!(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE));
+                assert(!(arg_scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE));
 				for (uint64_t i = 0; i < BUF_LENGTH(type_spec->function.args); i++)
 				{
 					AST_Declaration* arg_decl = type_spec->function.args[i];
