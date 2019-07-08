@@ -414,9 +414,20 @@ namespace Zodiac
                                               break_block);
                 }
 
+                auto last_iri = ir_builder->insert_block->last_instruction;
+
+                if (last_iri)
+                {
+                    if (last_iri->op == IR_OP_RETURN ||
+                        last_iri->op == IR_OP_JMP)
+                        break;
+                }
+
                 auto defer_statements = statement->block.scope->defer_statements;
                 if (defer_statements)
                 {
+                    // We don't have to check the order here since this is always
+                    //  the end of the block.
                     for (uint64_t i = 0; i < BUF_LENGTH(defer_statements); i++)
                     {
                         uint64_t index = BUF_LENGTH(defer_statements) - 1 - i;
@@ -2168,15 +2179,6 @@ namespace Zodiac
         assert(ir_builder);
         assert(scope);
 
-        // Always emit the current scope
-        for (uint64_t i = 0; i < BUF_LENGTH(scope->defer_statements); i++)
-        {
-            uint64_t index = BUF_LENGTH(scope->defer_statements) - 1 - i;
-            AST_Statement* defer_stmt = scope->defer_statements[index];
-            ir_builder_emit_statement(ir_builder, defer_stmt, scope, nullptr);
-        }
-
-        scope = scope->parent;
         while (!(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE))
         {
             for (uint64_t i = 0; i < BUF_LENGTH(scope->defer_statements); i++)
@@ -2359,9 +2361,18 @@ namespace Zodiac
         assert(block_value);
         assert(block_value->kind == IRV_BLOCK);
 
+        auto last_iri = ir_builder->insert_block->last_instruction;
+        if (last_iri)
+        {
+            if (last_iri->op == IR_OP_RETURN ||
+                last_iri->op == IR_OP_JMP)
+                return;
+        }
+
         IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_JMP, block_value,
                                                  nullptr, nullptr);
         ir_builder_emit_instruction(ir_builder, iri);
+
     }
 
     void ir_builder_emit_jmp_if(IR_Builder* ir_builder, IR_Value* cond_value,

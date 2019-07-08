@@ -26,6 +26,7 @@ defer_test1 :: (arg: int)
 
     if (arg == 1)
     {
+        defer print("deferred arg = 1");
         print("arg is 1");
         return;
     }
@@ -57,6 +58,7 @@ defer_test2 :: (arg: int)
         arg = arg - 1;
         if (arg < 0)
         {
+            defer print("defer in break block");
             break;
         }
     }
