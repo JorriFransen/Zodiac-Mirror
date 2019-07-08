@@ -56,6 +56,61 @@ namespace Zodiac
 		return false;
     }
 
+    int64_t const_interpret_int_expression(Context* context, AST_Expression* expression,
+                                           AST_Type* type, AST_Scope* scope)
+    {
+        assert(context);
+        assert(expression);
+        // assert(expression->type);
+        // assert(expression->type->flags & AST_TYPE_FLAG_INT);
+        assert(type);
+        assert(type->flags & AST_TYPE_FLAG_INT);
+        // assert(type->flags & AST_TYPE_FLAG_SIGNED);
+        assert(scope);
+
+        switch (expression->kind)
+        {
+            case AST_EXPR_IDENTIFIER:
+            {
+                AST_Declaration* decl = find_declaration(context, scope, expression->identifier);
+                return const_int_decl_value(context, decl, scope);
+                break;
+            }
+
+            case AST_EXPR_INTEGER_LITERAL:
+            {
+                return const_interpret_int_literal_expression(context, expression, type);
+            }
+
+            default: assert(false);
+        }
+
+        assert(false);
+    }
+
+    int64_t const_interpret_int_literal_expression(Context* context, AST_Expression* expression,
+                                                   AST_Type* type)
+    {
+        assert(context);
+        assert(expression);
+        assert(expression->type);
+        assert(expression->type->flags & AST_TYPE_FLAG_INT);
+        assert(type);
+        assert(type->flags & AST_TYPE_FLAG_INT);
+        // assert(type->flags & AST_TYPE_FLAG_SIGNED);
+
+        if (type == Builtin::type_int)
+        {
+            return (uint64_t)expression->integer_literal.u64;
+        }
+        else if (type == Builtin::type_u32)
+        {
+            return (uint32_t)expression->integer_literal.u64;
+        }
+
+        assert(false);
+    }
+
     int64_t const_interpret_s64_expression(Context* context, AST_Expression* expression,
                                            AST_Scope* scope)
     {
@@ -80,7 +135,7 @@ namespace Zodiac
             case AST_EXPR_IDENTIFIER:
             {
                 AST_Declaration* decl = find_declaration(context, scope, expression->identifier);
-                return const_s64_decl_value(context, decl, scope);
+                return const_int_decl_value(context, decl, scope);
                 break;
             }
 
@@ -88,7 +143,7 @@ namespace Zodiac
             {
                 assert(expression->dot.declaration);
                 AST_Declaration* decl = expression->dot.declaration;
-                return const_s64_decl_value(context, decl, scope);
+                return const_int_decl_value(context, decl, scope);
             }
 
             default: assert(false);
@@ -124,7 +179,7 @@ namespace Zodiac
 		return 0;
     }
 
-    int64_t const_s64_decl_value(Context* context, AST_Declaration* declaration, AST_Scope* scope)
+    int64_t const_int_decl_value(Context* context, AST_Declaration* declaration, AST_Scope* scope)
     {
         assert(context);
         assert(declaration);
@@ -134,8 +189,8 @@ namespace Zodiac
         {
             case AST_DECL_CONSTANT_VAR:
             {
-                return const_interpret_s64_expression(context,
-                                                      declaration->constant_var.init_expression,
+                auto init_expr = declaration->constant_var.init_expression;
+                return const_interpret_int_expression(context, init_expr, init_expr->type,
                                                       scope);
                 break;
             }

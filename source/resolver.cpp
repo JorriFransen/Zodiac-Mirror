@@ -612,17 +612,15 @@ namespace Zodiac
         {
             if (declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT)
             {
-                declaration->aggregate_type.type = create_struct_type(resolver,
-                                                                      declaration->identifier,
-                                                                      aggregate_decls,
-                                                                      aggregate_decl->index_overload);
+                declaration->aggregate_type.type =
+                    create_struct_type(resolver, declaration->identifier, aggregate_decls,
+                                       aggregate_decl->index_overload);
             }
             else if (declaration->aggregate_type.kind == AST_AGG_DECL_UNION)
             {
-                declaration->aggregate_type.type = create_union_type(resolver,
-                                                                     declaration->identifier,
-                                                                     aggregate_decls,
-                                                                     aggregate_decl->index_overload);
+                declaration->aggregate_type.type =
+                    create_union_type(resolver, declaration->identifier, aggregate_decls,
+                                      aggregate_decl->index_overload);
             }
             else assert(false);
 
@@ -663,6 +661,22 @@ namespace Zodiac
         assert(scope);
 
         auto aggregate_decls = declaration->aggregate_type.aggregate_decl->members;
+        AST_Type* member_type = nullptr;
+        if (declaration->aggregate_type.enum_type_spec)
+        {
+            if (!try_resolve_type_spec(resolver, declaration->aggregate_type.enum_type_spec,
+                                       &member_type, scope))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            member_type = Builtin::type_int;
+        }
+
+        assert(member_type);
+        assert(member_type->flags & AST_TYPE_FLAG_INT);
 
         int64_t index_value = 0;
         bool result = true;
@@ -671,26 +685,54 @@ namespace Zodiac
             AST_Declaration* member_decl = aggregate_decls[i];
             assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
 
+            File_Pos gen_fp = { "<auto generated>", 0, 0, 0 };
             if (!member_decl->constant_var.init_expression)
             {
-                File_Pos gen_fp = { "<auto generated>", 0, 0, 0 };
                 member_decl->constant_var.init_expression =
                     ast_integer_literal_expression_new(resolver->context, gen_fp, index_value);
             }
 
-            result &= try_resolve_declaration(resolver, member_decl,
-                                              declaration->aggregate_type.scope);
+            bool member_result = try_resolve_declaration(resolver, member_decl,
+                                                         declaration->aggregate_type.scope);
 
-            index_value = const_interpret_s64_expression(resolver->context,
-                                                         member_decl->constant_var.init_expression,
-                                                         scope);
-            index_value++;
+            if (member_result)
+            {
+                index_value =
+                    const_interpret_int_expression(resolver->context,
+                                                   member_decl->constant_var.init_expression,
+                                                   member_type, scope);
+
+                if (member_decl->constant_var.init_expression->kind != AST_EXPR_INTEGER_LITERAL)
+                {
+                    AST_Expression* new_init =
+                        ast_integer_literal_expression_new(resolver->context, gen_fp,
+                                                           index_value);
+                    bool new_init_result =
+                        try_resolve_expression(resolver, new_init,
+                                               declaration->aggregate_type.scope);
+                    assert(new_init_result);
+
+
+                    // FIXME: LEAK:
+                    member_decl->constant_var.init_expression = new_init;
+                }
+
+                index_value++;
+            }
+
+            result &= member_result;
+        }
+
+        if (!result)
+        {
+            return false;
         }
 
         if (result && !declaration->aggregate_type.type)
         {
             declaration->aggregate_type.type = create_enum_type(resolver,
                                                                 declaration->identifier,
+                                                                member_type,
                                                                 aggregate_decls);
         }
 
@@ -835,7 +877,8 @@ namespace Zodiac
         if (result)
         {
             assert(insert_stmt->kind == AST_STMT_CALL);
-            auto u8_ptr_type = ast_find_or_create_pointer_type(resolver->context, Builtin::type_u8);
+            auto u8_ptr_type = ast_find_or_create_pointer_type(resolver->context,
+                                                               Builtin::type_u8);
             assert(insert_stmt->call_expression->type == u8_ptr_type);
 
             char* insert_string = run_insert(resolver, insert_stmt->call_expression);
@@ -2869,14 +2912,17 @@ namespace Zodiac
     }
 
     AST_Type* create_enum_type(Resolver* resolver, AST_Identifier* identifier,
+                               AST_Type* member_type,
                                BUF(AST_Declaration*) member_decls)
     {
         assert(resolver);
         assert(identifier);
+        assert(member_type);
+        assert(member_type->flags & AST_TYPE_FLAG_INT);
         assert(member_decls);
 
         AST_Type* enum_type = ast_type_enum_new(resolver->context, member_decls,
-                                                Builtin::type_int);
+                                                member_type);
 
         assert(enum_type->bit_size);
         return enum_type;
@@ -2902,6 +2948,7 @@ namespace Zodiac
             //               I can't think of a better way to do it right now, without
             //               majorly restructuring the resolver.
             if (!(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE) &&
+                !(scope->flags & AST_SCOPE_FLAG_IS_ENUM_SCOPE) &&
                 (identifier->file_pos.file_name == decl->file_pos.file_name) &&
                 (identifier->file_pos.line < decl->file_pos.line ||
                 (identifier->file_pos.line == decl->file_pos.line &&

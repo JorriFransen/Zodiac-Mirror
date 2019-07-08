@@ -148,6 +148,7 @@ namespace Zodiac
                                  BUF(AST_Declaration*) member_decls,
                                  AST_Identifier* index_overload);
     AST_Type* create_enum_type(Resolver* resolver, AST_Identifier* identifier,
+                               AST_Type* member_type,
                                BUF(AST_Declaration*) member_decls);
 
     AST_Declaration* find_declaration(Context* context, AST_Scope* scope,

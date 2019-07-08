@@ -437,6 +437,7 @@ namespace Zodiac
                 BUF(AST_Poly_Instance) poly_instances;
                 uint64_t poly_count;
                 AST_Scope* scope;
+                AST_Type_Spec* enum_type_spec;
             } aggregate_type;
 
 			struct
@@ -584,7 +585,8 @@ namespace Zodiac
     {
         AST_SCOPE_FLAG_NONE            = 0,
         AST_SCOPE_FLAG_IS_MODULE_SCOPE = (1 << 0),
-        AST_SCOPE_FLAG_BREAK_SCOPE     = (1 << 1),
+        AST_SCOPE_FLAG_IS_ENUM_SCOPE   = (1 << 1),
+        AST_SCOPE_FLAG_BREAK_SCOPE     = (1 << 2),
     };
 
     struct AST_Scope
@@ -713,6 +715,7 @@ namespace Zodiac
                                                 AST_Scope* scope);
     AST_Declaration* ast_enum_declaration_new(Context* context, File_Pos file_pos,
                                               AST_Identifier* identifier,
+                                              AST_Type_Spec* enum_type_spec,
                                               AST_Aggregate_Declaration* aggregate_decl,
                                               AST_Scope* scope);
 	AST_Declaration* ast_typedef_declaration_new(Context* context, File_Pos file_pos,

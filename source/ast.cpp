@@ -547,6 +547,7 @@ namespace Zodiac
 
     AST_Declaration* ast_enum_declaration_new(Context* context, File_Pos file_pos,
                                               AST_Identifier* identifier,
+                                              AST_Type_Spec* enum_type_spec,
                                               AST_Aggregate_Declaration* aggregate_decl,
                                               AST_Scope* scope)
     {
@@ -562,6 +563,7 @@ namespace Zodiac
         result->aggregate_type.type = nullptr;
         result->aggregate_type.aggregate_decl = aggregate_decl;
         result->aggregate_type.scope = scope;
+        result->aggregate_type.enum_type_spec = enum_type_spec;
 
         return result;
     }

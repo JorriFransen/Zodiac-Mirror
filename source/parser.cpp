@@ -387,11 +387,12 @@ namespace Zodiac
             AST_Scope* enum_scope = ast_scope_new(parser->context, scope,
                                                   parser->result.ast_module,
                                                   false);
+            enum_scope->flags |= AST_SCOPE_FLAG_IS_ENUM_SCOPE;
 
             AST_Aggregate_Declaration* agg_decl = parse_aggregate(parser, enum_scope, true);
             assert(agg_decl);
             return ast_enum_declaration_new(parser->context, identifier->file_pos, identifier,
-                                            agg_decl, enum_scope);
+                                            type_spec, agg_decl, enum_scope);
         }
         else
         {
