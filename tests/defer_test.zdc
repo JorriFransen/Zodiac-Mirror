@@ -17,6 +17,10 @@ main :: ()
     defer print("main defer 1");
     defer print("main defer 2");
     defer print("main defer 3");
+
+    // defer defer print("nested defer");
+    // defer { print("abc"); return -1; }
+    // defer while (true) break;
 }
 
 

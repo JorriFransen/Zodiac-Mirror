@@ -1136,6 +1136,10 @@ namespace Zodiac
                                                 nullptr);
                 if (result)
                 {
+                    result &= defer_statement_is_legal(resolver, statement->defer_statement);
+                }
+                if (result)
+                {
                     add_defer_statement(scope, statement->defer_statement);
                 }
                 break;
@@ -3062,6 +3066,120 @@ namespace Zodiac
         overload->identifier->atom = overload_ident;
 
         BUF_PUSH(container->function.overloads, overload);
+    }
+
+    bool defer_statement_is_legal(Resolver* resolver, AST_Statement* statement)
+    {
+        assert(resolver);
+        assert(statement);
+
+        switch (statement->kind)
+        {
+            case AST_STMT_DECLARATION:
+            {
+                return true;
+            }
+
+            case AST_STMT_RETURN:
+            {
+                resolver_report_error(resolver, statement->file_pos,
+                                      "Return statement is not allow in a defer statement");
+                return false;
+            }
+
+            case AST_STMT_BLOCK:
+            {
+                for (uint64_t i = 0; i < BUF_LENGTH(statement->block.statements); i++)
+                {
+                    bool legal = defer_statement_is_legal(resolver,
+                                                          statement->block.statements[i]);
+                    if (!legal)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            case AST_STMT_IF:
+            {
+                bool then_legal = defer_statement_is_legal(resolver,
+                                                           statement->if_stmt.then_statement);
+                if (!then_legal)
+                    return false;
+
+                if (statement->if_stmt.else_statement)
+                {
+                    return defer_statement_is_legal(resolver, statement->if_stmt.else_statement);
+                }
+
+                return true;
+            }
+
+            case AST_STMT_ASSIGN:
+            {
+                return true;
+            }
+
+            case AST_STMT_CALL:
+            {
+                return true;
+            }
+
+            case AST_STMT_WHILE:
+            {
+                return defer_statement_is_legal(resolver, statement->while_stmt.body_stmt);
+            }
+
+            case AST_STMT_FOR:
+            {
+                bool init_legal = defer_statement_is_legal(resolver,
+                                                           statement->for_stmt.init_stmt);
+                if (!init_legal)
+                    return false;
+
+                bool step_legal = defer_statement_is_legal(resolver,
+                                                           statement->for_stmt.step_stmt);
+                if (!step_legal)
+                    return false;
+
+                return defer_statement_is_legal(resolver, statement->for_stmt.body_stmt);
+            }
+
+            case AST_STMT_SWITCH:
+            {
+                resolver_report_error(resolver, statement->file_pos,
+                                      "Switch statement not allowed in defer statement");
+                return false;
+            }
+
+            case AST_STMT_BREAK:
+            {
+                resolver_report_error(resolver, statement->file_pos,
+                                      "Break statement not allowed in defer statement");
+                return false;
+            }
+
+            case AST_STMT_INSERT:
+            {
+                return true;
+            }
+
+            case AST_STMT_ASSERT:
+            {
+                return true;
+            }
+
+            case AST_STMT_DEFER:
+            {
+                resolver_report_error(resolver, statement->file_pos,
+                                      "Defer statement not allow in defer statement");
+                    return false;
+            }
+
+            default: assert(false);
+        }
     }
 
     void add_defer_statement(AST_Scope* scope, AST_Statement* statement)
