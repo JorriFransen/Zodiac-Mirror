@@ -1075,7 +1075,8 @@ namespace Zodiac
 
             case AST_EXPR_SIZEOF:
             {
-                return ir_integer_literal(ir_builder, expression->type, expression->sizeof_expr.byte_size);
+                return ir_integer_literal(ir_builder, expression->type,
+                                          expression->sizeof_expr.byte_size);
                 break;
             }
 

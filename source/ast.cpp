@@ -1647,6 +1647,17 @@ namespace Zodiac
                 break;
             }
 
+            case AST_TYPE_UNION:
+            {
+                if (type->name)
+                {
+                    result = string_append(type->name, "(union)");
+                }
+
+                else assert(false);
+                break;
+            }
+
             case AST_TYPE_STATIC_ARRAY:
             {
                 char element_count_str[128];

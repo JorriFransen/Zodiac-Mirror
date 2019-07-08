@@ -2546,11 +2546,15 @@ namespace Zodiac
                 AST_Declaration* type_decl = find_declaration(resolver->context, scope,
 					                                          type_spec->identifier.identifier);
                 if (type_decl && type_decl->kind == AST_DECL_AGGREGATE_TYPE &&
-                    type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT &&
                     type_decl->aggregate_type.parameter_idents)
                 {
-                    return find_or_create_poly_struct_type(resolver, type_decl, type_spec,
-                                                           type_dest, scope);
+                    if (type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
+                        type_decl->aggregate_type.kind == AST_AGG_DECL_UNION)
+                    {
+                        return find_or_create_poly_aggregate_type(resolver, type_decl, type_spec,
+                                                                  type_dest, scope);
+                    }
+                    else assert(false);
                 }
 
                 if (!type_decl)

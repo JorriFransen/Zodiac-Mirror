@@ -9,11 +9,27 @@ Value :: union
     real64 : double;
 }
 
+Value2 :: union(T)
+{
+    uint64 : u64;
+    int64  : int;
+    real64 : double;
+    thing  : T;
+}
+
+Vec3 :: struct
+{
+    x: float;
+    y: float;
+    z: float
+}
+
 main :: ()
 {
     print("union test");
 
     _c.printf("sizeof(Value) = %lu\n", sizeof(Value));
+    _c.printf("sizeof(Value2(float)) = %lu\n", sizeof(Value2(float)));
 
     value1 : Value;
     value1.uint64 = 888;
@@ -27,9 +43,35 @@ main :: ()
     print_value("value1", value1);
     print_value("value2", value2);
     print_value("value3", value3);
+
+    value4 : Value2(float);
+    value4.thing = 99.99;
+
+    value5 : Value2(double);
+    value5.thing = 55.55;
+
+    value6 : Value2(Vec3);
+    value6.thing = { 1.1, 2.2, 3.3 };
+
+    print_value("value4", value4);
+    print_value("value5", value5);
+    print_value("value6", value6);
+
 }
 
 print_value :: (name: *u8, value: Value)
 {
     _c.printf("%s: %lu, %ld, %f\n", name, value.uint64, value.int64, value.real64);
+}
+
+print_value :: (name: *u8, value: Value2(Vec3))
+{
+    _c.printf("%s: %lu, %ld, %f\n", name, value.uint64, value.int64, value.real64);
+    _c.printf("\tthing: %f, %f, %f\n", value.thing.x, value.thing.y, value.thing.z);
+}
+
+print_value :: (name: *u8, value: Value2($T))
+{
+    _c.printf("%s: %lu, %ld, %f\n", name, value.uint64, value.int64, value.real64);
+    _c.printf("\tthing: %ld, %f\n", value.thing, value.thing);
 }

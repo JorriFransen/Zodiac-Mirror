@@ -58,7 +58,8 @@ namespace Zodiac
             {
                 if (type_spec->identifier.poly_args)
                 {
-                    assert(given_type->kind == AST_TYPE_STRUCT);
+                    assert(given_type->kind == AST_TYPE_STRUCT ||
+                           given_type->kind == AST_TYPE_UNION);
                     assert(given_type->aggregate_type.poly_from);
 
                     auto poly_args = type_spec->identifier.poly_args;
@@ -177,21 +178,22 @@ namespace Zodiac
         return result;
     }
 
-    bool find_or_create_poly_struct_type(Resolver* resolver, AST_Declaration* type_decl,
+    bool find_or_create_poly_aggregate_type(Resolver* resolver, AST_Declaration* type_decl,
                                          AST_Type_Spec* type_spec, AST_Type** type_dest,
                                          AST_Scope* scope)
     {
         assert(resolver);
         assert(type_decl);
         assert(type_decl->kind == AST_DECL_AGGREGATE_TYPE);
-        assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
+        assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
+               type_decl->aggregate_type.kind == AST_AGG_DECL_UNION);
         assert(type_spec);
         assert(type_spec->kind == AST_TYPE_SPEC_IDENT);
         assert(type_dest);
         assert(*type_dest == nullptr);
         assert(scope);
 
-        if (!check_poly_struct_arguments(resolver, type_decl, type_spec))
+        if (!check_poly_aggregate_arguments(resolver, type_decl, type_spec))
         {
             return false;
         }
@@ -216,51 +218,52 @@ namespace Zodiac
             }
         }
 
-        AST_Declaration* poly_struct_decl = nullptr;
-        if (find_poly_struct_instance(type_decl, poly_hash, &poly_struct_decl))
+        AST_Declaration* poly_aggregate_decl = nullptr;
+        if (find_poly_aggregate_instance(type_decl, poly_hash, &poly_aggregate_decl))
         {
-            assert(poly_struct_decl);
-            assert(poly_struct_decl->kind == AST_DECL_AGGREGATE_TYPE);
-            assert(poly_struct_decl->aggregate_type.type);
-            *type_dest = poly_struct_decl->aggregate_type.type;
+            assert(poly_aggregate_decl);
+            assert(poly_aggregate_decl->kind == AST_DECL_AGGREGATE_TYPE);
+            assert(poly_aggregate_decl->aggregate_type.type);
+            *type_dest = poly_aggregate_decl->aggregate_type.type;
             return true;
         }
 
-        poly_struct_decl = create_poly_struct_instance(resolver, type_decl, scope);
-        assert(poly_struct_decl);
-        replace_poly_type_specs(type_decl->aggregate_type.parameter_idents, poly_struct_decl,
+        poly_aggregate_decl = create_poly_aggregate_instance(resolver, type_decl, scope);
+        assert(poly_aggregate_decl);
+        replace_poly_type_specs(type_decl->aggregate_type.parameter_idents, poly_aggregate_decl,
                                 type_spec->identifier.poly_args);
 
-        result &= try_resolve_declaration(resolver, poly_struct_decl, scope);
+        result &= try_resolve_declaration(resolver, poly_aggregate_decl, scope);
 
         if (result)
         {
-            assert(poly_struct_decl->aggregate_type.type);
-            auto poly_struct_type = poly_struct_decl->aggregate_type.type;
-            *type_dest = poly_struct_type;
+            assert(poly_aggregate_decl->aggregate_type.type);
+            auto poly_aggregate_type = poly_aggregate_decl->aggregate_type.type;
+            *type_dest = poly_aggregate_type;
 
-            poly_struct_type->aggregate_type.poly_from = type_decl;
+            poly_aggregate_type->aggregate_type.poly_from = type_decl;
 
             for (uint64_t i = 0; i < BUF_LENGTH(type_spec->identifier.poly_args); i++)
             {
-                BUF_PUSH(poly_struct_type->aggregate_type.poly_types,
+                BUF_PUSH(poly_aggregate_type->aggregate_type.poly_types,
                          type_spec->identifier.poly_args[i]);
             }
 
-            AST_Poly_Instance pi = { poly_hash, poly_struct_decl };
+            AST_Poly_Instance pi = { poly_hash, poly_aggregate_decl };
             BUF_PUSH(type_decl->aggregate_type.poly_instances, pi);
         }
 
         return result;
     }
 
-    bool check_poly_struct_arguments(Resolver* resolver, AST_Declaration* type_decl,
+    bool check_poly_aggregate_arguments(Resolver* resolver, AST_Declaration* type_decl,
                                      AST_Type_Spec* type_spec)
     {
         assert(resolver);
         assert(type_decl);
         assert(type_decl->kind == AST_DECL_AGGREGATE_TYPE);
-        assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
+        assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
+               type_decl->aggregate_type.kind == AST_AGG_DECL_UNION);
         assert(type_spec);
         assert(type_spec->kind == AST_TYPE_SPEC_IDENT);
 
@@ -268,7 +271,7 @@ namespace Zodiac
             BUF_LENGTH(type_spec->identifier.poly_args))
         {
             resolver_report_error(resolver, type_spec->file_pos,
-                                  "Mismatching poly arguments for struct type");
+                                  "Mismatching poly arguments for aggregate type");
             return false;
         }
 
@@ -299,12 +302,13 @@ namespace Zodiac
         return false;
     }
 
-    bool find_poly_struct_instance(AST_Declaration* type_decl, uint64_t poly_hash,
+    bool find_poly_aggregate_instance(AST_Declaration* type_decl, uint64_t poly_hash,
                                                AST_Declaration** decl_dest)
     {
         assert(type_decl);
         assert(type_decl->kind == AST_DECL_AGGREGATE_TYPE);
-        assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
+        assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
+               type_decl->aggregate_type.kind == AST_AGG_DECL_UNION);
         assert(decl_dest);
         assert(*decl_dest == nullptr);
 
@@ -375,13 +379,14 @@ namespace Zodiac
 
     }
 
-    AST_Declaration* create_poly_struct_instance(Resolver* resolver, AST_Declaration* type_decl,
+    AST_Declaration* create_poly_aggregate_instance(Resolver* resolver, AST_Declaration* type_decl,
                                                  AST_Scope* scope)
     {
         assert(resolver);
         assert(type_decl);
         assert(type_decl->kind == AST_DECL_AGGREGATE_TYPE);
-        assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
+        assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
+               type_decl->aggregate_type.kind == AST_AGG_DECL_UNION);
         assert(scope);
 
         auto agg_decls = type_decl->aggregate_type.aggregate_decl->members;
@@ -401,6 +406,7 @@ namespace Zodiac
         instance->aggregate_type.aggregate_decl =
             copy_aggregate_declaration(resolver->context,
                                        type_decl->aggregate_type.aggregate_decl);
+        instance->aggregate_type.kind = type_decl->aggregate_type.kind;
 
         instance->aggregate_type.scope = ast_scope_new(resolver->context, scope, scope->module,
                                                        false);
@@ -436,7 +442,7 @@ namespace Zodiac
 
             default: assert(false);
         }
-    }
+   }
 
     AST_Statement* copy_statement(Context* context, AST_Statement* statement,
                                   AST_Scope* scope)
@@ -702,18 +708,28 @@ namespace Zodiac
                 {
                     return true;
                 }
-                else if (type->kind == AST_TYPE_STRUCT)
+                else if (type->kind == AST_TYPE_STRUCT ||
+                         type->kind == AST_TYPE_UNION)
                 {
                     // if the struct is not poly, return true
                     // if the struct is poly, check the poly args
 
+                    bool result = true;
+                    const char* type_name = type->name;
+
                     if (type->aggregate_type.poly_from)
                     {
-                        return BUF_LENGTH(type->aggregate_type.poly_types) ==
-                               BUF_LENGTH(poly_type_spec->identifier.poly_args);
+                        result =  BUF_LENGTH(type->aggregate_type.poly_types) ==
+                                  BUF_LENGTH(poly_type_spec->identifier.poly_args);
+                        type_name = type->aggregate_type.poly_from->identifier->atom.data;
                     }
 
-                    return true;
+                    if (strcmp(poly_type_spec->identifier.identifier->atom.data, type_name) != 0)
+                    {
+                        result = false;
+                    }
+
+                    return result;
                 }
                 else assert(false);
 
@@ -937,7 +953,8 @@ namespace Zodiac
         {
             case AST_DECL_AGGREGATE_TYPE:
             {
-                assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
+                assert(type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
+                       type_decl->aggregate_type.kind == AST_AGG_DECL_UNION);
 
                 auto agg_decls = type_decl->aggregate_type.aggregate_decl->members;
 
