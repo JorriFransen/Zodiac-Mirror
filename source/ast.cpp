@@ -900,7 +900,7 @@ namespace Zodiac
     }
 
     AST_Type* ast_type_enum_new(Context* context, BUF(AST_Declaration*) member_decls,
-                                AST_Type* base_type)
+                                const char* name, AST_Type* base_type)
     {
         assert(context);
         assert(member_decls);
@@ -909,7 +909,7 @@ namespace Zodiac
         assert(base_type->flags & AST_TYPE_FLAG_INT);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_ENUM, AST_TYPE_FLAG_NONE,
-                                        {}, base_type->bit_size);
+                                        name, base_type->bit_size);
         result->aggregate_type.member_declarations = member_decls;
         result->aggregate_type.base_type = base_type;
 
@@ -1672,7 +1672,6 @@ namespace Zodiac
                 {
                     result = string_append(type->name, "(struct)");
                 }
-
                 else assert(false);
                 break;
             }
@@ -1683,7 +1682,16 @@ namespace Zodiac
                 {
                     result = string_append(type->name, "(union)");
                 }
+                else assert(false);
+                break;
+            }
 
+            case AST_TYPE_ENUM:
+            {
+                if (type->name)
+                {
+                    result = string_append(type->name, "(enum)");
+                }
                 else assert(false);
                 break;
             }

@@ -25,6 +25,7 @@ namespace Zodiac
         resolver->module = module;
 
         resolver->done = false;
+        resolver->override_done = false;
         resolver->progressed_on_last_cycle = true;
         resolver->unresolved_decl_count = 0;
         resolver->unresolved_decl_count_last_cycle = UINT64_MAX;
@@ -2243,6 +2244,8 @@ namespace Zodiac
                 resolver_report_error(resolver, expression->file_pos,
                                         "Mismatching types in binary expression\n\tLeft: %s\n\tRight: %s",
                                         lhs_type_string, rhs_type_string);
+                mem_free(lhs_type_string);
+                mem_free(rhs_type_string);
                 return false;
             }
 
@@ -2250,6 +2253,30 @@ namespace Zodiac
             if ((lhs->flags & AST_EXPR_FLAG_CONST) && (rhs->flags & AST_EXPR_FLAG_CONST))
             {
                 expression->flags |= AST_EXPR_FLAG_CONST;
+            }
+
+            if (!((lhs->type->flags & AST_TYPE_FLAG_INT) ||
+                  (lhs->type->flags & AST_TYPE_FLAG_FLOAT) ||
+                  lhs->type->kind == AST_TYPE_POINTER ||
+                  lhs->type->kind == AST_TYPE_ENUM) ||
+                !((rhs->type->flags & AST_TYPE_FLAG_INT) ||
+                  (rhs->type->flags & AST_TYPE_FLAG_FLOAT) ||
+                  rhs->type->kind == AST_TYPE_POINTER ||
+                  rhs->type->kind == AST_TYPE_ENUM))
+            {
+                const char* lhs_type_string = ast_type_to_string(lhs->type);
+                const char* rhs_type_string = ast_type_to_string(rhs->type);
+                resolver_report_error(resolver, expression->file_pos, "Invalid types for binary expression, and no suitable overload was found\n\tLeft type: %s\n\tRight type: %s",
+                                      lhs_type_string, rhs_type_string);
+
+                // HACK: FIXME: BUG: This is a terminal error, and it is reported
+                //     in the first cycles, but for some reason it is not in later
+                //     cycles, which causes the program to compile correctly.
+                resolver->override_done = true;
+
+                mem_free(lhs_type_string);
+                mem_free(rhs_type_string);
+                return false;
             }
         }
 
@@ -2944,7 +2971,7 @@ namespace Zodiac
         assert(member_decls);
 
         AST_Type* enum_type = ast_type_enum_new(resolver->context, member_decls,
-                                                member_type);
+                                                identifier->atom.data, member_type);
 
         assert(enum_type->bit_size);
         return enum_type;
@@ -3323,7 +3350,8 @@ namespace Zodiac
 
             case AST_STMT_INSERT:
             {
-                return true;
+                // Disallow this for now, need to think about if we want to support this
+                return false;
             }
 
             case AST_STMT_ASSERT:

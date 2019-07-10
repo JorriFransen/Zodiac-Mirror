@@ -28,6 +28,7 @@ namespace Zodiac
         AST_Module* module = nullptr;
 
         bool done = false;
+        bool override_done = false;
         bool progressed_on_last_cycle = false;
 
         uint64_t unresolved_decl_count = 0;

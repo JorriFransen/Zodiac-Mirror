@@ -127,6 +127,11 @@ int main(int argc, char** argv)
             break;
         }
 
+        if (resolver.override_done)
+        {
+            break;
+        }
+
     }
 
     if (!resolver.done || resolver.import_error)

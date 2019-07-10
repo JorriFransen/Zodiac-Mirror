@@ -291,6 +291,11 @@ namespace Zodiac
             {
                 break;
             }
+
+            if (resolver.override_done)
+            {
+                break;
+            }
         }
 
         if (!resolver.done)
