@@ -273,7 +273,7 @@ namespace Zodiac
 
     AST_Aggregate_Declaration* ast_aggregate_declaration_new(Context* context, File_Pos file_pos,
                                                              BUF(AST_Declaration*) members,
-                                                             AST_Identifier* index_overload_ident)
+                                                             BUF(AST_Overload_Directive) overloads)
     {
         assert(context);
 
@@ -281,7 +281,7 @@ namespace Zodiac
 
         result->file_pos = file_pos;
         result->members = members;
-        result->index_overload = index_overload_ident;
+        result->overload_directives = overloads;
 
         return result;
     }
@@ -820,7 +820,7 @@ namespace Zodiac
         result->flags = type_flags;
         result->bit_size = bit_size;
         result->name = name;
-        result->index_overload = nullptr;;
+        result->overloads = nullptr;
 
         return result;
     }
@@ -845,7 +845,7 @@ namespace Zodiac
                                         {}, Builtin::pointer_size);
         result->pointer.base = base_type;
 
-        result->index_overload = base_type->index_overload;
+        result->overloads = base_type->overloads;
 
         return result;
     }
@@ -867,7 +867,7 @@ namespace Zodiac
 
     AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations,
                                   const char* name, uint64_t bit_size,
-                                  AST_Identifier* index_overload)
+                                  BUF(AST_Overload_Directive) overloads)
     {
         assert(context);
         // assert(member_declarations);
@@ -877,14 +877,14 @@ namespace Zodiac
         result->aggregate_type.member_declarations = member_declarations;
         result->aggregate_type.poly_from = nullptr;
         result->aggregate_type.poly_types = nullptr;
-        result->index_overload = index_overload;
+        result->overloads = overloads;
 
         return result;
     }
 
     AST_Type* ast_type_union_new(Context* context, BUF(AST_Declaration*) member_declarations,
                                  const char* name, uint64_t bit_size,
-                                 AST_Identifier* index_overload)
+                                 BUF(AST_Overload_Directive) overloads)
     {
         assert(context);
         assert(name);
@@ -894,7 +894,7 @@ namespace Zodiac
         result->aggregate_type.member_declarations = member_declarations;
         result->aggregate_type.poly_from = nullptr;
         result->aggregate_type.poly_types = nullptr;
-        result->index_overload = index_overload;
+        result->overloads = overloads;
 
         return result;
     }

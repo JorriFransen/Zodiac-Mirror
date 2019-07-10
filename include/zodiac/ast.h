@@ -342,11 +342,22 @@ namespace Zodiac
         AST_Expression* init_expression = nullptr;
     };
 
+    enum AST_Overload_Operator_Kind
+    {
+        AST_OVERLOAD_OP_INDEX,
+    };
+
+    struct AST_Overload_Directive
+    {
+        AST_Overload_Operator_Kind op;
+        AST_Identifier* identifier = nullptr;
+    };
+
     struct AST_Aggregate_Declaration
     {
         File_Pos file_pos = {};
         BUF(AST_Declaration*) members = nullptr;
-        AST_Identifier* index_overload = nullptr;
+        BUF(AST_Overload_Directive) overload_directives = nullptr;
     };
 
     typedef uint64_t _AST_DECL_FLAG_TYPE_;
@@ -491,7 +502,7 @@ namespace Zodiac
         uint64_t bit_size = 0;
 
         const char* name;
-        AST_Identifier* index_overload;
+        BUF(AST_Overload_Directive) overloads = nullptr;
 
         union
         {
@@ -659,9 +670,10 @@ namespace Zodiac
                                             AST_Type_Spec* type_spec,
                                             AST_Expression* cast_expr);
 
-    AST_Aggregate_Declaration* ast_aggregate_declaration_new(Context* context, File_Pos file_pos,
-                                                             BUF(AST_Declaration*) members,
-                                                             AST_Identifier* index_overload_ident);
+    AST_Aggregate_Declaration*
+        ast_aggregate_declaration_new(Context* context, File_Pos file_pos,
+                                      BUF(AST_Declaration*) members,
+                                      BUF(AST_Overload_Directive) overloads);
 
     AST_Declaration* ast_declaration_new(Context* context, File_Pos file_Pos,
                                          AST_Declaration_Kind kind,
@@ -763,10 +775,10 @@ namespace Zodiac
     AST_Type* ast_type_static_array_new(Context* context, AST_Type* base_type, uint64_t count);
     AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations,
                                   const char* name, uint64_t bit_size,
-                                  AST_Identifier* index_overload);
+                                  BUF(AST_Overload_Directive) overloads);
     AST_Type* ast_type_union_new(Context* context, BUF(AST_Declaration*) member_declarations,
                                  const char* name, uint64_t bit_size,
-                                 AST_Identifier* index_overload);
+                                 BUF(AST_Overload_Directive) overloads);
     AST_Type* ast_type_enum_new(Context* context, BUF(AST_Declaration*) member_decls,
                                 AST_Type* base_type);
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,

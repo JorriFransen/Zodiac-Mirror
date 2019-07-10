@@ -411,12 +411,14 @@ namespace Zodiac
         instance->aggregate_type.scope = ast_scope_new(resolver->context, scope, scope->module,
                                                        false);
 
-        if (type_decl->aggregate_type.aggregate_decl->index_overload)
-        {
-            instance->aggregate_type.aggregate_decl->index_overload =
-                copy_identifier(resolver->context,
-                                type_decl->aggregate_type.aggregate_decl->index_overload);
-        }
+        // assert(false); // Copy overload directives
+
+        // // if (type_decl->aggregate_type.aggregate_decl->index_overload)
+        // // {
+        // //     instance->aggregate_type.aggregate_decl->index_overload =
+        // //         copy_identifier(resolver->context,
+        // //                         type_decl->aggregate_type.aggregate_decl->index_overload);
+        // // }
 
         return instance;
     }
@@ -680,14 +682,18 @@ namespace Zodiac
             BUF_PUSH(members_copy, copy_declaration(context, agg_decl->members[i]));
         }
 
-        AST_Identifier* index_overload_copy = nullptr;
-        if (agg_decl->index_overload)
+        auto overloads = agg_decl->overload_directives;
+        BUF(AST_Overload_Directive) overloads_copy = nullptr;
+        for (uint64_t i = 0; i < BUF_LENGTH(overloads); i++)
         {
-            index_overload_copy = copy_identifier(context, agg_decl->index_overload);
+            AST_Overload_Directive overload_copy;
+            overload_copy.op = overloads[i].op;
+            overload_copy.identifier = copy_identifier(context, overloads[i].identifier);
+            BUF_PUSH(overloads_copy, overload_copy);
         }
 
         return ast_aggregate_declaration_new(context, agg_decl->file_pos, members_copy,
-                                             index_overload_copy);
+                                             overloads_copy);
     }
 
     bool poly_type_spec_matches_type(AST_Type_Spec* poly_type_spec, AST_Type* type)

@@ -6,7 +6,7 @@ String :: struct
     data   : *u8;
     length : u64;
 
-    #overload_index string_index;
+    #overload[] string_index;
 }
 
 string_length :: (c_str: *u8) -> u64
@@ -62,7 +62,7 @@ Array :: struct(T)
     count    : u64;
     capacity : u64;
 
-    #overload_index array_index;
+    #overload[] array_index;
 }
 
 array_add :: (array: *Array($T), element: T)

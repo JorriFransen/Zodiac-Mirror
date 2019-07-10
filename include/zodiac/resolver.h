@@ -143,10 +143,10 @@ namespace Zodiac
 
     AST_Type* create_struct_type(Resolver* resolver, AST_Identifier* identifier,
                                  BUF(AST_Declaration*) member_decls,
-                                 AST_Identifier* index_overload);
+                                 BUF(AST_Overload_Directive) overloads);
     AST_Type* create_union_type(Resolver* resolver, AST_Identifier* identifier,
-                                 BUF(AST_Declaration*) member_decls,
-                                 AST_Identifier* index_overload);
+                                BUF(AST_Declaration*) member_decls,
+                                BUF(AST_Overload_Directive) overloads);
     AST_Type* create_enum_type(Resolver* resolver, AST_Identifier* identifier,
                                AST_Type* member_type,
                                BUF(AST_Declaration*) member_decls);
@@ -167,8 +167,9 @@ namespace Zodiac
     bool defer_statement_is_legal(Resolver* resolver, AST_Statement* statement);
     void add_defer_statement(AST_Scope* scope, AST_Statement* statement);
 
+    AST_Identifier* find_overload(AST_Type* type, AST_Overload_Operator_Kind op);
     AST_Expression* try_resolve_index_overload(Resolver* resolver, AST_Expression* subscript_expr,
-                                               AST_Scope* scope);
+                                               AST_Identifier* overload_ident, AST_Scope* scope);
 
     char* run_insert(Resolver* resolver, AST_Expression* call_expression);
 

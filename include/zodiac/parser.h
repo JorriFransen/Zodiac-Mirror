@@ -95,6 +95,8 @@ namespace Zodiac
     static AST_Type_Spec* parse_type_spec(Parser* parser, AST_Scope* scope);
 	static AST_Type_Spec* parse_function_type_spec(Parser* parser, AST_Scope* scope);
 
+    static AST_Overload_Operator_Kind parse_overload_operator(Parser* parser);
+
     static bool is_add_op(Parser* parser);
     static bool is_mul_op(Parser* parser);
     bool is_cmp_op(Parser* parser);

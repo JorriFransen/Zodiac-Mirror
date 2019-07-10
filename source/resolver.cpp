@@ -614,13 +614,13 @@ namespace Zodiac
             {
                 declaration->aggregate_type.type =
                     create_struct_type(resolver, declaration->identifier, aggregate_decls,
-                                       aggregate_decl->index_overload);
+                                       aggregate_decl->overload_directives);
             }
             else if (declaration->aggregate_type.kind == AST_AGG_DECL_UNION)
             {
                 declaration->aggregate_type.type =
                     create_union_type(resolver, declaration->identifier, aggregate_decls,
-                                      aggregate_decl->index_overload);
+                                      aggregate_decl->overload_directives);
             }
             else assert(false);
 
@@ -1375,11 +1375,13 @@ namespace Zodiac
                 result &= try_resolve_expression(resolver, base_expr, scope);
                 if (result)
                 {
-                    if (base_expr->type->index_overload)
+                    AST_Identifier* index_overload_ident = find_overload(base_expr->type,
+                                                                         AST_OVERLOAD_OP_INDEX);
+                    if (index_overload_ident)
                     {
-                        AST_Expression* call_expression = try_resolve_index_overload(resolver,
-                                                                                     expression,
-                                                                                     scope);
+                        AST_Expression* call_expression =
+                            try_resolve_index_overload(resolver, expression, index_overload_ident,
+                                                       scope);
                         if (!call_expression) return false;
 
                         assert(call_expression->call.callee_declaration);
@@ -2839,7 +2841,7 @@ namespace Zodiac
 
     AST_Type* create_struct_type(Resolver* resolver, AST_Identifier* identifier,
                                  BUF(AST_Declaration*) member_decls,
-                                 AST_Identifier* index_overload)
+                                 BUF(AST_Overload_Directive) overloads)
     {
         assert(resolver);
         assert(identifier);
@@ -2868,7 +2870,7 @@ namespace Zodiac
 
         AST_Type* struct_type = ast_type_struct_new(resolver->context, member_decls,
                                                     identifier->atom.data,
-                                                    bit_size, index_overload);
+                                                    bit_size, overloads);
 
         assert(struct_type->bit_size || BUF_LENGTH(member_decls) == 0);
         return struct_type;
@@ -2876,7 +2878,7 @@ namespace Zodiac
 
     AST_Type* create_union_type(Resolver* resolver, AST_Identifier* identifier,
                                 BUF(AST_Declaration*) member_decls,
-                                AST_Identifier* index_overload)
+                                BUF(AST_Overload_Directive) overloads)
     {
         assert(resolver);
         assert(identifier);
@@ -2905,8 +2907,9 @@ namespace Zodiac
             if (member_bit_size > bit_size) bit_size = member_bit_size;
         }
 
-        AST_Type* union_type = ast_type_union_new(resolver->context, member_decls, identifier->atom.data,
-                                                  bit_size, index_overload);
+        AST_Type* union_type = ast_type_union_new(resolver->context, member_decls,
+                                                  identifier->atom.data,
+                                                  bit_size, overloads);
         assert(union_type->bit_size || BUF_LENGTH(member_decls) == 0);
         return union_type;
     }
@@ -3334,19 +3337,33 @@ namespace Zodiac
         BUF_PUSH(*defer_stmts, statement);
     }
 
+    AST_Identifier* find_overload(AST_Type* type, AST_Overload_Operator_Kind op)
+    {
+        assert(type);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(type->overloads); i++)
+        {
+            if (type->overloads[i].op == op)
+            {
+                return type->overloads[i].identifier;
+            }
+        }
+
+        return nullptr;
+    }
+
     AST_Expression* try_resolve_index_overload(Resolver* resolver, AST_Expression* subscript_expr,
-                                               AST_Scope* scope)
+                                               AST_Identifier* overload_ident, AST_Scope* scope)
     {
         assert(resolver);
         assert(subscript_expr);
         assert(subscript_expr->kind == AST_EXPR_SUBSCRIPT);
+        assert(overload_ident);
         assert(scope);
 
         AST_Expression* lvalue_expr = subscript_expr->subscript.base_expression;
         assert(lvalue_expr->type);
         AST_Type* lvalue_type = lvalue_expr->type;
-        assert(lvalue_type->index_overload);
-        AST_Identifier* overload_ident = lvalue_type->index_overload;
 
         bool result = try_resolve_identifier(resolver, overload_ident, scope);
         if (!result) return nullptr;

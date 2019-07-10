@@ -568,19 +568,22 @@ namespace Zodiac
         expect_token(parser, TOK_LBRACE);
 
         BUF(AST_Declaration*) members = nullptr;
-        AST_Identifier* overload_index_ident = nullptr;
+        BUF(AST_Overload_Directive) overloads = nullptr;
 
         while (!match_token(parser, TOK_RBRACE))
         {
             if (match_token(parser, TOK_POUND))
             {
                 AST_Identifier* directive_ident = parse_identifier(parser);
-                if (directive_ident->atom == Builtin::atom_overload_index)
+                if (directive_ident->atom == Builtin::atom_overload)
                 {
-                    assert(overload_index_ident == nullptr);
-                    overload_index_ident = parse_identifier(parser);
+                    AST_Overload_Directive overload;
+                    overload.op = parse_overload_operator(parser);
+                    overload.identifier = parse_identifier(parser);
                     expect_token(parser, TOK_SEMICOLON);
+                    BUF_PUSH(overloads, overload);
                 }
+                else assert(false);
             }
             else
             {
@@ -607,7 +610,7 @@ namespace Zodiac
         }
 
         return ast_aggregate_declaration_new(parser->context, ft.file_pos, members,
-                                             overload_index_ident);
+                                             overloads);
     }
 
     AST_Statement* parse_statement(Parser* parser, AST_Scope* scope)
@@ -1560,6 +1563,25 @@ namespace Zodiac
 		return ast_type_spec_function_new(parser->context, ft.file_pos, is_vararg, arg_decls,
 		                                  return_type_spec, arg_scope);
 	}
+
+    static AST_Overload_Operator_Kind parse_overload_operator(Parser* parser)
+    {
+        assert(parser);
+
+        auto ft = current_token(parser);
+
+        switch (ft.kind)
+        {
+            case TOK_LBRACK:
+            {
+                consume_token(parser);
+                expect_token(parser, TOK_RBRACK);
+                return AST_OVERLOAD_OP_INDEX;
+            }
+
+            default: assert(false);
+        }
+    }
 
     static bool is_add_op(Parser* parser)
     {
