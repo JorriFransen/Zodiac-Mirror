@@ -2151,6 +2151,11 @@ namespace Zodiac
             if (!result) return false;
         }
 
+        if ((lhs->flags & AST_EXPR_FLAG_CONST) && (rhs->flags & AST_EXPR_FLAG_CONST))
+        {
+            expression->flags |= AST_EXPR_FLAG_CONST;
+        }
+
         AST_Overload_Operator_Kind overload_op = binary_op_to_overload_op(expression->binary.op);
         if (overload_op != AST_OVERLOAD_OP_INVALID)
         {
@@ -2247,12 +2252,6 @@ namespace Zodiac
                 mem_free(lhs_type_string);
                 mem_free(rhs_type_string);
                 return false;
-            }
-
-
-            if ((lhs->flags & AST_EXPR_FLAG_CONST) && (rhs->flags & AST_EXPR_FLAG_CONST))
-            {
-                expression->flags |= AST_EXPR_FLAG_CONST;
             }
 
             if (!((lhs->type->flags & AST_TYPE_FLAG_INT) ||
