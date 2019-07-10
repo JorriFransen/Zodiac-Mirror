@@ -1389,7 +1389,6 @@ namespace Zodiac
                         assert(callee_decl->flags & AST_DECL_FLAG_RESOLVED);
 
                         expression->type = callee_decl->function.return_type;
-
                         expression->subscript.call_expression = call_expression;
                     }
                     else if (base_expr->type->kind == AST_TYPE_POINTER)
@@ -2149,6 +2148,26 @@ namespace Zodiac
             if (!result) return false;
             result &= try_resolve_expression(resolver, rhs, scope);
             if (!result) return false;
+        }
+
+        AST_Overload_Operator_Kind overload_op = binary_op_to_overload_op(expression->binary.op);
+        if (overload_op != AST_OVERLOAD_OP_INVALID)
+        {
+            AST_Identifier* overload_ident = find_overload(lhs->type, overload_op);
+            if (overload_ident)
+            {
+                AST_Expression* call_expression = try_resolve_binary_overload(resolver, expression,
+                                                                              overload_ident,
+                                                                              scope);
+                if (!call_expression) return false;
+                assert(call_expression->call.callee_declaration);
+                AST_Declaration* callee_decl = call_expression->call.callee_declaration;
+                assert(callee_decl->flags & AST_DECL_FLAG_RESOLVED);
+
+                expression->type = callee_decl->function.return_type;
+                expression->binary.call_expression = call_expression;
+                return true;
+            }
         }
 
         if (result && !expression->type)
@@ -3386,6 +3405,52 @@ namespace Zodiac
 
         AST_Expression* call_expression = ast_call_expression_new(resolver->context,
                                                                   subscript_expr->file_pos,
+                                                                  overload_ident_expr, args);
+
+        result &= try_resolve_expression(resolver, call_expression, scope);
+        if (result)
+        {
+            return call_expression;
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    AST_Expression* try_resolve_binary_overload(Resolver* resolver, AST_Expression* bin_expr,
+                                                AST_Identifier* overload_ident, AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(bin_expr);
+        assert(bin_expr->kind == AST_EXPR_BINARY);
+        assert(overload_ident);
+        assert(scope);
+
+        AST_Expression* lhs = bin_expr->binary.lhs;
+        AST_Expression* rhs = bin_expr->binary.rhs;
+        assert(lhs->type);
+        assert(rhs->type);
+
+        bool result = try_resolve_identifier(resolver, overload_ident, scope);
+        if (!result) return nullptr;
+        assert(overload_ident->declaration);
+
+        AST_Declaration* overload_decl = overload_ident->declaration;
+        assert(overload_decl->flags & AST_DECL_FLAG_RESOLVED);
+        assert(overload_decl->kind == AST_DECL_FUNC);
+        assert(BUF_LENGTH(overload_decl->function.args) == 2);
+
+        BUF(AST_Expression*) args = nullptr;
+        BUF_PUSH(args, lhs);
+        BUF_PUSH(args, rhs);
+
+        AST_Expression* overload_ident_expr = ast_ident_expression_new(resolver->context,
+                                                                       bin_expr->file_pos,
+                                                                       overload_ident);
+
+        AST_Expression* call_expression = ast_call_expression_new(resolver->context,
+                                                                  bin_expr->file_pos,
                                                                   overload_ident_expr, args);
 
         result &= try_resolve_expression(resolver, call_expression, scope);

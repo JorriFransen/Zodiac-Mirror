@@ -170,6 +170,8 @@ namespace Zodiac
     AST_Identifier* find_overload(AST_Type* type, AST_Overload_Operator_Kind op);
     AST_Expression* try_resolve_index_overload(Resolver* resolver, AST_Expression* subscript_expr,
                                                AST_Identifier* overload_ident, AST_Scope* scope);
+    AST_Expression* try_resolve_binary_overload(Resolver* resolver, AST_Expression* bin_expr,
+                                                AST_Identifier* overload_ident, AST_Scope* scope);
 
     char* run_insert(Resolver* resolver, AST_Expression* call_expression);
 

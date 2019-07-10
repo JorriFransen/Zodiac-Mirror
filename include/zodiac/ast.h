@@ -115,6 +115,7 @@ namespace Zodiac
             struct
             {
                 AST_Binop_Kind op;
+                AST_Expression* call_expression;
                 AST_Expression* lhs;
                 AST_Expression* rhs;
             } binary;
@@ -344,7 +345,12 @@ namespace Zodiac
 
     enum AST_Overload_Operator_Kind
     {
+        AST_OVERLOAD_OP_INVALID,
         AST_OVERLOAD_OP_INDEX,
+        AST_OVERLOAD_OP_PLUS,
+        AST_OVERLOAD_OP_MINUS,
+        AST_OVERLOAD_OP_MUL,
+        AST_OVERLOAD_OP_DIV,
     };
 
     struct AST_Overload_Directive
@@ -805,6 +811,8 @@ namespace Zodiac
 
 	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
 		                     bool is_module_scope);
+
+    AST_Overload_Operator_Kind binary_op_to_overload_op(AST_Binop_Kind binop);
 
 	void ast_scope_push_declaration(AST_Scope* scope, AST_Declaration* declaration);
 	AST_Declaration* ast_scope_find_declaration(Context* context, AST_Scope* scope,

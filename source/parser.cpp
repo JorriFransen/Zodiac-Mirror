@@ -1569,14 +1569,34 @@ namespace Zodiac
         assert(parser);
 
         auto ft = current_token(parser);
+        consume_token(parser);
 
         switch (ft.kind)
         {
             case TOK_LBRACK:
             {
-                consume_token(parser);
                 expect_token(parser, TOK_RBRACK);
                 return AST_OVERLOAD_OP_INDEX;
+            }
+
+            case TOK_PLUS:
+            {
+                return AST_OVERLOAD_OP_PLUS;
+            }
+
+            case TOK_MINUS:
+            {
+                return AST_OVERLOAD_OP_MINUS;
+            }
+
+            case TOK_MUL:
+            {
+                return AST_OVERLOAD_OP_MUL;
+            }
+
+            case TOK_DIV:
+            {
+                return AST_OVERLOAD_OP_DIV;
             }
 
             default: assert(false);

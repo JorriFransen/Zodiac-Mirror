@@ -1109,6 +1109,19 @@ namespace Zodiac
         return result;
     }
 
+    AST_Overload_Operator_Kind binary_op_to_overload_op(AST_Binop_Kind binop)
+    {
+        switch (binop)
+        {
+            case AST_BINOP_ADD: return AST_OVERLOAD_OP_PLUS;
+            case AST_BINOP_SUB: return AST_OVERLOAD_OP_MINUS;
+            case AST_BINOP_MUL: return AST_OVERLOAD_OP_MUL;
+            case AST_BINOP_DIV: return AST_OVERLOAD_OP_DIV;
+
+            default: return AST_OVERLOAD_OP_INVALID;
+        }
+    }
+
 	void ast_scope_push_declaration(AST_Scope* scope, AST_Declaration* declaration)
 	{
 		assert(scope);

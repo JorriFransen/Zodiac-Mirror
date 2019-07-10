@@ -739,71 +739,81 @@ namespace Zodiac
         {
             case AST_EXPR_BINARY:
             {
-                IR_Value* lhs_value = ir_builder_emit_expression(ir_builder,
-                                                                 expression->binary.lhs);
-                IR_Value* rhs_value = ir_builder_emit_expression(ir_builder,
-                                                                 expression->binary.rhs);
-
-                if (expression->flags & AST_EXPR_FLAG_POINTER_MATH)
+                if (expression->binary.call_expression)
                 {
-                    if (lhs_value->type->kind == AST_TYPE_POINTER)
-                    {
-                        assert(rhs_value->type->flags & AST_TYPE_FLAG_INT);
-                        auto size_lit = ir_integer_literal(ir_builder, rhs_value->type,
-                                                           lhs_value->type->pointer.base->bit_size / 8);
-                        rhs_value = ir_builder_emit_mul(ir_builder, rhs_value, size_lit);
-                        rhs_value = ir_builder_emit_cast(ir_builder, rhs_value, lhs_value->type);
-                    }
-                    else
-                    {
-                        assert(rhs_value->type->kind == AST_TYPE_POINTER);
-                        assert(lhs_value->type->flags & AST_TYPE_FLAG_INT);
-                        assert(false);
-                    }
+                    return ir_builder_emit_expression(ir_builder,
+                                                      expression->binary.call_expression);
                 }
-
-                switch (expression->binary.op)
+                else
                 {
-                    case AST_BINOP_ADD:
-                        return ir_builder_emit_add(ir_builder, lhs_value, rhs_value);
+                    IR_Value* lhs_value = ir_builder_emit_expression(ir_builder,
+                                                                    expression->binary.lhs);
+                    IR_Value* rhs_value = ir_builder_emit_expression(ir_builder,
+                                                                    expression->binary.rhs);
 
-                    case AST_BINOP_SUB:
-                        return ir_builder_emit_sub(ir_builder, lhs_value, rhs_value);
+                    if (expression->flags & AST_EXPR_FLAG_POINTER_MATH)
+                    {
+                        if (lhs_value->type->kind == AST_TYPE_POINTER)
+                        {
+                            assert(rhs_value->type->flags & AST_TYPE_FLAG_INT);
+                            auto size_lit =
+                                ir_integer_literal(ir_builder, rhs_value->type,
+                                                   lhs_value->type->pointer.base->bit_size / 8);
+                            rhs_value = ir_builder_emit_mul(ir_builder, rhs_value, size_lit);
+                            rhs_value = ir_builder_emit_cast(ir_builder, rhs_value,
+                                                             lhs_value->type);
+                        }
+                        else
+                        {
+                            assert(rhs_value->type->kind == AST_TYPE_POINTER);
+                            assert(lhs_value->type->flags & AST_TYPE_FLAG_INT);
+                            assert(false);
+                        }
+                    }
 
-                    case AST_BINOP_DIV:
-                        return ir_builder_emit_div(ir_builder, lhs_value, rhs_value);
+                    switch (expression->binary.op)
+                    {
+                        case AST_BINOP_ADD:
+                            return ir_builder_emit_add(ir_builder, lhs_value, rhs_value);
 
-                    case AST_BINOP_MUL:
-                        return ir_builder_emit_mul(ir_builder, lhs_value, rhs_value);
+                        case AST_BINOP_SUB:
+                            return ir_builder_emit_sub(ir_builder, lhs_value, rhs_value);
 
-                    case AST_BINOP_MOD:
-                        return ir_builder_emit_mod(ir_builder, lhs_value, rhs_value);
+                        case AST_BINOP_DIV:
+                            return ir_builder_emit_div(ir_builder, lhs_value, rhs_value);
 
-                    case AST_BINOP_LT:
-                        return ir_builder_emit_lt(ir_builder, lhs_value, rhs_value);
+                        case AST_BINOP_MUL:
+                            return ir_builder_emit_mul(ir_builder, lhs_value, rhs_value);
 
-                    case AST_BINOP_LTEQ:
-                        return ir_builder_emit_lteq(ir_builder, lhs_value, rhs_value);
+                        case AST_BINOP_MOD:
+                            return ir_builder_emit_mod(ir_builder, lhs_value, rhs_value);
 
-                    case AST_BINOP_GT:
-                        return ir_builder_emit_gt(ir_builder, lhs_value, rhs_value);
+                        case AST_BINOP_LT:
+                            return ir_builder_emit_lt(ir_builder, lhs_value, rhs_value);
 
-                    case AST_BINOP_GTEQ:
-                        return ir_builder_emit_gteq(ir_builder, lhs_value, rhs_value);
+                        case AST_BINOP_LTEQ:
+                            return ir_builder_emit_lteq(ir_builder, lhs_value, rhs_value);
 
-                    case AST_BINOP_EQ:
-                        return ir_builder_emit_eq(ir_builder, lhs_value, rhs_value);
+                        case AST_BINOP_GT:
+                            return ir_builder_emit_gt(ir_builder, lhs_value, rhs_value);
 
-                    case AST_BINOP_NEQ:
-                        return ir_builder_emit_neq(ir_builder, lhs_value, rhs_value);
+                        case AST_BINOP_GTEQ:
+                            return ir_builder_emit_gteq(ir_builder, lhs_value, rhs_value);
 
-                    case AST_BINOP_AND_AND:
-                        return ir_builder_emit_and_and(ir_builder, lhs_value, rhs_value);
+                        case AST_BINOP_EQ:
+                            return ir_builder_emit_eq(ir_builder, lhs_value, rhs_value);
 
-                    case AST_BINOP_OR_OR:
-                        return ir_builder_emit_or_or(ir_builder, lhs_value, rhs_value);
+                        case AST_BINOP_NEQ:
+                            return ir_builder_emit_neq(ir_builder, lhs_value, rhs_value);
 
-                    default: assert(false);
+                        case AST_BINOP_AND_AND:
+                            return ir_builder_emit_and_and(ir_builder, lhs_value, rhs_value);
+
+                        case AST_BINOP_OR_OR:
+                            return ir_builder_emit_or_or(ir_builder, lhs_value, rhs_value);
+
+                        default: assert(false);
+                    }
                 }
             }
 
