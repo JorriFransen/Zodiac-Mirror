@@ -433,10 +433,20 @@ namespace Zodiac
             {
 				if (!(declaration->mutable_decl.type == init_expr->type))
 				{
-					assert((declaration->mutable_decl.type->kind == AST_TYPE_POINTER &&
+					if (!((declaration->mutable_decl.type->kind == AST_TYPE_POINTER &&
                             init_expr->kind == AST_EXPR_NULL_LITERAL) ||
-                           declaration->mutable_decl.type == Builtin::type_double &&
-                           init_expr->type == Builtin::type_float);
+                           (declaration->mutable_decl.type == Builtin::type_double &&
+                            init_expr->type == Builtin::type_float)))
+                    {
+                        auto expected_type_string =
+                            ast_type_to_string(declaration->mutable_decl.type);
+                        auto got_type_string = ast_type_to_string(init_expr->type);
+                        resolver_report_error(resolver, declaration->file_pos,
+                                             "Type of init expression does not match type of declaration\n\tExpected: %s\n\tGot: %s", expected_type_string, got_type_string);
+                        mem_free(expected_type_string);
+                        mem_free(got_type_string);
+                        return false;
+                    }
 				}
             }
         }
@@ -2155,6 +2165,7 @@ namespace Zodiac
         {
             expression->flags |= AST_EXPR_FLAG_CONST;
         }
+
 
         AST_Overload_Operator_Kind overload_op = binary_op_to_overload_op(expression->binary.op);
         if (overload_op != AST_OVERLOAD_OP_INVALID)

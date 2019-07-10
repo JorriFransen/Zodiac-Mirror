@@ -40,6 +40,8 @@ main :: ()
 {
     // assert(false);
 
+    // test_stringabc : String = "test string";
+
     name := "Jorri Fransen";
     me : Person = { { name, _c.strlen(name) }, 23, 1 };
     print_person_and_thing(me, 1);
