@@ -167,7 +167,6 @@ namespace Zodiac
     bool defer_statement_is_legal(Resolver* resolver, AST_Statement* statement);
     void add_defer_statement(AST_Scope* scope, AST_Statement* statement);
 
-    AST_Identifier* find_overload(AST_Type* type, AST_Overload_Operator_Kind op);
     AST_Expression* try_resolve_index_overload(Resolver* resolver, AST_Expression* subscript_expr,
                                                AST_Identifier* overload_ident, AST_Scope* scope);
     AST_Expression* try_resolve_binary_overload(Resolver* resolver, AST_Expression* bin_expr,

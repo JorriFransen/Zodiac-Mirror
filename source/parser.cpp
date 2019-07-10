@@ -349,6 +349,7 @@ namespace Zodiac
             }
 
             AST_Aggregate_Declaration* agg_decl = parse_aggregate(parser, struct_scope);
+            if (!agg_decl) return nullptr;
 
             return ast_struct_declaration_new(parser->context, identifier->file_pos, identifier,
                                               agg_decl, parameters, struct_scope);
@@ -579,6 +580,16 @@ namespace Zodiac
                 {
                     AST_Overload_Directive overload;
                     overload.op = parse_overload_operator(parser);
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(overloads); i++)
+                    {
+                        if (overload.op == overloads[i].op)
+                        {
+                            parser_report_error(parser, directive_ident->file_pos,
+                                                "Multiple overload directives for the same operator are illegal, use function overloading for this kind of behaviour");
+                            return nullptr;
+                        }
+                    }
                     overload.identifier = parse_identifier(parser);
                     expect_token(parser, TOK_SEMICOLON);
                     BUF_PUSH(overloads, overload);

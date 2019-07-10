@@ -1109,6 +1109,21 @@ namespace Zodiac
         return result;
     }
 
+    AST_Identifier* find_overload(AST_Type* type, AST_Overload_Operator_Kind op)
+    {
+        assert(type);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(type->overloads); i++)
+        {
+            if (type->overloads[i].op == op)
+            {
+                return type->overloads[i].identifier;
+            }
+        }
+
+        return nullptr;
+    }
+
     AST_Overload_Operator_Kind binary_op_to_overload_op(AST_Binop_Kind binop)
     {
         switch (binop)

@@ -3356,21 +3356,6 @@ namespace Zodiac
         BUF_PUSH(*defer_stmts, statement);
     }
 
-    AST_Identifier* find_overload(AST_Type* type, AST_Overload_Operator_Kind op)
-    {
-        assert(type);
-
-        for (uint64_t i = 0; i < BUF_LENGTH(type->overloads); i++)
-        {
-            if (type->overloads[i].op == op)
-            {
-                return type->overloads[i].identifier;
-            }
-        }
-
-        return nullptr;
-    }
-
     AST_Expression* try_resolve_index_overload(Resolver* resolver, AST_Expression* subscript_expr,
                                                AST_Identifier* overload_ident, AST_Scope* scope)
     {

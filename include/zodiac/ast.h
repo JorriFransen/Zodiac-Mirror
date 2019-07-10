@@ -812,6 +812,7 @@ namespace Zodiac
 	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
 		                     bool is_module_scope);
 
+    AST_Identifier* find_overload(AST_Type* type, AST_Overload_Operator_Kind op);
     AST_Overload_Operator_Kind binary_op_to_overload_op(AST_Binop_Kind binop);
 
 	void ast_scope_push_declaration(AST_Scope* scope, AST_Declaration* declaration);
