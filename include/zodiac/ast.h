@@ -723,8 +723,9 @@ namespace Zodiac
                                                 AST_Identifier* import_module_identifier);
     AST_Declaration* ast_struct_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,
-                                               AST_Aggregate_Declaration* aggregate_decl,
+                                                AST_Aggregate_Declaration* aggregate_decl,
                                                 BUF(AST_Identifier*) parameters,
+                                                AST_Declaration_Location location,
                                                 AST_Scope* scope);
     AST_Declaration* ast_union_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Identifier* identifier,

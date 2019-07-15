@@ -501,6 +501,7 @@ namespace Zodiac
                                                 AST_Identifier* identifier,
                                                 AST_Aggregate_Declaration* aggregate_decl,
                                                 BUF(AST_Identifier*) parameters,
+                                                AST_Declaration_Location location,
                                                 AST_Scope* scope)
     {
         assert(context);
@@ -509,7 +510,7 @@ namespace Zodiac
         assert(scope);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_AGGREGATE_TYPE,
-                                                      AST_DECL_LOC_GLOBAL, identifier, nullptr);
+                                                      location, identifier, nullptr);
         result->aggregate_type.kind = AST_AGG_DECL_STRUCT;
         result->aggregate_type.type = nullptr;
         result->aggregate_type.aggregate_decl = aggregate_decl;

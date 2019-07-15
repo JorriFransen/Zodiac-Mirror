@@ -352,7 +352,7 @@ namespace Zodiac
             if (!agg_decl) return nullptr;
 
             return ast_struct_declaration_new(parser->context, identifier->file_pos, identifier,
-                                              agg_decl, parameters, struct_scope);
+                                              agg_decl, parameters, location, struct_scope);
         }
         else if (match_token(parser, TOK_KW_UNION))
         {

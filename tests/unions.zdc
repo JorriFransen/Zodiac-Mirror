@@ -24,12 +24,32 @@ Vec3 :: struct
     z: float
 }
 
+Top_Level :: struct
+{
+    x : int;
+    nested :: struct
+    {
+        y: int;
+        z: int
+    }
+}
+
 main :: ()
 {
     print("union test");
 
+    _c.printf("sizeof(Top_Level) = %lu\n", sizeof(Top_Level));
+
     _c.printf("sizeof(Value) = %lu\n", sizeof(Value));
     _c.printf("sizeof(Value2(float)) = %lu\n", sizeof(Value2(float)));
+
+    tl : Top_Level;
+    tl.x = 11;
+    tl.nested.y = 22;
+    tl.nested.z = 33;
+
+    // _c.printf("tl: x = %d, y = %d, z = %d\n", tl.x, tl.nested.y, tl.nested.z);
+    _c.printf("tl: x = %d\n", tl.x);
 
     value1 : Value;
     value1.uint64 = 888;
