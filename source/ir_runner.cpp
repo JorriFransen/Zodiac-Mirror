@@ -1241,14 +1241,16 @@ namespace Zodiac
                 IR_Value* dest_value = ir_runner_get_local_temporary(runner, iri->result);
                 AST_Type* dest_type = iri->result->type;
 
-                if (dest_type->kind == AST_TYPE_STRUCT)
+                if (dest_type->kind == AST_TYPE_STRUCT ||
+                    dest_type->kind == AST_TYPE_UNION)
                 {
                     dest_value->value.struct_pointer = pointer_value->value.struct_pointer;
                 }
                 else if (dest_type->kind == AST_TYPE_POINTER &&
                          dest_type->pointer.base->kind == AST_TYPE_STRUCT)
                 {
-                     dest_value->value.string = (uint8_t*)(*(uint64_t*)pointer_value->value.struct_pointer);
+                     dest_value->value.string =
+                         (uint8_t*)(*(uint64_t*)pointer_value->value.struct_pointer);
                 }
                 else if (dest_type->kind == AST_TYPE_STATIC_ARRAY)
                 {
@@ -1310,7 +1312,6 @@ namespace Zodiac
                 {
                     dest_value->value.string = *((uint8_t**)pointer_value->value.string);
                 }
-
                 else assert(false);
 
                 break;

@@ -32,6 +32,28 @@ Top_Level :: struct
         y: int;
         z: int
     }
+
+    w : int;
+
+    nested2 :: struct
+    {
+        xf : float;
+        yf : float;
+
+        nested_nested :: struct
+        {
+            zf : float;
+            wf : float;
+        }
+    }
+
+    value :: union
+    {
+        int64  : int;
+        uint64 : u64;
+        r32    : float;
+        r64    : double;
+    }
 }
 
 main :: ()
@@ -47,9 +69,23 @@ main :: ()
     tl.x = 11;
     tl.nested.y = 22;
     tl.nested.z = 33;
+    tl.w = 44;
+    tl.nested2.xf = 1.2;
+    tl.nested2.yf = 3.4;
+    tl.nested2.nested_nested.zf = 5.6;
+    tl.nested2.nested_nested.wf = 7.8;
 
-    // _c.printf("tl: x = %d, y = %d, z = %d\n", tl.x, tl.nested.y, tl.nested.z);
-    _c.printf("tl: x = %d\n", tl.x);
+    tl.value.int64 = -4;
+    _c.printf("tl.value: %d, %u, %f, %f\n", tl.value.int64,
+              tl.value.uint64, tl.value.r32, tl.value.r64);
+    tl.value.r32 = -4;
+    _c.printf("tl.value: %d, %u, %f, %f\n", tl.value.int64,
+              tl.value.uint64, tl.value.r32, tl.value.r64);
+
+    _c.printf("tl: x = %d, y = %d, z = %d, w = %d\n\txf = %f, yf = %f, zf = %f, wf = %f\n",
+              tl.x, tl.nested.y, tl.nested.z, tl.w,
+              tl.nested2.xf, tl.nested2.yf,
+              tl.nested2.nested_nested.zf, tl.nested2.nested_nested.wf);
 
     value1 : Value;
     value1.uint64 = 888;

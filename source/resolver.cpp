@@ -593,11 +593,22 @@ namespace Zodiac
         BUF(AST_Declaration*) pointers_to_self = nullptr;
         for (uint64_t i = 0; i < BUF_LENGTH(aggregate_decls); i++)
         {
+            bool mem_result = true;
+
             AST_Declaration* member_decl = aggregate_decls[i];
-            assert(member_decl->kind == AST_DECL_MUTABLE);
             assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
-            bool mem_result = try_resolve_declaration(resolver, member_decl,
-                                                      declaration->aggregate_type.scope);
+            if (member_decl->kind == AST_DECL_AGGREGATE_TYPE)
+            {
+                assert(member_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
+                       member_decl->aggregate_type.kind == AST_AGG_DECL_UNION);
+                assert(member_decl->aggregate_type.scope);
+                mem_result &=
+                    try_replace_nested_aggregate_with_mutable(resolver, member_decl,
+                                                              member_decl->aggregate_type.scope);
+            }
+            assert(member_decl->kind == AST_DECL_MUTABLE);
+            mem_result = try_resolve_declaration(resolver, member_decl,
+                                                 declaration->aggregate_type.scope);
 
             // Special case pointer to self
             if (!mem_result)
@@ -3485,6 +3496,33 @@ namespace Zodiac
         {
             return nullptr;
         }
+    }
+
+    bool try_replace_nested_aggregate_with_mutable(Resolver* resolver,
+                                                   AST_Declaration* nested_aggregate,
+                                                   AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(nested_aggregate);
+        assert(nested_aggregate->kind == AST_DECL_AGGREGATE_TYPE);
+        assert(nested_aggregate->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
+               nested_aggregate->aggregate_type.kind == AST_AGG_DECL_UNION);
+        assert(scope);
+
+        bool result = try_resolve_declaration(resolver, nested_aggregate, scope);
+        if (!result) return false;
+
+        assert(nested_aggregate->aggregate_type.type);
+        assert(nested_aggregate->aggregate_type.type->kind == AST_TYPE_STRUCT ||
+               nested_aggregate->aggregate_type.type->kind == AST_TYPE_UNION);
+
+        AST_Type* nested_type = nested_aggregate->aggregate_type.type;
+
+        nested_aggregate->kind = AST_DECL_MUTABLE;
+        nested_aggregate->mutable_decl.type = nested_type;
+        nested_aggregate->mutable_decl.init_expression = nullptr;
+
+        return try_resolve_declaration(resolver, nested_aggregate, scope);
     }
 
     char* run_insert(Resolver* resolver, AST_Expression* call_expression)

@@ -381,7 +381,7 @@ namespace Zodiac
             AST_Aggregate_Declaration* agg_decl = parse_aggregate(parser, union_scope);
 
             return ast_union_declaration_new(parser->context, identifier->file_pos, identifier,
-                                             agg_decl, parameters, union_scope);
+                                             agg_decl, parameters, location, union_scope);
         }
         else if (match_token(parser, TOK_KW_ENUM))
         {

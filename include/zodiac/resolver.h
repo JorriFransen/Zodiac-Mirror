@@ -173,6 +173,10 @@ namespace Zodiac
     AST_Expression* try_resolve_binary_overload(Resolver* resolver, AST_Expression* bin_expr,
                                                 AST_Identifier* overload_ident, AST_Scope* scope);
 
+    bool try_replace_nested_aggregate_with_mutable(Resolver* resolver,
+                                                   AST_Declaration* nested_aggregate,
+                                                   AST_Scope* scope);
+
     char* run_insert(Resolver* resolver, AST_Expression* call_expression);
 
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,

@@ -19,19 +19,19 @@ namespace Zodiac
             case AST_DECL_FUNC:
             {
                 auto arg_decls = poly_decl->function.args;
-                auto call_exprs = call_expr->call.arg_expressions;
+                auto arg_exprs = call_expr->call.arg_expressions;
 
                 for (uint64_t i = 0; i < BUF_LENGTH(arg_decls); i++)
                 {
                     auto arg_decl = arg_decls[i];
-                    auto call_expr = call_exprs[i];
+                    auto arg_expr = arg_exprs[i];
 
                     if (arg_decl->mutable_decl.type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
                     {
                         find_type_spec_replacements(context,
                                                     arg_decl->mutable_decl.type_spec,
                                                     arg_decl->mutable_decl.type_spec->file_pos,
-                                                    call_expr->type, &replacements);
+                                                    arg_expr->type, &replacements);
                     }
                 }
                 break;

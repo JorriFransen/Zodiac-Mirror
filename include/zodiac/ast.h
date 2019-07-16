@@ -728,10 +728,11 @@ namespace Zodiac
                                                 AST_Declaration_Location location,
                                                 AST_Scope* scope);
     AST_Declaration* ast_union_declaration_new(Context* context, File_Pos file_pos,
-                                                AST_Identifier* identifier,
-                                                AST_Aggregate_Declaration* aggregate_decl,
-                                                BUF(AST_Identifier*) parameters,
-                                                AST_Scope* scope);
+                                               AST_Identifier* identifier,
+                                               AST_Aggregate_Declaration* aggregate_decl,
+                                               BUF(AST_Identifier*) parameters,
+                                               AST_Declaration_Location location,
+                                               AST_Scope* scope);
     AST_Declaration* ast_enum_declaration_new(Context* context, File_Pos file_pos,
                                               AST_Identifier* identifier,
                                               AST_Type_Spec* enum_type_spec,
