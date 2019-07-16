@@ -1154,7 +1154,6 @@ namespace Zodiac
             AST_Type* aggregate_type = nullptr;
             IR_Value* base_value = nullptr;
             AST_Declaration* base_decl = nullptr;
-            bool is_pointer = false;
 
             if (base_expression->kind == AST_EXPR_IDENTIFIER)
             {
@@ -1168,7 +1167,6 @@ namespace Zodiac
                 else if (base_expression->type->kind == AST_TYPE_POINTER)
                 {
                     aggregate_type = base_expression->type->pointer.base;
-                    is_pointer = true;
                 }
                 else assert(false);
             }
@@ -1183,43 +1181,49 @@ namespace Zodiac
             while (aggregate_type->kind == AST_TYPE_POINTER)
             {
                 aggregate_type = aggregate_type->pointer.base;
-                is_pointer = true;
             }
 
             assert(aggregate_type->kind == AST_TYPE_STRUCT ||
                    aggregate_type->kind == AST_TYPE_UNION);
 
             uint64_t member_index = 0;
-            AST_Type* member_type = nullptr;
 
             auto member_decls = aggregate_type->aggregate_type.member_declarations;
             for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
             {
                 AST_Declaration* member_decl = member_decls[i];
-                if (member_decl->identifier->atom == member_expression->identifier->atom)
+                if (!member_decl->identifier)
+                {
+                    AST_Type* anon_type = member_decl->mutable_decl.type;
+                    assert(anon_type->kind == AST_TYPE_STRUCT ||
+                           anon_type->kind == AST_TYPE_UNION);
+                    auto anon_members = anon_type->aggregate_type.member_declarations;
+                    for (uint64_t j = 0; j < BUF_LENGTH(anon_members); j++)
+                    {
+                        AST_Declaration* anon_member = anon_members[j];
+                        if (anon_member->identifier->atom == member_expression->identifier->atom)
+                        {
+                            base_value = ir_builder_emit_aggregate_offset_pointer(ir_builder,
+                                                                                  base_value, i);
+                            member_index = j;
+                            break;
+                        }
+                    }
+                }
+                else if (member_decl->identifier->atom == member_expression->identifier->atom)
                 {
                     member_index = i;
-                    member_type = member_decl->mutable_decl.type;
                     break;
                 }
             }
 
-            assert(member_type);
-
             assert(base_decl);
             assert(base_value);
 
-            if (is_pointer)
+            while (base_value->type->kind != AST_TYPE_STRUCT &&
+                   base_value->type->kind != AST_TYPE_UNION)
             {
-                if (base_value->kind == IRV_ALLOCL)
-                {
-                    base_value = ir_builder_emit_loadl(ir_builder, base_value);
-                }
-                else if (base_value->kind == IRV_ARGUMENT)
-                {
-                    base_value = ir_builder_emit_loada(ir_builder, base_value);
-                }
-                base_value = ir_builder_emit_loadp(ir_builder, base_value);
+                base_value = ir_builder_emit_load(ir_builder, base_value);
             }
             IR_Value* value_pointer = ir_builder_emit_aggregate_offset_pointer(ir_builder,
                                                                                 base_value,
@@ -1240,15 +1244,6 @@ namespace Zodiac
         IR_Value* expr_value = ir_builder_emit_expression(ir_builder, expression->cast_expr.expr);
 
         return ir_builder_emit_cast(ir_builder, expr_value, expression->type);
-
-		// IR_Value* expr_value = ir_builder_emit_expression(ir_builder, expression->cast_expr.expr);
-		// IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, expression->type);
-		// IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_CAST, expr_value, nullptr,
-		// 	result);
-
-		// ir_builder_emit_instruction(ir_builder, iri);
-
-		// return result;
 	}
 
     IR_Value* ir_builder_emit_load_lit(IR_Builder* ir_builder, IR_Value* literal)
@@ -2732,20 +2727,42 @@ namespace Zodiac
             for (uint64_t i = 0; i < BUF_LENGTH(agg_members); i++)
             {
                 AST_Declaration* member_decl = agg_members[i];
-                if (member_expression->identifier->atom == member_decl->identifier->atom)
+                if (!member_decl->identifier)
                 {
-                    member_index = i;
-                    found = true;
-                    break;
+                    AST_Type* anon_agg_type = member_decl->mutable_decl.type;
+                    assert(anon_agg_type->kind == AST_TYPE_STRUCT ||
+                           anon_agg_type->kind == AST_TYPE_UNION);
+                    auto anon_members = anon_agg_type->aggregate_type.member_declarations;
+                    for (uint64_t j = 0; j < BUF_LENGTH(anon_members); j++)
+                    {
+                        AST_Declaration* anon_member = anon_members[j];
+                        if (member_expression->identifier->atom == anon_member->identifier->atom)
+                        {
+                            IR_Value* anon_value =
+                                ir_builder_emit_aggregate_offset_pointer(ir_builder,
+                                                                         base_value, i);
+                            anon_value = ir_builder_emit_load(ir_builder, anon_value);
+                            return ir_builder_emit_aggregate_offset_pointer(ir_builder,
+                                                                            anon_value, j);
+                        }
+                    }
+                }
+                else if (member_expression->identifier->atom == member_decl->identifier->atom)
+                {
+                    // member_index = i;
+                    // found = true;
+                    // break;
+                    return ir_builder_emit_aggregate_offset_pointer(ir_builder, base_value, i);
                 }
             }
 
-            assert(found);
+            assert(false);
+            // assert(found);
 
-            IR_Value* result = ir_builder_emit_aggregate_offset_pointer(ir_builder, base_value,
-                                                                        member_index);
+            // IR_Value* result = ir_builder_emit_aggregate_offset_pointer(ir_builder, base_value,
+            //                                                             member_index);
 
-            return result;
+            // return result;
         }
         else if (lvalue_expr->kind == AST_EXPR_SUBSCRIPT)
         {

@@ -44,6 +44,12 @@ Top_Level :: struct
         {
             zf : float;
             wf : float;
+
+            union
+            {
+                integer : int;
+                real64  : double;
+            }
         }
     }
 
@@ -53,6 +59,12 @@ Top_Level :: struct
         uint64 : u64;
         r32    : float;
         r64    : double;
+    }
+
+    struct
+    {
+        anon_nested_int : int;
+        anon_nested_float : float;
     }
 }
 
@@ -74,6 +86,18 @@ main :: ()
     tl.nested2.yf = 3.4;
     tl.nested2.nested_nested.zf = 5.6;
     tl.nested2.nested_nested.wf = 7.8;
+
+    tl.nested2.nested_nested.integer = 1234;
+    _c.printf("tl.nested2.nested_nested.integer = %d\n", tl.nested2.nested_nested.integer);
+    _c.printf("tl.nested2.nested_nested.real64 = %f\n", tl.nested2.nested_nested.real64);
+    tl.nested2.nested_nested.real64 = 12.34;
+    _c.printf("tl.nested2.nested_nested.integer = %d\n", tl.nested2.nested_nested.integer);
+    _c.printf("tl.nested2.nested_nested.real64 = %f\n", tl.nested2.nested_nested.real64);
+
+    tl.anon_nested_int = 55;
+    tl.anon_nested_float = 66.77;
+    _c.printf("tl.anon_nested_int = %d\n", tl.anon_nested_int);
+    _c.printf("tl.anon_nested_float = %f\n", tl.anon_nested_float);
 
     tl.value.int64 = -4;
     _c.printf("tl.value: %d, %u, %f, %f\n", tl.value.int64,

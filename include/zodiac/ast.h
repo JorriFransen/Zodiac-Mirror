@@ -17,8 +17,8 @@ namespace Zodiac
 
     struct AST_Module
     {
-		AST_Declaration** declarations = nullptr;
-		uint64_t declaration_count = 32;
+        AST_Declaration** declarations = nullptr;
+        uint64_t declaration_count = 32;
 
         BUF(AST_Declaration*) global_declarations = nullptr;
         AST_Scope* module_scope = nullptr;
@@ -738,9 +738,9 @@ namespace Zodiac
                                               AST_Type_Spec* enum_type_spec,
                                               AST_Aggregate_Declaration* aggregate_decl,
                                               AST_Scope* scope);
-	AST_Declaration* ast_typedef_declaration_new(Context* context, File_Pos file_pos,
-		                                         AST_Identifier* identifier,
-		                                         AST_Type_Spec* type_spec);
+    AST_Declaration* ast_typedef_declaration_new(Context* context, File_Pos file_pos,
+                                                 AST_Identifier* identifier,
+                                                 AST_Type_Spec* type_spec);
     AST_Declaration* ast_insert_declaration_new(Context* context, File_Pos file_pos,
                                                 AST_Statement* stmt);
 

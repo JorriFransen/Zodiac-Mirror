@@ -584,9 +584,13 @@ namespace Zodiac
 
         bool result = true;
 
-        assert(declaration->identifier);
+        AST_Identifier* identifier = declaration->identifier;
 
-        assert(!find_declaration(resolver->context, scope, declaration->identifier));
+
+        if (identifier)
+        {
+            assert(!find_declaration(resolver->context, scope, declaration->identifier));
+        }
 
         auto aggregate_decl = declaration->aggregate_type.aggregate_decl;
         auto aggregate_decls = aggregate_decl->members;
@@ -611,7 +615,7 @@ namespace Zodiac
                                                  declaration->aggregate_type.scope);
 
             // Special case pointer to self
-            if (!mem_result)
+            if (!mem_result && identifier)
             {
                 AST_Type_Spec* mem_ts = member_decl->mutable_decl.type_spec;
                 assert(mem_ts);
@@ -619,7 +623,7 @@ namespace Zodiac
                     mem_ts->pointer.base->kind == AST_TYPE_SPEC_IDENT)
                 {
                     AST_Type_Spec* mem_base_ts = mem_ts->pointer.base;
-                    if (mem_base_ts->identifier.identifier->atom == declaration->identifier->atom)
+                    if (mem_base_ts->identifier.identifier->atom == identifier->atom)
                     {
                         mem_result = true;
                         BUF_PUSH(pointers_to_self, member_decl);
@@ -635,13 +639,13 @@ namespace Zodiac
             if (declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT)
             {
                 declaration->aggregate_type.type =
-                    create_struct_type(resolver, declaration->identifier, aggregate_decls,
+                    create_struct_type(resolver, identifier, aggregate_decls,
                                        aggregate_decl->overload_directives);
             }
             else if (declaration->aggregate_type.kind == AST_AGG_DECL_UNION)
             {
                 declaration->aggregate_type.type =
-                    create_union_type(resolver, declaration->identifier, aggregate_decls,
+                    create_union_type(resolver, identifier, aggregate_decls,
                                       aggregate_decl->overload_directives);
             }
             else assert(false);
@@ -2493,7 +2497,30 @@ namespace Zodiac
                         assert(struct_member->location = AST_DECL_LOC_AGGREGATE_MEMBER);
                         assert(struct_member->mutable_decl.type);
 
-                        if (struct_member->identifier->atom == member_expr->identifier->atom)
+                        if (!struct_member->identifier)
+                        {
+                            // Anonymous member
+                            assert(struct_member->location == AST_DECL_LOC_AGGREGATE_MEMBER);
+                            auto anon_struct_type = struct_member->mutable_decl.type;
+                            assert(anon_struct_type->kind == AST_TYPE_STRUCT ||
+                                   anon_struct_type->kind == AST_TYPE_UNION);
+                            auto anon_members =
+                                anon_struct_type->aggregate_type.member_declarations;
+                            for (uint64_t j = 0; j < BUF_LENGTH(anon_members); j++)
+                            {
+                                AST_Declaration* anon_member = anon_members[j];
+                                assert(anon_member->kind == AST_DECL_MUTABLE);
+                                if (anon_member->identifier->atom ==
+                                    member_expr->identifier->atom)
+                                {
+                                    expression->type = anon_member->mutable_decl.type;
+                                    expression->dot.declaration = anon_member;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        else if (struct_member->identifier->atom == member_expr->identifier->atom)
                         {
                             expression->type = struct_member->mutable_decl.type;
                             expression->dot.declaration = struct_member;
@@ -2911,7 +2938,7 @@ namespace Zodiac
                                  BUF(AST_Overload_Directive) overloads)
     {
         assert(resolver);
-        assert(identifier);
+        // assert(identifier);
         // assert(member_decls);
 
         uint64_t bit_size = 0;
@@ -2935,9 +2962,13 @@ namespace Zodiac
             else assert(false);
         }
 
+        const char* struct_name = nullptr;
+        if (identifier)
+        {
+            struct_name = identifier->atom.data;
+        }
         AST_Type* struct_type = ast_type_struct_new(resolver->context, member_decls,
-                                                    identifier->atom.data,
-                                                    bit_size, overloads);
+                                                    struct_name, bit_size, overloads);
 
         assert(struct_type->bit_size || BUF_LENGTH(member_decls) == 0);
         return struct_type;
@@ -2948,7 +2979,7 @@ namespace Zodiac
                                 BUF(AST_Overload_Directive) overloads)
     {
         assert(resolver);
-        assert(identifier);
+        // assert(identifier);
 
         uint64_t bit_size = 0;
         for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
@@ -2974,9 +3005,13 @@ namespace Zodiac
             if (member_bit_size > bit_size) bit_size = member_bit_size;
         }
 
+        const char* union_name = nullptr;
+        if (identifier)
+        {
+            union_name = identifier->atom.data;
+        }
         AST_Type* union_type = ast_type_union_new(resolver->context, member_decls,
-                                                  identifier->atom.data,
-                                                  bit_size, overloads);
+                                                  union_name, bit_size, overloads);
         assert(union_type->bit_size || BUF_LENGTH(member_decls) == 0);
         return union_type;
     }

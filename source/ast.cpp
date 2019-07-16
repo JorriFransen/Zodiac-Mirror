@@ -505,7 +505,7 @@ namespace Zodiac
                                                 AST_Scope* scope)
     {
         assert(context);
-        assert(identifier);
+        // assert(identifier);
         assert(aggregate_decl);
         assert(scope);
 
@@ -530,7 +530,7 @@ namespace Zodiac
                                                AST_Scope* scope)
     {
         assert(context);
-        assert(identifier);
+        // assert(identifier);
         assert(aggregate_decl);
         assert(scope);
 
@@ -889,7 +889,7 @@ namespace Zodiac
                                  BUF(AST_Overload_Directive) overloads)
     {
         assert(context);
-        assert(name);
+        // assert(name);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_UNION, AST_TYPE_FLAG_NONE, name,
                                         bit_size);

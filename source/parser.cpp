@@ -233,9 +233,9 @@ namespace Zodiac
         auto fp = current_token(parser).file_pos;
         expect_token(parser, TOK_COLON);
 
-		auto ast_module = parser->result.ast_module;
+        auto ast_module = parser->result.ast_module;
         AST_Scope* argument_scope = ast_scope_new(parser->context, ast_module->module_scope,
-			                                      ast_module, false);
+                                                  ast_module, false);
 
         if (is_token(parser, TOK_LPAREN))
         {
@@ -310,20 +310,20 @@ namespace Zodiac
             return ast_import_declaration_new(parser->context, identifier->file_pos, identifier,
                                               import_module_ident);
         }
-		else if (match_token(parser, TOK_KW_TYPEDEF))
-		{
-			assert(!type_spec);
+        else if (match_token(parser, TOK_KW_TYPEDEF))
+        {
+            assert(!type_spec);
 
-			AST_Type_Spec* type_spec = parse_type_spec(parser, scope);
+            AST_Type_Spec* type_spec = parse_type_spec(parser, scope);
             if (!type_spec)
             {
                 return nullptr;
             }
-			expect_token(parser, TOK_SEMICOLON);
+            expect_token(parser, TOK_SEMICOLON);
 
-			return ast_typedef_declaration_new(parser->context, identifier->file_pos, identifier,
-				                               type_spec);
-		}
+            return ast_typedef_declaration_new(parser->context, identifier->file_pos, identifier,
+                                               type_spec);
+        }
         else if (match_token(parser, TOK_KW_STRUCT))
         {
             assert(!type_spec);
@@ -595,6 +595,38 @@ namespace Zodiac
                     BUF_PUSH(overloads, overload);
                 }
                 else assert(false);
+            }
+            else if (match_token(parser, TOK_KW_STRUCT))
+            {
+                AST_Aggregate_Declaration* nested_struct = parse_aggregate(parser, scope,
+                                                                           false);
+                assert(nested_struct);
+                AST_Declaration* member_decl =
+                    ast_struct_declaration_new(parser->context, nested_struct->file_pos, nullptr,
+                                               nested_struct, nullptr,
+                                               AST_DECL_LOC_AGGREGATE_MEMBER, scope);
+                BUF_PUSH(members, member_decl);
+
+                // for (uint64_t i = 0; i < BUF_LENGTH(nested_aggregate->members); i++)
+                // {
+                //     BUF_PUSH(members, nested_aggregate->members[i]);
+                // }
+                // assert(!nested_aggregate->overload_directives);
+
+                // // LEAK: FIXME: We can free the buffers, but we will still leak the
+                // //   aggregate declaration itself.
+                // BUF_FREE(nested_aggregate->members);
+            }
+            else if (match_token(parser, TOK_KW_UNION))
+            {
+                AST_Aggregate_Declaration* nested_union = parse_aggregate(parser, scope, false);
+                assert(nested_union);
+
+                AST_Declaration* member_decl =
+                    ast_union_declaration_new(parser->context, nested_union->file_pos, nullptr,
+                                              nested_union, nullptr,
+                                              AST_DECL_LOC_AGGREGATE_MEMBER, scope);
+                BUF_PUSH(members, member_decl);
             }
             else
             {
