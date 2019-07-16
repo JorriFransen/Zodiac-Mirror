@@ -51,9 +51,9 @@ namespace Zodiac
     void ir_runner_execute_entry(IR_Runner* ir_runner, AST_Module* ast_module,
                                  IR_Module* ir_module);
 
-    void ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* AST_Module,
+    bool ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* AST_Module,
                                      IR_Module* ir_module);
-    void ir_runner_load_dynamic_lib(IR_Runner* ir_runner, Atom lib_name);
+    bool ir_runner_load_dynamic_lib(IR_Runner* ir_runner, Atom lib_name);
     void ir_runner_load_foreigns(IR_Runner* ir_runner, IR_Module* ir_module);
 
     IR_Value* ir_runner_get_local_temporary(IR_Runner* ir_runner, uint64_t temp_index);

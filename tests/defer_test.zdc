@@ -59,7 +59,7 @@ defer_test2 :: (arg: int)
     {
         defer print(arg);
 
-        arg = arg - 1;
+        arg -= 1;
         if (arg < 0)
         {
             defer print("defer in break block");

@@ -3,7 +3,7 @@ c :: import c;
 
 main :: () -> void
 {
-    for (i := 0; i < 20; i = i + 1)
+    for (i := 0; i < 20; i += 1)
     {
         c.printf("i: %ld\n", i);
 
@@ -21,7 +21,7 @@ main :: () -> void
         if (j <= 10)
             break;
 
-        j = j - 1;
+        j -= 1;
     }
 
 }

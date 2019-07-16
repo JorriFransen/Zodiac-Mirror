@@ -3597,7 +3597,10 @@ namespace Zodiac
                 assert(func_value);
                 assert(func_value->function);
 
-                ir_runner_load_dynamic_libs(&ir_runner, resolver->module, &ir_module);
+                if (!ir_runner_load_dynamic_libs(&ir_runner, resolver->module, &ir_module))
+                {
+                    return nullptr;
+                }
                 ir_runner_load_foreigns(&ir_runner, &ir_module);
 
                 ir_runner_execute_block(&ir_runner, ir_runner.context->global_init_block->block);

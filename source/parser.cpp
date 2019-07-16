@@ -767,8 +767,7 @@ namespace Zodiac
             return nullptr;
         }
 
-        if (lvalue_expr->kind == AST_EXPR_IDENTIFIER &&
-            is_binary_assign_op(parser))
+        if (is_binary_assign_op(parser))
         {
             auto op_tok = current_token(parser);
             auto op = parse_binary_assign_op(parser);
@@ -777,7 +776,7 @@ namespace Zodiac
             AST_Expression* binary_expr = ast_binary_expression_new(parser->context,
                                                                     op_tok.file_pos, lvalue_expr,
                                                                     op, rhs);
-            expect_token(parser, TOK_SEMICOLON);
+            match_token(parser, TOK_SEMICOLON);
             return ast_assign_statement_new(parser->context, lvalue_expr->file_pos, lvalue_expr,
                                             binary_expr);
         }

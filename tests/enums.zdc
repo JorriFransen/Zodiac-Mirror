@@ -43,18 +43,18 @@ Binary_Op : u32 : enum
 
 main :: () -> int
 {
-    // io.printf("enum test()\n");
+    c.printf("enum test()\n");
 
-    // io.printf("DAY_MONDAY: %ld\n", DAY_MONDAY);
+    c.printf("DAY_MONDAY: %ld\n", DAY_MONDAY);
 
-    // io.printf("global_int: %lu\n", global_int);
-    // global_int = 5;
-    // io.printf("global_int: %lu\n", global_int);
+    c.printf("global_int: %lu\n", global_int);
+    global_int = 5;
+    c.printf("global_int: %lu\n", global_int);
 
-    // global_int_ptr := *global_int;
-    // <global_int_ptr = 6;
-    // io.printf("<global_int_ptr: %lu\n", <global_int_ptr);
-    // io.printf("global_int: %lu\n", global_int);
+    global_int_ptr := *global_int;
+    <global_int_ptr = 6;
+    c.printf("<global_int_ptr: %lu\n", <global_int_ptr);
+    c.printf("global_int: %lu\n", global_int);
 
     day : Day;
     day = Day.WEDNESDAY;
@@ -67,7 +67,7 @@ main :: () -> int
     print_day(Day.SUNDAY);
     print_day((:Day)11);
 
-    for (i := 0; i <= 12; i = i + 1)
+    for (i := 0; i <= 12; i += 1)
     {
         print_num(i);
     }

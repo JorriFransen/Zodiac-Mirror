@@ -28,7 +28,8 @@ namespace Zodiac
         ir_runner->loaded_foreign_symbols = nullptr;
     }
 
-    void ir_runner_execute_entry(IR_Runner* ir_runner, AST_Module* ast_module, IR_Module* ir_module)
+    void ir_runner_execute_entry(IR_Runner* ir_runner, AST_Module* ast_module, IR_Module*
+                                 ir_module)
     {
         assert(ir_runner);
         assert(ast_module);
@@ -36,7 +37,11 @@ namespace Zodiac
 
         assert(ir_module->entry_function);
 
-        ir_runner_load_dynamic_libs(ir_runner, ast_module, ir_module);
+        if (!ir_runner_load_dynamic_libs(ir_runner, ast_module, ir_module))
+        {
+            return;
+        }
+
         ir_runner_load_foreigns(ir_runner, ir_module);
 
         ir_runner_execute_block(ir_runner, ir_runner->context->global_init_block->block);
@@ -60,7 +65,7 @@ namespace Zodiac
         }
     }
 
-    void ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* ast_module,
+    bool ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* ast_module,
                                      IR_Module* ir_module)
     {
         assert(ir_runner);
@@ -68,7 +73,10 @@ namespace Zodiac
 
         for (uint64_t i = 0; i < BUF_LENGTH(ir_module->dynamic_lib_names); i++)
         {
-            ir_runner_load_dynamic_lib(ir_runner, ir_module->dynamic_lib_names[i]);
+            if (!ir_runner_load_dynamic_lib(ir_runner, ir_module->dynamic_lib_names[i]))
+            {
+                return false;
+            }
         }
 
         for (uint64_t i = 0; i < BUF_LENGTH(ast_module->import_modules); i++)
@@ -77,24 +85,16 @@ namespace Zodiac
             assert(import_ast_module->gen_data);
             IR_Builder* import_ir_builder = (IR_Builder*)import_ast_module->gen_data;
             IR_Module* import_ir_module = &import_ir_builder->result;
-            ir_runner_load_dynamic_libs(ir_runner, import_ast_module, import_ir_module);
+            if (!ir_runner_load_dynamic_libs(ir_runner, import_ast_module, import_ir_module))
+            {
+                return false;
+            }
         }
 
-        // for (uint64_t i = 0; i < BUF_LENGTH(ast_module->import_modules); i++)
-        // {
-        //     AST_Module* import_ast_module = ast_module->import_modules[i];
-        //     assert(import_ast_module->gen_data);
-        //     IR_Builder* import_ir_builder = (IR_Builder*)import_ast_module->gen_data;
-        //     IR_Module* import_ir_module = &import_ir_builder->result;
-
-        //     for (uint64_t ni = 0; ni < BUF_LENGTH(import_ir_module->dynamic_lib_names); ni++)
-        //     {
-        //         ir_runner_load_dynamic_lib(ir_runner, import_ir_module->dynamic_lib_names[ni]);
-        //     }
-        // }
+        return true;
     }
 
-    void ir_runner_load_dynamic_lib(IR_Runner* ir_runner, Atom lib_name)
+    bool ir_runner_load_dynamic_lib(IR_Runner* ir_runner, Atom lib_name)
     {
         assert(ir_runner);
 
@@ -103,7 +103,7 @@ namespace Zodiac
             const IR_Loaded_Dynamic_Lib& loaded_lib = ir_runner->loaded_dyn_libs[i];
             if (loaded_lib.name == lib_name)
             {
-                return;
+                return true;
             }
         }
 
@@ -140,6 +140,8 @@ namespace Zodiac
         {
             fprintf(stderr, "could not find library: %s\n", lib_name.data);
         }
+
+        return found;
     }
 
     void ir_runner_load_foreigns(IR_Runner* ir_runner, IR_Module* ir_module)

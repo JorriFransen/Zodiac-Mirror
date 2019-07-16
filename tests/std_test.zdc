@@ -47,7 +47,7 @@ main :: ()
     float_array : Array(float);
     int_array2 : Array(int);
 
-    for (i : u64 = 0; i < 5; i = i + 1)
+    for (i : u64 = 0; i < 5; i += 1)
     {
         j := i + 1;
         array_add(*int_array, (:int)(j * j));
@@ -55,7 +55,7 @@ main :: ()
         array_add(*float_array, j * j / 3.0);
     }
 
-    for (i : u64 = 0; i < int_array.count; i = i + 1)
+    for (i : u64 = 0; i < int_array.count; i += 1)
     {
         _c.printf("int_array[%d]: %d\n", i, int_array[i]);
         array_add(*int_array2, int_array[i]);
@@ -63,7 +63,7 @@ main :: ()
 
     print(" ");
 
-    for (i : u64 = 0; i < float_array.count; i = i + 1)
+    for (i : u64 = 0; i < float_array.count; i += 1)
     {
         _c.printf("float_array[%d]: %f\n", i, float_array[i]);
         array_add(*int_array2, (:int)float_array[i]);
@@ -71,7 +71,7 @@ main :: ()
 
     print(" ");
 
-    for (i : u64 = 0; i < int_array2.count; i = i + 1)
+    for (i : u64 = 0; i < int_array2.count; i += 1)
     {
         _c.printf("int_array2[%d]: %d\n", i, int_array2[i]);
     }

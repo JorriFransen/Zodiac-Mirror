@@ -73,8 +73,6 @@ gen_vector_definition :: (element_count: u64) -> *u8
     if (element_count >= (:u64)4)
     {
         SB.append(*sb, "\tw: float;\n");
-    }
-
     SB.append(*sb, "}\n");
 
     SB.append(*sb, "vec_print :: (vec: Vec");

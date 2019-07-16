@@ -72,13 +72,13 @@ append_to_block :: (sb: *_String_Builder_Block, str: std.String) -> bool
     if (sb.used_size + str.length < sb.size)
     {
         sbi := sb.used_size;
-        for (i: u64 = 0; i < str.length; i = i + 1)
+        for (i: u64 = 0; i < str.length; i +=  1)
         {
             sb.data[sbi] = str.data[i];
-            sbi = sbi + 1;
+            sbi += 1
         }
 
-        sb.used_size = sb.used_size + str.length;
+        sb.used_size += str.length;
 
         return true;
     }
@@ -108,10 +108,10 @@ copy_to_string :: (sb: *String_Builder) -> std.String
     block = sb.first_block;
     while (block)
     {
-        for (i: u64 = 0; i < block.used_size; i = i + 1)
+        for (i: u64 = 0; i < block.used_size; i += 1)
         {
             result.data[ri] = block.data[i];
-            ri = ri + 1;
+            ri += 1;
         }
         block = block.next_block;
     }
