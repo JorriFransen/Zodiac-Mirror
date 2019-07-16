@@ -767,6 +767,21 @@ namespace Zodiac
             return nullptr;
         }
 
+        if (lvalue_expr->kind == AST_EXPR_IDENTIFIER &&
+            is_binary_assign_op(parser))
+        {
+            auto op_tok = current_token(parser);
+            auto op = parse_binary_assign_op(parser);
+            expect_token(parser, TOK_EQ);
+            AST_Expression* rhs = parse_expression(parser, scope);
+            AST_Expression* binary_expr = ast_binary_expression_new(parser->context,
+                                                                    op_tok.file_pos, lvalue_expr,
+                                                                    op, rhs);
+            expect_token(parser, TOK_SEMICOLON);
+            return ast_assign_statement_new(parser->context, lvalue_expr->file_pos, lvalue_expr,
+                                            binary_expr);
+        }
+
         if (is_token(parser, TOK_COLON))
         {
             AST_Declaration* decl = parse_declaration(parser, lvalue_expr->identifier,
@@ -1127,6 +1142,7 @@ namespace Zodiac
         while (is_add_op(parser))
         {
             auto op_tok = current_token(parser);
+            if (peek_token(parser, 1).kind == TOK_EQ) break;
             auto op = parse_add_op(parser);
             AST_Expression* rhs = parse_mul_expression(parser, scope);
             lhs = ast_binary_expression_new(parser->context, op_tok.file_pos, lhs, op, rhs);
@@ -1144,6 +1160,7 @@ namespace Zodiac
         while (is_mul_op(parser))
         {
             auto op_tok = current_token(parser);
+            if (peek_token(parser, 1).kind == TOK_EQ) break;
             auto op = parse_mul_op(parser);
             AST_Expression* rhs = parse_mul_expression(parser, scope);
             lhs = ast_binary_expression_new(parser->context, op_tok.file_pos, lhs, op, rhs);
@@ -1821,12 +1838,83 @@ namespace Zodiac
         return result;
     }
 
+    static bool is_binary_assign_op(Parser* parser)
+    {
+        assert(parser);
+
+        auto ct = current_token(parser);
+
+        switch (ct.kind)
+        {
+            case TOK_PLUS:
+            case TOK_MINUS:
+            case TOK_MUL:
+            case TOK_DIV:
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    static AST_Binop_Kind parse_binary_assign_op(Parser* parser)
+    {
+        assert(parser);
+
+        auto ct = current_token(parser);
+
+        auto result = AST_BINOP_INVALID;
+
+        switch (ct.kind)
+        {
+            case TOK_PLUS:
+            {
+                result = AST_BINOP_ADD;
+                break;
+            }
+
+            case TOK_MINUS:
+            {
+                result = AST_BINOP_SUB;
+                break;
+            }
+
+            case TOK_MUL:
+            {
+                result = AST_BINOP_MUL;
+                break;
+            }
+
+            case TOK_DIV:
+            {
+                result = AST_BINOP_DIV;
+                break;
+            }
+
+            default: assert(false);
+        }
+
+        if (result != AST_BINOP_INVALID)
+        {
+            consume_token(parser);
+        }
+
+        return result;
+    }
+
+    static Token peek_token(Parser* parser, uint64_t offset)
+    {
+        assert(parser);
+        assert(parser->ti + offset < BUF_LENGTH(parser->tokens));
+
+        return parser->tokens[parser->ti + offset];
+    }
+
     static Token current_token(Parser* parser)
     {
         assert(parser);
-        assert(parser->ti < BUF_LENGTH(parser->tokens));
 
-        return parser->tokens[parser->ti];
+        return peek_token(parser, 0);
     }
 
     static void consume_token(Parser* parser)

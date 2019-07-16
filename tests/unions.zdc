@@ -77,6 +77,8 @@ main :: ()
     _c.printf("sizeof(Value) = %lu\n", sizeof(Value));
     _c.printf("sizeof(Value2(float)) = %lu\n", sizeof(Value2(float)));
 
+    print(" ");
+
     tl : Top_Level;
     tl.x = 11;
     tl.nested.y = 22;
@@ -94,10 +96,14 @@ main :: ()
     _c.printf("tl.nested2.nested_nested.integer = %d\n", tl.nested2.nested_nested.integer);
     _c.printf("tl.nested2.nested_nested.real64 = %f\n", tl.nested2.nested_nested.real64);
 
+    print(" ");
+
     tl.anon_nested_int = 55;
     tl.anon_nested_float = 66.77;
     _c.printf("tl.anon_nested_int = %d\n", tl.anon_nested_int);
     _c.printf("tl.anon_nested_float = %f\n", tl.anon_nested_float);
+
+    print(" ");
 
     tl.value.int64 = -4;
     _c.printf("tl.value: %d, %u, %f, %f\n", tl.value.int64,
@@ -110,6 +116,8 @@ main :: ()
               tl.x, tl.nested.y, tl.nested.z, tl.w,
               tl.nested2.xf, tl.nested2.yf,
               tl.nested2.nested_nested.zf, tl.nested2.nested_nested.wf);
+
+    print(" ");
 
     value1 : Value;
     value1.uint64 = 888;

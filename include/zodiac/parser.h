@@ -106,6 +106,10 @@ namespace Zodiac
     static AST_Binop_Kind parse_cmp_op(Parser* parser);
     static AST_Unop_Kind parse_unary_op(Parser* parser);
 
+    static bool is_binary_assign_op(Parser* parser);
+    static AST_Binop_Kind parse_binary_assign_op(Parser* parser);
+
+    static Token peek_token(Parser* parser, uint64_t offset);
     static Token current_token(Parser* parser);
     static void consume_token(Parser* parser);
     static bool expect_token(Parser* parser, Token_Kind token_kind);
