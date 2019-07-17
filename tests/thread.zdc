@@ -1,0 +1,34 @@
+
+_c :: import c;
+
+Thread :: struct
+{
+    handle: u64;
+    user_data: *void;
+}
+
+main :: ()
+{
+    _c.printf("Thread test\n");
+
+    // printer((:*void)5);
+
+    printer_args := (:*void)5;
+
+    t1 := __create_thread__(*printer, printer_args);
+    t2 := __create_thread__(*printer, printer_args);
+
+    __join_thread__(t1);
+    __join_thread__(t2);
+}
+
+printer :: (data: *void) -> *void
+{
+    count := (:u64)data;
+
+    while (count > 0)
+    {
+        _c.printf("Printer: %d\n", count);
+        count--;
+    }
+}

@@ -607,6 +607,30 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_POST_INCREMENT:
+            {
+                AST_Expression* base_expression = statement->post_increment->base_expression;
+                IR_Value* lvalue = ir_builder_emit_lvalue(ir_builder, base_expression);
+                IR_Value* old_value = ir_builder_emit_expression(ir_builder, base_expression);
+                IR_Value* one_value = ir_integer_literal(ir_builder,
+                                                         statement->post_increment->type, 1);
+                IR_Value* new_value = ir_builder_emit_add(ir_builder, old_value, one_value);
+                ir_builder_emit_store(ir_builder, lvalue, new_value);
+                break;
+            }
+
+            case AST_STMT_POST_DECREMENT:
+            {
+                AST_Expression* base_expression = statement->post_decrement->base_expression;
+                IR_Value* lvalue = ir_builder_emit_lvalue(ir_builder, base_expression);
+                IR_Value* old_value = ir_builder_emit_expression(ir_builder, base_expression);
+                IR_Value* one_value = ir_integer_literal(ir_builder,
+                                                         statement->post_decrement->type, 1);
+                IR_Value* new_value = ir_builder_emit_sub(ir_builder, old_value, one_value);
+                ir_builder_emit_store(ir_builder, lvalue, new_value);
+                break;
+            }
+
             default: assert(false);
         }
     }
@@ -2605,7 +2629,8 @@ namespace Zodiac
         return global_value;
     }
 
-    void ir_builder_emit_storeg(IR_Builder* ir_builder, IR_Value* global_value, IR_Value* new_value)
+    void ir_builder_emit_storeg(IR_Builder* ir_builder, IR_Value* global_value,
+                                IR_Value* new_value)
     {
         assert(ir_builder);
         assert(global_value);

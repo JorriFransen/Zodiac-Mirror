@@ -179,6 +179,8 @@ namespace Zodiac
 
     char* run_insert(Resolver* resolver, AST_Expression* call_expression);
 
+    bool match_builtin_function(Resolver* resolver, AST_Expression* call_expression, AST_Scope* scope);
+
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,
                                              AST_Identifier* identifier);
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,

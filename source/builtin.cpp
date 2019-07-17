@@ -12,6 +12,7 @@ namespace Zodiac
     AST_Type* Builtin::type_bool = nullptr;
     AST_Type* Builtin::type_float = nullptr;
     AST_Type* Builtin::type_double = nullptr;
+    AST_Type* Builtin::type_pointer_to_void = nullptr;
     AST_Type* Builtin::type_pointer_to_u8 = nullptr;
     AST_Type* Builtin::type_String = nullptr;
 
@@ -26,6 +27,11 @@ namespace Zodiac
     Atom Builtin::atom_String;
     Atom Builtin::atom_string_length;
     Atom Builtin::atom_overload;
+    Atom Builtin::atom_Thread;
+    Atom Builtin::atom___create_thread__;
+    Atom Builtin::atom___join_thread__;
+
+    AST_Identifier* Builtin::identifier_Thread = nullptr;
 
     void init_builtin_types(Context* context)
     {
@@ -50,6 +56,8 @@ namespace Zodiac
 
         Builtin::pointer_size = Builtin::type_int->bit_size;
 
+        Builtin::type_pointer_to_void = ast_find_or_create_pointer_type(context,
+                                                                        Builtin::type_void);
         Builtin::type_pointer_to_u8 = ast_find_or_create_pointer_type(context, Builtin::type_u8);
 
 		Builtin::atom_main = atom_get(context->atom_table, "main");
@@ -57,6 +65,14 @@ namespace Zodiac
         Builtin::atom_String = atom_get(context->atom_table, "String");
         Builtin::atom_string_length = atom_get(context->atom_table, "string_length");
         Builtin::atom_overload = atom_get(context->atom_table, "overload");
+        Builtin::atom_Thread = atom_get(context->atom_table, "Thread");
+        Builtin::atom___create_thread__ = atom_get(context->atom_table, "__create_thread__");
+        Builtin::atom___join_thread__ = atom_get(context->atom_table, "__join_thread__");
+
+        File_Pos builtin_file_pos = {};
+        builtin_file_pos.file_name = "<builtin>";
+
+        Builtin::identifier_Thread = ast_identifier_new(context, Builtin::atom_Thread, builtin_file_pos);
     }
 
     AST_Type* register_builtin_type(Context* context, AST_Type_Flags flags, uint64_t size,

@@ -1607,6 +1607,11 @@ namespace Zodiac
                 {
                     dest->value.string = (uint8_t*)source->value.u64;
                 }
+                else if (iri->arg1->type == Builtin::type_pointer_to_void &&
+                         (iri->result->type->flags & AST_TYPE_FLAG_INT))
+                {
+                    dest->value.u64 = (uint64_t)source->value.string;
+                }
                 else assert(false);
 
 				break;

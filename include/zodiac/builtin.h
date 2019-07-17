@@ -17,6 +17,7 @@ namespace Zodiac
         static AST_Type* type_bool;
         static AST_Type* type_float;
         static AST_Type* type_double;
+        static AST_Type* type_pointer_to_void;
         static AST_Type* type_pointer_to_u8;
         static AST_Type* type_String;
 
@@ -31,6 +32,11 @@ namespace Zodiac
         static Atom atom_String;
         static Atom atom_string_length;
         static Atom atom_overload;
+        static Atom atom_Thread;
+        static Atom atom___create_thread__;
+        static Atom atom___join_thread__;
+
+        static AST_Identifier* identifier_Thread;
     };
 
     void init_builtin_types(Context* context);

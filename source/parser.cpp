@@ -806,6 +806,18 @@ namespace Zodiac
             expect_token(parser, TOK_SEMICOLON);
             return ast_call_statement_new(parser->context, lvalue_expr);
         }
+        else if (lvalue_expr->kind == AST_EXPR_POST_INCREMENT)
+        {
+            expect_token(parser, TOK_SEMICOLON);
+            return ast_post_increment_statement_new(parser->context, lvalue_expr->file_pos,
+                                                    lvalue_expr);
+        }
+        else if (lvalue_expr->kind == AST_EXPR_POST_DECREMENT)
+        {
+            expect_token(parser, TOK_SEMICOLON);
+            return ast_post_decrement_statement_new(parser->context, lvalue_expr->file_pos,
+                                                    lvalue_expr);
+        }
         else
         {
             parser_report_error(parser, lvalue_expr->file_pos, "Expected ':', '=' or '(' after identifier");

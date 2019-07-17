@@ -102,6 +102,13 @@ namespace Zodiac
         AST_EXPR_FLAG_POINTER_MATH = (1 << 3),
     };
 
+    enum AST_Builtin_Function
+    {
+        AST_BUILTIN_FUNC_INVALID,
+        AST_BUILTIN_FUNC_CREATE_THREAD,
+        AST_BUILTIN_FUNC_JOIN_THREAD,
+    };
+
     struct AST_Expression
     {
         AST_Expression_Kind kind;
@@ -134,6 +141,8 @@ namespace Zodiac
                 AST_Expression* ident_expression;
                 AST_Declaration* callee_declaration;
                 BUF(AST_Expression*) arg_expressions;
+
+                AST_Builtin_Function builtin_function;
             } call;
 
             struct
@@ -142,7 +151,6 @@ namespace Zodiac
                 AST_Expression* index_expression;
                 AST_Expression* call_expression; // Used when subscript operator is overloaded
             } subscript;
-
 
             struct
             {
@@ -215,6 +223,8 @@ namespace Zodiac
         AST_STMT_INSERT,
         AST_STMT_ASSERT,
         AST_STMT_DEFER,
+        AST_STMT_POST_INCREMENT,
+        AST_STMT_POST_DECREMENT,
     };
 
     typedef uint64_t _AST_STMT_FLAGS_;
@@ -243,6 +253,8 @@ namespace Zodiac
         {
             AST_Declaration* declaration;
             AST_Expression* return_expression;
+            AST_Expression* post_increment;
+            AST_Expression* post_decrement;
 
             struct
             {
@@ -781,6 +793,10 @@ namespace Zodiac
                                             AST_Expression* assert_expr);
     AST_Statement* ast_defer_statement_new(Context* context, File_Pos file_pos,
                                            AST_Statement* defer_statement);
+    AST_Statement* ast_post_increment_statement_new(Context* context, File_Pos file_pos,
+                                                    AST_Expression* post_inc_expr);
+    AST_Statement* ast_post_decrement_statement_new(Context* context, File_Pos file_pos,
+                                                    AST_Expression* post_dec_expr);
 
     AST_Type* ast_type_new(Context* context, AST_Type_Kind kind, AST_Type_Flags type_flags,
                            const char* name, uint64_t bit_size);

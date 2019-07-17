@@ -1226,6 +1226,18 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_POST_INCREMENT:
+            {
+                result &= try_resolve_expression(resolver, statement->post_increment, scope);
+                break;
+            }
+
+            case AST_STMT_POST_DECREMENT:
+            {
+                result &= try_resolve_expression(resolver, statement->post_decrement, scope);
+                break;
+            }
+
             default:
                 assert(false);
                 result = false;
@@ -1571,6 +1583,14 @@ namespace Zodiac
         AST_Declaration* func_decl = nullptr;
         AST_Expression* ident_expr = expression->call.ident_expression;
         bool recursive = false;
+
+        if (ident_expr->kind == AST_EXPR_IDENTIFIER)
+        {
+            if (match_builtin_function(resolver, expression, scope))
+            {
+                return true;
+            }
+        }
 
         if (ident_expr->kind == AST_EXPR_IDENTIFIER &&
             resolver->current_func_decl &&
@@ -3651,9 +3671,9 @@ namespace Zodiac
                 }
 
                 IR_Value return_value = {};
-                IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(&ir_runner,
-                                                                            func_value->function, num_args,
-                                                                            &return_value);
+                IR_Stack_Frame* entry_stack_frame =
+                    ir_runner_call_function(&ir_runner, func_value->function, num_args,
+                                            &return_value);
 
                 resolver->module->gen_data = nullptr;
 
@@ -3669,6 +3689,84 @@ namespace Zodiac
         }
 
         return nullptr;
+    }
+
+    bool match_builtin_function(Resolver* resolver, AST_Expression* call_expr, AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(call_expr);
+        assert(call_expr->kind == AST_EXPR_CALL);
+        assert(scope);
+
+        const Atom& ident_atom = call_expr->call.ident_expression->identifier->atom;
+        bool result = false;
+
+        if (ident_atom == Builtin::atom___create_thread__)
+        {
+            call_expr->call.builtin_function = AST_BUILTIN_FUNC_CREATE_THREAD;
+            AST_Declaration* thread_struct_decl = find_declaration(resolver->context, scope,
+                                                                   Builtin::identifier_Thread);
+            if (thread_struct_decl)
+            {
+                assert(thread_struct_decl->flags & AST_DECL_FLAG_RESOLVED);
+                assert(thread_struct_decl->kind == AST_DECL_AGGREGATE_TYPE);
+                assert(thread_struct_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
+                assert(thread_struct_decl->aggregate_type.type);
+                assert(thread_struct_decl->aggregate_type.type->kind == AST_TYPE_STRUCT);
+                AST_Type* thread_type = thread_struct_decl->aggregate_type.type;
+
+                assert(BUF_LENGTH(call_expr->call.arg_expressions) == 2);
+                AST_Expression* arg_0 = call_expr->call.arg_expressions[0];
+                AST_Expression* arg_1 = call_expr->call.arg_expressions[1];
+
+                bool arg_result = try_resolve_expression(resolver, arg_0, scope);
+                arg_result &= try_resolve_expression(resolver, arg_1, scope);
+
+                if (arg_result)
+                {
+                    assert(arg_0->type->kind == AST_TYPE_POINTER);
+                    assert(arg_0->type->pointer.base->kind == AST_TYPE_FUNCTION);
+                    assert(arg_1->type == Builtin::type_pointer_to_void);
+
+                    call_expr->type = thread_type;
+                    result = true;
+                }
+            }
+        }
+        else if (ident_atom == Builtin::atom___join_thread__)
+        {
+            call_expr->call.builtin_function = AST_BUILTIN_FUNC_JOIN_THREAD;
+            AST_Declaration* thread_struct_decl = find_declaration(resolver->context, scope,
+                                                                   Builtin::identifier_Thread);
+            if (thread_struct_decl)
+            {
+                assert(thread_struct_decl->flags & AST_DECL_FLAG_RESOLVED);
+                assert(thread_struct_decl->kind == AST_DECL_AGGREGATE_TYPE);
+                assert(thread_struct_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
+                assert(thread_struct_decl->aggregate_type.type);
+                assert(thread_struct_decl->aggregate_type.type->kind == AST_TYPE_STRUCT);
+                AST_Type* thread_type = thread_struct_decl->aggregate_type.type;
+
+                assert(BUF_LENGTH(call_expr->call.arg_expressions) == 1);
+                AST_Expression* arg_0 = call_expr->call.arg_expressions[0];
+
+                if (try_resolve_expression(resolver, arg_0, scope))
+                {
+                    assert(arg_0->type == thread_type);
+
+                    call_expr->type = Builtin::type_void;
+                    result = true;
+                }
+            }
+        }
+
+
+        if (result)
+        {
+            assert(call_expr->type);
+        }
+
+        return result;
     }
 
     static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,

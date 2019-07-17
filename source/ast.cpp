@@ -124,11 +124,13 @@ namespace Zodiac
 
         result->call.ident_expression = ident_expr;
         result->call.arg_expressions = arg_exprs;
+        result->call.builtin_function = AST_BUILTIN_FUNC_INVALID;
 
         return result;
     }
 
-    AST_Expression* ast_subscript_expression_new(Context* context, File_Pos file_pos, AST_Expression* base_expression,
+    AST_Expression* ast_subscript_expression_new(Context* context, File_Pos file_pos,
+                                                 AST_Expression* base_expression,
                                                  AST_Expression* index_expression)
     {
         assert(context);
@@ -832,6 +834,36 @@ namespace Zodiac
         result->file_pos = file_pos;
 
         result->defer_statement = defer_statement;
+
+        return result;
+    }
+
+    AST_Statement* ast_post_increment_statement_new(Context* context, File_Pos file_pos,
+                                                    AST_Expression* post_inc_expr)
+    {
+        assert(context);
+        assert(post_inc_expr);
+        assert(post_inc_expr->kind == AST_EXPR_POST_INCREMENT);
+
+        AST_Statement* result = arena_alloc(context->arena, AST_Statement);
+        result->kind = AST_STMT_POST_INCREMENT;
+        result->file_pos = file_pos;
+        result->post_increment = post_inc_expr;
+
+        return result;
+    }
+
+    AST_Statement* ast_post_decrement_statement_new(Context* context, File_Pos file_pos,
+                                                    AST_Expression* post_dec_expr)
+    {
+        assert(context);
+        assert(post_dec_expr);
+        assert(post_dec_expr->kind == AST_EXPR_POST_DECREMENT);
+
+        AST_Statement* result = arena_alloc(context->arena, AST_Statement);
+        result->kind = AST_STMT_POST_DECREMENT;
+        result->file_pos = file_pos;
+        result->post_decrement = post_dec_expr;
 
         return result;
     }
