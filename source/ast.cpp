@@ -271,6 +271,30 @@ namespace Zodiac
 		return result;
 	}
 
+    AST_Expression* ast_post_increment_expression_new(Context* context, File_Pos file_pos,
+                                                      AST_Expression* base_expression)
+    {
+        assert(context);
+        assert(base_expression);
+
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_POST_INCREMENT);
+        result->base_expression = base_expression;
+
+        return result;
+    }
+
+    AST_Expression* ast_post_decrement_expression_new(Context* context, File_Pos file_pos,
+                                                      AST_Expression* base_expression)
+    {
+        assert(context);
+        assert(base_expression);
+
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_POST_DECREMENT);
+        result->base_expression = base_expression;
+
+        return result;
+    }
+
     AST_Aggregate_Declaration* ast_aggregate_declaration_new(Context* context, File_Pos file_pos,
                                                              BUF(AST_Declaration*) members,
                                                              BUF(AST_Overload_Directive) overloads)

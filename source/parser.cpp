@@ -771,6 +771,7 @@ namespace Zodiac
         {
             auto op_tok = current_token(parser);
             auto op = parse_binary_assign_op(parser);
+
             expect_token(parser, TOK_EQ);
             AST_Expression* rhs = parse_expression(parser, scope);
             AST_Expression* binary_expr = ast_binary_expression_new(parser->context,
@@ -1141,7 +1142,11 @@ namespace Zodiac
         while (is_add_op(parser))
         {
             auto op_tok = current_token(parser);
-            if (peek_token(parser, 1).kind == TOK_EQ) break;
+            if (peek_token(parser, 1).kind == TOK_EQ ||
+                is_binary_assign_op(parser, 1))
+            {
+                break;
+            }
             auto op = parse_add_op(parser);
             AST_Expression* rhs = parse_mul_expression(parser, scope);
             lhs = ast_binary_expression_new(parser->context, op_tok.file_pos, lhs, op, rhs);
@@ -1292,6 +1297,35 @@ namespace Zodiac
             case TOK_LPAREN:
             {
                 result = parse_call_expression(parser, result, scope);
+                break;
+            }
+
+            case TOK_PLUS:
+            {
+                if (peek_token(parser, 1).kind == TOK_PLUS)
+                {
+                    consume_token(parser);
+                    consume_token(parser);
+                    result = ast_post_increment_expression_new(parser->context, result->file_pos,
+                                                               result);
+                }
+
+                done = true;
+
+                break;
+            }
+
+            case TOK_MINUS:
+            {
+                if (peek_token(parser, 1).kind == TOK_MINUS)
+                {
+                    consume_token(parser);
+                    consume_token(parser);
+                    result = ast_post_decrement_expression_new(parser->context, result->file_pos,
+                                                                result);
+                }
+
+                done = true;
                 break;
             }
 
@@ -1837,11 +1871,11 @@ namespace Zodiac
         return result;
     }
 
-    static bool is_binary_assign_op(Parser* parser)
+    static bool is_binary_assign_op(Parser* parser, uint64_t offset /*= 0*/)
     {
         assert(parser);
 
-        auto ct = current_token(parser);
+        auto ct = peek_token(parser, offset);
 
         switch (ct.kind)
         {

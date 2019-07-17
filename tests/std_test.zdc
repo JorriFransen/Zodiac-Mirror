@@ -100,10 +100,12 @@ main :: ()
     var -= 7;
     _c.printf("var: %d\n", var);
 
-    // post_inc_test := 4;
-    // print(post_inc_test++);
-    // print(post_inc_test--);
-    // print(post_inc_test);
+    print(" ");
+
+    post_inc_test := 4;
+    print(post_inc_test++);
+    print(post_inc_test--);
+    print(post_inc_test);
 }
 
 add :: (a: $T, b: T) -> T
@@ -112,25 +114,25 @@ add :: (a: $T, b: T) -> T
 }
 
 Person :: struct
-          {
-          name: String;
-          age: u32;
-          id : u32;
+{
+    name: String;
+    age: u32;
+    id : u32;
 }
 
-    Pet :: struct
-           {
-           name: String;
-           age: u32;
-           owner: *Person;
-    }
+Pet :: struct
+{
+    name: String;
+    age: u32;
+    owner: *Person;
+}
 
-        print_person_and_thing :: (person: Person, thing: $T)
-        {
-            print("print_person_and_thing");
-            _c.printf("  name: %s\n", person.name.data);
-            _c.printf("  thing: %x\n", thing);
-        }
+print_person_and_thing :: (person: Person, thing: $T)
+{
+    print("print_person_and_thing");
+    _c.printf("  name: %s\n", person.name.data);
+    _c.printf("  thing: %x\n", thing);
+}
 
 print_person_and_thing :: (pet: Pet, thing: $T)
 {

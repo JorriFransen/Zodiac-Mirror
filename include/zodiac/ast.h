@@ -58,6 +58,8 @@ namespace Zodiac
         AST_EXPR_DOT,
 		AST_EXPR_CAST,
         AST_EXPR_SIZEOF,
+        AST_EXPR_POST_INCREMENT,
+        AST_EXPR_POST_DECREMENT,
     };
 
     enum AST_Binop_Kind
@@ -111,6 +113,7 @@ namespace Zodiac
         union
         {
             AST_Identifier* identifier;
+            AST_Expression* base_expression;
 
             struct
             {
@@ -675,6 +678,10 @@ namespace Zodiac
     AST_Expression* ast_cast_expression_new(Context* context, File_Pos file_pos,
                                             AST_Type_Spec* type_spec,
                                             AST_Expression* cast_expr);
+    AST_Expression* ast_post_increment_expression_new(Context* context, File_Pos file_pos,
+                                                      AST_Expression* base_expression);
+    AST_Expression* ast_post_decrement_expression_new(Context* context, File_Pos file_pos,
+                                                      AST_Expression* base_expression);
 
     AST_Aggregate_Declaration*
         ast_aggregate_declaration_new(Context* context, File_Pos file_pos,

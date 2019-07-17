@@ -1514,6 +1514,26 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_POST_INCREMENT:
+            {
+                result &= try_resolve_expression(resolver, expression->base_expression, scope);
+                if (result)
+                {
+                    expression->type = expression->base_expression->type;
+                }
+                break;
+            }
+
+            case AST_EXPR_POST_DECREMENT:
+            {
+                result &= try_resolve_expression(resolver, expression->base_expression, scope);
+                if (result)
+                {
+                    expression->type = expression->base_expression->type;
+                }
+                break;
+            }
+
             default:
             {
                 assert(false);

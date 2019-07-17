@@ -1090,6 +1090,34 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_POST_INCREMENT:
+            {
+                IR_Value* result_value = ir_builder_emit_expression(ir_builder,
+                                                                    expression->base_expression);
+
+                IR_Value* lvalue = ir_builder_emit_lvalue(ir_builder, expression->base_expression);
+                IR_Value* one_value = ir_integer_literal(ir_builder,
+                                                         expression->base_expression->type, 1);
+                IR_Value* new_value = ir_builder_emit_add(ir_builder, result_value, one_value);
+                ir_builder_emit_store(ir_builder, lvalue, new_value);
+                return result_value;
+                break;
+            }
+
+            case AST_EXPR_POST_DECREMENT:
+            {
+                IR_Value* result_value = ir_builder_emit_expression(ir_builder,
+                                                                    expression->base_expression);
+
+                IR_Value* lvalue = ir_builder_emit_lvalue(ir_builder, expression->base_expression);
+                IR_Value* one_value = ir_integer_literal(ir_builder,
+                                                         expression->base_expression->type, 1);
+                IR_Value* new_value = ir_builder_emit_sub(ir_builder, result_value, one_value);
+                ir_builder_emit_store(ir_builder, lvalue, new_value);
+                return result_value;
+                break;
+            }
+
             default: assert(false);
         }
 
