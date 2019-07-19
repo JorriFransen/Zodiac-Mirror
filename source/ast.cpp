@@ -1771,6 +1771,34 @@ namespace Zodiac
                 break;
             }
 
+            case AST_TYPE_FUNCTION:
+            {
+                auto s1 = string_append("(", "");
+                for (uint64_t i = 0 ; i < BUF_LENGTH(type->function.arg_types); i++)
+                {
+                    if (i > 0)
+                    {
+                        auto s2 = string_append(s1, ", ");
+                        mem_free(s1);
+                        s1 = s2;
+                    }
+                    AST_Type* arg_type = type->function.arg_types[i];
+                    auto arg_str = ast_type_to_string(arg_type);
+                    auto s3 = string_append(s1, arg_str);
+                    mem_free(arg_str);
+                    mem_free(s1);
+                    s1 = s3;
+                }
+
+                auto s4 = string_append(s1, ") -> ");
+                mem_free(s1);
+                auto return_type_str = ast_type_to_string(type->function.return_type);
+                result = string_append(s4, return_type_str);
+                mem_free(s4);
+                mem_free(return_type_str);
+                break;
+            }
+
             default: assert(false);
         }
 

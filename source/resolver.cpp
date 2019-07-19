@@ -3715,6 +3715,13 @@ namespace Zodiac
                 assert(thread_struct_decl->aggregate_type.type->kind == AST_TYPE_STRUCT);
                 AST_Type* thread_type = thread_struct_decl->aggregate_type.type;
 
+                if (!Builtin::type_Thread)
+                {
+                    Builtin::type_Thread = thread_type;
+                    Builtin::type_pointer_to_Thread =
+                        ast_find_or_create_pointer_type(resolver->context, thread_type);
+                }
+
                 assert(BUF_LENGTH(call_expr->call.arg_expressions) == 2);
                 AST_Expression* arg_0 = call_expr->call.arg_expressions[0];
                 AST_Expression* arg_1 = call_expr->call.arg_expressions[1];
@@ -3724,8 +3731,9 @@ namespace Zodiac
 
                 if (arg_result)
                 {
-                    assert(arg_0->type->kind == AST_TYPE_POINTER);
-                    assert(arg_0->type->pointer.base->kind == AST_TYPE_FUNCTION);
+                    assert(arg_0->type->kind == AST_TYPE_FUNCTION ||
+                           (arg_0->type->kind == AST_TYPE_POINTER &&
+                               arg_0->type->pointer.base->kind == AST_TYPE_FUNCTION));
                     assert(arg_1->type == Builtin::type_pointer_to_void);
 
                     call_expr->type = thread_type;

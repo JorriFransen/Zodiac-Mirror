@@ -20,6 +20,8 @@ namespace Zodiac
         static AST_Type* type_pointer_to_void;
         static AST_Type* type_pointer_to_u8;
         static AST_Type* type_String;
+        static AST_Type* type_Thread;
+        static AST_Type* type_pointer_to_Thread;
 
         static uint64_t pointer_size;
 

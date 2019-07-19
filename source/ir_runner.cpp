@@ -4,9 +4,12 @@
 
 #include <inttypes.h>
 
+#include <pthread.h>
+
 namespace Zodiac
 {
-    void ir_runner_init(Context* context, IR_Runner* ir_runner)
+    void ir_runner_init(Context* context, IR_Runner* ir_runner,
+                        IR_Runner* thread_parent /*= nullptr*/)
     {
         assert(context);
         assert(ir_runner);
@@ -24,8 +27,24 @@ namespace Zodiac
         dcMode(ir_runner->dyn_vm, DC_CALL_C_DEFAULT);
         dcReset(ir_runner->dyn_vm);
 
-        ir_runner->loaded_dyn_libs = nullptr;
-        ir_runner->loaded_foreign_symbols = nullptr;
+        if (thread_parent)
+        {
+            assert(thread_parent->loaded_dyn_libs);
+            assert(thread_parent->loaded_foreign_symbols);
+            assert(thread_parent->threads);
+
+            ir_runner->loaded_dyn_libs = thread_parent->loaded_dyn_libs;
+            ir_runner->loaded_foreign_symbols = thread_parent->loaded_foreign_symbols;
+            ir_runner->threads = thread_parent->threads;
+            ir_runner->create_thread_mutex = thread_parent->create_thread_mutex;
+        }
+        else
+        {
+            ir_runner->loaded_dyn_libs = nullptr;
+            ir_runner->loaded_foreign_symbols = nullptr;
+            ir_runner->threads = nullptr;
+            pthread_mutex_init(&ir_runner->create_thread_mutex, nullptr);
+        }
     }
 
     void ir_runner_execute_entry(IR_Runner* ir_runner, AST_Module* ast_module, IR_Module*
@@ -53,7 +72,8 @@ namespace Zodiac
 
         if (ir_runner->context->options.verbose)
         {
-            printf("Entry point returned: %" PRId64 "\n", entry_stack_frame->return_value->value.s64);
+            printf("Entry point returned: %" PRId64 "\n",
+                   entry_stack_frame->return_value->value.s64);
             uint64_t arena_cap = 0;
             auto block = ir_runner->arena.blocks;
             while (block)
@@ -63,6 +83,77 @@ namespace Zodiac
             }
             printf("Arena size: %.2fMB\n", (double)arena_cap / MB(1));
         }
+    }
+
+    typedef void *(*__start_routine)(void *);
+
+    void* ir_runner_thread_entry(void* _ir_thread)
+    {
+        assert(_ir_thread);
+
+        IR_Thread* ir_thread = (IR_Thread*)_ir_thread;
+
+        // pthread_mutex_lock(&ir_thread->parent_ir_runner->create_thread_mutex);
+
+        // printf("Creating new ir thread: %d\n", (int)ir_thread->handle);
+        // printf("\tUser_data: %ld, %p\n", (int64_t)user_data, user_data);
+
+        DCCallback* callback = (DCCallback*)ir_thread->function_value->value.string;
+        _IR_DCB_Data* dcb_data = (_IR_DCB_Data*)dcbGetUserData(callback);
+        assert(dcb_data);
+        IR_Value* func_value = dcb_data->func_value;
+        assert(func_value->kind == IRV_FUNCTION);
+
+        IR_Runner thread_ir_runner;
+        ir_runner_init(ir_thread->parent_ir_runner->context, &thread_ir_runner,
+                       ir_thread->parent_ir_runner);
+
+        IR_Value arg;
+        arg.kind = IRV_TEMPORARY;
+        arg.type = Builtin::type_pointer_to_Thread;
+        arg.value.struct_pointer = &ir_thread->builtin_thread;
+
+        IR_Pushed_Arg ipa = { arg, false };
+        stack_push(thread_ir_runner.arg_stack, ipa);
+
+        // pthread_mutex_unlock(&ir_thread->parent_ir_runner->create_thread_mutex);
+
+        IR_Value return_value = {};
+        ir_runner_call_function(&thread_ir_runner, func_value->function, 1, &return_value);
+
+        return nullptr;
+    }
+
+    void ir_runner_destroy_thread(IR_Runner* ir_runner, pthread_t handle)
+    {
+        assert(ir_runner);
+
+        IR_Thread* ir_thread = ir_runner->threads;
+        IR_Thread* last = nullptr;
+        while (ir_thread)
+        {
+            auto next = ir_thread->next;
+            if (ir_thread->handle == handle)
+            {
+
+                if (ir_thread == ir_runner->threads)
+                {
+                    ir_runner->threads = next;
+                }
+                else
+                {
+                    assert(last);
+                    last->next = ir_thread->next;
+                }
+
+                return;
+            }
+
+            ir_thread = next;
+            last = ir_thread;
+        }
+
+        assert(false); // Didn't find a matching handle
     }
 
     bool ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* ast_module,
@@ -459,6 +550,10 @@ namespace Zodiac
         {
             return 'v';
         }
+        else if (return_type == Builtin::type_pointer_to_void)
+        {
+            return 'p';
+        }
         else assert(false);
 
 		assert(false);
@@ -742,6 +837,10 @@ namespace Zodiac
                 else if (type->kind == AST_TYPE_ENUM)
                 {
                     dest->value.s64 = arg1->value.s64 == arg2->value.s64;
+                }
+                else if (type->kind == AST_TYPE_POINTER && type == arg2->type)
+                {
+                    dest->value.s64 = arg1->value.string == arg2->value.string;
                 }
                 else assert(false);
                 break;
@@ -1500,7 +1599,6 @@ namespace Zodiac
                     IR_Value* index_value = ir_runner_get_local_temporary(runner, iri->arg2);
                     if (iri->arg2->type == Builtin::type_int)
                     {
-                        
                         index = index_value->value.s64;
                     }
                     else
@@ -1681,6 +1779,46 @@ namespace Zodiac
                         stack_pop(runner->call_stack);
                     }
                 }
+                break;
+            }
+
+            case IR_OP_CREATE_THREAD:
+            {
+                // pthread_mutex_lock(&runner->create_thread_mutex);
+
+                IR_Value* func_value = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value* user_data_value = ir_runner_get_local_temporary(runner, iri->arg2);
+                IR_Value* thread_value = ir_runner_get_local_temporary(runner, iri->result);
+
+                // TODO: Freelist
+                IR_Thread* new_thread = (IR_Thread*)mem_alloc(sizeof(IR_Thread));
+                thread_value->value.struct_pointer = &new_thread->builtin_thread;
+                new_thread->builtin_thread.user_data = user_data_value->value.struct_pointer;
+                new_thread->function_value = func_value;
+                new_thread->next = runner->threads;
+                new_thread->parent_ir_runner = runner;
+                runner->threads = new_thread;
+                auto result = pthread_create(&new_thread->handle, nullptr, &ir_runner_thread_entry,
+                                             new_thread);
+                assert(result == 0);
+
+                // pthread_mutex_unlock(&runner->create_thread_mutex);
+
+                break;
+            }
+
+            case IR_OP_JOIN_THREAD:
+            {
+                IR_Value* thread_value = ir_runner_get_local_temporary(runner, iri->arg1);
+
+                uint64_t* handle_ptr = (uint64_t*)thread_value->value.struct_pointer;
+                pthread_t handle = *handle_ptr;
+
+                auto result = pthread_join(handle, nullptr);
+                assert(result == 0);
+
+                ir_runner_destroy_thread(runner, handle);
+
                 break;
             }
 

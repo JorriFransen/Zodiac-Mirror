@@ -137,6 +137,9 @@ namespace Zodiac
 
 		IR_OP_CAST,
         IR_OP_ASSERT,
+
+        IR_OP_CREATE_THREAD,
+        IR_OP_JOIN_THREAD,
     };
 
     struct IR_Instruction
@@ -168,6 +171,7 @@ namespace Zodiac
     };
 
     struct IR_Runner;
+
     struct _IR_DCB_Data
     {
         IR_Runner* runner = nullptr;
@@ -259,6 +263,10 @@ namespace Zodiac
     IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_not(IR_Builder* ir_builder, AST_Expression* expression);
 
+    IR_Value* ir_builder_emit_create_thread(IR_Builder* ir_builder, IR_Value* func_value,
+                                            IR_Value* user_data_value);
+    void ir_builder_emit_join_thread(IR_Builder* ir_builder, IR_Value* thread_value);
+
     void ir_builder_push_value_and_decl(IR_Builder* ir_builder, IR_Value* ir_value,
                                         AST_Declaration* decl);
     void ir_builder_grow_value_decl_hash(IR_Builder* ir_builder);
@@ -314,6 +322,8 @@ namespace Zodiac
                                   bool is_vararg = false);
     IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value,
                                    IR_Value* num_args);
+    IR_Value* ir_builder_emit_builtin_function_call(IR_Builder* ir_builder,
+                                                    AST_Expression* call_expr);
     IR_Value* ir_builder_emit_subscript(IR_Builder* ir_builder, IR_Value* base_value,
                                         IR_Value* index_value);
     void ir_builder_emit_jmp(IR_Builder* ir_builder, IR_Value* block_value);

@@ -952,6 +952,14 @@ namespace Zodiac
             case AST_EXPR_CALL:
             {
                 AST_Declaration* callee_decl = expression->call.callee_declaration;
+
+                if (!callee_decl)
+                {
+                    assert(expression->call.builtin_function != AST_BUILTIN_FUNC_INVALID);
+
+                    return ir_builder_emit_builtin_function_call(ir_builder, expression);
+                }
+
                 assert(callee_decl);
 				if (callee_decl->kind == AST_DECL_FUNC)
 				{
@@ -1493,7 +1501,8 @@ namespace Zodiac
 		return result_value;
 	}
 
-    IR_Value* ir_builder_emit_addrof_function(IR_Builder* ir_builder, IR_Value* func, AST_Type* func_type)
+    IR_Value* ir_builder_emit_addrof_function(IR_Builder* ir_builder, IR_Value* func,
+                                              AST_Type* func_type)
     {
         assert(ir_builder);
         assert(func);
@@ -1555,7 +1564,34 @@ namespace Zodiac
         return result_value;
     }
 
-    void ir_builder_push_value_and_decl(IR_Builder* ir_builder, IR_Value* ir_value, AST_Declaration* decl)
+    IR_Value* ir_builder_emit_create_thread(IR_Builder* ir_builder, IR_Value* func_value,
+                                            IR_Value* user_data_value)
+    {
+        assert(ir_builder);
+        assert(func_value);
+        assert(user_data_value);
+
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_Thread);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_CREATE_THREAD, func_value,
+                                                 user_data_value, result_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result_value;
+    }
+
+    void ir_builder_emit_join_thread(IR_Builder* ir_builder, IR_Value* thread_value)
+    {
+        assert(ir_builder);
+        assert(thread_value);
+
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_JOIN_THREAD, thread_value,
+                                                 nullptr, nullptr);
+
+        ir_builder_emit_instruction(ir_builder, iri);
+    }
+
+    void ir_builder_push_value_and_decl(IR_Builder* ir_builder, IR_Value* ir_value,
+                                        AST_Declaration* decl)
     {
         assert(ir_builder);
         assert(ir_value);
@@ -2340,11 +2376,6 @@ namespace Zodiac
         assert(ir_builder);
         assert(arg_value);
 
-        // auto op = IR_OP_PUSH_CALL_ARG;
-        // if (is_foreign)
-        // {
-        //     op = IR_OP_PUSH_EX_CALL_ARG;
-        // }
         IR_Value* is_vararg_value = nullptr;
         if (is_vararg)
         {
@@ -2374,7 +2405,6 @@ namespace Zodiac
 			IR_Value* arg_1 = func_value;
 			if (func_value->function->flags & IR_FUNC_FLAG_FOREIGN)
 			{
-				// arg_1 = ir_integer_literal(ir_builder, Builtin::type_int, func_value->function->foreign_index);
 				op = IR_OP_CALL_EX;
 			}
 			IR_Instruction* iri = ir_instruction_new(ir_builder, op, arg_1,
@@ -2397,6 +2427,40 @@ namespace Zodiac
 
 		assert(false);
 		return nullptr;
+    }
+
+    IR_Value* ir_builder_emit_builtin_function_call(IR_Builder* ir_builder,
+                                                    AST_Expression* call_expr)
+    {
+        assert(ir_builder);
+        assert(call_expr);
+        assert(call_expr->kind == AST_EXPR_CALL);
+        assert(call_expr->call.builtin_function != AST_BUILTIN_FUNC_INVALID);
+
+        switch (call_expr->call.builtin_function)
+        {
+            case AST_BUILTIN_FUNC_CREATE_THREAD:
+            {
+                assert(BUF_LENGTH(call_expr->call.arg_expressions) == 2);
+                AST_Expression* func_expr = call_expr->call.arg_expressions[0];
+                AST_Expression* user_data_expr = call_expr->call.arg_expressions[1];
+                IR_Value* func_value = ir_builder_emit_expression(ir_builder, func_expr);
+                IR_Value* user_data_val = ir_builder_emit_expression(ir_builder, user_data_expr);
+                return ir_builder_emit_create_thread(ir_builder, func_value, user_data_val);
+            }
+
+            case AST_BUILTIN_FUNC_JOIN_THREAD:
+            {
+                assert(BUF_LENGTH(call_expr->call.arg_expressions) == 1);
+                AST_Expression* thread_expr = call_expr->call.arg_expressions[0];
+                IR_Value* thread_value = ir_builder_emit_expression(ir_builder, thread_expr);
+                ir_builder_emit_join_thread(ir_builder, thread_value);
+                return nullptr;
+            }
+
+            default: assert(false);
+        }
+
     }
 
     IR_Value* ir_builder_emit_subscript(IR_Builder* ir_builder, IR_Value* base_value,
@@ -3618,6 +3682,22 @@ namespace Zodiac
             case IR_OP_ASSERT:
             {
                 printf("ASSERT ");
+                ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_CREATE_THREAD:
+            {
+                printf("CREATE_THREAD ");
+                ir_print_value(instruction->arg1);
+                printf(", ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_JOIN_THREAD:
+            {
+                printf("JOIN_THREAD ");
                 ir_print_value(instruction->arg1);
                 break;
             }

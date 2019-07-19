@@ -42,7 +42,7 @@ add_subdirectory(lib/dyncall-1.0/)
 if (WIN32)
     set(ZODIAC_LIBS user32.lib kernel32.lib Shlwapi.lib)
 elseif(UNIX)
-    set(ZODIAC_LIBS dl)
+    set(ZODIAC_LIBS dl pthread)
 endif()
 
 add_executable(zodiac source/main.cpp ${ZODIAC_COMPILER_SOURCE})

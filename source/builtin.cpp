@@ -15,6 +15,8 @@ namespace Zodiac
     AST_Type* Builtin::type_pointer_to_void = nullptr;
     AST_Type* Builtin::type_pointer_to_u8 = nullptr;
     AST_Type* Builtin::type_String = nullptr;
+    AST_Type* Builtin::type_Thread = nullptr;
+    AST_Type* Builtin::type_pointer_to_Thread = nullptr;
 
     uint64_t Builtin::pointer_size = 0;
 

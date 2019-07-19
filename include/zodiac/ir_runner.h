@@ -31,6 +31,27 @@ namespace Zodiac
         bool is_vararg = false;
     };
 
+    struct IR_Builtin_Thread
+    {
+        uint64_t handle;
+        void* user_data;
+    };
+
+    struct IR_Thread
+    {
+        union
+        {
+            pthread_t handle;
+            IR_Builtin_Thread builtin_thread;
+        };
+
+        IR_Value* function_value;
+
+        IR_Runner* parent_ir_runner;
+
+        IR_Thread* next;
+    };
+
     struct IR_Runner
     {
         Context* context = nullptr;
@@ -45,11 +66,18 @@ namespace Zodiac
         DCCallVM* dyn_vm = nullptr;
         BUF(IR_Loaded_Dynamic_Lib) loaded_dyn_libs = nullptr;
         BUF(void*) loaded_foreign_symbols = nullptr;
+
+        IR_Thread* threads = nullptr;
+        pthread_mutex_t create_thread_mutex;
     };
 
-    void ir_runner_init(Context* context, IR_Runner* ir_runner);
+    void ir_runner_init(Context* context, IR_Runner* ir_runner,
+                        IR_Runner* thread_parent = nullptr);
     void ir_runner_execute_entry(IR_Runner* ir_runner, AST_Module* ast_module,
                                  IR_Module* ir_module);
+
+    void* ir_runner_thread_entry(void* user_data);
+    void ir_runner_destroy_thread(IR_Runner* ir_runner, pthread_t handle);
 
     bool ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* AST_Module,
                                      IR_Module* ir_module);
