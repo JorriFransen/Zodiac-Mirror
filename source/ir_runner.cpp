@@ -36,14 +36,12 @@ namespace Zodiac
             ir_runner->loaded_dyn_libs = thread_parent->loaded_dyn_libs;
             ir_runner->loaded_foreign_symbols = thread_parent->loaded_foreign_symbols;
             ir_runner->threads = thread_parent->threads;
-            ir_runner->create_thread_mutex = thread_parent->create_thread_mutex;
         }
         else
         {
             ir_runner->loaded_dyn_libs = nullptr;
             ir_runner->loaded_foreign_symbols = nullptr;
             ir_runner->threads = nullptr;
-            pthread_mutex_init(&ir_runner->create_thread_mutex, nullptr);
         }
     }
 
@@ -93,7 +91,6 @@ namespace Zodiac
 
         IR_Thread* ir_thread = (IR_Thread*)_ir_thread;
 
-        pthread_mutex_lock(&ir_thread->parent_ir_runner->create_thread_mutex);
 
         IR_Runner thread_ir_runner;
         ir_runner_init(ir_thread->parent_ir_runner->context, &thread_ir_runner,
@@ -106,8 +103,6 @@ namespace Zodiac
 
         IR_Pushed_Arg ipa = { arg, false };
         stack_push(thread_ir_runner.arg_stack, ipa);
-
-        pthread_mutex_unlock(&ir_thread->parent_ir_runner->create_thread_mutex);
 
         IR_Value return_value = {};
         assert(ir_thread->function);
@@ -1747,8 +1742,6 @@ namespace Zodiac
 
             case IR_OP_CREATE_THREAD:
             {
-                pthread_mutex_lock(&runner->create_thread_mutex);
-
                 IR_Value* func_value = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value* user_data_value = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* thread_value = ir_runner_get_local_temporary(runner, iri->result);
@@ -1780,7 +1773,6 @@ namespace Zodiac
                 new_thread->next = runner->threads;
                 new_thread->parent_ir_runner = runner;
                 runner->threads = new_thread;
-                pthread_mutex_unlock(&runner->create_thread_mutex);
 
                 auto result = pthread_create(&new_thread->handle, nullptr, &ir_runner_thread_entry,
                                              new_thread);
@@ -1792,8 +1784,6 @@ namespace Zodiac
 
             case IR_OP_JOIN_THREAD:
             {
-                // pthread_mutex_lock(&runner->create_thread_mutex);
-
                 IR_Value* thread_value = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Thread* thread = runner->threads;
                 IR_Thread* last_thread = nullptr;
@@ -1830,8 +1820,6 @@ namespace Zodiac
 
                 thread->next = runner->free_threads;
                 runner->free_threads = thread;
-
-                // pthread_mutex_unlock(&runner->create_thread_mutex);
 
                 break;
             }

@@ -70,7 +70,6 @@ namespace Zodiac
 
         IR_Thread* threads = nullptr;
         IR_Thread* free_threads = nullptr;
-        pthread_mutex_t create_thread_mutex;
     };
 
     void ir_runner_init(Context* context, IR_Runner* ir_runner,
