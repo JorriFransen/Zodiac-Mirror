@@ -2550,6 +2550,14 @@ namespace Zodiac
                             {
                                 AST_Declaration* anon_member = anon_members[j];
                                 assert(anon_member->kind == AST_DECL_MUTABLE);
+                                if (anon_member->mutable_decl.type->kind == AST_TYPE_STRUCT ||
+                                    anon_member->mutable_decl.type->kind == AST_TYPE_UNION)
+                                {
+                                    resolver_report_error(resolver, anon_member->file_pos,
+                                                          "Multiple levels of anonymous aggregates are not allowed");
+                                    return false;
+                                }
+
                                 if (anon_member->identifier->atom ==
                                     member_expr->identifier->atom)
                                 {

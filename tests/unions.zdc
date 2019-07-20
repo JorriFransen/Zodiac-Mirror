@@ -145,7 +145,47 @@ main :: ()
     print_value("value5", value5);
     print_value("value6", value6);
 
+
+    nt : Nest_Test;
+    nt.n1 = 1;
+    nt.s1.n2 = 2;
+    nt.s1.s2.n3 = 3;
+    nt.s1.s2.n4 = 4;
+    // nt.s1.s2.f4 = 4.4;
+    nt.s1.s2.n5 = 5;
+    // nt.s1.s2.f5 = 5.5;
+
+    _c.printf("nt.n1: %d\n", nt.n1);
+    _c.printf("nt.s1.n2: %d\n", nt.s1.n2);
+    _c.printf("nt.s1.s2.n3: %d\n", nt.s1.s2.n3);
+    _c.printf("nt.s1.s2.n4: %d\n", nt.s1.s2.n4);
+    _c.printf("nt.s1.s2.n4: %f\n", nt.s1.s2.f4);
 }
+
+Nest_Test :: struct
+{
+    n1 : int;
+    s1 :: struct
+    {
+        n2: int
+        s2 :: struct
+        {
+            n3 : int;
+            union
+            {
+                n4 : int;
+                f4 : double;
+
+                // union
+                // {
+                //     n5: int;
+                //     f5: double;
+                // }
+            }
+        }
+    }
+}
+
 
 print_value :: (name: *u8, value: Value)
 {
