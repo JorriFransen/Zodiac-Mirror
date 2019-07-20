@@ -1767,8 +1767,18 @@ namespace Zodiac
                 IR_Value* func = dcb_data->func_value;
                 assert(func->kind == IRV_FUNCTION);
 
-                // TODO: Freelist
-                IR_Thread* new_thread = (IR_Thread*)mem_alloc(sizeof(IR_Thread));
+                IR_Thread* new_thread = nullptr;
+                if (runner->free_threads)
+                {
+                    new_thread = runner->free_threads;
+                    runner->free_threads = new_thread->next;
+                    printf("Using thread from free list: %p\n", new_thread);
+                }
+                else
+                {
+                    new_thread = (IR_Thread*)mem_alloc(sizeof(IR_Thread));
+                }
+                assert(new_thread);
                 printf("Overriding thread_value: %d\n", &new_thread->builtin_thread);
                 thread_value->value.struct_pointer = &new_thread->builtin_thread;
                 new_thread->builtin_thread.user_data = user_data_value->value.struct_pointer;
@@ -1827,7 +1837,10 @@ namespace Zodiac
 
                     last_thread->next = thread->next;
                 }
-                mem_free(thread);
+
+                thread->next = runner->free_threads;
+                runner->free_threads = thread;
+                printf("Moved thread to free list: %p\n", thread);
 
                 // pthread_mutex_unlock(&runner->create_thread_mutex);
 
