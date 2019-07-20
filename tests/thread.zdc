@@ -11,8 +11,7 @@ Thread_Routine :: typedef *(thread: *Thread) -> *void;
 
 create_thread :: (thread_routine: Thread_Routine, user_data: *void) -> Thread
 {
-    result :=  __create_thread__(thread_routine, user_data);
-    return result;
+     return __create_thread__(thread_routine, user_data);
 }
 
 join_thread :: (thread: Thread)
@@ -27,17 +26,22 @@ main :: ()
     t0 : Thread;
     t0.user_data = (:*void)5;
 
+    printer(*t0);
 
     t1 := create_thread(*printer, printer_args);
     t2 := create_thread(*printer, t0.user_data);
 
-    printer(*t0);
 
     _c.printf("t1.handle: %d\n", t1.handle);
     _c.printf("t2.handle: %d\n", t2.handle);
 
     join_thread(t1);
     join_thread(t2);
+
+    t3 := create_thread(*printer, (:*void)3);
+    _c.printf("t3.handle: %d\n", t3.handle);
+
+    join_thread(t3);
 }
 
 printer :: (thread: *Thread) -> *void

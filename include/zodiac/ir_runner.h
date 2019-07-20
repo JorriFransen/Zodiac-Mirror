@@ -46,6 +46,7 @@ namespace Zodiac
         };
 
         IR_Value* function_value;
+        IR_Function* function;
 
         IR_Runner* parent_ir_runner;
 
@@ -68,6 +69,7 @@ namespace Zodiac
         BUF(void*) loaded_foreign_symbols = nullptr;
 
         IR_Thread* threads = nullptr;
+        IR_Thread* free_threads = nullptr;
         pthread_mutex_t create_thread_mutex;
     };
 
@@ -77,7 +79,6 @@ namespace Zodiac
                                  IR_Module* ir_module);
 
     void* ir_runner_thread_entry(void* user_data);
-    void ir_runner_destroy_thread(IR_Runner* ir_runner, pthread_t handle);
 
     bool ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* AST_Module,
                                      IR_Module* ir_module);
