@@ -95,11 +95,6 @@ namespace Zodiac
 
         pthread_mutex_lock(&ir_thread->parent_ir_runner->create_thread_mutex);
 
-        // printf("Creating new ir thread: %d\n", (int)ir_thread->handle);
-        // printf("\tUser_data: %ld, %p\n", (int64_t)user_data, user_data);
-
-        printf("thread entry: %d, %d\n", ir_thread->handle, ir_thread->builtin_thread.user_data);
-
         IR_Runner thread_ir_runner;
         ir_runner_init(ir_thread->parent_ir_runner->context, &thread_ir_runner,
                        ir_thread->parent_ir_runner);
@@ -1772,14 +1767,12 @@ namespace Zodiac
                 {
                     new_thread = runner->free_threads;
                     runner->free_threads = new_thread->next;
-                    printf("Using thread from free list: %p\n", new_thread);
                 }
                 else
                 {
                     new_thread = (IR_Thread*)mem_alloc(sizeof(IR_Thread));
                 }
                 assert(new_thread);
-                printf("Overriding thread_value: %d\n", &new_thread->builtin_thread);
                 thread_value->value.struct_pointer = &new_thread->builtin_thread;
                 new_thread->builtin_thread.user_data = user_data_value->value.struct_pointer;
                 new_thread->function_value = func_value;
@@ -1821,9 +1814,6 @@ namespace Zodiac
                 // printf("joining thread value: %d\n", thread_value->value.struct_pointer);
 
                 auto result = pthread_join(thread->handle, nullptr);
-                printf("Joined thread with handle: %d\n", thread->handle);
-                printf("\tUser data: %d\n", thread->builtin_thread.user_data);
-                printf("\tpointer: %d\n", thread);
                 assert(result == 0);
 
                 if (thread == runner->threads)
@@ -1840,7 +1830,6 @@ namespace Zodiac
 
                 thread->next = runner->free_threads;
                 runner->free_threads = thread;
-                printf("Moved thread to free list: %p\n", thread);
 
                 // pthread_mutex_unlock(&runner->create_thread_mutex);
 
