@@ -9,6 +9,9 @@ _thread :: import thread;
 using _thread;
 
 global_counter : u64 = 0;
+global_counter_2 : u64 = 0;
+
+global_counter_2_mutex : Mutex;
 
 main :: ()
 {
@@ -26,9 +29,9 @@ main :: ()
     for (i := 0; i < adder_count; i++)
     {
         at : Thread;
-        if (false)
+        if (i % 2)
         {
-          at = create_thread(*add_func, amount_per_adder);
+            at = create_thread(*add_func, amount_per_adder);
         }
         else
         {
@@ -45,8 +48,56 @@ main :: ()
     }
 
     printf("global_counter: %llu\n", global_counter);
-    printf("\texpected: %llu\n", (:u64)(adder_count * amount_per_adder));
+    printf("\texpected: %llu\n\n", (:u64)(adder_count * amount_per_adder));
     assert(global_counter == (:u64)(adder_count * amount_per_adder));
+
+    adders.count = 0;
+    // adder_count = 100;
+    // amount_per_adder = 10;
+
+    for (i := 0; i < adder_count; i++)
+    {
+        at : Thread;
+        if (i % 2)
+        {
+            at = create_thread(*add_func_mut, amount_per_adder);
+        }
+        else
+        {
+            at = create_thread(*add_func_mut2, amount_per_adder);
+        }
+        array_add(*adders, at);
+    }
+
+
+    for (i : u64 = 0; i < adders.count; i++)
+    {
+        at := adders[i];
+        join_thread(at);
+    }
+
+    printf("global_counter_2: %llu\n", global_counter_2);
+    printf("\texpected: %llu\n", (:u64)(adder_count * amount_per_adder));
+    assert(global_counter_2 == (:u64)(adder_count * amount_per_adder));
+}
+
+add_func_mut :: (thread: *Thread) -> *void
+{
+    to_add := (:u64)thread.user_data;
+    for (i : u64 = 0; i < to_add; i++)
+    {
+        mutex_lock(*global_counter_2_mutex);
+        global_counter_2 += 1;
+        mutex_unlock(*global_counter_2_mutex);
+    }
+}
+
+add_func_mut2 :: (thread: *Thread) -> *void
+{
+    to_add := (:u64)thread.user_data;
+    mutex_lock(*global_counter_2_mutex);
+    global_counter_2 += to_add;
+    mutex_unlock(*global_counter_2_mutex);
 }
 
 add_func :: (thread: *Thread) -> *void

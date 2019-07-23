@@ -206,6 +206,7 @@ namespace Zodiac
         BUF(IR_Function*) functions = nullptr;
         IR_Function* entry_function = nullptr;
 
+        BUF(IR_Value*) globals = nullptr;
         BUF(IR_Value*) global_constants = nullptr;
         BUF(IR_Value*) string_literal_values = nullptr;
         Arena string_literal_arena = {};

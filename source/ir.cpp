@@ -2013,7 +2013,8 @@ namespace Zodiac
         assert(struct_value);
         assert(struct_value->kind == IRV_ALLOCL ||
                struct_value->kind == IRV_ARGUMENT ||
-               struct_value->kind == IRV_TEMPORARY);
+               struct_value->kind == IRV_TEMPORARY ||
+               struct_value->kind == IRV_GLOBAL);
         assert(struct_value->type->kind == AST_TYPE_STRUCT ||
                struct_value->type->kind == AST_TYPE_UNION);
         AST_Type* struct_type = struct_value->type;
@@ -2725,6 +2726,7 @@ namespace Zodiac
             ir_builder_emit_storeg(ir_builder, global_value, init_value);
             ir_builder->insert_block = nullptr;
         }
+        BUF_PUSH(ir_builder->result.globals, global_value);
         return global_value;
     }
 
@@ -3503,6 +3505,14 @@ namespace Zodiac
             {
                 ir_print_value(instruction->arg1);
                 printf(" && ");
+                ir_print_value(instruction->arg2);
+                break;
+            }
+
+            case IR_OP_OR_OR:
+            {
+                ir_print_value(instruction->arg1);
+                printf(" || ");
                 ir_print_value(instruction->arg2);
                 break;
             }

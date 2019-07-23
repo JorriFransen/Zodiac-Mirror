@@ -61,6 +61,8 @@ namespace Zodiac
 
         ir_runner_load_foreigns(ir_runner, ir_module);
 
+        ir_runner->ir_module = ir_module;
+        ir_runner_allocate_global_structs(ir_runner);
         ir_runner_execute_block(ir_runner, ir_runner->context->global_init_block->block);
 
         IR_Value return_value = {};
@@ -80,6 +82,21 @@ namespace Zodiac
                 block = block->next_block;
             }
             printf("Arena size: %.2fMB\n", (double)arena_cap / MB(1));
+        }
+    }
+
+    void ir_runner_allocate_global_structs(IR_Runner* ir_runner)
+    {
+        assert(ir_runner);
+        assert(ir_runner->ir_module);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(ir_runner->ir_module->globals); i++)
+        {
+            IR_Value* global = ir_runner->ir_module->globals[i];
+            if (global->type->kind == AST_TYPE_STRUCT)
+            {
+                global->value.struct_pointer = mem_alloc(global->type->bit_size / 8);
+            }
         }
     }
 
@@ -1687,7 +1704,8 @@ namespace Zodiac
                 assert(iri->arg1);
                 assert(iri->arg1->kind == IRV_ALLOCL ||
                        iri->arg1->kind == IRV_ARGUMENT ||
-                       iri->arg1->kind == IRV_TEMPORARY);
+                       iri->arg1->kind == IRV_TEMPORARY ||
+                       iri->arg1->kind == IRV_GLOBAL);
                 assert(iri->arg1->type->kind == AST_TYPE_STRUCT ||
                        iri->arg1->type->kind == AST_TYPE_UNION);
 

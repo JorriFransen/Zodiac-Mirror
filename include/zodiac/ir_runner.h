@@ -56,6 +56,7 @@ namespace Zodiac
     struct IR_Runner
     {
         Context* context = nullptr;
+        IR_Module* ir_module = nullptr;
         Arena arena = {};
         Stack<IR_Stack_Frame*> call_stack = {};
         IR_Stack_Frame* free_stack_frames = nullptr;
@@ -76,6 +77,7 @@ namespace Zodiac
                         IR_Runner* thread_parent = nullptr);
     void ir_runner_execute_entry(IR_Runner* ir_runner, AST_Module* ast_module,
                                  IR_Module* ir_module);
+    void ir_runner_allocate_global_structs(IR_Runner* ir_runner);
 
     void* ir_runner_thread_entry(void* user_data);
 

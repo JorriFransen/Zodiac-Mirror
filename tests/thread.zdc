@@ -29,6 +29,24 @@ compare_and_swap :: (pointer: *u64, old_value: u64, new_value: u64) -> bool
     return __compare_and_swap__(pointer, old_value, new_value);
 }
 
+Mutex :: struct
+{
+    lock: u64;
+}
+
+mutex_lock :: (mutex: *Mutex)
+{
+    while (!compare_and_swap(*mutex.lock, 0, 1))
+    {
+        // busy wait
+    }
+}
+
+mutex_unlock :: (mutex: *Mutex)
+{
+    mutex.lock = 0;
+}
+
 _main :: ()
 {
     printer_args := (:*void)6;
