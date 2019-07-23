@@ -150,6 +150,8 @@ namespace Zodiac
         IR_Value* arg2 = nullptr;
         IR_Value* result = nullptr;
 
+        File_Pos origin;
+
         IR_Instruction* next = nullptr;
     };
 
@@ -183,6 +185,7 @@ namespace Zodiac
     struct IR_Function
     {
         _IR_Function_Flags_ flags = IR_FUNC_FLAG_NONE;
+        File_Pos file_pos;
 
         const char* name = nullptr;
         AST_Type* type = nullptr;
@@ -255,21 +258,27 @@ namespace Zodiac
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
     IR_Value* ir_builder_emit_dot_expression(IR_Builder* ir_builder, AST_Expression* expression);
 	IR_Value* ir_builder_emit_cast_expression(IR_Builder* ir_builder, AST_Expression* expression);
-    IR_Value* ir_builder_emit_load_lit(IR_Builder* ir_builder, IR_Value* literal);
-    IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression);
-    IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression);
+    IR_Value* ir_builder_emit_load_lit(IR_Builder* ir_builder, IR_Value* literal, File_Pos origin);
+    IR_Value* ir_builder_emit_negate(IR_Builder* ir_builder, AST_Expression* expression,
+                                     File_Pos origin);
+    IR_Value* ir_builder_emit_addrof(IR_Builder* ir_builder, AST_Expression* expression,
+                                     File_Pos origin);
 	IR_Value* ir_builder_emit_addrof_foreign(IR_Builder* ir_builder, IR_Value* foreign_func,
-                                             AST_Type* foreign_type);
+                                             AST_Type* foreign_type, File_Pos origin);
     IR_Value* ir_builder_emit_addrof_function(IR_Builder* ir_builder, IR_Value* func,
-                                              AST_Type* func_type);
-    IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression);
-    IR_Value* ir_builder_emit_not(IR_Builder* ir_builder, AST_Expression* expression);
+                                              AST_Type* func_type, File_Pos origin);
+    IR_Value* ir_builder_emit_deref(IR_Builder* ir_builder, AST_Expression* expression,
+                                    File_Pos origin);
+    IR_Value* ir_builder_emit_not(IR_Builder* ir_builder, AST_Expression* expression,
+                                  File_Pos origin);
 
     IR_Value* ir_builder_emit_create_thread(IR_Builder* ir_builder, IR_Value* func_value,
-                                            IR_Value* user_data_value);
-    void ir_builder_emit_join_thread(IR_Builder* ir_builder, IR_Value* thread_value);
+                                            IR_Value* user_data_value, File_Pos origin);
+    void ir_builder_emit_join_thread(IR_Builder* ir_builder, IR_Value* thread_value,
+                                     File_Pos origin);
     IR_Value* ir_builder_emit_compare_and_swap(IR_Builder* ir_builder, IR_Value* pointer_val,
-                                               IR_Value* value, IR_Value* new_value);
+                                               IR_Value* value, IR_Value* new_value,
+                                               File_Pos origin);
 
     void ir_builder_push_value_and_decl(IR_Builder* ir_builder, IR_Value* ir_value,
                                         AST_Declaration* decl);
@@ -277,7 +286,8 @@ namespace Zodiac
     IR_Value* ir_builder_value_for_declaration(IR_Builder* ir_builder,
                                                AST_Declaration* declaration);
 
-    IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, const char* name, AST_Type*
+    IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, File_Pos file_pos,
+                                        const char* name, AST_Type*
                                         return_type);
     void ir_builder_end_function(IR_Builder* ir_builder, IR_Value* func_value);
     void ir_builder_patch_empty_block_jumps(IR_Builder* ir_builder, IR_Function* function);
@@ -293,68 +303,88 @@ namespace Zodiac
     void ir_builder_set_insert_block(IR_Builder* ir_builder, IR_Value* block_value);
 
     IR_Value* ir_builder_emit_array_offset_pointer(IR_Builder* ir_builder, IR_Value* array_allocl,
-                                                   uint64_t offset);
+                                                   uint64_t offset, File_Pos origin);
     IR_Value* ir_builder_emit_array_offset_pointer(IR_Builder* ir_builder, IR_Value* array_allocl,
-                                                   IR_Value* offset_value);
+                                                   IR_Value* offset_value, File_Pos origin);
     IR_Value* ir_builder_emit_aggregate_offset_pointer(IR_Builder* ir_builder,
                                                        IR_Value* struct_value,
-                                                       uint64_t offset);
+                                                       uint64_t offset, File_Pos origin);
 
     void ir_builder_emit_instruction(IR_Builder* ir_builder, IR_Instruction* iri);
 
     IR_Value* ir_builder_emit_function_arg(IR_Builder* ir_builder, const char* name,
                                            AST_Type* type);
-    IR_Value* ir_builder_emit_add(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    IR_Value* ir_builder_emit_sub(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    IR_Value* ir_builder_emit_mul(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    IR_Value* ir_builder_emit_mod(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    IR_Value* ir_builder_emit_div(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    IR_Value* ir_builder_emit_lt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    IR_Value* ir_builder_emit_lteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    IR_Value* ir_builder_emit_gt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    IR_Value* ir_builder_emit_gteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    IR_Value* ir_builder_emit_eq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    IR_Value* ir_builder_emit_neq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    IR_Value* ir_builder_emit_and_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    IR_Value* ir_builder_emit_or_or(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs);
-    void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val);
+    IR_Value* ir_builder_emit_add(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                  File_Pos origin);
+    IR_Value* ir_builder_emit_sub(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                  File_Pos origin);
+    IR_Value* ir_builder_emit_mul(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                  File_Pos origin);
+    IR_Value* ir_builder_emit_mod(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                  File_Pos origin);
+    IR_Value* ir_builder_emit_div(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                  File_Pos origin);
+    IR_Value* ir_builder_emit_lt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                 File_Pos origin);
+    IR_Value* ir_builder_emit_lteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                   File_Pos origin);
+    IR_Value* ir_builder_emit_gt(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                 File_Pos origin);
+    IR_Value* ir_builder_emit_gteq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                   File_Pos origin);
+    IR_Value* ir_builder_emit_eq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                 File_Pos origin);
+    IR_Value* ir_builder_emit_neq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                  File_Pos origin);
+    IR_Value* ir_builder_emit_and_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                      File_Pos origin);
+    IR_Value* ir_builder_emit_or_or(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                    File_Pos origin);
+    void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val, File_Pos origin);
     void ir_builder_emit_defer_statements_before_return(IR_Builder* ir_builder, AST_Scope* scope,
                                                         File_Pos return_file_pos);
     void ir_builder_emit_defer_statements_before_break(IR_Builder* ir_builder, AST_Scope* scope,
                                                        File_Pos break_file_pos);
     void ir_builder_emit_call_arg(IR_Builder* ir_builder, IR_Value* arg_value,
-                                  bool is_vararg = false);
+                                  File_Pos origin, bool is_vararg = false);
     IR_Value* ir_builder_emit_call(IR_Builder* ir_builder, IR_Value* func_value,
-                                   IR_Value* num_args);
+                                   IR_Value* num_args, File_Pos origin);
     IR_Value* ir_builder_emit_builtin_function_call(IR_Builder* ir_builder,
                                                     AST_Expression* call_expr);
     IR_Value* ir_builder_emit_subscript(IR_Builder* ir_builder, IR_Value* base_value,
-                                        IR_Value* index_value);
-    void ir_builder_emit_jmp(IR_Builder* ir_builder, IR_Value* block_value);
+                                        IR_Value* index_value, File_Pos origin);
+    void ir_builder_emit_jmp(IR_Builder* ir_builder, IR_Value* block_value, File_Pos origin);
     void ir_builder_emit_jmp_if(IR_Builder* ir_builder, IR_Value* cond_value,
-                                IR_Value* block_value);
-    IR_Value* ir_builder_emit_allocl(IR_Builder* ir_builder, AST_Type* type, const char* name);
+                                IR_Value* block_value, File_Pos origin);
+    IR_Value* ir_builder_emit_allocl(IR_Builder* ir_builder, AST_Type* type, const char* name,
+                                     File_Pos origin);
     void ir_builder_emit_storel(IR_Builder* ir_builder, IR_Value* allocl_value,
-                                IR_Value* new_value);
-    IR_Value* ir_builder_emit_loadl(IR_Builder* ir_builder, IR_Value* allocl_value);
-    void ir_builder_emit_storea(IR_Builder* ir_builder, IR_Value* arg_value, IR_Value* new_value);
-    IR_Value* ir_builder_emit_loada(IR_Builder* ir_builder, IR_Value* alloca_value);
+                                IR_Value* new_value, File_Pos origin);
+    IR_Value* ir_builder_emit_loadl(IR_Builder* ir_builder, IR_Value* allocl_value,
+                                    File_Pos origin);
+    void ir_builder_emit_storea(IR_Builder* ir_builder, IR_Value* arg_value, IR_Value* new_value,
+                                File_Pos origin);
+    IR_Value* ir_builder_emit_loada(IR_Builder* ir_builder, IR_Value* alloca_value,
+                                    File_Pos origin);
     void ir_builder_emit_storep(IR_Builder* ir_builder, IR_Value* pointer_allocl,
-                                IR_Value* new_value);
-    IR_Value* ir_builder_emit_loadp(IR_Builder* ir_builder, IR_Value* pointer);
+                                IR_Value* new_value, File_Pos origin);
+    IR_Value* ir_builder_emit_loadp(IR_Builder* ir_builder, IR_Value* pointer, File_Pos origin);
     IR_Value* ir_builder_emit_global(IR_Builder* ir_builder, AST_Declaration* global_decl);
     void ir_builder_emit_storeg(IR_Builder* ir_builder, IR_Value* global_value,
-                                IR_Value* new_value);
-    IR_Value* ir_builder_emit_loadg(IR_Builder* ir_builder, IR_Value* global_value);
+                                IR_Value* new_value, File_Pos origin);
+    IR_Value* ir_builder_emit_loadg(IR_Builder* ir_builder, IR_Value* global_value,
+                                    File_Pos origin);
 
-	IR_Value* ir_builder_emit_load(IR_Builder* ir_builder, IR_Value* store);
-    void ir_builder_emit_store(IR_Builder* ir_builder, IR_Value* store, IR_Value* new_value);
+	IR_Value* ir_builder_emit_load(IR_Builder* ir_builder, IR_Value* store, File_Pos origin);
+    void ir_builder_emit_store(IR_Builder* ir_builder, IR_Value* store, IR_Value* new_value,
+                               File_Pos origin);
 
     IR_Value* ir_builder_emit_lvalue(IR_Builder* ir_builder, AST_Expression* lvalue_expr);
 
-    IR_Value* ir_builder_emit_cast(IR_Builder* ir_builder, IR_Value* value, AST_Type* type);
+    IR_Value* ir_builder_emit_cast(IR_Builder* ir_builder, IR_Value* value, AST_Type* type,
+                                   File_Pos file_pos);
 
-    void ir_builder_emit_assert(IR_Builder* ir_builder, IR_Value* assert_value);
+    void ir_builder_emit_assert(IR_Builder* ir_builder, IR_Value* assert_value, File_Pos origin);
 
     IR_Value* ir_builder_emit_zero_literal(IR_Builder* ir_builder, AST_Type* type);
     IR_Value* ir_boolean_literal(IR_Builder* ir_builder, AST_Type* type, bool value);
@@ -365,7 +395,8 @@ namespace Zodiac
     IR_Value* ir_character_literal(IR_Builder* ir_builder, AST_Type* type, char c);
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);
 
-    IR_Function* ir_function_new(IR_Builder* ir_builder, const char* name, AST_Type* func_type);
+    IR_Function* ir_function_new(IR_Builder* ir_builder, File_Pos file_pos, const char* name,
+                                 AST_Type* func_type);
 
     IR_Value* ir_value_new(IR_Builder* ir_builder, IR_Value_Kind kind, AST_Type* type);
     IR_Value* ir_value_function_new(IR_Builder* ir_builder, IR_Function* function);
@@ -373,7 +404,7 @@ namespace Zodiac
     IR_Value* ir_value_allocl_new(IR_Builder* ir_builder, AST_Type* type, const char* name);
     IR_Value* ir_value_global_new(IR_Builder* ir_builder, AST_Type* type, const char* name);
 
-    IR_Instruction* ir_instruction_new(IR_Builder* ir_builder, IR_Operator op,
+    IR_Instruction* ir_instruction_new(IR_Builder* ir_builder, File_Pos origin, IR_Operator op,
                                        IR_Value* arg1, IR_Value* arg2, IR_Value* result);
 
     bool ir_instruction_is_terminator(IR_Operator op);

@@ -552,6 +552,7 @@ namespace Zodiac
                 BUF(AST_Type*) arg_types;
                 AST_Type* return_type;
                 AST_Declaration* poly_from;
+                const char* original_name;
             } function;
         };
     };
@@ -602,6 +603,7 @@ namespace Zodiac
 
             struct
             {
+                const char* name;
                 BUF(AST_Declaration*) args;
                 AST_Type_Spec* return_type_spec;
                 AST_Scope* arg_scope;
@@ -816,7 +818,7 @@ namespace Zodiac
     AST_Type* ast_type_enum_new(Context* context, BUF(AST_Declaration*) member_decls,
                                 const char* name, AST_Type* base_type);
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
-                                    AST_Type* return_type);
+                                    AST_Type* return_type, const char* original_name);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind);
     AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos,
@@ -833,7 +835,7 @@ namespace Zodiac
     AST_Type_Spec* ast_type_spec_function_new(Context* context, File_Pos file_pos,
                                               bool is_vararg, BUF(AST_Declaration*) arg_decls,
                                               AST_Type_Spec* return_type_spec,
-                                              AST_Scope* arg_scope);
+                                              AST_Scope* arg_scope, const char* name);
     AST_Type_Spec* ast_type_spec_from_type_new(Context* context, File_Pos file_pos,
                                                AST_Type* type);
 
@@ -855,7 +857,7 @@ namespace Zodiac
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type, uint64_t count);
 	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
                                                BUF(AST_Type*) arg_types,
-		                                       AST_Type* return_type);
+		                                       AST_Type* return_type, const char* original_name);
 
     uint64_t ast_get_type_hash(AST_Type* type);
     uint64_t ast_get_pointer_type_hash(AST_Type* base_type);

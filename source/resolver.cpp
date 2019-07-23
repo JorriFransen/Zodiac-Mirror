@@ -352,10 +352,12 @@ namespace Zodiac
                 declaration->function.return_type = Builtin::type_void;
             }
             bool is_vararg = declaration->flags & AST_DECL_FLAG_FUNC_VARARG;
+            const char* original_name = declaration->identifier->atom.data;
 			declaration->function.type =
                 ast_find_or_create_function_type(resolver->context,
                                                  is_vararg, arg_types,
-                                                 declaration->function.return_type);
+                                                 declaration->function.return_type,
+                                                 original_name);
 
             auto main_atom = Builtin::atom_main;
             if (main_atom == declaration->identifier->atom)
@@ -1628,8 +1630,11 @@ namespace Zodiac
 
         assert(func_decl);
 
+        const char* overload_name = nullptr;
+
         if (func_decl->function.overloads)
         {
+            overload_name = func_decl->identifier->atom.data;
             func_decl = find_overload_signature_match(resolver, func_decl, expression, scope);
             if (!func_decl) return false;
         }
@@ -1662,6 +1667,7 @@ namespace Zodiac
         if (func_type)
         {
             assert(func_type->kind == AST_TYPE_FUNCTION);
+            func_type->function.original_name = overload_name;
             auto arg_count = BUF_LENGTH(expression->call.arg_expressions);
             auto expected_arg_count = BUF_LENGTH(func_type->function.arg_types);
 
@@ -2928,7 +2934,8 @@ namespace Zodiac
 						ast_find_or_create_function_type(resolver->context,
                                                          (type_spec->flags &
                                                           AST_TYPE_SPEC_FLAG_FUNC_VARARG),
-						                                 arg_types, return_type);
+						                                 arg_types, return_type,
+                                                         type_spec->function.name);
 					*type_dest = result_type;
                     type_spec->type = result_type;
 					return true;
@@ -3324,6 +3331,8 @@ namespace Zodiac
         assert(call_expr);
         assert(call_expr->kind == AST_EXPR_CALL);
         assert(scope);
+
+        const char* original_name = overload_decl->identifier->atom.data;
 
         for (uint64_t i = 0; i < BUF_LENGTH(overload_decl->function.overloads); i++)
         {
@@ -3740,7 +3749,8 @@ namespace Zodiac
 
                 IR_Value return_value = {};
                 IR_Stack_Frame* entry_stack_frame =
-                    ir_runner_call_function(&ir_runner, func_value->function, num_args,
+                    ir_runner_call_function(&ir_runner, call_expression->file_pos,
+                                            func_value->function, num_args,
                                             &return_value);
 
                 resolver->module->gen_data = nullptr;

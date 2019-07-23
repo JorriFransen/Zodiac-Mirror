@@ -140,4 +140,5 @@ print_person_and_thing :: (pet: Pet, thing: $T)
     _c.printf("  name: %s\n", pet.name.data);
     _c.printf("  owner: %x\n", pet.owner);
     _c.printf("  thing: %x\n", thing);
+    assert(false);
 }

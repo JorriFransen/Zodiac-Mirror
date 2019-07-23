@@ -11,6 +11,7 @@ namespace Zodiac
     struct IR_Stack_Frame
     {
         IR_Function* function = nullptr;
+        File_Pos call_site;
         Arena arena = {};
         BUF(IR_Value) args = nullptr;
         BUF(IR_Value) temps = nullptr;
@@ -92,18 +93,23 @@ namespace Zodiac
     void ir_runner_push_ex_call_args(IR_Runner* runner, IR_Value* num_args_val);
     void ir_runner_push_ex_call_arg(IR_Runner* runner, IR_Value* arg_value, AST_Type* arg_type,
                                     bool is_vararg);
-    IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, IR_Function* function,
-                                            uint64_t num_args, IR_Value* return_value);
+    IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, File_Pos origin,
+                                            IR_Function* function, uint64_t num_args,
+                                            IR_Value* return_value);
     void ir_runner_execute_block(IR_Runner* runner, IR_Block* block);
     void ir_runner_execute_instruction(IR_Runner* runner, IR_Instruction* iri);
 
-    IR_Stack_Frame* ir_runner_new_stack_frame(IR_Runner* ir_runner, IR_Function* function,
-                                              BUF(IR_Value) args, IR_Value* return_value);
+    IR_Stack_Frame* ir_runner_new_stack_frame(IR_Runner* ir_runner, File_Pos call_site,
+                                              IR_Function* function, BUF(IR_Value) args,
+                                              IR_Value* return_value);
 
-    IR_Stack_Frame* ir_runner_push_stack_frame(IR_Runner* ir_runner, IR_Function* function,
-                                               BUF(IR_Value) args, IR_Value* return_value);
+    IR_Stack_Frame* ir_runner_push_stack_frame(IR_Runner* ir_runner, File_Pos call_site,
+                                               IR_Function* function, BUF(IR_Value) args,
+                                               IR_Value* return_value);
     IR_Stack_Frame* ir_runner_top_stack_frame(IR_Runner* ir_runner);
     void ir_runner_pop_stack_frame(IR_Runner* ir_runner);
+
+    void ir_runner_print_stack_trace(IR_Runner* ir_runner, File_Pos origin);
 
     static const char* get_dcb_signature(AST_Type* type);
     static char get_dcb_signature_char(AST_Type* type);

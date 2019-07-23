@@ -66,7 +66,9 @@ namespace Zodiac
         ir_runner_execute_block(ir_runner, ir_runner->context->global_init_block->block);
 
         IR_Value return_value = {};
-        IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(ir_runner,
+        File_Pos call_site;
+        call_site.file_name = "<ir_runner_execute_entry>";
+        IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(ir_runner, call_site,
                                                                     ir_module->entry_function, 0,
                                                                     &return_value);
 
@@ -123,7 +125,10 @@ namespace Zodiac
 
         IR_Value return_value = {};
         assert(ir_thread->function);
-        ir_runner_call_function(&thread_ir_runner, ir_thread->function, 1, &return_value);
+        File_Pos call_site;
+        call_site.file_name = "<ir_runner_thread_entry>";
+        ir_runner_call_function(&thread_ir_runner, call_site, ir_thread->function, 1,
+                                &return_value);
 
         // assert(!thread_ir_runner.threads);
         assert(!thread_ir_runner.free_threads);
@@ -390,8 +395,9 @@ namespace Zodiac
         else assert(false);
     }
 
-    IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, IR_Function* function,
-                                            uint64_t num_args, IR_Value* return_value)
+    IR_Stack_Frame* ir_runner_call_function(IR_Runner* runner, File_Pos origin,
+                                            IR_Function* function, uint64_t num_args,
+                                            IR_Value* return_value)
     {
         assert(runner);
         assert(function);
@@ -409,7 +415,7 @@ namespace Zodiac
             stack_pop(runner->arg_stack);
         }
 
-        IR_Stack_Frame* stack_frame = ir_runner_push_stack_frame(runner, function, args,
+        IR_Stack_Frame* stack_frame = ir_runner_push_stack_frame(runner, origin, function, args,
                                                                  return_value);
 
         auto block = function->first_block;
@@ -512,7 +518,10 @@ namespace Zodiac
         assert(!(return_type->kind == AST_TYPE_STATIC_ARRAY));
 
         IR_Value return_value = {};
+        File_Pos call_site;
+        call_site.file_name = "<dcb_handler>";
         IR_Stack_Frame* stack_frame = ir_runner_call_function(dcb_data->runner,
+                                                              call_site,
                                                               func_value->function,
                                                               BUF_LENGTH(arg_types),
                                                               &return_value);
@@ -934,7 +943,8 @@ namespace Zodiac
                 IR_Function* function = iri->arg1->function;
                 auto num_args = iri->arg2->value.s64;
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
-                IR_Stack_Frame* callee_stack_frame = ir_runner_call_function(runner, function,
+                IR_Stack_Frame* callee_stack_frame = ir_runner_call_function(runner, iri->origin,
+                                                                             function,
                                                                              num_args,
                                                                              result_value);
 
@@ -1749,14 +1759,7 @@ namespace Zodiac
                 IR_Value* assert_value = ir_runner_get_local_temporary(runner, iri->arg1);
                 if (!assert_value->value.u64)
                 {
-                    IR_Function* ir_func = stack_top(runner->call_stack)->function;
-                    const char* function_name = ir_func->name;
-                    if (ir_func->type->function.poly_from)
-                    {
-                        function_name = ir_func->type->function.poly_from->identifier->atom.data;
-                    }
-
-                    fprintf(stderr, "Assertion failed in function: %s\n", function_name);
+                    ir_runner_print_stack_trace(runner, iri->origin);
 
                     runner->asserted = true;
                     while (stack_count(runner->call_stack))
@@ -1872,8 +1875,9 @@ namespace Zodiac
         }
     }
 
-    IR_Stack_Frame* ir_runner_new_stack_frame(IR_Runner* ir_runner, IR_Function* function,
-                                              BUF(IR_Value) args, IR_Value* return_value)
+    IR_Stack_Frame* ir_runner_new_stack_frame(IR_Runner* ir_runner, File_Pos call_site,
+                                              IR_Function* function, BUF(IR_Value) args,
+                                              IR_Value* return_value)
     {
         assert(ir_runner);
         assert(function);
@@ -1890,6 +1894,7 @@ namespace Zodiac
             result = arena_alloc(&ir_runner->arena, IR_Stack_Frame);
             result->arena = arena_create(KB(1));
         }
+        result->call_site = call_site;
         result->function = function;
         result->args = args;
 
@@ -1944,13 +1949,14 @@ namespace Zodiac
         return result;
     }
 
-    IR_Stack_Frame* ir_runner_push_stack_frame(IR_Runner* ir_runner, IR_Function* function,
-                                               BUF(IR_Value) args, IR_Value* return_value)
+    IR_Stack_Frame* ir_runner_push_stack_frame(IR_Runner* ir_runner, File_Pos call_site,
+                                               IR_Function* function, BUF(IR_Value) args,
+                                               IR_Value* return_value)
     {
         assert(ir_runner);
         assert(function);
 
-        IR_Stack_Frame* new_frame = ir_runner_new_stack_frame(ir_runner, function, args,
+        IR_Stack_Frame* new_frame = ir_runner_new_stack_frame(ir_runner, call_site, function, args,
                                                               return_value);
         assert(new_frame);
 
@@ -1988,6 +1994,56 @@ namespace Zodiac
 
         old_stack_frame->next_free = ir_runner->free_stack_frames;
         ir_runner->free_stack_frames = old_stack_frame;
+    }
+
+    static const char* _get_function_name(IR_Function* func)
+    {
+        assert(func);
+
+        const char* result = func->name;
+
+        if (func->type->function.poly_from)
+        {
+            result = func->type->function.poly_from->identifier->atom.data;
+        }
+
+        if (func->type->function.original_name)
+        {
+            result = func->type->function.original_name;
+        }
+
+        return result;
+    }
+
+    void ir_runner_print_stack_trace(IR_Runner* ir_runner, File_Pos origin)
+    {
+        assert(ir_runner);
+
+        IR_Function* ir_func = stack_top(ir_runner->call_stack)->function;
+        const char* function_name = _get_function_name(ir_func);
+
+        fprintf(stderr, "\nAssertion failed in function: %s\n\t(%s:%lu:%lu)\nStack Trace:\n",
+                function_name, origin.file_name, origin.line, origin.line_relative_char_pos);
+
+        for (uint64_t i = 0; i < stack_count(ir_runner->call_stack); i++)
+        {
+            IR_Stack_Frame* frame = stack_peek(ir_runner->call_stack, i);
+            IR_Function* ir_func = frame->function;
+            const char* function_name = _get_function_name(ir_func);
+
+            fprintf(stderr, "  %s (%s:%lu:%lu)\n", function_name,
+                    ir_func->file_pos.file_name, ir_func->file_pos.line,
+                    ir_func->file_pos.line_relative_char_pos);
+
+            if (i < stack_count(ir_runner->call_stack) - 1)
+            {
+                File_Pos call_site = frame->call_site;
+                IR_Function* ir_func_from = stack_peek(ir_runner->call_stack, i + 1)->function;
+                const char* from_name = _get_function_name(ir_func_from);
+                fprintf(stderr, "   From: %s (%s:%lu:%lu)\n", from_name, call_site.file_name,
+                        call_site.line, call_site.line_relative_char_pos);
+            }
+        }
     }
 
     static const char* get_dcb_signature(AST_Type* type)

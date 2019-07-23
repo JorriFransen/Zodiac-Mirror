@@ -1668,7 +1668,7 @@ namespace Zodiac
 		}
 
 		return ast_type_spec_function_new(parser->context, ft.file_pos, is_vararg, arg_decls,
-		                                  return_type_spec, arg_scope);
+		                                  return_type_spec, arg_scope, "");
 	}
 
     static AST_Overload_Operator_Kind parse_overload_operator(Parser* parser)

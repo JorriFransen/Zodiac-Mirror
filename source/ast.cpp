@@ -975,7 +975,7 @@ namespace Zodiac
     }
 
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
-                                    AST_Type* return_type)
+                                    AST_Type* return_type, const char* original_name)
     {
         assert(context);
         assert(return_type);
@@ -988,6 +988,7 @@ namespace Zodiac
         result->function.arg_types = arg_types;
         result->function.return_type = return_type;
         result->function.poly_from = nullptr;
+        result->function.original_name = nullptr;
 
         return result;
     }
@@ -1093,10 +1094,11 @@ namespace Zodiac
     AST_Type_Spec* ast_type_spec_function_new(Context* context, File_Pos file_pos,
                                               bool is_vararg, BUF(AST_Declaration*) arg_decls,
                                               AST_Type_Spec* return_type_spec,
-                                              AST_Scope* arg_scope)
+                                              AST_Scope* arg_scope, const char* name)
     {
         assert(context);
         assert(arg_scope);
+        assert(name);
 
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_FUNCTION);
         if (is_vararg)
@@ -1106,6 +1108,7 @@ namespace Zodiac
         result->function.args = arg_decls;
         result->function.return_type_spec = return_type_spec;
         result->function.arg_scope = arg_scope;
+        result->function.name = name;
 
         return result;
     }
@@ -1458,10 +1461,11 @@ namespace Zodiac
 
 	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
                                                BUF(AST_Type*) arg_types,
-                                               AST_Type* return_type)
+                                               AST_Type* return_type, const char* original_name)
 	{
 		assert(context);
         assert(return_type);
+        assert(original_name);
 
         uint64_t hash = ast_get_function_type_hash(is_vararg, arg_types, return_type);
         uint64_t hash_index = hash & (context->type_count - 1);
@@ -1520,14 +1524,16 @@ namespace Zodiac
 
         if (found_slot)
         {
-            AST_Type* result = ast_type_function_new(context, is_vararg, arg_types, return_type);
+            AST_Type* result = ast_type_function_new(context, is_vararg, arg_types, return_type,
+                                                     original_name);
             context->type_hash[hash_index] = result;
             return result;
         }
         else
         {
             ast_grow_type_hash(context);
-            return ast_find_or_create_function_type(context, is_vararg, arg_types, return_type);
+            return ast_find_or_create_function_type(context, is_vararg, arg_types, return_type,
+                                                    original_name);
         }
 
 	}
