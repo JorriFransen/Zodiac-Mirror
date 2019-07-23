@@ -2723,6 +2723,20 @@ namespace Zodiac
         assert(*type_dest == nullptr);
         assert(scope);
 
+        if (type_spec->type)
+        {
+            *type_dest = type_spec->type;
+            return true;
+        }
+
+        if (type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
+        {
+            if (!try_resolve_poly_type_spec_args(resolver, type_spec, scope))
+            {
+                return false;
+            }
+        }
+
         switch (type_spec->kind)
         {
             case AST_TYPE_SPEC_IDENT:
@@ -2758,6 +2772,7 @@ namespace Zodiac
                         if (type)
                         {
                             *type_dest = type;
+                            type_spec->type = type;
                             return true;
                         }
                         break;
@@ -2769,6 +2784,7 @@ namespace Zodiac
                         if (type)
                         {
                             *type_dest = type;
+                            type_spec->type = type;
                             return true;
                         }
                         break;
@@ -2780,6 +2796,7 @@ namespace Zodiac
 						if (type)
 						{
 							*type_dest = type;
+                            type_spec->type = type;
 							return true;
 						}
 						break;
@@ -2811,6 +2828,7 @@ namespace Zodiac
                     if (member_result)
                     {
                         *type_dest = type;
+                        type_spec->type = type;
                         return true;
                     }
                 }
@@ -2830,6 +2848,7 @@ namespace Zodiac
                                                                              base_type);
                     assert(pointer_type);
                     *type_dest = pointer_type;
+                    type_spec->type = pointer_type;
                     return true;
                 }
                 else
@@ -2859,6 +2878,7 @@ namespace Zodiac
                                                       type_spec->static_array.count_expr,
                                                       scope);
                     *type_dest = array_type;
+                    type_spec->type = array_type;
                     return true;
                 }
                 else
@@ -2910,6 +2930,7 @@ namespace Zodiac
                                                           AST_TYPE_SPEC_FLAG_FUNC_VARARG),
 						                                 arg_types, return_type);
 					*type_dest = result_type;
+                    type_spec->type = result_type;
 					return true;
 				}
 				return false;
@@ -2920,6 +2941,45 @@ namespace Zodiac
 
         assert(false);
         return false;
+    }
+
+    bool try_resolve_poly_type_spec_args(Resolver* resolver, AST_Type_Spec* type_spec,
+                                         AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(type_spec);
+        assert(type_spec->flags & AST_TYPE_SPEC_FLAG_POLY);
+        assert(scope);
+
+        switch (type_spec->kind)
+        {
+            case AST_TYPE_SPEC_POINTER:
+            {
+                return try_resolve_poly_type_spec_args(resolver, type_spec->pointer.base, scope);
+            }
+
+            case AST_TYPE_SPEC_IDENT:
+            {
+                for (uint64_t i = 0; i < BUF_LENGTH(type_spec->identifier.poly_args); i++)
+                {
+                    AST_Type_Spec* poly_arg_ts = type_spec->identifier.poly_args[i];
+                    AST_Type* type = nullptr;
+                    if (!try_resolve_type_spec(resolver, poly_arg_ts, &type, scope))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            case AST_TYPE_SPEC_DOT:
+            {
+                return try_resolve_poly_type_spec_args(resolver, type_spec->dot.member_type_spec,
+                                                       scope);
+            }
+
+            default: assert(false);
+        }
     }
 
     AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module,

@@ -15,13 +15,12 @@ global_counter_2_mutex : Mutex;
 
 main :: ()
 {
-    _thread._main();
+    _main();
 
     std.print("\nthread test");
     printf("global_counter: %llu\n", global_counter);
 
-    // adders : std.Array(Thread);
-    adders : Array(_thread.Thread);
+    adders : std.Array(Thread);
 
     adder_count := 1000;
     amount_per_adder := 50;
@@ -52,8 +51,6 @@ main :: ()
     assert(global_counter == (:u64)(adder_count * amount_per_adder));
 
     adders.count = 0;
-    // adder_count = 100;
-    // amount_per_adder = 10;
 
     for (i := 0; i < adder_count; i++)
     {
@@ -106,8 +103,6 @@ add_func :: (thread: *Thread) -> *void
 
     for (i : u64 = 0; i < to_add; i++)
     {
-        // global_counter += 1;
-
         done := false;
         while (!done)
         {

@@ -579,6 +579,8 @@ namespace Zodiac
         _AST_Type_Spec_Flags_ flags;
         File_Pos file_pos;
 
+        AST_Type* type = nullptr;
+
         union
         {
             struct

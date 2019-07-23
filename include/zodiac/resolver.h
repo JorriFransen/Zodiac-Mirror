@@ -134,6 +134,8 @@ namespace Zodiac
     bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec,
                                       AST_Type** type_dest,
                                       AST_Scope* scope);
+    bool try_resolve_poly_type_spec_args(Resolver* resolver, AST_Type_Spec* type_spec,
+                                         AST_Scope* scope);
 
     AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module,
                                               const Atom& module_path,

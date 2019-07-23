@@ -999,6 +999,7 @@ namespace Zodiac
         AST_Type_Spec* result = arena_alloc(context->arena, AST_Type_Spec);
         result->kind = kind;
         result->file_pos = file_pos;
+        result->type = nullptr;
 
         return result;
     }
@@ -1014,21 +1015,27 @@ namespace Zodiac
         result->identifier.identifier = identifier;
         result->identifier.poly_args = poly_args;
 
-        for (uint64_t i = 0; i < BUF_LENGTH(poly_args); i++)
+        if (poly_args)
         {
-            auto poly_arg = poly_args[i];
-            if (poly_arg->flags & AST_TYPE_SPEC_FLAG_POLY)
-            {
-                result->flags |= AST_TYPE_SPEC_FLAG_POLY;
-                break;
-            }
+            result->flags |= AST_TYPE_SPEC_FLAG_POLY;
         }
+
+        // for (uint64_t i = 0; i < BUF_LENGTH(poly_args); i++)
+        // {
+        //     auto poly_arg = poly_args[i];
+        //     if (poly_arg->flags & AST_TYPE_SPEC_FLAG_POLY)
+        //     {
+        //         result->flags |= AST_TYPE_SPEC_FLAG_POLY;
+        //         break;
+        //     }
+        // }
 
         return result;
     }
 
     AST_Type_Spec* ast_type_spec_dot_new(Context* context, File_Pos file_pos,
-                                         AST_Identifier* module_ident, AST_Type_Spec* member_type_spec)
+                                         AST_Identifier* module_ident,
+                                         AST_Type_Spec* member_type_spec)
     {
         assert(context);
         assert(module_ident);
@@ -1037,6 +1044,11 @@ namespace Zodiac
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_DOT);
         result->dot.module_ident = module_ident;
         result->dot.member_type_spec = member_type_spec;
+
+        if (member_type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
+        {
+            result->flags |= AST_TYPE_SPEC_FLAG_POLY;
+        }
 
         return result;
     }

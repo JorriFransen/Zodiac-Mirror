@@ -1574,12 +1574,14 @@ namespace Zodiac
         else if (is_token(parser, TOK_IDENTIFIER))
         {
             AST_Identifier* base_ident = parse_identifier(parser);
+            AST_Type_Spec* result = nullptr;
             if (match_token(parser, TOK_DOT))
             {
-                AST_Identifier* member_ident = parse_identifier(parser);
-                AST_Type_Spec* member_type_spec =
-                    ast_type_spec_identifier_new(parser->context, member_ident->file_pos,
-                                                 member_ident);
+                // AST_Identifier* member_ident = parse_identifier(parser);
+                // AST_Type_Spec* member_type_spec =
+                //     ast_type_spec_identifier_new(parser->context, member_ident->file_pos,
+                //                                  member_ident);
+                AST_Type_Spec* member_type_spec = parse_type_spec(parser, scope);
                 return ast_type_spec_dot_new(parser->context, base_ident->file_pos, base_ident,
                                              member_type_spec);
             }
