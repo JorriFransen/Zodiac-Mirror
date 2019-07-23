@@ -1103,29 +1103,38 @@ namespace Zodiac
                 auto offset = index_value->value.s64 * (element_type->bit_size / 8);
 
                 uint8_t* source_pointer = base_pointer + offset;
-                assert(element_type->kind == AST_TYPE_BASE);
-                switch (element_type->bit_size)
+                if (element_type->kind == AST_TYPE_BASE)
                 {
-                    case 8:
+                    switch (element_type->bit_size)
                     {
-                        result_value->value.u8 = *((uint8_t*)source_pointer);
-                        break;
-                    }
+                        case 8:
+                        {
+                            result_value->value.u8 = *((uint8_t*)source_pointer);
+                            break;
+                        }
 
-                    case 32:
-                    {
-                        result_value->value.u32 = *((uint32_t*)source_pointer);
-                        break;
-                    }
+                        case 32:
+                        {
+                            result_value->value.u32 = *((uint32_t*)source_pointer);
+                            break;
+                        }
 
-                    case 64:
-                    {
-                        result_value->value.s64 = *((uint64_t*)source_pointer);
-                        break;
-                    }
+                        case 64:
+                        {
+                            result_value->value.s64 = *((uint64_t*)source_pointer);
+                            break;
+                        }
 
-                    default: assert(false);
+                        default: assert(false);
+                    }
                 }
+                else if (element_type->kind == AST_TYPE_STRUCT)
+                {
+                    assert(result_value->value.struct_pointer);
+                    memcpy(result_value->value.struct_pointer, source_pointer,
+                           element_type->bit_size / 8);
+                }
+                else assert(false);
                 break;
             }
 
@@ -1821,6 +1830,23 @@ namespace Zodiac
                 thread->next = runner->free_threads;
                 runner->free_threads = thread;
 
+                break;
+            }
+
+            case IR_OP_COMPARE_AND_SWAP:
+            {
+                assert(stack_count(runner->arg_stack));
+                IR_Pushed_Arg pushed_pointer = stack_pop(runner->arg_stack);
+
+                IR_Value* old_value = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value* new_value = ir_runner_get_local_temporary(runner, iri->arg2);
+                IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
+
+                bool result =
+                    __sync_bool_compare_and_swap((uint64_t*)pushed_pointer.arg_value.value.u64,
+                                                 old_value->value.u64, new_value->value.u64);
+
+                result_value->value.boolean = result;
                 break;
             }
 

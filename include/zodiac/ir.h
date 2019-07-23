@@ -140,6 +140,7 @@ namespace Zodiac
 
         IR_OP_CREATE_THREAD,
         IR_OP_JOIN_THREAD,
+        IR_OP_COMPARE_AND_SWAP,
     };
 
     struct IR_Instruction
@@ -266,6 +267,8 @@ namespace Zodiac
     IR_Value* ir_builder_emit_create_thread(IR_Builder* ir_builder, IR_Value* func_value,
                                             IR_Value* user_data_value);
     void ir_builder_emit_join_thread(IR_Builder* ir_builder, IR_Value* thread_value);
+    IR_Value* ir_builder_emit_compare_and_swap(IR_Builder* ir_builder, IR_Value* pointer_val,
+                                               IR_Value* value, IR_Value* new_value);
 
     void ir_builder_push_value_and_decl(IR_Builder* ir_builder, IR_Value* ir_value,
                                         AST_Declaration* decl);

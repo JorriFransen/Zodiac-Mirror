@@ -19,6 +19,7 @@ namespace Zodiac
         static AST_Type* type_double;
         static AST_Type* type_pointer_to_void;
         static AST_Type* type_pointer_to_u8;
+        static AST_Type* type_pointer_to_u64;
         static AST_Type* type_String;
         static AST_Type* type_Thread;
         static AST_Type* type_pointer_to_Thread;
@@ -37,6 +38,7 @@ namespace Zodiac
         static Atom atom_Thread;
         static Atom atom___create_thread__;
         static Atom atom___join_thread__;
+        static Atom atom___compare_and_swap__;
 
         static AST_Identifier* identifier_Thread;
     };

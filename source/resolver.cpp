@@ -3775,7 +3775,30 @@ namespace Zodiac
                 }
             }
         }
+        else if (ident_atom == Builtin::atom___compare_and_swap__)
+        {
+            call_expr->call.builtin_function = AST_BUILTIN_FUNC_COMPARE_AND_SWAP;
 
+            assert(BUF_LENGTH(call_expr->call.arg_expressions) == 3);
+            AST_Expression* arg_0 = call_expr->call.arg_expressions[0];
+            AST_Expression* arg_1 = call_expr->call.arg_expressions[1];
+            AST_Expression* arg_2 = call_expr->call.arg_expressions[2];
+
+            bool arg_result = try_resolve_expression(resolver, arg_0, scope);
+            arg_result &= try_resolve_expression(resolver, arg_1, scope);
+            arg_result &= try_resolve_expression(resolver, arg_2, scope);
+
+            if (arg_result)
+            {
+                assert(arg_0->type == Builtin::type_pointer_to_u64);
+                assert(arg_1->type == Builtin::type_u64);
+                assert(arg_2->type == Builtin::type_u64);
+
+                call_expr->type = Builtin::type_bool;
+
+                result = true;
+            }
+        }
 
         if (result)
         {

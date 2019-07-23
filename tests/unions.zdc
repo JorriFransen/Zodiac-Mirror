@@ -152,7 +152,7 @@ main :: ()
     nt.s1.s2.n3 = 3;
     nt.s1.s2.n4 = 4;
     // nt.s1.s2.f4 = 4.4;
-    nt.s1.s2.n5 = 5;
+    // nt.s1.s2.n5 = 5;
     // nt.s1.s2.f5 = 5.5;
 
     _c.printf("nt.n1: %d\n", nt.n1);

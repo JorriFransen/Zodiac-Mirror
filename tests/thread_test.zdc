@@ -1,0 +1,79 @@
+
+std :: import std;
+using std;
+
+// _c :: import c;
+using _c;
+
+_thread :: import thread;
+using _thread;
+
+global_counter : u64 = 0;
+
+main :: ()
+{
+    _thread._main();
+
+    std.print("\nthread test");
+    printf("global_counter: %llu\n", global_counter);
+
+    // adders : std.Array(Thread);
+    adders : Array(_thread.Thread);
+
+    adder_count := 1000;
+    amount_per_adder := 50;
+
+    for (i := 0; i < adder_count; i++)
+    {
+        at : Thread;
+        if (false)
+        {
+          at = create_thread(*add_func, amount_per_adder);
+        }
+        else
+        {
+            at = create_thread(*add_func2, amount_per_adder);
+        }
+        array_add(*adders, at);
+    }
+
+
+    for (i : u64 = 0; i < adders.count; i++)
+    {
+        at := adders[i];
+        join_thread(at);
+    }
+
+    printf("global_counter: %llu\n", global_counter);
+    printf("\texpected: %llu\n", (:u64)(adder_count * amount_per_adder));
+    assert(global_counter == (:u64)(adder_count * amount_per_adder));
+}
+
+add_func :: (thread: *Thread) -> *void
+{
+    to_add := (:u64)thread.user_data;
+
+    for (i : u64 = 0; i < to_add; i++)
+    {
+        // global_counter += 1;
+
+        done := false;
+        while (!done)
+        {
+            value := global_counter;
+            done = compare_and_swap(*global_counter, value, value + 1);
+        }
+    }
+}
+
+add_func2 :: (thread: *Thread) -> *void
+{
+    to_add := (:u64)thread.user_data;
+
+    done := false;
+    while (!done)
+    {
+        value := global_counter;
+        done = compare_and_swap(*global_counter, value, value + to_add);
+    }
+}

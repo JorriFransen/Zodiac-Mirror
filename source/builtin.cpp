@@ -13,6 +13,7 @@ namespace Zodiac
     AST_Type* Builtin::type_float = nullptr;
     AST_Type* Builtin::type_double = nullptr;
     AST_Type* Builtin::type_pointer_to_void = nullptr;
+    AST_Type* Builtin::type_pointer_to_u64 = nullptr;
     AST_Type* Builtin::type_pointer_to_u8 = nullptr;
     AST_Type* Builtin::type_String = nullptr;
     AST_Type* Builtin::type_Thread = nullptr;
@@ -32,6 +33,7 @@ namespace Zodiac
     Atom Builtin::atom_Thread;
     Atom Builtin::atom___create_thread__;
     Atom Builtin::atom___join_thread__;
+    Atom Builtin::atom___compare_and_swap__;
 
     AST_Identifier* Builtin::identifier_Thread = nullptr;
 
@@ -60,6 +62,7 @@ namespace Zodiac
 
         Builtin::type_pointer_to_void = ast_find_or_create_pointer_type(context,
                                                                         Builtin::type_void);
+        Builtin::type_pointer_to_u64 = ast_find_or_create_pointer_type(context, Builtin::type_u64);
         Builtin::type_pointer_to_u8 = ast_find_or_create_pointer_type(context, Builtin::type_u8);
 
 		Builtin::atom_main = atom_get(context->atom_table, "main");
@@ -70,6 +73,7 @@ namespace Zodiac
         Builtin::atom_Thread = atom_get(context->atom_table, "Thread");
         Builtin::atom___create_thread__ = atom_get(context->atom_table, "__create_thread__");
         Builtin::atom___join_thread__ = atom_get(context->atom_table, "__join_thread__");
+        Builtin::atom___compare_and_swap__ = atom_get(context->atom_table, "__compare_and_swap__");
 
         File_Pos builtin_file_pos = {};
         builtin_file_pos.file_name = "<builtin>";

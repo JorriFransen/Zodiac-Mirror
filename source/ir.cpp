@@ -385,6 +385,11 @@ namespace Zodiac
                 {
                     // Do nothing
                 }
+                else if (decl->kind == AST_DECL_CONSTANT_VAR)
+                {
+                    // TODO: Emit intit expression and store in global init block
+                    assert(false);
+                }
                 else assert(false);
                 break;
             }
@@ -1590,6 +1595,24 @@ namespace Zodiac
         ir_builder_emit_instruction(ir_builder, iri);
     }
 
+    IR_Value* ir_builder_emit_compare_and_swap(IR_Builder* ir_builder, IR_Value* pointer_val,
+                                               IR_Value* value, IR_Value* new_value)
+    {
+        assert(ir_builder);
+        assert(pointer_val);
+        assert(value);
+        assert(new_value);
+
+        ir_builder_emit_call_arg(ir_builder, pointer_val);
+
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, IR_OP_COMPARE_AND_SWAP, value,
+                                                 new_value, result_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result_value;
+    }
+
     void ir_builder_push_value_and_decl(IR_Builder* ir_builder, IR_Value* ir_value,
                                         AST_Declaration* decl)
     {
@@ -2456,6 +2479,18 @@ namespace Zodiac
                 IR_Value* thread_value = ir_builder_emit_expression(ir_builder, thread_expr);
                 ir_builder_emit_join_thread(ir_builder, thread_value);
                 return nullptr;
+            }
+
+            case AST_BUILTIN_FUNC_COMPARE_AND_SWAP:
+            {
+                assert(BUF_LENGTH(call_expr->call.arg_expressions) == 3);
+                AST_Expression* pointer_expr = call_expr->call.arg_expressions[0];
+                AST_Expression* val_expr = call_expr->call.arg_expressions[1];
+                AST_Expression* new_val_expr = call_expr->call.arg_expressions[2];
+                IR_Value* pointer_val = ir_builder_emit_expression(ir_builder, pointer_expr);
+                IR_Value* val = ir_builder_emit_expression(ir_builder, val_expr);
+                IR_Value* new_val = ir_builder_emit_expression(ir_builder, new_val_expr);
+                return ir_builder_emit_compare_and_swap(ir_builder, pointer_val, val, new_val);
             }
 
             default: assert(false);
@@ -3699,6 +3734,15 @@ namespace Zodiac
             {
                 printf("JOIN_THREAD ");
                 ir_print_value(instruction->arg1);
+                break;
+            }
+
+            case IR_OP_COMPARE_AND_SWAP:
+            {
+                printf("COMPARE_AND_SWAP ");
+                ir_print_value(instruction->arg1);
+                printf(", ");
+                ir_print_value(instruction->arg2);
                 break;
             }
 

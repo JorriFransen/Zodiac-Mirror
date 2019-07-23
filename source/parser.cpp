@@ -808,7 +808,7 @@ namespace Zodiac
         }
         else if (lvalue_expr->kind == AST_EXPR_POST_INCREMENT)
         {
-            expect_token(parser, TOK_SEMICOLON);
+            match_token(parser, TOK_SEMICOLON);
             return ast_post_increment_statement_new(parser->context, lvalue_expr->file_pos,
                                                     lvalue_expr);
         }

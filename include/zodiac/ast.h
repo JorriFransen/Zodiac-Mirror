@@ -107,6 +107,7 @@ namespace Zodiac
         AST_BUILTIN_FUNC_INVALID,
         AST_BUILTIN_FUNC_CREATE_THREAD,
         AST_BUILTIN_FUNC_JOIN_THREAD,
+        AST_BUILTIN_FUNC_COMPARE_AND_SWAP,
     };
 
     struct AST_Expression
