@@ -100,7 +100,6 @@ namespace Zodiac
         }
     }
 
-    typedef void *(*__start_routine)(void *);
 
     void* ir_runner_thread_entry(void* _ir_thread)
     {

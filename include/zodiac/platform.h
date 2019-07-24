@@ -5,14 +5,19 @@
 #include <stdint.h>
 #include <cassert>
 
+typedef void *(*_Thread_Routine)(void *);
+
 #ifdef _WIN32
 
 #include <Windows.h>
 
 typedef HANDLE Thread_Handle;
 
-#define CREATE_THREAD(func, user_data) \
-    CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)func, user_data, 0, nullptr)
+static bool _join_thread(Thread_Handle handle)
+{
+	WaitForSingleObject(handle, INFINITE);
+	return CloseHandle(handle);
+}
 
 static bool _compare_and_swap(uint64_t* pointer, uint64_t old_value, uint64_t new_value)
 {
@@ -20,17 +25,11 @@ static bool _compare_and_swap(uint64_t* pointer, uint64_t old_value, uint64_t ne
 	return ret == old_value;
 }
 
+#define CREATE_THREAD(func, user_data) \
+    CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)func, user_data, 0, nullptr)
+#define JOIN_THREAD(handle) _join_thread(handle)
 #define COMPARE_AND_SWAP(pointer, old_value, new_value) \
 	_compare_and_swap(pointer, old_value, new_value)
-	
-
-static bool _join_thread(Thread_Handle handle)
-{
-	WaitForSingleObject(handle, INFINITE);  
-	return CloseHandle(handle);
-}
-
-#define JOIN_THREAD(handle) _join_thread(handle)
 
 static const char* _get_environment_variable(const char* name)
 {
@@ -58,6 +57,23 @@ static const char* _get_environment_variable(const char* name)
 
 typedef pthread_t Thread_Handle;
 
+static Thread_Handle _create_thread(_Thread_Routine func, void* user_data)
+{
+    Thread_Handle handle;
+    auto result = pthread_create(&handle, nullptr, func, user_data);
+    assert(result == 0);
+    assert(handle != 0);
+    return handle;
+}
+
+static bool _join_thread(Thread_Handle handle)
+{
+    auto result = pthread_join(handle, nullptr);
+    return result == 0;
+}
+
+#define CREATE_THREAD(func, user_data) _create_thread(func, user_data)
+#define JOIN_THREAD(handle) _join_thread(handle)
 #define COMPARE_AND_SWAP(pointer, old_value, new_value) \
 	__sync_bool_compare_and_swap(pointer, old_value, new_value)
 
