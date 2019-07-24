@@ -4,8 +4,6 @@
 
 #include <inttypes.h>
 
-#include <pthread.h>
-
 namespace Zodiac
 {
     void ir_runner_init(Context* context, IR_Runner* ir_runner,
@@ -132,6 +130,19 @@ namespace Zodiac
 
         // assert(!thread_ir_runner.threads);
         assert(!thread_ir_runner.free_threads);
+
+		IR_Stack_Frame* sf = thread_ir_runner.free_stack_frames;
+		while (sf)
+		{
+			auto next = sf->next_free;
+			arena_free(&sf->arena);
+			sf = next;
+		}
+
+		arena_free(&thread_ir_runner.arena);
+		stack_free(&thread_ir_runner.call_stack);
+		stack_free(&thread_ir_runner.arg_stack);
+		dcFree(thread_ir_runner.dyn_vm);
 
         return nullptr;
     }
@@ -1804,10 +1815,9 @@ namespace Zodiac
                 new_thread->parent_ir_runner = runner;
                 runner->threads = new_thread;
 
-                auto result = pthread_create(&new_thread->handle, nullptr, &ir_runner_thread_entry,
-                                             new_thread);
-                assert(result == 0);
-
+				auto result = CREATE_THREAD(&ir_runner_thread_entry, new_thread);
+				assert(result);
+				new_thread->handle = result;
 
                 break;
             }
@@ -1822,7 +1832,7 @@ namespace Zodiac
                 {
                     auto next = thread->next;
 
-                    if (thread->handle == *(uint64_t*)thread_value->value.struct_pointer)
+                    if (thread->handle == *(Thread_Handle*)thread_value->value.struct_pointer)
                     {
                         break;
                     }
@@ -1833,8 +1843,8 @@ namespace Zodiac
                 assert(thread);
                 // printf("joining thread value: %d\n", thread_value->value.struct_pointer);
 
-                auto result = pthread_join(thread->handle, nullptr);
-                assert(result == 0);
+				bool result = JOIN_THREAD(thread->handle);
+				assert(result);
 
                 if (thread == runner->threads)
                 {
@@ -1863,9 +1873,8 @@ namespace Zodiac
                 IR_Value* new_value = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
 
-                bool result =
-                    __sync_bool_compare_and_swap((uint64_t*)pushed_pointer.arg_value.value.u64,
-                                                 old_value->value.u64, new_value->value.u64);
+				bool result = COMPARE_AND_SWAP((uint64_t*)pushed_pointer.arg_value.value.u64,
+					old_value->value.u64, new_value->value.u64);
 
                 result_value->value.boolean = result;
                 break;

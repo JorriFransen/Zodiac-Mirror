@@ -76,17 +76,19 @@ main :: ()
     printf("global_counter_2: %llu\n", global_counter_2);
     printf("\texpected: %llu\n", (:u64)(adder_count * amount_per_adder));
     assert(global_counter_2 == (:u64)(adder_count * amount_per_adder));
+
+    array_free(*adders);
 }
 
 add_func_mut :: (thread: *Thread) -> *void
 {
     to_add := (:u64)thread.user_data;
+    mutex_lock(*global_counter_2_mutex);
     for (i : u64 = 0; i < to_add; i++)
     {
-        mutex_lock(*global_counter_2_mutex);
         global_counter_2 += 1;
-        mutex_unlock(*global_counter_2_mutex);
     }
+    mutex_unlock(*global_counter_2_mutex);
 }
 
 add_func_mut2 :: (thread: *Thread) -> *void

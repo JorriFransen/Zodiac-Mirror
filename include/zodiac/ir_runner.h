@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ir.h"
+#include "platform.h"
 
 #include <dyncall.h>
 #include <dyncall_callback.h>
@@ -34,7 +35,7 @@ namespace Zodiac
 
     struct IR_Builtin_Thread
     {
-        uint64_t handle;
+		Thread_Handle handle;
         void* user_data;
     };
 
@@ -42,7 +43,7 @@ namespace Zodiac
     {
         union
         {
-            pthread_t handle;
+			Thread_Handle handle;
             IR_Builtin_Thread builtin_thread;
         };
 
