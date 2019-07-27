@@ -696,11 +696,12 @@ namespace Zodiac
                                              overloads_copy);
     }
 
-    bool poly_type_spec_matches_type(AST_Type_Spec* poly_type_spec, AST_Type* type)
+    bool poly_type_spec_matches_type(AST_Type_Spec* poly_type_spec, AST_Type* type, uint64_t* score)
     {
         assert(poly_type_spec);
         assert(poly_type_spec->flags & AST_TYPE_SPEC_FLAG_POLY);
         assert(type);
+        assert(score);
 
         switch (poly_type_spec->kind)
         {
@@ -708,10 +709,12 @@ namespace Zodiac
             {
                 if (type->kind == AST_TYPE_BASE)
                 {
+                    *score += 1;
                     return true;
                 }
                 else if (type->kind == AST_TYPE_POINTER)
                 {
+                    *score += 1;
                     return true;
                 }
                 else if (type->kind == AST_TYPE_STRUCT ||
@@ -723,18 +726,40 @@ namespace Zodiac
                     bool result = true;
                     const char* type_name = type->name;
 
+                    auto agg = type->aggregate_type;
                     if (type->aggregate_type.poly_from)
                     {
                         result =  BUF_LENGTH(type->aggregate_type.poly_types) ==
                                   BUF_LENGTH(poly_type_spec->identifier.poly_args);
-                        type_name = type->aggregate_type.poly_from->identifier->atom.data;
-                    }
+                        // type_name = type->aggregate_type.poly_from->identifier->atom.data;
 
-                    if (strcmp(poly_type_spec->identifier.identifier->atom.data, type_name) != 0)
+                        if (result)
+                        {
+                            for (uint64_t i = 0; i < BUF_LENGTH(type->aggregate_type.poly_types); i++)
+                            {
+                                AST_Type_Spec* type_poly_arg = type->aggregate_type.poly_types[i];
+                                AST_Type_Spec* spec_poly_arg = poly_type_spec->identifier.poly_args[i];
+                                result &= poly_type_specs_match(type_poly_arg, spec_poly_arg);
+                                if (result)
+                                {
+                                    *score += 1;
+                                }
+                            }
+                        }
+                    }
+                    else
                     {
                         result = false;
                     }
 
+                    // if (strcmp(poly_type_spec->identifier.identifier->atom.data, type_name) != 0)
+                    // {
+                    //     result = false;
+                    // }
+                    // else
+                    // {
+                    //     *score += 1;
+                    // }
                     return result;
                 }
                 else assert(false);
@@ -750,7 +775,43 @@ namespace Zodiac
                 }
 
                 return poly_type_spec_matches_type(poly_type_spec->pointer.base,
-                                                    type->pointer.base);
+                                                   type->pointer.base, score);
+            }
+
+            default: assert(false);
+        }
+    }
+
+    bool poly_type_specs_match(AST_Type_Spec* ts_a, AST_Type_Spec* ts_b)
+    {
+        assert(ts_a);
+        assert(ts_b);
+
+        if (ts_a->kind != ts_b->kind)
+        {
+            return false;
+        }
+
+        switch (ts_a->kind)
+        {
+            case AST_TYPE_SPEC_IDENT:
+            {
+                assert(!ts_a->identifier.poly_args);
+                assert(!ts_b->identifier.poly_args);
+
+                bool names_match = ts_a->identifier.identifier->atom == ts_b->identifier.identifier->atom;
+                if (names_match)
+                {
+                    return true;
+                }
+                else
+                {
+                    return (((ts_a->flags & AST_TYPE_SPEC_FLAG_POLY) &&
+                             !(ts_b->flags & AST_TYPE_SPEC_FLAG_POLY)) ||
+                            (!(ts_a->flags & AST_TYPE_SPEC_FLAG_POLY) &&
+                             (ts_b->flags & AST_TYPE_SPEC_FLAG_POLY)));
+                }
+                break;
             }
 
             default: assert(false);

@@ -3333,10 +3333,15 @@ namespace Zodiac
         assert(scope);
 
         const char* original_name = overload_decl->identifier->atom.data;
+        auto overload_count = BUF_LENGTH(overload_decl->function.overloads);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(overload_decl->function.overloads); i++)
+        AST_Declaration* best_match = nullptr;
+        uint64_t best_score = 0;
+
+        for (uint64_t i = 0; i < overload_count; i++)
         {
             AST_Declaration* overload = overload_decl->function.overloads[i];
+            uint64_t score = 0;
 
             if (BUF_LENGTH(overload->function.args) != BUF_LENGTH(call_expr->call.arg_expressions))
                 continue;
@@ -3354,7 +3359,11 @@ namespace Zodiac
                     if (try_resolve_expression(resolver, call_arg_expr, scope, nullptr))
                     {
                         match = poly_type_spec_matches_type(overload_arg->mutable_decl.type_spec,
-                                                            call_arg_expr->type);
+                                                            call_arg_expr->type, &score);
+                        if (match)
+                        {
+                            score += 1;
+                        }
                     }
                     else
                     {
@@ -3374,6 +3383,10 @@ namespace Zodiac
                             {
                                 match = false;
                             }
+                            else
+                            {
+                                score += 2;
+                            }
                         }
                         else
                         {
@@ -3392,9 +3405,18 @@ namespace Zodiac
 
             if (match)
             {
-                return overload;
+                if (score > best_score)
+                {
+                    best_match = overload;
+                    best_score = score;
+                }
             }
 
+        }
+
+        if (best_match)
+        {
+            return best_match;
         }
 
         return overload_decl;
