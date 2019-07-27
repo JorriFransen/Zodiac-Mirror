@@ -240,7 +240,8 @@ namespace Zodiac
             {
                 AST_Expression* init_expr = global_decl->constant_var.init_expression;
                 IR_Value* value = ir_builder_emit_expression(ir_builder, init_expr);
-                BUF_PUSH(ir_builder->result.global_constants, value);
+                IR_Global_Constant gc = { global_decl->identifier->atom.data, value };
+                BUF_PUSH(ir_builder->result.global_constants, gc);
                 ir_builder_push_value_and_decl(ir_builder, value, global_decl);
                 break;
             }
@@ -330,7 +331,8 @@ namespace Zodiac
                         AST_Declaration* enum_mem = agg_members[i];
                         AST_Expression* init_expr = enum_mem->constant_var.init_expression;
                         IR_Value* value = ir_builder_emit_expression(ir_builder, init_expr);
-                        BUF_PUSH(ir_builder->result.global_constants, value);
+                        IR_Global_Constant gc = { enum_mem->identifier->atom.data, value };
+                        BUF_PUSH(ir_builder->result.global_constants, gc);
                         ir_builder_push_value_and_decl(ir_builder, value, enum_mem);
                     }
                 }
@@ -3419,8 +3421,9 @@ namespace Zodiac
 
         for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.global_constants); i++)
         {
-            IR_Value* constant = ir_builder->result.global_constants[i];
-            ir_print_value(constant, &sb);
+            auto gc = ir_builder->result.global_constants[i];
+            string_builder_appendf(&sb, "global(%s) = ", gc.name);
+            ir_print_value(gc.value, &sb);
             string_builder_append(&sb, "\n");
         }
 

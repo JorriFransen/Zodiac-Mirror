@@ -204,13 +204,19 @@ namespace Zodiac
         uint64_t next_duplicate_name_index = 1;
     };
 
+    struct IR_Global_Constant
+    {
+        const char* name = nullptr;
+        IR_Value* value = nullptr;
+    };
+
     struct IR_Module
     {
         BUF(IR_Function*) functions = nullptr;
         IR_Function* entry_function = nullptr;
 
         BUF(IR_Value*) globals = nullptr;
-        BUF(IR_Value*) global_constants = nullptr;
+        BUF(IR_Global_Constant) global_constants = nullptr;
         BUF(IR_Value*) string_literal_values = nullptr;
         Arena string_literal_arena = {};
 

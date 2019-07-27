@@ -1760,7 +1760,10 @@ namespace Zodiac
                     string_builder_append(string_builder, type->name);
                     string_builder_append(string_builder, "(struct)");
                 }
-                else assert(false);
+                else
+                {
+                    string_builder_append(string_builder, "(anonymous_struct)");
+                }
                 break;
             }
 
@@ -1771,7 +1774,10 @@ namespace Zodiac
                     string_builder_append(string_builder, type->name);
                     string_builder_append(string_builder, "(union)");
                 }
-                else assert(false);
+                else
+                {
+                    string_builder_append(string_builder, "(anonymous_union)");
+                }
                 break;
             }
 
