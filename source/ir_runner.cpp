@@ -1641,8 +1641,12 @@ namespace Zodiac
 				IR_Value* source = ir_runner_get_local_temporary(runner, iri->arg1);
 				IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
-                if ((iri->arg1->type->flags & AST_TYPE_FLAG_INT) &&
-                    iri->result->type == Builtin::type_float)
+                if (iri->arg1->type == iri->result->type)
+                {
+                    dest->value = source->value;
+                }
+                else if ((iri->arg1->type->flags & AST_TYPE_FLAG_INT) &&
+                         iri->result->type == Builtin::type_float)
                 {
                     if (iri->arg1->type->flags & AST_TYPE_FLAG_SIGNED)
                     {
@@ -1713,6 +1717,21 @@ namespace Zodiac
                          (iri->result->type->flags & AST_TYPE_FLAG_INT))
                 {
                     dest->value.u64 = (uint64_t)source->value.string;
+                }
+                else if (iri->arg1->type == Builtin::type_double &&
+                         (iri->result->type->flags &  AST_TYPE_FLAG_INT))
+                {
+                    dest->value.u64 = (uint64_t)source->value.r64;
+                }
+                else if (iri->arg1->type->kind == AST_TYPE_STRUCT &&
+                         (iri->result->type->flags & AST_TYPE_FLAG_INT))
+                {
+                    dest->value.u64 = (uint64_t)source->value.struct_pointer;
+                }
+                else if (iri->arg1->type->kind == AST_TYPE_STRUCT &&
+                         iri->result->type == Builtin::type_double)
+                {
+                    dest->value.r64 = (double)((uint64_t)source->value.struct_pointer);
                 }
                 else assert(false);
 
