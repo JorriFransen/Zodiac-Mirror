@@ -415,12 +415,12 @@ namespace Zodiac
     void ir_report_validation_error(IR_Validation_Result* valres, const char* format, ...);
 
     void ir_builder_print_result(IR_Builder* ir_builder);
-    void ir_builder_print_functions(IR_Builder* ir_builder);
-    void ir_print_function(IR_Function* function);
-    void ir_print_block(IR_Block* block);
-    void ir_print_instruction(IR_Instruction* instruction);
-    void ir_print_value(IR_Value* value);
-    void ir_print_string_literal(const char* string);
-	void ir_print_type(AST_Type* type);
-    void ir_print_character(char c);
+    void ir_builder_print_functions(IR_Builder* ir_builder, String_Builder* string_builder);
+    void ir_print_function(IR_Function* function, String_Builder* string_builder);
+    void ir_print_block(IR_Block* block, String_Builder* string_builder);
+    void ir_print_instruction(IR_Instruction* instruction, String_Builder* string_builder);
+    void ir_print_value(IR_Value* value, String_Builder* string_builder);
+    void ir_print_string_literal(const char* string, String_Builder* string_builder);
+	void ir_print_type(AST_Type* type, String_Builder* string_builder);
+    void ir_print_character(char c, String_Builder* string_builder);
 }

@@ -34,6 +34,7 @@ set (ZODIAC_COMPILER_SOURCE
     source/platform.cpp
     source/polymorph.cpp
     source/resolver.cpp
+    source/string_builder.cpp
     source/token.cpp
 )
 

@@ -3406,108 +3406,130 @@ namespace Zodiac
     {
         assert(ir_builder);
 
+        String_Builder sb;
+        string_builder_init(&sb, 2048);
+
+        string_builder_appendf(&sb, "IR module: %s\n", ir_builder->ast_module->module_name);
+
         for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.dynamic_lib_names); i++)
         {
             auto lib_atom = ir_builder->result.dynamic_lib_names[i];
-            printf("#dynamic_link %s\n", lib_atom.data);
+            string_builder_appendf(&sb, "#dynamic_link %s\n", lib_atom.data);
         }
 
         for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.global_constants); i++)
         {
             IR_Value* constant = ir_builder->result.global_constants[i];
-            ir_print_value(constant);
+            ir_print_value(constant, &sb);
+            string_builder_append(&sb, "\n");
         }
 
-        printf("\n");
+        ir_builder_print_functions(ir_builder, &sb);
 
-        ir_builder_print_functions(ir_builder);
+        char* result = string_builder_to_string(&sb);
+        string_builder_free(&sb);
+
+        if (result)
+        {
+            printf("%s", result);
+        }
     }
 
-    void ir_builder_print_functions(IR_Builder* ir_builder)
+    void ir_builder_print_functions(IR_Builder* ir_builder, String_Builder* string_builder)
     {
         assert(ir_builder);
+        assert(string_builder);
 
-        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->result.functions); i++)
+        auto func_count = BUF_LENGTH(ir_builder->result.functions);
+
+        if (func_count)
+        {
+            string_builder_append(string_builder, "\n");
+        }
+
+        for (uint64_t i = 0; i < func_count; i++)
         {
             IR_Function* func = ir_builder->result.functions[i];
-            ir_print_function(func);
+            ir_print_function(func, string_builder);
         }
     }
 
-    void ir_print_function(IR_Function* function)
+    void ir_print_function(IR_Function* function, String_Builder* sb)
     {
         assert(function);
+        assert(sb);
 
         bool is_foreign = function->flags & IR_FUNC_FLAG_FOREIGN;
 
         if (is_foreign)
         {
-            printf("#foreign ");
+            string_builder_append(sb, "#foreign ");
         }
 
-        printf("%s(", function->name);
+        string_builder_append(sb, function->name);
+        string_builder_append(sb, "(");
         for (uint64_t i = 0; i < BUF_LENGTH(function->arguments); i++)
         {
             if (i > 0)
             {
-                printf(", ");
+                string_builder_append(sb, ", ");
             }
-            ir_print_value(function->arguments[i]);
-            printf(":(");
-            ir_print_type(function->arguments[i]->type);
-            printf(")");
+            ir_print_value(function->arguments[i], sb);
+            string_builder_append(sb, ":(");
+            ir_print_type(function->arguments[i]->type, sb);
+            string_builder_append(sb, ")");
         }
-        printf(")");
-
-        printf(" -> ");
-        ir_print_type(function->type->function.return_type);
-        printf("\n");
+        string_builder_append(sb, ") -> ");
+        ir_print_type(function->type->function.return_type, sb);
+        string_builder_append(sb, "\n");
 
         if (!is_foreign)
         {
-            printf("{\n");
+            string_builder_append(sb, "{\n");
 
             IR_Block* block = function->first_block;
 
             while (block)
             {
-                ir_print_block(block);
+                ir_print_block(block, sb);
                 block = block->next;
             }
 
-            printf("}\n");
+            string_builder_append(sb, "}\n");
         }
 
-        printf("\n");
+        string_builder_append(sb, "\n");
     }
 
-    void ir_print_block(IR_Block* block)
+    void ir_print_block(IR_Block* block, String_Builder* sb)
     {
         assert(block);
+        assert(sb);
 
-        printf("\t%s:\n", block->name.data);
+        string_builder_appendf(sb, "\t%s:\n", block->name.data);
 
         IR_Instruction* instruction = block->first_instruction;
 
         while (instruction)
         {
-            ir_print_instruction(instruction);
+            ir_print_instruction(instruction, sb);
             instruction = instruction->next;
         }
     }
 
-    void ir_print_instruction(IR_Instruction* instruction)
+    void ir_print_instruction(IR_Instruction* instruction, String_Builder* sb)
     {
         assert(instruction);
+        assert(sb);
 
-        printf("\t\t");
+        string_builder_append(sb, "\t\t");
 
         if (instruction->result)
         {
-            ir_print_value(instruction->result);
-            printf(":(");
-            ir_print_type(instruction->result->type);
-            printf(") = ");
+            ir_print_value(instruction->result, sb);
+            string_builder_append(sb, ":(");
+            ir_print_type(instruction->result->type, sb);
+            string_builder_append(sb, ") = ");
         }
 
         switch (instruction->op)
@@ -3520,344 +3542,344 @@ namespace Zodiac
 
             case IR_OP_ADD:
             {
-                ir_print_value(instruction->arg1);
-                printf(" + ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " + ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_SUB:
             {
-                ir_print_value(instruction->arg1);
-                printf(" - ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " - ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_MUL:
             {
-                ir_print_value(instruction->arg1);
-                printf(" * ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " * ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_MOD:
             {
-                ir_print_value(instruction->arg1);
-                printf(" %% ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " %% ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_DIV:
             {
-                ir_print_value(instruction->arg1);
-                printf(" / ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " / ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_LT:
             {
-                ir_print_value(instruction->arg1);
-                printf(" < ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " < ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_LTEQ:
             {
-                ir_print_value(instruction->arg1);
-                printf(" <= ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " <= ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_GT:
             {
-                ir_print_value(instruction->arg1);
-                printf(" > ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " > ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_GTEQ:
             {
-                ir_print_value(instruction->arg1);
-                printf(" >= ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " >= ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_EQ:
             {
-                ir_print_value(instruction->arg1);
-                printf(" == ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " == ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_NEQ:
             {
-                ir_print_value(instruction->arg1);
-                printf(" != ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " != ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_AND_AND:
             {
-                ir_print_value(instruction->arg1);
-                printf(" && ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " && ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_OR_OR:
             {
-                ir_print_value(instruction->arg1);
-                printf(" || ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " || ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_NOT:
             {
-                printf("!");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "!");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_RETURN:
             {
-                printf("RETURN ");
+                string_builder_append(sb, "RETURN ");
                 if (instruction->arg1)
                 {
-                    ir_print_value(instruction->arg1);
+                    ir_print_value(instruction->arg1, sb);
                 }
                 break;
             }
 
             case IR_OP_SUBSCRIPT:
             {
-                ir_print_value(instruction->arg1);
-                printf(" SUBSCRIPT ");
-                ir_print_value(instruction->arg2);
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " SUBSCRIPT ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_PUSH_CALL_ARG:
             {
-                printf("PUSH_ARG ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "PUSH_ARG ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_CALL:
             {
-                printf("CALL ");
-                ir_print_value(instruction->arg1);
-                printf(", ");
-                ir_print_value(instruction->arg2);
+                string_builder_append(sb, "CALL ");
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, ", ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_CALL_EX:
             {
-                printf("CALL_EX ");
-                ir_print_value(instruction->arg1);
-                printf(", ");
-                ir_print_value(instruction->arg2);
+                string_builder_append(sb, "CALL_EX ");
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, ", ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
 			case IR_OP_ADDROF_FOREIGN:
 			{
-				printf("ADDROF_FOREIGN ");
-				ir_print_value(instruction->arg1);
+				string_builder_append(sb, "ADDROF_FOREIGN ");
+				ir_print_value(instruction->arg1, sb);
 				break;
 			}
 
             case IR_OP_ADDROF_FUNCTION:
             {
-                printf("ADDROF_FUNCTION ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "ADDROF_FUNCTION ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
 			case IR_OP_CALL_PTR:
 			{
-				printf("CALL_PTR ");
-				ir_print_value(instruction->arg1);
-				printf(", ");
-				ir_print_value(instruction->arg2);
+				string_builder_append(sb, "CALL_PTR ");
+				ir_print_value(instruction->arg1, sb);
+				string_builder_append(sb, ", ");
+				ir_print_value(instruction->arg2, sb);
 				break;
 			}
 
             case IR_OP_JMP:
             {
-                printf("JMP ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "JMP ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_JMP_IF:
             {
-                printf("IF ");
-                ir_print_value(instruction->arg1);
-                printf(" JMP ");
-                ir_print_value(instruction->arg2);
+                string_builder_append(sb, "IF ");
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " JMP ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_ALLOCL:
             {
-                printf("ALLOCL ");
+                string_builder_append(sb, "ALLOCL ");
                 break;
             }
 
             case IR_OP_STOREL:
             {
-                printf("STOREL ");
-                ir_print_value(instruction->arg2);
-                printf(" INTO ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "STOREL ");
+                ir_print_value(instruction->arg2, sb);
+                string_builder_append(sb, " INTO ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_LOADL:
             {
-                printf("LOADL ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "LOADL ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_STOREA:
             {
-                printf("STOREA ");
-                ir_print_value(instruction->arg2);
-                printf(" INTO ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "STOREA ");
+                ir_print_value(instruction->arg2, sb);
+                string_builder_append(sb, " INTO ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_LOADA:
             {
-                printf("LOADA ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "LOADA ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_STOREP:
             {
-                printf("STOREP ");
-                ir_print_value(instruction->arg2);
-                printf(" INTO ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "STOREP ");
+                ir_print_value(instruction->arg2, sb);
+                string_builder_append(sb, " INTO ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_LOADP:
             {
-                printf("LOADP ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "LOADP ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_STOREG:
             {
-                printf("STOREG ");
-                ir_print_value(instruction->arg2);
-                printf(" INTO ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "STOREG ");
+                ir_print_value(instruction->arg2, sb);
+                string_builder_append(sb, " INTO ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_LOADG:
             {
-                printf("LOADG ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "LOADG ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_LOAD_LIT:
             {
-                printf("LOAD_LIT ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "LOAD_LIT ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_ADDROF:
             {
-                printf("ADDROF ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "ADDROF ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_DEREF:
             {
-                printf("DEREF ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "DEREF ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_ARRAY_OFFSET_POINTER:
             {
-                printf("ARRAY_OFFSET_POINTER ");
-                ir_print_value(instruction->arg1);
-                printf(" ");
-                ir_print_value(instruction->arg2);
+                string_builder_append(sb, "ARRAY_OFFSET_POINTER ");
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_AGGREGATE_OFFSET_POINTER:
             {
-                printf("AGGREGATE_OFFSET_POINTER ");
-                ir_print_value(instruction->arg1);
-                printf(" ");
-                ir_print_value(instruction->arg2);
+                string_builder_append(sb, "AGGREGATE_OFFSET_POINTER ");
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
 			case IR_OP_CAST:
 			{
-				printf("CAST ");
-				ir_print_value(instruction->arg1);
-				printf(" TO ");
-				ir_print_type(instruction->result->type);
+				string_builder_append(sb, "CAST ");
+				ir_print_value(instruction->arg1, sb);
+				string_builder_append(sb, " TO ");
+				ir_print_type(instruction->result->type, sb);
 				break;
 			}
 
             case IR_OP_ASSERT:
             {
-                printf("ASSERT ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "ASSERT ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_CREATE_THREAD:
             {
-                printf("CREATE_THREAD ");
-                ir_print_value(instruction->arg1);
-                printf(", ");
-                ir_print_value(instruction->arg2);
+                string_builder_append(sb, "CREATE_THREAD ");
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, ", ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
             case IR_OP_JOIN_THREAD:
             {
-                printf("JOIN_THREAD ");
-                ir_print_value(instruction->arg1);
+                string_builder_append(sb, "JOIN_THREAD ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
             case IR_OP_COMPARE_AND_SWAP:
             {
-                printf("COMPARE_AND_SWAP ");
-                ir_print_value(instruction->arg1);
-                printf(", ");
-                ir_print_value(instruction->arg2);
+                string_builder_append(sb, "COMPARE_AND_SWAP ");
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, ", ");
+                ir_print_value(instruction->arg2, sb);
                 break;
             }
 
@@ -3865,43 +3887,44 @@ namespace Zodiac
 
         }
 
-        printf("\n");
+        string_builder_append(sb, "\n");
     }
 
-    void ir_print_value(IR_Value* value)
+    void ir_print_value(IR_Value* value, String_Builder* sb)
     {
         assert(value);
+        assert(sb);
 
         switch (value->kind)
         {
             case IRV_TEMPORARY:
             {
-                printf("t(%" PRIu64 ")", value->temp.index);
+                string_builder_appendf(sb, "t(%" PRIu64 ")", value->temp.index);
                 break;
             }
 
             case IRV_BOOL_LITERAL:
             {
-                printf("lit(%s)", value->value.boolean ? "true" : "false");
+                string_builder_appendf(sb, "lit(%s)", value->value.boolean ? "true" : "false");
                 break;
             }
 
 			case IRV_NULL_LITERAL:
 			{
-				printf("lit(null)");
+				string_builder_append(sb, "lit(null)");
 				break;
 			}
 
             case IRV_STRING_LITERAL:
             {
-                ir_print_string_literal((const char*)value->value.string);
+                ir_print_string_literal((const char*)value->value.string, sb);
                 break;
             }
 
             case IRV_INT_LITERAL:
             {
-                printf("lit(%" PRId64 "):", value->value.s64);
-                ir_print_type(value->type);
+                string_builder_appendf(sb, "lit(%" PRId64 "):", value->value.s64);
+                ir_print_type(value->type, sb);
                 break;
             }
 
@@ -3909,52 +3932,52 @@ namespace Zodiac
             {
                 if (value->type == Builtin::type_double)
                 {
-                    printf("lit(%f):", value->value.r64);
+                    string_builder_appendf(sb, "lit(%f):", value->value.r64);
                 }
                 else if (value->type == Builtin::type_float)
                 {
-                    printf("lit(%f):", value->value.r32);
+                    string_builder_appendf(sb, "lit(%f):", value->value.r32);
                 }
                 else assert(false);
-                ir_print_type(value->type);
+                ir_print_type(value->type, sb);
                 break;
             }
 
             case IRV_CHAR_LITERAL:
             {
-                printf("lit('");
-                ir_print_character(value->value.u8);
-                printf("')");
+                string_builder_append(sb, "lit('");
+                ir_print_character(value->value.u8, sb);
+                string_builder_append(sb, "')");
                 break;
             }
 
             case IRV_ARGUMENT:
             {
-                printf("arg(%s)", value->argument.name);
+                string_builder_appendf(sb, "arg(%s)", value->argument.name);
                 break;
             }
 
             case IRV_FUNCTION:
             {
-                printf("func(%s)", value->function->name);
+                string_builder_appendf(sb, "func(%s)", value->function->name);
                 break;
             }
 
             case IRV_BLOCK:
             {
-                printf("block(%s)", value->block->name.data);
+                string_builder_appendf(sb, "block(%s)", value->block->name.data);
                 break;
             }
 
             case IRV_ALLOCL:
             {
-                printf("allocl(%s)", value->allocl.name);
+                string_builder_appendf(sb, "allocl(%s)", value->allocl.name);
                 break;
             }
 
             case IRV_GLOBAL:
             {
-                printf("global(%s)", value->global.name);
+                string_builder_appendf(sb, "global(%s)", value->global.name);
                 break;
             }
 
@@ -3962,133 +3985,46 @@ namespace Zodiac
         }
     }
 
-    void ir_print_string_literal(const char* string)
+    void ir_print_string_literal(const char* string, String_Builder* sb)
     {
         assert(string);
+        assert(sb);
 
-        printf("lit(\"");
+        string_builder_append(sb, "lit(\"");
 
         auto string_length = strlen(string);
 
         for (uint64_t i = 0; i < string_length; i++)
         {
-            ir_print_character(string[i]);
+            ir_print_character(string[i], sb);
         }
 
-        printf("\")");
+        string_builder_append(sb, "\")");
     }
 
-	void ir_print_type(AST_Type* type)
+	void ir_print_type(AST_Type* type, String_Builder* sb)
 	{
 		assert(type);
+        assert(sb);
 
-		switch (type->kind)
-		{
-			case AST_TYPE_POINTER:
-			{
-				printf("*");
-				ir_print_type(type->pointer.base);
-				break;
-			}
-
-			case AST_TYPE_FUNCTION:
-			{
-				printf("(");
-				for (uint64_t i = 0; i < BUF_LENGTH(type->function.arg_types); i++)
-				{
-					ir_print_type(type->function.arg_types[i]);
-					if (i + 1 < BUF_LENGTH(type->function.arg_types))
-						printf(", ");
-				}
-				printf(") -> ");
-
-				ir_print_type(type->function.return_type);
-				break;
-			}
-
-			case AST_TYPE_BASE:
-			{
-				bool sign = type->flags & AST_TYPE_FLAG_SIGNED;
-				if (type->flags & AST_TYPE_FLAG_INT)
-				{
-					printf("%c%" PRIu64, sign ? 's' : 'u', type->bit_size);
-				}
-                else if (type->flags & AST_TYPE_FLAG_VOID)
-                {
-                    printf("void");
-                }
-                else if (type->flags & AST_TYPE_FLAG_FLOAT)
-                {
-                    printf("r%" PRIu64, type->bit_size);
-                }
-				else assert(false);
-				break;
-			}
-
-            case AST_TYPE_ENUM:
-            {
-                bool sign = type->flags & AST_TYPE_FLAG_SIGNED;
-                printf("enum(%c%" PRIu64 ")", sign ? 's' : 'u', type->bit_size);
-                break;
-            }
-
-            case AST_TYPE_STRUCT:
-            case AST_TYPE_UNION:
-            {
-                if (type->name)
-                {
-                    if (type->kind == AST_TYPE_STRUCT)
-                    {
-                        printf("struct(%s)", type->name);
-                    }
-                    else if (type->kind == AST_TYPE_UNION)
-                    {
-                        printf("union(%s)", type->name);
-                    }
-                }
-                else
-                {
-                    printf("struct { ");
-                    for (uint64_t i = 0; i < BUF_LENGTH(type->aggregate_type.member_declarations); i++)
-                    {
-                        if (i > 0)
-                        {
-                            printf(", ");
-                        }
-
-                        AST_Declaration* member_decl = type->aggregate_type.member_declarations[i];
-                        assert(member_decl->kind == AST_DECL_MUTABLE);
-                        ir_print_type(member_decl->mutable_decl.type);
-                    }
-                    printf(" }");
-                }
-                break;
-            }
-
-            case AST_TYPE_STATIC_ARRAY:
-            {
-                printf("[%" PRIu64 "]", type->static_array.count);
-                ir_print_type(type->static_array.base);
-                break;
-            }
-
-			default: assert(false);
-		}
+        ast_type_to_string(type, sb);
 	}
 
-    void ir_print_character(char c)
+    void ir_print_character(char c, String_Builder* sb)
     {
+        assert(sb);
+
         switch (c)
         {
             case '\n':
             {
-                printf("\\n");
+                string_builder_append(sb, "\\n");
                 break;
             }
 
             default:
             {
-                printf("%c", c);
+                string_builder_appendf(sb, "%c", c);
                 break;
             }
         }

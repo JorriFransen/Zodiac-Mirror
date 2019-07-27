@@ -1720,25 +1720,36 @@ namespace Zodiac
     {
         assert(type);
 
-        const char* result = nullptr;
+        String_Builder sb;
+        string_builder_init(&sb, 128);
+
+        ast_type_to_string(type, &sb);
+
+        char* result = string_builder_to_string(&sb);
+
+        string_builder_free(&sb);
+
+        return result;
+    }
+
+    void ast_type_to_string(AST_Type* type, String_Builder* string_builder)
+    {
+        assert(type);
+        assert(string_builder);
 
         switch (type->kind)
         {
             case AST_TYPE_BASE:
             {
-                auto name_len = strlen(type->name);
-                result = (char*)mem_alloc(name_len + 1);
-                memcpy((char*)result, type->name, name_len);
-                ((char*)result)[name_len + 1] = '\0';
+                string_builder_append(string_builder, type->name);
                 break;
             }
 
             case AST_TYPE_POINTER:
             {
                 // TODO: Temp mem
-                const char* base_string = ast_type_to_string(type->pointer.base);
-                result = string_append("*", base_string);
-                mem_free(base_string);
+                ast_type_to_string(type->pointer.base, string_builder);
+                string_builder_append(string_builder, "*");
                 break;
             }
 
@@ -1746,7 +1757,8 @@ namespace Zodiac
             {
                 if (type->name)
                 {
-                    result = string_append(type->name, "(struct)");
+                    string_builder_append(string_builder, type->name);
+                    string_builder_append(string_builder, "(struct)");
                 }
                 else assert(false);
                 break;
@@ -1756,7 +1768,8 @@ namespace Zodiac
             {
                 if (type->name)
                 {
-                    result = string_append(type->name, "(union)");
+                    string_builder_append(string_builder, type->name);
+                    string_builder_append(string_builder, "(union)");
                 }
                 else assert(false);
                 break;
@@ -1766,7 +1779,8 @@ namespace Zodiac
             {
                 if (type->name)
                 {
-                    result = string_append(type->name, "(enum)");
+                    string_builder_append(string_builder, type->name);
+                    string_builder_append(string_builder, "(enum)");
                 }
                 else assert(false);
                 break;
@@ -1774,53 +1788,33 @@ namespace Zodiac
 
             case AST_TYPE_STATIC_ARRAY:
             {
-                char element_count_str[128];
-                auto sprf_res = sprintf(element_count_str, "%" PRIu64, type->static_array.count);
-                    assert(sprf_res);
-                auto s1 = string_append("[", element_count_str);
-                auto s2 = string_append(s1, "]");
-                auto base_type_str = ast_type_to_string(type->static_array.base);
-
-                result = string_append(s2, base_type_str);
-
-                mem_free(base_type_str);
-                mem_free(s2);
-                mem_free(s1);
+                string_builder_append(string_builder, "[");
+                string_builder_append(string_builder, type->static_array.count);
+                string_builder_append(string_builder, "]");
+                ast_type_to_string(type->static_array.base, string_builder);
                 break;
             }
 
             case AST_TYPE_FUNCTION:
             {
-                auto s1 = string_append("(", "");
+                string_builder_append(string_builder, "(");
                 for (uint64_t i = 0 ; i < BUF_LENGTH(type->function.arg_types); i++)
                 {
                     if (i > 0)
                     {
-                        auto s2 = string_append(s1, ", ");
-                        mem_free(s1);
-                        s1 = s2;
+                        string_builder_append(string_builder, ", ");
                     }
                     AST_Type* arg_type = type->function.arg_types[i];
-                    auto arg_str = ast_type_to_string(arg_type);
-                    auto s3 = string_append(s1, arg_str);
-                    mem_free(arg_str);
-                    mem_free(s1);
-                    s1 = s3;
+                    ast_type_to_string(arg_type, string_builder);
                 }
 
-                auto s4 = string_append(s1, ") -> ");
-                mem_free(s1);
-                auto return_type_str = ast_type_to_string(type->function.return_type);
-                result = string_append(s4, return_type_str);
-                mem_free(s4);
-                mem_free(return_type_str);
+                string_builder_append(string_builder, ") -> ");
+                ast_type_to_string(type->function.return_type, string_builder);
                 break;
             }
 
             default: assert(false);
         }
-
-        return  result;
     }
 
     bool is_cmp_op(AST_Binop_Kind binop)

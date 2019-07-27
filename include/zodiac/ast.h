@@ -2,6 +2,7 @@
 
 #include "zodiac.h"
 #include "file_pos.h"
+#include "string_builder.h"
 
 namespace Zodiac
 {
@@ -868,6 +869,7 @@ namespace Zodiac
     void ast_grow_type_hash(Context* context);
 
     const char* ast_type_to_string(AST_Type* type);
+    void ast_type_to_string(AST_Type* type, String_Builder* string_builder);
 
     bool is_cmp_op(AST_Binop_Kind binop);
 }
