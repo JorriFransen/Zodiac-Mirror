@@ -1524,6 +1524,7 @@ namespace Zodiac
                     assert(type);
                     expression->sizeof_expr.byte_size = type->bit_size / 8;
                     expression->type = Builtin::type_u64;
+                    expression->flags |= AST_EXPR_FLAG_CONST;
                 }
                 break;
             }
@@ -2348,6 +2349,28 @@ namespace Zodiac
                 mem_free(lhs_type_string);
                 mem_free(rhs_type_string);
                 return false;
+            }
+        }
+
+        if ((lhs->flags & AST_EXPR_FLAG_CONST) && (lhs->type->flags & AST_TYPE_FLAG_INT) &&
+            (rhs->flags & AST_EXPR_FLAG_CONST) && (rhs->type->flags & AST_TYPE_FLAG_INT))
+        {
+            assert(expression->flags & AST_EXPR_FLAG_CONST);
+            assert(expression->type);
+            assert(expression->type->flags & AST_TYPE_FLAG_INT);
+            if (expression->type->flags & AST_TYPE_FLAG_SIGNED)
+            {
+                int64_t value = const_interpret_int_expression(resolver->context, expression,
+                                                               expression->type, scope);
+                expression->kind = AST_EXPR_INTEGER_LITERAL;
+                expression->integer_literal.u64 = value;
+            }
+            else
+            {
+                uint64_t value = const_interpret_uint_expression(resolver->context, expression,
+                                                                 expression->type, scope);
+                expression->kind = AST_EXPR_INTEGER_LITERAL;
+                expression->integer_literal.u64 = value;
             }
         }
 

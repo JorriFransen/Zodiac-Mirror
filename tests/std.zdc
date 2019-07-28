@@ -1,6 +1,153 @@
 
 _c :: import c;
 
+is_power_of_two :: (x: u64) -> bool
+{
+    return (x & (x - 1)) == 0;
+}
+
+align_forward :: (ptr: *u64, align: u64) -> *u64
+{
+    p: *u64;
+    a: *u64;
+    modulo: *u64;
+
+    assert(is_power_of_two(align));
+
+    p = ptr;
+    a = (:*u64)align;
+    modulo = p & (a - 1);
+
+    if (modulo != 0)
+    {
+        p += a - modulo;
+    }
+
+    return p;
+}
+
+Arena :: struct
+{
+    buf             : *u8;
+    buf_length      : u64;
+    previous_offset : u64;
+    current_offset  : u64;
+}
+
+arena_init :: (arena: *Arena, buffer: *void, buffer_length: u64)
+{
+    arena.buf = (:u8)buffer;
+    arena.buf_length = buffer_length;
+    arena.previous_offset = 0;
+    arena.current_offset = 0;
+}
+
+arena_free :: (arena: *Arena) {}
+
+Temp_Arena_Memory :: struct
+{
+    arena           : *Arena;
+    previous_offset : u64;
+    current_offset  : u64;
+}
+
+temp_arena_memory_begin :: (arena: *Arena) -> Temp_Arena_Memory
+{
+    temp : Temp_Arena_Memory;
+    temp.arena = arena;
+    temp.previous_offset = arena.previous_offset;
+    temp.current_offset = arena.current_offset;
+    return temp;
+}
+
+temp_arena_memory_end :: (temp: Temp_Arena_Memory)
+{
+    temp.arena.previous_offset = temp.previous_offset;
+    temp.arena.current_offset = temp.current_offset;
+}
+
+arena_alloc_align :: (arena: *Arena, size: u64, align: u64) -> *void
+{
+    // Align
+    curr_ptr : *u64 = (:*u64)arena.buf + (:*u64)arena.current_offset;
+    offset : *u64 = align_forward(curr_ptr, align);
+    offset -= (:*u64)arena.buf;
+
+    if (offset + size <= arena.buf_length)
+    {
+        ptr : *void = (:*void)(*(arena.buf[(:u64)offset]));
+        arena.previous_offset = offset;
+        arena.current_offset = offset + size;
+
+        _c.memset(ptr, 0, size);
+        return ptr;
+    }
+
+    return null;
+}
+
+DEFAULT_ALIGNMENT :: 2 * sizeof(*void);
+
+arena_alloc :: (arena: *Arena, size: u64) -> *void
+{
+    return arena_alloc_align(arena, size, DEFAULT_ALIGNMENT);
+}
+
+arena_resize_align :: (arena: *Arena, old_memory: *void, old_size: u64, new_size: u64, align: u64) -> *void
+{
+    old_mem: *u8 = (:*u8)old_memory;
+
+    assert(is_power_of_two(align));
+
+    if (old_mem == null || old_size == 0)
+    {
+        return arena_alloc_align(arena, new_size, align);
+    }
+    else if (arena.buf <= old_mem && old_mem < arena.buf + arena.buf_length)
+    {
+        if (arena.buf + arena.previous_offset == old_mem)
+        {
+            arena.current_offset = arena.previous_offset + new_size;
+            if (new_size > old_size)
+            {
+                _c.memset(*(arena.buf[arena.current_offset]), 0, new_size - old_size);
+            }
+            return old_memory;
+        }
+        else
+        {
+            new_memory : *void = arena_alloc_align(arena, new_size, align);
+            copy_size := old_size;
+            if (old_size < new_size)
+            {
+                copy_size = old_size;
+            }
+            else
+            {
+                copy_size = new_size;
+            }
+            _c.memmove(new_memory, old_memory, copy_size);
+            return new_memory;
+        }
+    }
+    else
+    {
+        assert(false); // Memory out of arena bounds
+        return null;
+    }
+}
+
+arena_resize :: (arena: *Arena, old_memory: *void, old_size: u64, new_size: u64) -> *void
+{
+    return arena_resize_align(arena, old_memory, old_size, new_size, DEFAULT_ALIGNMENT);
+}
+
+arena_free_all :: (arena: *Arena)
+{
+    arena.current_offset = 0;
+    arena.current_offset = 0;
+}
+
 String :: struct
 {
     data   : *u8;

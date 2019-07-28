@@ -111,6 +111,87 @@ namespace Zodiac
         assert(false);
     }
 
+    uint64_t const_interpret_uint_expression(Context* context, AST_Expression* expression,
+                                             AST_Type* type, AST_Scope* scope)
+    {
+        assert(context);
+        assert(expression);
+        // assert(expression->type);
+        // assert(expression->type->flags & AST_TYPE_FLAG_INT);
+        assert(type);
+        assert(type->flags & AST_TYPE_FLAG_INT);
+        // assert(type->flags & AST_TYPE_FLAG_SIGNED);
+        assert(scope);
+
+        switch (expression->kind)
+        {
+            case AST_EXPR_IDENTIFIER:
+            {
+                AST_Declaration* decl = find_declaration(context, scope, expression->identifier);
+                return const_uint_decl_value(context, decl, scope);
+                break;
+            }
+
+            case AST_EXPR_INTEGER_LITERAL:
+            {
+                return const_interpret_uint_literal_expression(context, expression, type);
+            }
+
+            case AST_EXPR_BINARY:
+            {
+                switch (expression->binary.op)
+                {
+                    case AST_BINOP_MUL:
+                    {
+                        uint64_t lhs = const_interpret_uint_expression(context, expression->binary.lhs,
+                                                                       expression->binary.lhs->type,
+                                                                       scope);
+                        uint64_t rhs = const_interpret_uint_expression(context, expression->binary.rhs,
+                                                                       expression->binary.rhs->type,
+                                                                       scope);
+                        return lhs * rhs;
+                        break;
+                    }
+
+                    default: assert(false);
+                }
+                break;
+            }
+
+            case AST_EXPR_SIZEOF:
+            {
+                return expression->sizeof_expr.byte_size;
+            }
+
+            default: assert(false);
+        }
+
+        assert(false);
+    }
+
+    uint64_t const_interpret_uint_literal_expression(Context* context, AST_Expression* expression,
+                                                   AST_Type* type)
+    {
+        assert(context);
+        assert(expression);
+        assert(expression->type);
+        assert(expression->type->flags & AST_TYPE_FLAG_INT);
+        assert(type);
+        assert(type->flags & AST_TYPE_FLAG_INT);
+        // assert(type->flags & AST_TYPE_FLAG_SIGNED);
+
+        if (type == Builtin::type_u64)
+        {
+            return (uint64_t)expression->integer_literal.u64;
+        }
+        else if (type == Builtin::type_u32)
+        {
+            return (uint32_t)expression->integer_literal.u64;
+        }
+
+        assert(false);
+    }
+
     int64_t const_interpret_s64_expression(Context* context, AST_Expression* expression,
                                            AST_Scope* scope)
     {
@@ -192,6 +273,30 @@ namespace Zodiac
                 auto init_expr = declaration->constant_var.init_expression;
                 return const_interpret_int_expression(context, init_expr, init_expr->type,
                                                       scope);
+                break;
+            }
+
+            default: assert(false);
+        }
+
+		assert(false);
+		return false;
+    }
+
+    uint64_t const_uint_decl_value(Context* context, AST_Declaration* declaration,
+                                   AST_Scope* scope)
+    {
+        assert(context);
+        assert(declaration);
+        assert(scope);
+
+        switch (declaration->kind)
+        {
+            case AST_DECL_CONSTANT_VAR:
+            {
+                auto init_expr = declaration->constant_var.init_expression;
+                return const_interpret_uint_expression(context, init_expr, init_expr->type,
+                                                       scope);
                 break;
             }
 

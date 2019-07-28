@@ -1116,14 +1116,30 @@ namespace Zodiac
     {
         assert(parser);
 
+        AST_Expression* lhs = parse_and_expression(parser, scope);
+
+        while (match_token(parser, TOK_OR))
+        {
+            AST_Expression* rhs = parse_and_expression(parser, scope);
+            auto op = AST_BINOP_OR;
+            lhs = ast_binary_expression_new(parser->context, lhs->file_pos, lhs, op, rhs);
+        }
+
+        return lhs;
+    }
+
+    static AST_Expression* parse_and_expression(Parser* parser, AST_Scope* scope)
+    {
+        assert(parser);
+
         AST_Expression* lhs = parse_cmp_expression(parser, scope);
 
-        // while (match_token(parser, TOK_OR))
-        // {
-        //     AST_Expression* rhs = parse_cmp_expression(parser);
-        //     auto op = AST_BINOP_OR;
-        //     lhs = ast_new_binary_expression(parser->context, lhs, op, rhs);
-        // }
+        while (match_token(parser, TOK_AND))
+        {
+            AST_Expression* rhs = parse_cmp_expression(parser, scope);
+            auto op = AST_BINOP_AND;
+            lhs = ast_binary_expression_new(parser->context, lhs->file_pos, lhs, op, rhs);
+        }
 
         return lhs;
     }

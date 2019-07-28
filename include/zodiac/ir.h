@@ -100,6 +100,8 @@ namespace Zodiac
         IR_OP_NEQ,
         IR_OP_AND_AND,
         IR_OP_OR_OR,
+        IR_OP_AND,
+        IR_OP_OR,
         IR_OP_NOT,
 
         IR_OP_PUSH_CALL_ARG,
@@ -346,6 +348,10 @@ namespace Zodiac
                                       File_Pos origin);
     IR_Value* ir_builder_emit_or_or(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
                                     File_Pos origin);
+    IR_Value* ir_builder_emit_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                  File_Pos origin);
+    IR_Value* ir_builder_emit_or(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                  File_Pos origin);
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val, File_Pos origin);
     void ir_builder_emit_defer_statements_before_return(IR_Builder* ir_builder, AST_Scope* scope,
                                                         File_Pos return_file_pos);

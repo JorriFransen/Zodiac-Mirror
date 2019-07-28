@@ -875,6 +875,14 @@ namespace Zodiac
                             return ir_builder_emit_or_or(ir_builder, lhs_value, rhs_value,
                                                          expression->file_pos);
 
+                        case AST_BINOP_AND:
+                            return ir_builder_emit_and(ir_builder, lhs_value, rhs_value,
+                                                       expression->file_pos);
+
+                        case AST_BINOP_OR:
+                            return ir_builder_emit_or(ir_builder, lhs_value, rhs_value,
+                                                      expression->file_pos);
+
                         default: assert(false);
                     }
                 }
@@ -2320,7 +2328,9 @@ namespace Zodiac
 
         if (lhs->type == rhs->type ||
             (lhs->type->kind == AST_TYPE_ENUM &&
-             (lhs->type->aggregate_type.base_type == rhs->type)))
+             (lhs->type->aggregate_type.base_type == rhs->type)) ||
+            (lhs->type->kind == AST_TYPE_POINTER && rhs->type == Builtin::type_pointer_to_void) ||
+            (rhs->type->kind == AST_TYPE_POINTER && lhs->type == Builtin::type_pointer_to_void))
         {
             IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_bool);
             IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_EQ, lhs, rhs,
@@ -2390,6 +2400,38 @@ namespace Zodiac
         IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_OR_OR, lhs, rhs,
                                                  result);
 
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result;
+    }
+
+    IR_Value* ir_builder_emit_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                  File_Pos origin)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        assert(lhs->type == rhs->type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, lhs->type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_AND, lhs, rhs, result);
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result;
+    }
+
+    IR_Value* ir_builder_emit_or(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
+                                 File_Pos origin)
+    {
+        assert(ir_builder);
+        assert(lhs);
+        assert(rhs);
+
+        assert(lhs->type == rhs->type);
+
+        IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, lhs->type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_OR, lhs, rhs, result);
         ir_builder_emit_instruction(ir_builder, iri);
 
         return result;
@@ -3643,6 +3685,22 @@ namespace Zodiac
             {
                 ir_print_value(instruction->arg1, sb);
                 string_builder_append(sb, " || ");
+                ir_print_value(instruction->arg2, sb);
+                break;
+            }
+
+            case IR_OP_AND:
+            {
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " & ");
+                ir_print_value(instruction->arg2, sb);
+                break;
+            }
+
+            case IR_OP_OR:
+            {
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, " | ");
                 ir_print_value(instruction->arg2, sb);
                 break;
             }

@@ -82,6 +82,8 @@ namespace Zodiac
 
         AST_BINOP_AND_AND,
         AST_BINOP_OR_OR,
+        AST_BINOP_AND,
+        AST_BINOP_OR,
     };
 
     enum AST_Unop_Kind

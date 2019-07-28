@@ -99,6 +99,26 @@ void* _arena_alloc_from_block(Arena_Block* block, size_t size);
 #define arena_alloc_array(arena, type, length) ((type*)_arena_alloc((arena), \
                                                   sizeof(type) * (length)))
 
+// Memory pool
+struct Pool_Chunk
+{
+    Pool_Chunk* next_chunk = nullptr;
+    uint8_t* data = nullptr;
+};
+
+struct Pool
+{
+    uint64_t chunk_size = 0;
+    Pool_Chunk* first_chunk = nullptr;
+    Pool_Chunk* used_chunks = nullptr;
+    Pool_Chunk* free_chunks = nullptr;
+};
+
+void pool_init(Pool* pool, uint64_t chunk_size, uint64_t chunk_count);
+void pool_free_pool(Pool* pool);
+void* pool_alloc(Pool* pool);
+void pool_free(Pool* pool, void* ptr);
+
 // Stack
 template <typename T>
 struct Stack

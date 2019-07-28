@@ -129,6 +129,96 @@ void* _arena_alloc_from_block(Arena_Block* block, size_t size)
     return result;
 }
 
+void pool_init(Pool* pool, uint64_t chunk_size, uint64_t chunk_count)
+{
+    assert(pool);
+    assert(chunk_size);
+    assert(chunk_count);
+
+    chunk_size += sizeof(Pool_Chunk*);
+    pool->chunk_size = chunk_size;
+    pool->used_chunks = nullptr;
+
+    pool->first_chunk = (Pool_Chunk*)mem_alloc(chunk_size * chunk_count);
+    pool->free_chunks = pool->first_chunk;
+
+    Pool_Chunk* chunk = pool->first_chunk;
+
+    for (uint64_t i = 0; i < chunk_count; i++)
+    {
+        if (i < (chunk_count - 1))
+        {
+            Pool_Chunk* next_chunk = (Pool_Chunk*)((uint8_t*)chunk + chunk_size);
+            chunk->next_chunk = next_chunk;
+        }
+        else
+        {
+            chunk->next_chunk = nullptr;
+        }
+
+        chunk->data = (uint8_t*)chunk + sizeof(Pool_Chunk*);
+    }
+}
+
+void pool_free_pool(Pool* pool)
+{
+    assert(pool);
+    assert(pool->first_chunk);
+
+    mem_free(pool->first_chunk);
+    pool->first_chunk = nullptr;
+    pool->used_chunks = nullptr;
+    pool->free_chunks = nullptr;
+    pool->chunk_size = 0;
+}
+
+void* pool_alloc(Pool* pool)
+{
+    assert(pool);
+    assert(pool->free_chunks);
+
+    Pool_Chunk* chunk = pool->free_chunks;
+    pool->free_chunks = chunk->next_chunk;
+    chunk->next_chunk = pool->used_chunks;
+    pool->used_chunks = chunk;
+
+    return (void*)chunk->data;
+}
+
+void pool_free(Pool* pool, void* ptr)
+{
+    assert(pool);
+    assert(pool->used_chunks);
+
+    Pool_Chunk* chunk = pool->used_chunks;
+    Pool_Chunk* previous = nullptr;
+    while (chunk)
+    {
+        Pool_Chunk* next = chunk->next_chunk;
+
+        if (chunk->data == ptr)
+        {
+            if (chunk == pool->used_chunks)
+            {
+                pool->used_chunks = next;
+            }
+            else
+            {
+                previous->next_chunk = chunk->next_chunk;
+            }
+
+            chunk->next_chunk = pool->free_chunks;
+            pool->free_chunks = chunk;
+            return;
+        }
+
+        previous = chunk;
+        chunk = next;
+    }
+
+    assert(false); // Chunk not found!?
+}
+
 bool path_exists(const char* path)
 {
     if (file_exists(path))
