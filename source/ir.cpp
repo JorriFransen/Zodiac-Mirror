@@ -817,7 +817,14 @@ namespace Zodiac
                         {
                             assert(rhs_value->type->kind == AST_TYPE_POINTER);
                             assert(lhs_value->type->flags & AST_TYPE_FLAG_INT);
-                            assert(false);
+
+                            auto size_lit =
+                                ir_integer_literal(ir_builder, lhs_value->type,
+                                                   rhs_value->type->pointer.base->bit_size / 8);
+                            lhs_value = ir_builder_emit_mul(ir_builder, lhs_value, size_lit,
+                                                            expression->file_pos);
+                            lhs_value = ir_builder_emit_cast(ir_builder, lhs_value, rhs_value->type,
+                                                             expression->file_pos);
                         }
                     }
 

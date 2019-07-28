@@ -148,6 +148,157 @@ arena_free_all :: (arena: *Arena)
     arena.current_offset = 0;
 }
 
+Stack_Allocator :: struct
+{
+    buf             : *u8;
+    buf_length      : u64;
+    previous_offset : u64;
+    current_offset  : u64;
+}
+
+Stack_Allocation_Header :: struct
+{
+    previous_offset : u64;
+    padding         : u64;
+}
+
+stack_allocator_init :: (stack: *Stack_Allocator, buffer: *void, buffer_length: u64)
+{
+    stack.buf = (:*u8)buffer;
+    stack.buf_length = buffer_length;
+    stack.current_offset = 0;
+}
+
+calc_padding_with_header :: (ptr: *u64, alignment: u64, header_size: u64) -> u64
+{
+    p : *u64;
+    a : *u64;
+    modulo : *u64;
+    padding : *u64;
+    needed_space : *u64;
+
+    assert(is_power_of_two(alignment));
+
+    p = ptr;
+    a = (:*u64)alignment;
+    modulo = p & (a - 1);
+
+    padding = (:*u64)0;
+    needed_space = (:*u64)0;
+
+    if (modulo != 0)
+    {
+        padding = a - modulo;
+    }
+
+    needed_space = (:*u64)header_size;
+
+    if (padding < needed_space)
+    {
+        needed_space -= padding;
+
+        if ((needed_space & (a - 1)) != 0)
+        {
+            padding += a * (1 + (needed_space / a));
+        }
+        else
+        {
+            padding += a * (needed_space / a);
+        }
+    }
+
+    return (:u64)padding;
+}
+
+stack_alloc_align :: (stack: *Stack_Allocator, size: u64, alignment: u64) -> *void
+{
+    curr_addr: *u64;
+    next_addr: *u64;
+    padding: u64;
+    header: *Stack_Allocation_Header;
+
+    assert(is_power_of_two(alignment));
+
+    if (alignment > 128)
+    {
+        alignment = 128;
+    }
+
+    curr_addr = (:*u64)stack.buf + (:*u64)stack.current_offset;
+    padding = calc_padding_with_header(curr_addr, alignment, sizeof(Stack_Allocation_Header));
+    if (stack.current_offset + padding + size > stack.buf_length)
+    {
+        assert(false);
+        return null;
+    }
+
+    stack.previous_offset = stack.current_offset;
+    stack.current_offset += padding;
+
+    next_addr = curr_addr + (:*u64)padding;
+    header = (:*Stack_Allocation_Header)(next_addr - sizeof(Stack_Allocation_Header));
+    header.padding = padding;
+    header.previous_offset = stack.previous_offset;
+
+    stack.current_offset += size;
+
+    return _c.memset((:*void)next_addr, 0, size);
+}
+
+stack_alloc :: (stack: *Stack_Allocator, size: u64) -> *void
+{
+    return stack_alloc_align(stack, size, DEFAULT_ALIGNMENT);
+}
+
+stack_free :: (stack: *Stack_Allocator, ptr: *void)
+{
+    if (ptr != null)
+    {
+        start: *u64;
+        end: *u64;
+        curr_addr: *u64;
+        header: *Stack_Allocation_Header;
+        prev_offset: u64;
+
+        start = (:*u64)stack.buf;
+        end = start + (:*u64)stack.buf_length;
+        curr_addr = (:*u64)ptr;
+
+        if (!(start <= curr_addr && curr_addr < end))
+        {
+            assert(false); // Pointer out of bounds of stack allocator
+            return;
+        }
+
+        if (curr_addr >= start + (:*u64)stack.current_offset)
+        {
+            // Allow double free
+            return;
+        }
+
+        header = (:*Stack_Allocation_Header)(curr_addr - sizeof(Stack_Allocation_Header));
+        prev_offset = (:u64)(curr_addr - (:*u64)header.padding - start);
+
+        stack.current_offset = prev_offset;
+    }
+}
+
+stack_resize_align :: (stack: *Stack_Allocator, ptr: *void, old_size: u64, new_size: u64,
+                       alignment: u64)
+{
+    assert(false); // Not implemented
+}
+
+stack_resize :: (stack: *Stack_Allocator, ptr: *void, old_size: u64, new_size: u64) -> *void
+{
+    return stack_resize_align(stack, ptr, old_size, new_size, DEFAULT_ALIGNMENT);
+}
+
+stack_free_all :: (stack: *Stack_Allocator)
+{
+    stack.current_offset = 0;
+}
+
 String :: struct
 {
     data   : *u8;
