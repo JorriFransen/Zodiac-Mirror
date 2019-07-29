@@ -50,11 +50,11 @@ main :: ()
             break;
         }
 
-        if (i % 1000 == 0)
-        {
-            std.print("\t1000 threads created for pool 1");
-            _c.printf("\t\tglobal_counter: %lu\n", global_counter);
-        }
+        // if (i % 1000 == 0)
+        // {
+            // std.print("\t1000 threads created for pool 1");
+            // _c.printf("\t\tglobal_counter: %lu\n", global_counter);
+        // }
 
     }
 

@@ -26,9 +26,15 @@ static bool _create_thread(LPTHREAD_START_ROUTINE func, void* user_data, Thread_
 	return false;
 }
 
-static bool _join_thread(Thread_Handle handle)
+static bool _join_thread(Thread_Handle handle, void** ret_val)
 {
 	WaitForSingleObject(handle, INFINITE);
+
+	if (!GetExitCodeThread(handle, (LPDWORD)ret_val))
+	{
+		return false;
+	}
+
 	return CloseHandle(handle);
 }
 
@@ -39,7 +45,7 @@ static bool _compare_and_swap(uint64_t* pointer, uint64_t old_value, uint64_t ne
 }
 
 #define CREATE_THREAD(func, user_data, handle) _create_thread((LPTHREAD_START_ROUTINE)func, user_data, handle);
-#define JOIN_THREAD(handle) _join_thread(handle)
+#define JOIN_THREAD(handle, ret_val) _join_thread(handle, ret_val)
 #define COMPARE_AND_SWAP(pointer, old_value, new_value) \
 	_compare_and_swap(pointer, old_value, new_value)
 
