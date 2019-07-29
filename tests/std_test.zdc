@@ -6,6 +6,8 @@ main :: ()
 {
     // test_stringabc : String = "test string";
 
+    printf("test\n");
+
     _c.printf("DEFAULT_ALIGNMENT: %d\n", std.DEFAULT_ALIGNMENT);
 
     name := "Jorri Fransen";

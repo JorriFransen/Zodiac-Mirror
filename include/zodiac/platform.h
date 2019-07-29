@@ -57,13 +57,15 @@ static const char* _get_environment_variable(const char* name)
 
 typedef pthread_t Thread_Handle;
 
-static Thread_Handle _create_thread(_Thread_Routine func, void* user_data)
+static bool _create_thread(_Thread_Routine func, void* user_data, Thread_Handle* handle)
 {
-    Thread_Handle handle;
-    auto result = pthread_create(&handle, nullptr, func, user_data);
-    assert(result == 0);
-    assert(handle != 0);
-    return handle;
+    auto result = pthread_create(handle, nullptr, func, user_data);
+    if (result == 0)
+    {
+        assert(*handle != 0);
+        return true;
+    }
+    return false;
 }
 
 static bool _join_thread(Thread_Handle handle)
@@ -72,7 +74,7 @@ static bool _join_thread(Thread_Handle handle)
     return result == 0;
 }
 
-#define CREATE_THREAD(func, user_data) _create_thread(func, user_data)
+#define CREATE_THREAD(func, user_data, handle) _create_thread(func, user_data, handle)
 #define JOIN_THREAD(handle) _join_thread(handle)
 #define COMPARE_AND_SWAP(pointer, old_value, new_value) \
 	__sync_bool_compare_and_swap(pointer, old_value, new_value)

@@ -1833,9 +1833,21 @@ namespace Zodiac
                 new_thread->parent_ir_runner = runner;
                 runner->threads = new_thread;
 
-				auto result = CREATE_THREAD(&ir_runner_thread_entry, new_thread);
-				assert(result);
-				new_thread->handle = result;
+				// auto result = CREATE_THREAD(&ir_runner_thread_entry, new_thread);
+				// assert(result);
+				// new_thread->handle = result;
+
+                Thread_Handle handle;
+                bool result = CREATE_THREAD(&ir_runner_thread_entry, new_thread, &handle);
+                if (result)
+                {
+                    assert(handle);
+                    new_thread->handle = handle;
+                }
+                else
+                {
+                    new_thread->handle = 0;
+                }
 
                 break;
             }

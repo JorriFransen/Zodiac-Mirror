@@ -15,6 +15,8 @@ global_counter_2_mutex : Mutex;
 
 main :: ()
 {
+    open_std_handles();
+
     _main();
 
     std.print("\nthread test");
@@ -22,7 +24,7 @@ main :: ()
 
     adders : std.Array(Thread);
 
-    adder_count := 1000;
+    adder_count := 10000;
     amount_per_adder := 50;
 
     for (i := 0; i < adder_count; i++)
@@ -36,7 +38,18 @@ main :: ()
         {
             at = create_thread(*add_func2, amount_per_adder);
         }
-        array_add(*adders, at);
+
+        if (at.handle)
+        {
+            array_add(*adders, at);
+        }
+        else
+        {
+            fprintf(stderr, "Thread creation failed!\n");
+            adder_count = i;
+            break;
+        }
+
     }
 
 
@@ -63,7 +76,17 @@ main :: ()
         {
             at = create_thread(*add_func_mut2, amount_per_adder);
         }
-        array_add(*adders, at);
+
+        if (at.handle)
+        {
+            array_add(*adders, at);
+        }
+        else
+        {
+            fprintf(stderr, "Thread creation failed\n");
+            adder_count = i;
+            break;
+        }
     }
 
 
