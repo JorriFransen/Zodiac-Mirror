@@ -2358,17 +2358,25 @@ namespace Zodiac
             assert(expression->flags & AST_EXPR_FLAG_CONST);
             assert(expression->type);
             assert(expression->type->flags & AST_TYPE_FLAG_INT);
+            uint64_t value = 0;
             if (expression->type->flags & AST_TYPE_FLAG_SIGNED)
             {
-                int64_t value = const_interpret_int_expression(resolver->context, expression,
+                value = const_interpret_int_expression(resolver->context, expression,
                                                                expression->type, scope);
-                expression->kind = AST_EXPR_INTEGER_LITERAL;
-                expression->integer_literal.u64 = value;
             }
             else
             {
-                uint64_t value = const_interpret_uint_expression(resolver->context, expression,
+                value = const_interpret_uint_expression(resolver->context, expression,
                                                                  expression->type, scope);
+            }
+
+            if (expression->type == Builtin::type_bool)
+            {
+                expression->kind = AST_EXPR_BOOL_LITERAL;
+                expression->bool_literal.boolean = value;
+            }
+            else
+            {
                 expression->kind = AST_EXPR_INTEGER_LITERAL;
                 expression->integer_literal.u64 = value;
             }

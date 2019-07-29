@@ -82,6 +82,26 @@ namespace Zodiac
                 return const_interpret_int_literal_expression(context, expression, type);
             }
 
+            case AST_EXPR_BINARY:
+            {
+                uint64_t lhs = const_interpret_int_expression(context, expression->binary.lhs,
+                                                               expression->binary.lhs->type,
+                                                               scope);
+                uint64_t rhs = const_interpret_int_expression(context, expression->binary.rhs,
+                                                               expression->binary.rhs->type,
+                                                               scope);
+
+                switch (expression->binary.op)
+                {
+                    case AST_BINOP_ADD: return lhs + rhs;
+                    case AST_BINOP_MUL: return lhs * rhs;
+                    case AST_BINOP_EQ: return lhs == rhs;
+
+                    default: assert(false);
+                }
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -139,17 +159,24 @@ namespace Zodiac
 
             case AST_EXPR_BINARY:
             {
+                uint64_t lhs = const_interpret_uint_expression(context, expression->binary.lhs,
+                                                               expression->binary.lhs->type,
+                                                               scope);
+                uint64_t rhs = const_interpret_uint_expression(context, expression->binary.rhs,
+                                                               expression->binary.rhs->type,
+                                                               scope);
+
                 switch (expression->binary.op)
                 {
                     case AST_BINOP_MUL:
                     {
-                        uint64_t lhs = const_interpret_uint_expression(context, expression->binary.lhs,
-                                                                       expression->binary.lhs->type,
-                                                                       scope);
-                        uint64_t rhs = const_interpret_uint_expression(context, expression->binary.rhs,
-                                                                       expression->binary.rhs->type,
-                                                                       scope);
                         return lhs * rhs;
+                        break;
+                    }
+
+                    case AST_BINOP_EQ:
+                    {
+                        return lhs == rhs;
                         break;
                     }
 
@@ -161,6 +188,13 @@ namespace Zodiac
             case AST_EXPR_SIZEOF:
             {
                 return expression->sizeof_expr.byte_size;
+            }
+
+            case AST_EXPR_DOT:
+            {
+                AST_Declaration* decl = expression->dot.declaration;
+                return const_uint_decl_value(context, decl, scope);
+                break;
             }
 
             default: assert(false);
@@ -180,7 +214,8 @@ namespace Zodiac
         assert(type->flags & AST_TYPE_FLAG_INT);
         // assert(type->flags & AST_TYPE_FLAG_SIGNED);
 
-        if (type == Builtin::type_u64)
+        if (type == Builtin::type_u64 ||
+            type == Builtin::type_int)
         {
             return (uint64_t)expression->integer_literal.u64;
         }
