@@ -1694,36 +1694,45 @@ namespace Zodiac
         auto ft = current_token(parser);
         consume_token(parser);
 
+		auto result = AST_OVERLOAD_OP_INVALID;
+
         switch (ft.kind)
         {
             case TOK_LBRACK:
             {
                 expect_token(parser, TOK_RBRACK);
-                return AST_OVERLOAD_OP_INDEX;
+                result = AST_OVERLOAD_OP_INDEX;
+				break;
             }
 
             case TOK_PLUS:
             {
-                return AST_OVERLOAD_OP_PLUS;
+                result = AST_OVERLOAD_OP_PLUS;
+				break;
             }
 
             case TOK_MINUS:
             {
-                return AST_OVERLOAD_OP_MINUS;
+                result = AST_OVERLOAD_OP_MINUS;
+				break;
             }
 
             case TOK_MUL:
             {
-                return AST_OVERLOAD_OP_MUL;
+                result = AST_OVERLOAD_OP_MUL;
+				break;
             }
 
             case TOK_DIV:
             {
-                return AST_OVERLOAD_OP_DIV;
+                result = AST_OVERLOAD_OP_DIV;
+				break;
             }
 
             default: assert(false);
         }
+
+		return result;
     }
 
     static bool is_add_op(Parser* parser)

@@ -2636,6 +2636,8 @@ namespace Zodiac
             default: assert(false);
         }
 
+		assert(false);
+		return nullptr;
     }
 
     IR_Value* ir_builder_emit_subscript(IR_Builder* ir_builder, IR_Value* base_value,
@@ -3091,6 +3093,9 @@ namespace Zodiac
         {
             assert(false);
         }
+
+		assert(false);
+		return nullptr;
     }
 
     IR_Value* ir_builder_emit_cast(IR_Builder* ir_builder, IR_Value* value, AST_Type* type,

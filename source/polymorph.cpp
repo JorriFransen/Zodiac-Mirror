@@ -444,6 +444,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return nullptr;
    }
 
     AST_Statement* copy_statement(Context* context, AST_Statement* statement,
@@ -521,6 +524,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return false;
     }
 
     AST_Expression* copy_expression(Context* context, AST_Expression* expression)
@@ -614,8 +620,8 @@ namespace Zodiac
             case AST_EXPR_FLOAT_LITERAL:
             {
                 return ast_float_literal_expression_new(context, expression->file_pos,
-                                                        expression->float_literal.r32,
-                                                        expression->float_literal.r64);
+                                                        expression->float_literal.r64,
+                                                        expression->float_literal.r32);
             }
 
             case AST_EXPR_UNARY:
@@ -628,6 +634,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return nullptr;
     }
 
     AST_Type_Spec* copy_type_spec(Context* context, AST_Type_Spec* type_spec)
@@ -660,6 +669,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return nullptr;
     }
 
     AST_Identifier* copy_identifier(Context* context, AST_Identifier* identifier)
@@ -780,6 +792,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return false;
     }
 
     bool poly_type_specs_match(AST_Type_Spec* ts_a, AST_Type_Spec* ts_b)
@@ -816,6 +831,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return false;
     }
 
     void replace_poly_type_specs(AST_Declaration* poly_decl_instance,

@@ -922,7 +922,7 @@ namespace Zodiac
                 lexer_report_errors(&lexer);
 
                 // We might want to continue here, to try and parse what we have?
-                return -1;
+                return false;
             }
 
             Parser parser;
@@ -943,7 +943,7 @@ namespace Zodiac
                     parser_report_errors(&parser);
 
                     // Again, do we want to continue here?
-                    return -1;
+                    return false;
                 }
 
                 resolver->resolving_auto_gen = true;
@@ -1336,7 +1336,7 @@ namespace Zodiac
                 lexer_report_errors(&lexer);
 
                 // We might want to continue here, to try and parse what we have?
-                return -1;
+                return false;
             }
 
             Parser parser;
@@ -1354,7 +1354,7 @@ namespace Zodiac
                 parser_report_errors(&parser);
 
                 // Again, do we want to continue here?
-                return -1;
+                return false;
             }
 
             resolver->resolving_auto_gen = true;
@@ -2571,7 +2571,7 @@ namespace Zodiac
                     {
                         AST_Declaration* struct_member = struct_members[i];
                         assert(struct_member->kind == AST_DECL_MUTABLE);
-                        assert(struct_member->location = AST_DECL_LOC_AGGREGATE_MEMBER);
+                        assert(struct_member->location == AST_DECL_LOC_AGGREGATE_MEMBER);
                         assert(struct_member->mutable_decl.type);
 
                         if (!struct_member->identifier)
@@ -3018,6 +3018,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return nullptr;
     }
 
     AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module,
@@ -3594,6 +3597,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return false;
     }
 
     void add_defer_statement(AST_Scope* scope, AST_Statement* statement)

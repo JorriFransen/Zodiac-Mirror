@@ -2061,7 +2061,7 @@ namespace Zodiac
         IR_Function* ir_func = stack_top(ir_runner->call_stack)->function;
         const char* function_name = _get_function_name(ir_func);
 
-        fprintf(stderr, "\nAssertion failed in function: %s\n\t(%s:%lu:%lu)\nStack Trace:\n",
+        fprintf(stderr, "\nAssertion failed in function: %s\n\t(%s:%" PRIu64 ":%" PRIu64 ")\nStack Trace:\n",
                 function_name, origin.file_name, origin.line, origin.line_relative_char_pos);
 
         for (uint64_t i = 0; i < stack_count(ir_runner->call_stack); i++)
@@ -2070,7 +2070,7 @@ namespace Zodiac
             IR_Function* ir_func = frame->function;
             const char* function_name = _get_function_name(ir_func);
 
-            fprintf(stderr, "  %s (%s:%lu:%lu)\n", function_name,
+            fprintf(stderr, "  %s (%s:%" PRIu64 ":%" PRIu64 ")\n", function_name,
                     ir_func->file_pos.file_name, ir_func->file_pos.line,
                     ir_func->file_pos.line_relative_char_pos);
 
@@ -2079,7 +2079,7 @@ namespace Zodiac
                 File_Pos call_site = frame->call_site;
                 IR_Function* ir_func_from = stack_peek(ir_runner->call_stack, i + 1)->function;
                 const char* from_name = _get_function_name(ir_func_from);
-                fprintf(stderr, "   From: %s (%s:%lu:%lu)\n", from_name, call_site.file_name,
+                fprintf(stderr, "   From: %s (%s:%" PRIu64 ":%" PRIu64 ")\n", from_name, call_site.file_name,
                         call_site.line, call_site.line_relative_char_pos);
             }
         }

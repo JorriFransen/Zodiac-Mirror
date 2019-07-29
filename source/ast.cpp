@@ -1159,6 +1159,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return nullptr;
     }
 
     AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
@@ -1480,7 +1483,7 @@ namespace Zodiac
                 if (ex_type->kind == AST_TYPE_FUNCTION)
                 {
                     bool ret_match = ex_type->function.return_type == return_type;
-                    bool var_match = (ex_type->flags & AST_TYPE_FLAG_FUNC_VARARG) ==
+                    bool var_match = (bool)((ex_type->flags & AST_TYPE_FLAG_FUNC_VARARG)) ==
                                      is_vararg;
                     bool ac_match = BUF_LENGTH(ex_type->function.arg_types) ==
                         BUF_LENGTH(arg_types);

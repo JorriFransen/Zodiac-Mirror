@@ -13,6 +13,19 @@ typedef void *(*_Thread_Routine)(void *);
 
 typedef HANDLE Thread_Handle;
 
+static bool _create_thread(LPTHREAD_START_ROUTINE func, void* user_data, Thread_Handle* handle)
+{
+	Thread_Handle new_handle = CreateThread(nullptr, 0, func, user_data, 0, nullptr);
+
+	if (new_handle)
+	{
+		*handle = new_handle;
+		return true;
+	}
+
+	return false;
+}
+
 static bool _join_thread(Thread_Handle handle)
 {
 	WaitForSingleObject(handle, INFINITE);
@@ -25,8 +38,7 @@ static bool _compare_and_swap(uint64_t* pointer, uint64_t old_value, uint64_t ne
 	return ret == old_value;
 }
 
-#define CREATE_THREAD(func, user_data) \
-    CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)func, user_data, 0, nullptr)
+#define CREATE_THREAD(func, user_data, handle) _create_thread((LPTHREAD_START_ROUTINE)func, user_data, handle);
 #define JOIN_THREAD(handle) _join_thread(handle)
 #define COMPARE_AND_SWAP(pointer, old_value, new_value) \
 	_compare_and_swap(pointer, old_value, new_value)

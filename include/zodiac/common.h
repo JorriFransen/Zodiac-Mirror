@@ -9,9 +9,9 @@
 #include <string.h>
 
 // Common macros
-#define KB(n) ((n) * 1024)
-#define MB(n) (KB((n)) * 1024)
-#define GB(n) (MB((n)) * 1024)
+#define KB(n) ((n) * (uint64_t)1024)
+#define MB(n) (KB((n)) * (uint64_t)1024)
+#define GB(n) (MB((n)) * (uint64_t)1024)
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))

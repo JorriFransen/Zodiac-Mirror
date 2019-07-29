@@ -106,6 +106,7 @@ namespace Zodiac
         }
 
         assert(false);
+		return 0;
     }
 
     int64_t const_interpret_int_literal_expression(Context* context, AST_Expression* expression,
@@ -129,6 +130,7 @@ namespace Zodiac
         }
 
         assert(false);
+		return 0;
     }
 
     uint64_t const_interpret_uint_expression(Context* context, AST_Expression* expression,
@@ -201,6 +203,7 @@ namespace Zodiac
         }
 
         assert(false);
+		return 0;
     }
 
     uint64_t const_interpret_uint_literal_expression(Context* context, AST_Expression* expression,
@@ -225,6 +228,7 @@ namespace Zodiac
         }
 
         assert(false);
+		return 0;
     }
 
     int64_t const_interpret_s64_expression(Context* context, AST_Expression* expression,
