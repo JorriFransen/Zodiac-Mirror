@@ -3020,7 +3020,7 @@ namespace Zodiac
         }
 
 		assert(false);
-		return nullptr;
+		return  false;
     }
 
     AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module,

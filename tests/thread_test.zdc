@@ -24,7 +24,7 @@ main :: ()
 
     adders : std.Array(Thread);
 
-    adder_count := 10000;
+    adder_count := 1000;
     amount_per_adder := 10;
 
     for (i := 0; i < adder_count; i++)
@@ -61,15 +61,18 @@ main :: ()
 
     std.print("All threads for pool 1 created");
 
+    all_returns : u64 = 0;
+
     for (i : u64 = 0; i < adders.count; i++)
     {
         at := adders[i];
-        join_thread(at);
+        all_returns += (:u64)join_thread(at);
     }
 
     printf("global_counter: %llu\n", global_counter);
-    printf("\texpected: %llu\n\n", (:u64)(adder_count * amount_per_adder));
+    printf("\texpected: %llu\n", (:u64)(adder_count * amount_per_adder));
     assert(global_counter == (:u64)(adder_count * amount_per_adder));
+    printf("\tall_returns: %lu\n\n", all_returns);
 
     adders.count = 0;
 
@@ -99,15 +102,18 @@ main :: ()
 
     std.print("All threads for pool 2 created");
 
+    all_returns_2 : u64 = 0;
+
     for (i : u64 = 0; i < adders.count; i++)
     {
         at := adders[i];
-        join_thread(at);
+        all_returns_2 += (:u64)join_thread(at);
     }
 
     printf("global_counter_2: %llu\n", global_counter_2);
     printf("\texpected: %llu\n", (:u64)(adder_count * amount_per_adder));
     assert(global_counter_2 == (:u64)(adder_count * amount_per_adder));
+    printf("\tall_returns_2: %lu\n\n", all_returns_2);
 
     array_free(*adders);
 }
@@ -121,6 +127,8 @@ add_func_mut :: (thread: *Thread) -> *void
         global_counter_2 += 1;
     }
     mutex_unlock(*global_counter_2_mutex);
+
+    return to_add;
 }
 
 add_func_mut2 :: (thread: *Thread) -> *void
@@ -129,6 +137,8 @@ add_func_mut2 :: (thread: *Thread) -> *void
     mutex_lock(*global_counter_2_mutex);
     global_counter_2 += to_add;
     mutex_unlock(*global_counter_2_mutex);
+
+    return to_add;
 }
 
 add_func :: (thread: *Thread) -> *void
@@ -144,6 +154,8 @@ add_func :: (thread: *Thread) -> *void
             done = compare_and_swap(*global_counter, value, value + 1);
         }
     }
+
+    return to_add;
 }
 
 add_func2 :: (thread: *Thread) -> *void
@@ -156,4 +168,6 @@ add_func2 :: (thread: *Thread) -> *void
         value := global_counter;
         done = compare_and_swap(*global_counter, value, value + to_add);
     }
+
+    return to_add;
 }

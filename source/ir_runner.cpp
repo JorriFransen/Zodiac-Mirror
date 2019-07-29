@@ -124,8 +124,9 @@ namespace Zodiac
         assert(ir_thread->function);
         File_Pos call_site;
         call_site.file_name = "<ir_runner_thread_entry>";
-        ir_runner_call_function(&thread_ir_runner, call_site, ir_thread->function, 1,
-                                &return_value);
+        auto frame = ir_runner_call_function(&thread_ir_runner, call_site, ir_thread->function,
+                                             1, &return_value);
+        void* retval = frame->return_value->value.struct_pointer;
 
         // assert(!thread_ir_runner.threads);
         assert(!thread_ir_runner.free_threads);
@@ -143,7 +144,7 @@ namespace Zodiac
 		stack_free(&thread_ir_runner.arg_stack);
 		dcFree(thread_ir_runner.dyn_vm);
 
-        return nullptr;
+        return retval;
     }
 
     bool ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* ast_module,
@@ -1855,6 +1856,7 @@ namespace Zodiac
             case IR_OP_JOIN_THREAD:
             {
                 IR_Value* thread_value = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
                 IR_Thread* thread = runner->threads;
                 IR_Thread* last_thread = nullptr;
 
@@ -1873,7 +1875,7 @@ namespace Zodiac
                 assert(thread);
                 // printf("joining thread value: %d\n", thread_value->value.struct_pointer);
 
-				bool result = JOIN_THREAD(thread->handle);
+				bool result = JOIN_THREAD(thread->handle, &result_value->value.struct_pointer);
 				assert(result);
 
                 if (thread == runner->threads)

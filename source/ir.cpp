@@ -1666,16 +1666,19 @@ namespace Zodiac
         return result_value;
     }
 
-    void ir_builder_emit_join_thread(IR_Builder* ir_builder, IR_Value* thread_value,
+    IR_Value* ir_builder_emit_join_thread(IR_Builder* ir_builder, IR_Value* thread_value,
                                      File_Pos origin)
     {
         assert(ir_builder);
         assert(thread_value);
 
+        IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, Builtin::type_pointer_to_void);
         IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_JOIN_THREAD,
-                                                 thread_value, nullptr, nullptr);
+                                                 thread_value, nullptr, result);
 
         ir_builder_emit_instruction(ir_builder, iri);
+
+        return result;
     }
 
     IR_Value* ir_builder_emit_compare_and_swap(IR_Builder* ir_builder, IR_Value* pointer_val,
@@ -2616,8 +2619,7 @@ namespace Zodiac
                 assert(BUF_LENGTH(call_expr->call.arg_expressions) == 1);
                 AST_Expression* thread_expr = call_expr->call.arg_expressions[0];
                 IR_Value* thread_value = ir_builder_emit_expression(ir_builder, thread_expr);
-                ir_builder_emit_join_thread(ir_builder, thread_value, call_expr->file_pos);
-                return nullptr;
+                return ir_builder_emit_join_thread(ir_builder, thread_value, call_expr->file_pos);
             }
 
             case AST_BUILTIN_FUNC_COMPARE_AND_SWAP:

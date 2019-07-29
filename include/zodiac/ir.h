@@ -282,7 +282,7 @@ namespace Zodiac
 
     IR_Value* ir_builder_emit_create_thread(IR_Builder* ir_builder, IR_Value* func_value,
                                             IR_Value* user_data_value, File_Pos origin);
-    void ir_builder_emit_join_thread(IR_Builder* ir_builder, IR_Value* thread_value,
+    IR_Value* ir_builder_emit_join_thread(IR_Builder* ir_builder, IR_Value* thread_value,
                                      File_Pos origin);
     IR_Value* ir_builder_emit_compare_and_swap(IR_Builder* ir_builder, IR_Value* pointer_val,
                                                IR_Value* value, IR_Value* new_value,

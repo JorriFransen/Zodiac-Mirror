@@ -80,14 +80,14 @@ static bool _create_thread(_Thread_Routine func, void* user_data, Thread_Handle*
     return false;
 }
 
-static bool _join_thread(Thread_Handle handle)
+static bool _join_thread(Thread_Handle handle, void** ret_val)
 {
-    auto result = pthread_join(handle, nullptr);
+    auto result = pthread_join(handle, ret_val);
     return result == 0;
 }
 
 #define CREATE_THREAD(func, user_data, handle) _create_thread(func, user_data, handle)
-#define JOIN_THREAD(handle) _join_thread(handle)
+#define JOIN_THREAD(handle, ret_val) _join_thread(handle, ret_val)
 #define COMPARE_AND_SWAP(pointer, old_value, new_value) \
 	__sync_bool_compare_and_swap(pointer, old_value, new_value)
 
