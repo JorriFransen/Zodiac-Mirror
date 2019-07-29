@@ -526,7 +526,7 @@ namespace Zodiac
         }
 
 		assert(false);
-		return false;
+		return nullptr;
     }
 
     AST_Expression* copy_expression(Context* context, AST_Expression* expression)
