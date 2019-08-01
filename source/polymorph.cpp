@@ -498,6 +498,16 @@ namespace Zodiac
                                             then_copy, else_copy);
             }
 
+            case AST_STMT_FOR:
+            {
+                auto init_copy = copy_statement(context, statement->for_stmt.init_stmt, scope);
+                auto cond_copy = copy_expression(context, statement->for_stmt.cond_expr);
+                auto step_copy = copy_statement(context, statement->for_stmt.step_stmt, scope);
+                auto body_copy = copy_statement(context, statement->for_stmt.body_stmt, scope);
+                return ast_for_statement_new(context, statement->file_pos, scope, init_copy,
+                                             cond_copy, step_copy, body_copy);
+            }
+
             case AST_STMT_DECLARATION:
             {
                 auto decl_copy = copy_declaration(context, statement->declaration);
@@ -520,6 +530,12 @@ namespace Zodiac
             {
                 auto defer_stmt_copy = copy_statement(context, statement->defer_statement, scope);
                 return ast_defer_statement_new(context, statement->file_pos, defer_stmt_copy);
+            }
+
+            case AST_STMT_POST_INCREMENT:
+            {
+                auto expr_copy = copy_expression(context, statement->post_increment);
+                return ast_post_increment_statement_new(context, statement->file_pos, expr_copy);
             }
 
             default: assert(false);
@@ -630,6 +646,12 @@ namespace Zodiac
                 return ast_unary_expression_new(context, expression->file_pos,
                                                 expression->unary.op,
                                                 operand_copy);
+            }
+
+            case AST_EXPR_POST_INCREMENT:
+            {
+                auto base_copy = copy_expression(context, expression->base_expression);
+                return ast_post_increment_expression_new(context, expression->file_pos, base_copy);
             }
 
             default: assert(false);
@@ -950,6 +972,21 @@ namespace Zodiac
                 break;
             }
 
+            case AST_STMT_FOR:
+            {
+                replace_poly_type_specs(statement->for_stmt.init_stmt, replacements);
+                replace_poly_type_specs(statement->for_stmt.cond_expr, replacements);
+                replace_poly_type_specs(statement->for_stmt.step_stmt, replacements);
+                replace_poly_type_specs(statement->for_stmt.body_stmt, replacements);
+                break;
+            }
+
+            case AST_STMT_POST_INCREMENT:
+            {
+                replace_poly_type_specs(statement->post_increment, replacements);
+                break;
+            }
+
             default: assert(false);
         }
     }
@@ -1009,6 +1046,12 @@ namespace Zodiac
             case AST_EXPR_UNARY:
             {
                 replace_poly_type_specs(expression->unary.operand, replacements);
+                break;
+            }
+
+            case AST_EXPR_POST_INCREMENT:
+            {
+                replace_poly_type_specs(expression->base_expression, replacements);
                 break;
             }
 

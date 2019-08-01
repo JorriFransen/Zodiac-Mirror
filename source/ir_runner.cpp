@@ -1934,6 +1934,7 @@ namespace Zodiac
         {
             result = arena_alloc(&ir_runner->arena, IR_Stack_Frame);
             result->arena = arena_create(KB(1));
+            result->temps = nullptr;
         }
         result->call_site = call_site;
         result->function = function;

@@ -157,3 +157,82 @@ array_free :: (array: *Array($T))
         array.capacity = 0;
     }
 }
+
+Queue :: struct(T)
+{
+    data        : *T;
+    capacity    : u64;
+    first_index : u64;
+    count       : u64;
+}
+
+queue_init :: (queue: *Queue($T), capacity: u64)
+{
+    queue.capacity = capacity;
+    queue.data = (:*T)_c.malloc(capacity * sizeof(T));
+    queue.first_index = 0;
+    queue.count = 0;
+}
+
+queue_enqueue :: (queue: *Queue($T), element: T)
+{
+    // _c.printf("__queue_enqueue, count: %lu, cap: %lu\n", queue.count, queue.capacity);
+    if (queue.count + 1 > queue.capacity)
+    {
+        queue_grow(queue);
+    }
+
+    new_index := queue.first_index + queue.count;
+    if (new_index >= queue.capacity)
+    {
+        new_index = new_index - queue.capacity;
+    }
+    queue.data[new_index] = element;
+    queue.count += 1;
+
+    // _c.printf("_enqueued %lu at %lu\n", element, new_index);
+}
+
+queue_grow :: (queue: *Queue($T))
+{
+    assert(queue.data);
+
+    new_cap := queue.capacity * 2;
+    new_data := (:*T)_c.malloc(new_cap * sizeof(T));
+
+    old_index := queue.first_index;
+    for (i : u64 = 0; i < queue.count; i++)
+    {
+        new_data[i] = queue.data[old_index];
+
+        old_index += 1;
+        if (old_index >= queue.capacity)
+        {
+            old_index = 0;
+        }
+    }
+
+    _c.free(queue.data);
+    queue.capacity = new_cap;
+    queue.data = new_data;
+    queue.first_index = 0;
+
+    // _c.printf("_queu grown to %lu\n", new_cap);
+}
+
+queue_dequeue :: (queue: *Queue($T)) -> T
+{
+    assert(queue.data);
+    assert(queue.count);
+
+    result_index := queue.first_index;
+
+    queue.first_index += 1;
+    queue.count -= 1;
+    if (queue.first_index >= queue.capacity)
+    {
+        queue.first_index = 0;
+    }
+
+    return queue.data[result_index];
+}
