@@ -1110,76 +1110,6 @@ namespace Zodiac
                 break;
             }
 
-            case IR_OP_SUBSCRIPT:
-            {
-                assert(iri->arg1->kind == IRV_TEMPORARY);
-
-                AST_Type* element_type = nullptr;
-
-                if (iri->arg1->type->kind == AST_TYPE_POINTER)
-                {
-                     element_type = iri->arg1->type->pointer.base;
-                }
-                else if (iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY)
-                {
-                    element_type = iri->arg1->type->static_array.base;
-                }
-                else assert(false);
-                assert(element_type);
-                assert(element_type->bit_size % 8 == 0);
-
-                IR_Value* base_value = ir_runner_get_local_temporary(runner, iri->arg1);
-
-                uint8_t* base_pointer = (uint8_t*)base_value->value.pointer;
-
-                IR_Value* index_value = ir_runner_get_local_temporary(runner, iri->arg2);
-                assert((iri->arg2->type->flags & AST_TYPE_FLAG_INT) ||
-                       iri->arg2->type->kind == AST_TYPE_ENUM);
-
-                assert(iri->result->type == element_type);
-                IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
-                auto offset = index_value->value.s64 * (element_type->bit_size / 8);
-
-                uint8_t* source_pointer = base_pointer + offset;
-                if (element_type->kind == AST_TYPE_BASE)
-                {
-                    switch (element_type->bit_size)
-                    {
-                        case 8:
-                        {
-                            result_value->value.u8 = *((uint8_t*)source_pointer);
-                            break;
-                        }
-
-                        case 32:
-                        {
-                            result_value->value.u32 = *((uint32_t*)source_pointer);
-                            break;
-                        }
-
-                        case 64:
-                        {
-                            result_value->value.s64 = *((uint64_t*)source_pointer);
-                            break;
-                        }
-
-                        default: assert(false);
-                    }
-                }
-                else if (element_type->kind == AST_TYPE_POINTER)
-                {
-                    result_value->value.pointer = (void*)(*((uint64_t*)source_pointer));
-                }
-                else if (element_type->kind == AST_TYPE_STRUCT)
-                {
-                    assert(result_value->value.pointer);
-                    memcpy(result_value->value.pointer, source_pointer,
-                           element_type->bit_size / 8);
-                }
-                else assert(false);
-                break;
-            }
-
             case IR_OP_JMP:
             {
                 IR_Value* block_value = iri->arg1;
@@ -1585,7 +1515,8 @@ namespace Zodiac
                 assert(iri->arg2->kind == IRV_INT_LITERAL ||
                        iri->arg2->kind == IRV_TEMPORARY);
                 assert(iri->arg2->type == Builtin::type_int ||
-                       iri->arg2->type == Builtin::type_u64);
+                       iri->arg2->type == Builtin::type_u64 ||
+                       iri->arg2->type->kind == AST_TYPE_ENUM);
 
                 assert(iri->result);
                 assert(iri->result->kind == IRV_TEMPORARY);

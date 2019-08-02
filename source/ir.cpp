@@ -2654,12 +2654,14 @@ namespace Zodiac
             case AST_TYPE_POINTER:
             {
                 IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY,
-                                                      base_value->type->pointer.base);
+                                                      base_value->type);
 
-                IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_SUBSCRIPT,
+                IR_Instruction* iri = ir_instruction_new(ir_builder, origin,
+                                                         IR_OP_ARRAY_OFFSET_POINTER,
                                                          base_value, index_value,
                                                         result_value);
                 ir_builder_emit_instruction(ir_builder, iri);
+                result_value = ir_builder_emit_load(ir_builder, result_value, origin);
 
                 return result_value;
                 break;
@@ -2667,12 +2669,15 @@ namespace Zodiac
 
             case AST_TYPE_STATIC_ARRAY:
             {
-                IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY,
-                                                      base_value->type->static_array.base);
-                IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_SUBSCRIPT,
+                AST_Type* type = ast_find_or_create_pointer_type(ir_builder->context,
+                                                             base_value->type->static_array.base);
+                IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, type);
+                IR_Instruction* iri = ir_instruction_new(ir_builder, origin,
+                                                         IR_OP_ARRAY_OFFSET_POINTER,
                                                          base_value, index_value,
                                                          result_value);
                 ir_builder_emit_instruction(ir_builder, iri);
+                result_value = ir_builder_emit_load(ir_builder, result_value, origin);
                 return result_value;
                 break;
             }
@@ -3734,14 +3739,6 @@ namespace Zodiac
                 {
                     ir_print_value(instruction->arg1, sb);
                 }
-                break;
-            }
-
-            case IR_OP_SUBSCRIPT:
-            {
-                ir_print_value(instruction->arg1, sb);
-                string_builder_append(sb, " SUBSCRIPT ");
-                ir_print_value(instruction->arg2, sb);
                 break;
             }
 

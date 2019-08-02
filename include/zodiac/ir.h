@@ -110,8 +110,6 @@ namespace Zodiac
 		IR_OP_CALL_PTR,
         IR_OP_RETURN,
 
-        IR_OP_SUBSCRIPT,
-
         IR_OP_JMP,
         IR_OP_JMP_IF,
 
