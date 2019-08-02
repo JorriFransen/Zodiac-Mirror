@@ -52,19 +52,45 @@ mutex_unlock :: (mutex: *Mutex)
     mutex.lock = 0;
 }
 
+Atomic_Cond :: struct
+{
+    sig : u64;
+}
+
+atomic_cond_init :: (signal: *Atomic_Cond)
+{
+    signal.sig = 0;
+}
+
+atomic_cond_wait :: (signal: *Atomic_Cond)
+{
+    while (!compare_and_swap(*signal.sig, 1, 0))
+    {
+        // Busy wait
+    }
+}
+
+atomic_cond_signal :: (signal: *Atomic_Cond)
+{
+    while (!compare_and_swap(*signal.sig, 0, 1))
+    {
+        // Busy wait
+    }
+}
+
 // This is a weak semaphore
 Semaphore :: struct
 {
     count : int;
     lock  : Mutex;
-    wait  : u64;
+    wait  : Atomic_Cond;
 }
 
 semaphore_init :: (sem: *Semaphore, count: int)
 {
     sem.count = count;
     mutex_init(*sem.lock);
-    sem.wait = 0;
+    atomic_cond_init(*sem.wait);
 }
 
 semaphore_wait :: (sem: *Semaphore)
@@ -72,17 +98,10 @@ semaphore_wait :: (sem: *Semaphore)
     mutex_lock(*sem.lock);
     sem.count -= 1;
 
-    // _c.printf("___sem_counter after dec: %ld\n", sem.count);
-
     if (sem.count < 0)
     {
-        // _c.printf("\t___waiting...\n");
         mutex_unlock(*sem.lock);
-        while (!compare_and_swap(*sem.wait, 1, 0))
-        {
-            // busy wait
-        }
-        // _c.printf("\t___done waiting...\n");
+        atomic_cond_wait(*sem.wait);
     }
     else
     {
@@ -99,11 +118,7 @@ semaphore_signal :: (sem: *Semaphore)
 
     if (old_count < 0)
     {
-        while (!compare_and_swap(*sem.wait, 0, 1))
-        {
-            // busy wait, but we can oly be waiting for a wait call on this variable
-            // the counter should ensure this stays in sync
-        }
+        atomic_cond_signal(*sem.wait);
     }
 }
 
