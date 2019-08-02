@@ -48,9 +48,7 @@ namespace Zodiac
 
             bool boolean;
 
-            uint8_t* string;
-            void* static_array;
-            void* struct_pointer;
+            void* pointer;
         } value;
 
         union

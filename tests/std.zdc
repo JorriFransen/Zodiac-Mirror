@@ -180,17 +180,21 @@ queue_enqueue :: (queue: *Queue($T), element: T)
     if (queue.count + 1 > queue.capacity)
     {
         queue_grow(queue);
+        // _c.printf("__queue grown\n");
     }
 
     new_index := queue.first_index + queue.count;
     if (new_index >= queue.capacity)
     {
         new_index = new_index - queue.capacity;
+        // _c.printf("__wrapped index to: %lu\n", new_index);
     }
+    // _c.printf("__new_index: %lu\n", new_index);
+    // _c.printf("__ptr: %p\n", (:u64)queue.data + (new_index * sizeof(T)));
     queue.data[new_index] = element;
     queue.count += 1;
 
-    // _c.printf("_enqueued %lu at %lu\n", element, new_index);
+    // _c.printf("_enqueued %p at %lu (%p)\n", element, new_index, *queue.data[new_index]);
 }
 
 queue_grow :: (queue: *Queue($T))
@@ -234,5 +238,8 @@ queue_dequeue :: (queue: *Queue($T)) -> T
         queue.first_index = 0;
     }
 
-    return queue.data[result_index];
+    result := queue.data[result_index];
+    // _c.printf("_dequeued %p from %lu (%p)\n", result, result_index, *queue.data[result_index]);
+
+    return result;
 }

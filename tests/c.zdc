@@ -40,7 +40,8 @@ stderr : *FILE = null;
 #foreign sinf :: (x: float) -> float;
 #foreign cosf :: (x: float) -> float;
 
-#foreign time :: (timer: *int) -> int;
+#foreign time   :: (timer: *int) -> int;
+#foreign usleep :: (usec: int) -> int;
 
 open_std_handles :: () -> void
 {

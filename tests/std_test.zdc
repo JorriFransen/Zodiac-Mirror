@@ -114,39 +114,61 @@ queue_test :: ()
 {
     std.print(" ");
 
-    q : std.Queue(u64);
+    // q : std.Queue(u64);
+    // queue_init(*q, 4);
 
-    queue_init(*q, 4);
+    // for (i := 0; i < 10; i++)
+    // {
+    //     queue_enqueue(*q, (:u64)i);
+    // }
 
-    for (i := 0; i < 10; i++)
+    // for (i : u64 = 0; i < 5; i++)
+    // {
+    //     dq := queue_dequeue(*q);
+    //     assert(dq == i);
+    //     _c.printf("dequeued: %lu\n", dq);
+    // }
+
+    // for (i : u64 = 20; i < 35; i++)
+    // {
+    //     queue_enqueue(*q, i);
+    // }
+
+    // for (i : u64 = 5; i < 10; i++)
+    // {
+    //     dq := queue_dequeue(*q);
+    //     assert(dq == i);
+    //     _c.printf("dequeued: %lu\n", dq);
+    // }
+
+    // for (i : u64 = 20; i < 35; i++)
+    // {
+    //     dq := queue_dequeue(*q);
+    //     assert(dq == i);
+    //     _c.printf("dequeued: %lu\n", dq);
+    // }
+
+    print(" ");
+
+    pq : std.Queue(*u64);
+    queue_init(*pq, 4);
+
+    arr : [4]u64 = { 1, 2, 3, 4 };
+
+    for (i := 0; i < array_length(arr); i++)
     {
-        queue_enqueue(*q, (:u64)i);
+        p := *arr[i];
+        queue_enqueue(*pq, p);
+        _c.printf("enqueued: %p (%lu)\n", p, <p);
     }
 
-    for (i : u64 = 0; i < 5; i++)
-    {
-        dq := queue_dequeue(*q);
-        assert(dq == i);
-        _c.printf("dequeued: %lu\n", dq);
-    }
+    print(" ");
 
-    for (i : u64 = 20; i < 35; i++)
+    for (i := 0; i < array_length(arr); i++)
     {
-        queue_enqueue(*q, i);
-    }
-
-    for (i : u64 = 5; i < 10; i++)
-    {
-        dq := queue_dequeue(*q);
-        assert(dq == i);
-        _c.printf("dequeued: %lu\n", dq);
-    }
-
-    for (i : u64 = 20; i < 35; i++)
-    {
-        dq := queue_dequeue(*q);
-        assert(dq == i);
-        _c.printf("dequeued: %lu\n", dq);
+        ip := queue_dequeue(*pq);
+        _c.printf("dequeued: %p (%lu)\n", ip, <ip);
+        assert(<ip == arr[i]);
     }
 }
 

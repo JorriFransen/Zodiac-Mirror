@@ -34,6 +34,11 @@ Mutex :: struct
     lock: u64;
 }
 
+mutex_init :: (mutex: *Mutex)
+{
+    mutex.lock = 0;
+}
+
 mutex_lock :: (mutex: *Mutex)
 {
     while (!compare_and_swap(*mutex.lock, 0, 1))
@@ -45,6 +50,61 @@ mutex_lock :: (mutex: *Mutex)
 mutex_unlock :: (mutex: *Mutex)
 {
     mutex.lock = 0;
+}
+
+// This is a weak semaphore
+Semaphore :: struct
+{
+    count : int;
+    lock  : Mutex;
+    wait  : u64;
+}
+
+semaphore_init :: (sem: *Semaphore, count: int)
+{
+    sem.count = count;
+    mutex_init(*sem.lock);
+    sem.wait = 0;
+}
+
+semaphore_wait :: (sem: *Semaphore)
+{
+    mutex_lock(*sem.lock);
+    sem.count -= 1;
+
+    // _c.printf("___sem_counter after dec: %ld\n", sem.count);
+
+    if (sem.count < 0)
+    {
+        // _c.printf("\t___waiting...\n");
+        mutex_unlock(*sem.lock);
+        while (!compare_and_swap(*sem.wait, 1, 0))
+        {
+            // busy wait
+        }
+        // _c.printf("\t___done waiting...\n");
+    }
+    else
+    {
+        mutex_unlock(*sem.lock);
+    }
+}
+
+semaphore_signal :: (sem: *Semaphore)
+{
+    mutex_lock(*sem.lock);
+    old_count := sem.count;
+    sem.count += 1;
+    mutex_unlock(*sem.lock);
+
+    if (old_count < 0)
+    {
+        while (!compare_and_swap(*sem.wait, 0, 1))
+        {
+            // busy wait, but we can oly be waiting for a wait call on this variable
+            // the counter should ensure this stays in sync
+        }
+    }
 }
 
 _main :: ()

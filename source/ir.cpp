@@ -3164,7 +3164,7 @@ namespace Zodiac
 		assert(type);
 
 		IR_Value* result = ir_value_new(ir_builder, IRV_NULL_LITERAL, type);
-		result->value.string = nullptr;
+		result->value.pointer = nullptr;
 		result->assigned = true;
 		return result;
 	}
@@ -3175,8 +3175,8 @@ namespace Zodiac
         assert(type);
 
         IR_Value* result = ir_value_new(ir_builder, IRV_STRING_LITERAL, type);
-        result->value.string = arena_alloc_array(&ir_builder->result.string_literal_arena, uint8_t, string.length + 1);
-        memcpy(result->value.string, string.data, string.length + 1);
+        result->value.pointer = arena_alloc_array(&ir_builder->result.string_literal_arena, uint8_t, string.length + 1);
+        memcpy(result->value.pointer, string.data, string.length + 1);
         result->assigned = true;
 
         return result;
@@ -3992,7 +3992,7 @@ namespace Zodiac
 
             case IRV_STRING_LITERAL:
             {
-                ir_print_string_literal((const char*)value->value.string, sb);
+                ir_print_string_literal((const char*)value->value.pointer, sb);
                 break;
             }
 

@@ -116,6 +116,112 @@ main :: ()
     printf("\tall_returns_2: %lu\n\n", all_returns_2);
 
     array_free(*adders);
+
+    semaphore_test();
+}
+
+SEM_BUFFER_CAP     : u64 : 8;
+SEM_BUFFER_COUNT   : u64 : 1;
+SEM_PRODUCER_COUNT : u64 : 1;
+SEM_CONSUMER_COUNT : u64 : 1;
+
+sem_lock      : Semaphore;
+sem_buf_full  : Semaphore;
+sem_buf_empty : Semaphore;
+
+pc_done : u64 = 0;
+
+PC_Data :: struct
+{
+    empty_buffers : Queue(*u64);
+    full_buffers  : Queue(*u64);
+}
+
+semaphore_test :: ()
+{
+    std.print(" ");
+    std.print("Semaphore test");
+
+    semaphore_init(*sem_lock, 1);
+    semaphore_init(*sem_buf_full, 0);
+    semaphore_init(*sem_buf_empty, (:int)SEM_BUFFER_COUNT);
+
+    pc_data : PC_Data;
+    queue_init(*pc_data.empty_buffers, SEM_BUFFER_COUNT);
+    queue_init(*pc_data.full_buffers, SEM_BUFFER_COUNT);
+
+    empty_buffers : Queue(*u64);
+    queue_init(*empty_buffers, SEM_BUFFER_COUNT);
+
+    for (i : u64 = 0; i < SEM_BUFFER_COUNT; i++)
+    {
+        buffer := (:*u64)_c.malloc(SEM_BUFFER_CAP * sizeof(u64));
+        _c.printf("Allocated_buffer: %p\n", buffer);
+        queue_enqueue(*pc_data.empty_buffers, buffer);
+    }
+
+    pt := create_thread(*produce, (:*void)(*pc_data));
+    ct := create_thread(*consume, (:*void)(*pc_data));
+
+    _c.getchar();
+    assert(pc_done == 0);
+    while (!compare_and_swap(*pc_done, 0, 1)) {}
+    join_thread(pt);
+    join_thread(ct);
+}
+
+produce :: (thread: *Thread) -> *void
+{
+    while (!compare_and_swap(*pc_done, 1, 1))
+    {
+        semaphore_wait(*sem_buf_empty);
+
+        semaphore_wait(*sem_lock);
+        pc_data := (:*PC_Data)thread.user_data;
+        buffer := queue_dequeue(*pc_data.empty_buffers);
+        _c.printf("Producing in buffer: %p\n", buffer);
+        semaphore_signal(*sem_lock);
+
+        for (i : u64 = 0; i < SEM_BUFFER_CAP; i++)
+        {
+            buffer[i] = i * i;
+            _c.usleep(1000 * 500);
+        }
+
+        semaphore_wait(*sem_lock);
+        queue_enqueue(*pc_data.full_buffers, buffer);
+        semaphore_signal(*sem_lock);
+
+        semaphore_signal(*sem_buf_full);
+    }
+}
+
+consume :: (thread: *Thread) -> *void
+{
+    while (!compare_and_swap(*pc_done, 1, 1))
+    {
+        semaphore_wait(*sem_buf_full);
+        _c.printf("-- waited full\n");
+
+        semaphore_wait(*sem_lock);
+        pc_data := (:*PC_Data)thread.user_data;
+        buffer := queue_dequeue(*pc_data.full_buffers);
+        semaphore_signal(*sem_lock);
+
+        std.print("=========================================");
+        _c.printf("\tConsuming from buffer: %p\n", buffer);
+        for (i : u64 = 0; i < SEM_BUFFER_CAP; i++)
+        {
+            _c.printf("buffer[%lu]: %lu\n", i, buffer[i]);
+        }
+        std.print("=========================================\n");
+
+        semaphore_wait(*sem_lock);
+        queue_enqueue(*pc_data.empty_buffers, buffer);
+        semaphore_signal(*sem_lock);
+
+        semaphore_signal(*sem_buf_empty);
+    }
 }
 
 add_func_mut :: (thread: *Thread) -> *void

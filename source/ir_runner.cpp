@@ -95,7 +95,7 @@ namespace Zodiac
             IR_Value* global = ir_runner->ir_module->globals[i];
             if (global->type->kind == AST_TYPE_STRUCT)
             {
-                global->value.struct_pointer = mem_alloc(global->type->bit_size / 8);
+                global->value.pointer = mem_alloc(global->type->bit_size / 8);
             }
         }
     }
@@ -115,7 +115,7 @@ namespace Zodiac
         IR_Value arg;
         arg.kind = IRV_TEMPORARY;
         arg.type = Builtin::type_pointer_to_Thread;
-        arg.value.struct_pointer = &ir_thread->builtin_thread;
+        arg.value.pointer = &ir_thread->builtin_thread;
 
         IR_Pushed_Arg ipa = { arg, false };
         stack_push(thread_ir_runner.arg_stack, ipa);
@@ -126,7 +126,7 @@ namespace Zodiac
         call_site.file_name = "<ir_runner_thread_entry>";
         auto frame = ir_runner_call_function(&thread_ir_runner, call_site, ir_thread->function,
                                              1, &return_value);
-        void* retval = frame->return_value->value.struct_pointer;
+        void* retval = frame->return_value->value.pointer;
 
         // assert(!thread_ir_runner.threads);
         assert(!thread_ir_runner.free_threads);
@@ -392,7 +392,7 @@ namespace Zodiac
         }
         else if (arg_type->kind == AST_TYPE_POINTER)
         {
-            dcArgPointer(runner->dyn_vm, arg_value->value.string);
+            dcArgPointer(runner->dyn_vm, arg_value->value.pointer);
         }
         else if (arg_type->kind == AST_TYPE_ENUM)
         {
@@ -500,7 +500,7 @@ namespace Zodiac
 
             if (arg_type->kind == AST_TYPE_POINTER)
             {
-                arg_value.value.string = (uint8_t*)dcbArgPointer(args);
+                arg_value.value.pointer = (uint8_t*)dcbArgPointer(args);
             }
             else if (arg_type->flags & AST_TYPE_FLAG_INT)
             {
@@ -835,7 +835,7 @@ namespace Zodiac
                 }
                 else if (type->kind == AST_TYPE_POINTER && type == arg2->type)
                 {
-                    dest->value.s64 = arg1->value.string == arg2->value.string;
+                    dest->value.s64 = arg1->value.pointer == arg2->value.pointer;
                 }
                 else assert(false);
                 break;
@@ -990,7 +990,7 @@ namespace Zodiac
                 }
                 else if (iri->result->type->kind == AST_TYPE_POINTER)
                 {
-                    result_value->value.string = (uint8_t*)dcCallPointer(runner->dyn_vm,
+                    result_value->value.pointer = (uint8_t*)dcCallPointer(runner->dyn_vm,
                                                                          foreign_symbol);
                 }
                 else if (iri->result->type == Builtin::type_void)
@@ -1024,16 +1024,16 @@ namespace Zodiac
 
                 if (iri->result->type->flags & AST_TYPE_FLAG_INT)
                 {
-                    result_value->value.s64 = dcCallInt(runner->dyn_vm, ptr_val->value.string);
+                    result_value->value.s64 = dcCallInt(runner->dyn_vm, ptr_val->value.pointer);
                 }
 				else if (iri->result->type->kind == AST_TYPE_POINTER)
 				{
-					result_value->value.string = (uint8_t*)dcCallPointer(runner->dyn_vm,
-                                                                         ptr_val->value.string);
+					result_value->value.pointer = (uint8_t*)dcCallPointer(runner->dyn_vm,
+                                                                         ptr_val->value.pointer);
 				}
                 else if (iri->result->type->flags & AST_TYPE_FLAG_VOID)
                 {
-                    dcCallVoid(runner->dyn_vm, ptr_val->value.string);
+                    dcCallVoid(runner->dyn_vm, ptr_val->value.pointer);
                 }
 				else assert(false);
                 dcReset(runner->dyn_vm);
@@ -1048,7 +1048,7 @@ namespace Zodiac
 				assert(BUF_LENGTH(runner->loaded_foreign_symbols) > foreign_index);
 
 				IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
-				dest->value.string = (uint8_t*)runner->loaded_foreign_symbols[foreign_index];
+				dest->value.pointer = runner->loaded_foreign_symbols[foreign_index];
 				break;
 			}
 
@@ -1078,7 +1078,7 @@ namespace Zodiac
                 }
 
                 assert(callback_address);
-                dest->value.string = (uint8_t*)callback_address;
+                dest->value.pointer = callback_address;
                 break;
             }
 
@@ -1094,8 +1094,8 @@ namespace Zodiac
 					{
                         uint64_t struct_byte_size = temp->type->bit_size / 8;
                         assert(struct_byte_size);
-                        memcpy(current_stack_frame->return_value->value.struct_pointer,
-                               temp->value.struct_pointer, struct_byte_size);
+                        memcpy(current_stack_frame->return_value->value.pointer,
+                               temp->value.pointer, struct_byte_size);
 					}
 					else
 					{
@@ -1130,7 +1130,7 @@ namespace Zodiac
 
                 IR_Value* base_value = ir_runner_get_local_temporary(runner, iri->arg1);
 
-                uint8_t* base_pointer = base_value->value.string;
+                uint8_t* base_pointer = (uint8_t*)base_value->value.pointer;
 
                 IR_Value* index_value = ir_runner_get_local_temporary(runner, iri->arg2);
                 assert((iri->arg2->type->flags & AST_TYPE_FLAG_INT) ||
@@ -1166,10 +1166,14 @@ namespace Zodiac
                         default: assert(false);
                     }
                 }
+                else if (element_type->kind == AST_TYPE_POINTER)
+                {
+                    result_value->value.pointer = (void*)(*((uint64_t*)source_pointer));
+                }
                 else if (element_type->kind == AST_TYPE_STRUCT)
                 {
-                    assert(result_value->value.struct_pointer);
-                    memcpy(result_value->value.struct_pointer, source_pointer,
+                    assert(result_value->value.pointer);
+                    memcpy(result_value->value.pointer, source_pointer,
                            element_type->bit_size / 8);
                 }
                 else assert(false);
@@ -1222,7 +1226,7 @@ namespace Zodiac
                     auto byte_count = array_type->static_array.count *
                         (array_type->static_array.base->bit_size / 8);
 
-                    memcpy(dest_value->value.static_array, source_value->value.static_array,
+                    memcpy(dest_value->value.pointer, source_value->value.pointer,
                            byte_count);
                 }
                 else if (dest_value->type->kind == AST_TYPE_STRUCT)
@@ -1238,8 +1242,8 @@ namespace Zodiac
                     uint64_t struct_byte_size = struct_type->bit_size / 8;
                     assert(struct_byte_size);
 
-                    memcpy(dest_value->value.struct_pointer,
-                           source_value->value.struct_pointer,
+                    memcpy(dest_value->value.pointer,
+                           source_value->value.pointer,
                            struct_byte_size);
                 }
                 else
@@ -1302,7 +1306,7 @@ namespace Zodiac
                     uint64_t struct_byte_size = pointer_base_type->bit_size / 8;
                     assert(struct_byte_size);
 
-                    memcpy(pointer, source_value->value.struct_pointer,
+                    memcpy(pointer, source_value->value.pointer,
                            struct_byte_size);
                 }
                 else
@@ -1350,17 +1354,17 @@ namespace Zodiac
                 if (dest_type->kind == AST_TYPE_STRUCT ||
                     dest_type->kind == AST_TYPE_UNION)
                 {
-                    dest_value->value.struct_pointer = pointer_value->value.struct_pointer;
+                    dest_value->value.pointer = pointer_value->value.pointer;
                 }
                 else if (dest_type->kind == AST_TYPE_POINTER &&
                          dest_type->pointer.base->kind == AST_TYPE_STRUCT)
                 {
-                     dest_value->value.string =
-                         (uint8_t*)(*(uint64_t*)pointer_value->value.struct_pointer);
+                     dest_value->value.pointer =
+                         (uint8_t*)(*(uint64_t*)pointer_value->value.pointer);
                 }
                 else if (dest_type->kind == AST_TYPE_STATIC_ARRAY)
                 {
-                    dest_value->value.static_array = (void*)pointer_value->value.string;
+                    dest_value->value.pointer = pointer_value->value.pointer;
                 }
                 else if (dest_type->flags & AST_TYPE_FLAG_INT)
                 {
@@ -1368,25 +1372,25 @@ namespace Zodiac
                     {
                         case 64:
                         {
-                            dest_value->value.s64 = *((int64_t*)pointer_value->value.string);
+                            dest_value->value.s64 = *((int64_t*)pointer_value->value.pointer);
                             break;
                         }
 
                         case 32:
                         {
-                            dest_value->value.u32 = *((uint32_t*)pointer_value->value.string);
+                            dest_value->value.u32 = *((uint32_t*)pointer_value->value.pointer);
                             break;
                         }
 
                         case 16:
                         {
-                            dest_value->value.u16 = *((uint16_t*)pointer_value->value.string);
+                            dest_value->value.u16 = *((uint16_t*)pointer_value->value.pointer);
                             break;
                         }
 
                         case 8:
                         {
-                            dest_value->value.u8 = *((uint8_t*)pointer_value->value.string);
+                            dest_value->value.u8 = *((uint8_t*)pointer_value->value.pointer);
                             break;
                         }
 
@@ -1399,24 +1403,24 @@ namespace Zodiac
                     {
                         case 64:
                         {
-                            dest_value->value.r64 = *((double*)pointer_value->value.string);
+                            dest_value->value.r64 = *((double*)pointer_value->value.pointer);
                             break;
                         }
 
                         case 32:
                         {
-                            dest_value->value.r32 = *((float*)pointer_value->value.string);
+                            dest_value->value.r32 = *((float*)pointer_value->value.pointer);
                             break;
                         }
                     }
                 }
                 else if (dest_type->kind == AST_TYPE_ENUM)
                 {
-                    dest_value->value.s64 = *((int64_t*)pointer_value->value.string);
+                    dest_value->value.s64 = *((int64_t*)pointer_value->value.pointer);
                 }
                 else if (dest_type->kind == AST_TYPE_POINTER)
                 {
-                    dest_value->value.string = *((uint8_t**)pointer_value->value.string);
+                    dest_value->value.pointer = *((uint64_t**)pointer_value->value.pointer);
                 }
                 else assert(false);
 
@@ -1440,7 +1444,7 @@ namespace Zodiac
                     auto byte_count = array_type->static_array.count *
                         (array_type->static_array.base->bit_size / 8);
 
-                    memcpy(dest_value->value.static_array, source_value->value.static_array,
+                    memcpy(dest_value->value.pointer, source_value->value.pointer,
                            byte_count);
                 }
                 else if (dest_value->type->kind == AST_TYPE_STRUCT)
@@ -1457,8 +1461,8 @@ namespace Zodiac
                     uint64_t struct_byte_size = struct_type->bit_size / 8;
                     assert(struct_byte_size);
 
-                    memcpy(dest_value->value.struct_pointer,
-                           source_value->value.struct_pointer,
+                    memcpy(dest_value->value.pointer,
+                           source_value->value.pointer,
                            struct_byte_size);
                 }
                 else
@@ -1514,7 +1518,7 @@ namespace Zodiac
 
                 if (iri->arg1->type->kind == AST_TYPE_STRUCT)
                 {
-                    dest->value.struct_pointer = source->value.struct_pointer;
+                    dest->value.pointer = source->value.pointer;
                 }
                 else
                 {
@@ -1535,7 +1539,7 @@ namespace Zodiac
 
                 if (iri->result->type->kind == AST_TYPE_STRUCT)
                 {
-                    dest->value.struct_pointer = source_allocl->value.struct_pointer;
+                    dest->value.pointer = source_allocl->value.pointer;
                 }
                 else
                 {
@@ -1562,7 +1566,7 @@ namespace Zodiac
                 }
                 else if (iri->arg1->type->kind == AST_TYPE_POINTER)
                 {
-                    result_val->value.boolean = !operand_val->value.string;
+                    result_val->value.boolean = !operand_val->value.pointer;
                 }
                 else assert(false);
 
@@ -1618,12 +1622,12 @@ namespace Zodiac
                 if (iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY)
                 {
                     element_type = iri->arg1->type->static_array.base;
-                    base_pointer = (uint8_t*)base_pointer_value->value.static_array;
+                    base_pointer = (uint8_t*)base_pointer_value->value.pointer;
                 }
                 else if (iri->arg1->type->kind == AST_TYPE_POINTER)
                 {
                     element_type = iri->arg1->type->pointer.base;
-                    base_pointer = (uint8_t*)base_pointer_value->value.string;
+                    base_pointer = (uint8_t*)base_pointer_value->value.pointer;
                 }
                 else assert(false);
                 void* result_pointer = ((uint8_t*)base_pointer) +
@@ -1702,7 +1706,7 @@ namespace Zodiac
                 else if (iri->arg1->type->kind == AST_TYPE_POINTER &&
                          iri->result->type == Builtin::type_bool)
                 {
-                    dest->value.boolean = source->value.string != nullptr;
+                    dest->value.boolean = source->value.pointer != nullptr;
                 }
                 else if ((iri->arg1->type->flags & AST_TYPE_FLAG_INT) &&
                          iri->result->type->kind == AST_TYPE_ENUM)
@@ -1712,12 +1716,12 @@ namespace Zodiac
                 else if ((iri->arg1->type->flags & AST_TYPE_FLAG_INT) &&
                          (iri->result->type->kind == AST_TYPE_POINTER))
                 {
-                    dest->value.string = (uint8_t*)source->value.u64;
+                    dest->value.pointer = (uint8_t*)source->value.u64;
                 }
                 else if (iri->arg1->type == Builtin::type_pointer_to_void &&
                          (iri->result->type->flags & AST_TYPE_FLAG_INT))
                 {
-                    dest->value.u64 = (uint64_t)source->value.string;
+                    dest->value.u64 = (uint64_t)source->value.pointer;
                 }
                 else if (iri->arg1->type == Builtin::type_double &&
                          (iri->result->type->flags &  AST_TYPE_FLAG_INT))
@@ -1727,12 +1731,17 @@ namespace Zodiac
                 else if (iri->arg1->type->kind == AST_TYPE_STRUCT &&
                          (iri->result->type->flags & AST_TYPE_FLAG_INT))
                 {
-                    dest->value.u64 = (uint64_t)source->value.struct_pointer;
+                    dest->value.u64 = (uint64_t)source->value.pointer;
                 }
                 else if (iri->arg1->type->kind == AST_TYPE_STRUCT &&
                          iri->result->type == Builtin::type_double)
                 {
-                    dest->value.r64 = (double)((uint64_t)source->value.struct_pointer);
+                    dest->value.r64 = (double)((uint64_t)source->value.pointer);
+                }
+                else if (iri->arg1->type->kind == AST_TYPE_POINTER &&
+                         iri->result->type == Builtin::type_u64)
+                {
+                    dest->value.u64 = (uint64_t)source->value.pointer;
                 }
                 else assert(false);
 
@@ -1774,13 +1783,13 @@ namespace Zodiac
                 }
                 assert(found);
 
-                void* result_pointer = ((uint8_t*)struct_pointer_value->value.struct_pointer) +
+                void* result_pointer = ((uint8_t*)struct_pointer_value->value.pointer) +
                                         (member_offset / 8);
                 IR_Value* result_pointer_value = ir_runner_get_local_temporary(runner,
                                                                                iri->result);
                 assert(iri->result->type->kind == AST_TYPE_POINTER);
                 result_pointer_value->type = iri->result->type;
-                result_pointer_value->value.struct_pointer = result_pointer;
+                result_pointer_value->value.pointer = result_pointer;
                 break;
             }
 
@@ -1806,9 +1815,9 @@ namespace Zodiac
                 IR_Value* user_data_value = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* thread_value = ir_runner_get_local_temporary(runner, iri->result);
 
-                assert(func_value->value.string);
+                assert(func_value->value.pointer);
 
-                DCCallback* callback = (DCCallback*)func_value->value.string;
+                DCCallback* callback = (DCCallback*)func_value->value.pointer;
                 assert(callback);
                 _IR_DCB_Data*  dcb_data = (_IR_DCB_Data*)dcbGetUserData(callback);
                 assert(dcb_data);
@@ -1826,8 +1835,8 @@ namespace Zodiac
                     new_thread = (IR_Thread*)mem_alloc(sizeof(IR_Thread));
                 }
                 assert(new_thread);
-                thread_value->value.struct_pointer = &new_thread->builtin_thread;
-                new_thread->builtin_thread.user_data = user_data_value->value.struct_pointer;
+                thread_value->value.pointer = &new_thread->builtin_thread;
+                new_thread->builtin_thread.user_data = user_data_value->value.pointer;
                 new_thread->function_value = func_value;
                 new_thread->function = func->function;
                 new_thread->next = runner->threads;
@@ -1864,7 +1873,7 @@ namespace Zodiac
                 {
                     auto next = thread->next;
 
-                    if (thread->handle == *(Thread_Handle*)thread_value->value.struct_pointer)
+                    if (thread->handle == *(Thread_Handle*)thread_value->value.pointer)
                     {
                         break;
                     }
@@ -1873,9 +1882,9 @@ namespace Zodiac
                     thread = next;
                 }
                 assert(thread);
-                // printf("joining thread value: %d\n", thread_value->value.struct_pointer);
+                // printf("joining thread value: %d\n", thread_value->value.pointer);
 
-				bool result = JOIN_THREAD(thread->handle, &result_value->value.struct_pointer);
+				bool result = JOIN_THREAD(thread->handle, &result_value->value.pointer);
 				assert(result);
 
                 if (thread == runner->threads)
@@ -1955,7 +1964,7 @@ namespace Zodiac
                 uint64_t array_byte_size = array_type->static_array.count *
                     (array_type->static_array.base->bit_size / 8);
                 assert(array_byte_size == array_type->bit_size / 8);
-                new_temp.value.static_array = arena_alloc_array(&result->arena, uint8_t,
+                new_temp.value.pointer = arena_alloc_array(&result->arena, uint8_t,
                                                                 array_byte_size);
             }
             else if (code_temp->kind == IRV_ALLOCL &&
@@ -1965,7 +1974,7 @@ namespace Zodiac
                 AST_Type* struct_type = code_temp->type;
                 uint64_t struct_byte_size = struct_type->bit_size / 8;
                 assert(struct_byte_size);
-                new_temp.value.struct_pointer = arena_alloc_array(&result->arena, uint8_t,
+                new_temp.value.pointer = arena_alloc_array(&result->arena, uint8_t,
                                                                   struct_byte_size);
             }
             else if (code_temp->kind == IRV_TEMPORARY &&
@@ -1975,7 +1984,7 @@ namespace Zodiac
                 AST_Type* struct_type = code_temp->type;
                 uint64_t struct_byte_size = struct_type->bit_size / 8;
                 assert(struct_byte_size);
-                new_temp.value.struct_pointer = arena_alloc_array(&result->arena, uint8_t,
+                new_temp.value.pointer = arena_alloc_array(&result->arena, uint8_t,
                                                                   struct_byte_size);
             }
             assert(new_temp.type);

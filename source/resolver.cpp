@@ -3814,7 +3814,7 @@ namespace Zodiac
 
                 resolver->module->gen_data = nullptr;
 
-                return (char*)return_value.value.string;
+                return (char*)return_value.value.pointer;
             }
         }
         else
