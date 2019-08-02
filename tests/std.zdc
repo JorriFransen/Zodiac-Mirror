@@ -243,3 +243,12 @@ queue_dequeue :: (queue: *Queue($T)) -> T
 
     return result;
 }
+
+queue_free :: (queue: *Queue($T))
+{
+    assert(queue.data);
+
+    _c.free(queue.data);
+    queue.count = 0;
+    queue.capacity = 0;
+}
