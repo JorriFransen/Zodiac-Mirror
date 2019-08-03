@@ -1,6 +1,30 @@
 
 _c :: import c;
 
+Type_Info_Kind : u64 : enum
+{
+    INVALID;
+    POINTER;
+    STRUCT;
+    UNION;
+    ENUM;
+    FUNCTION;
+    BASE;
+}
+
+Type_Info :: struct
+{
+    kind      : Type_Info_Kind;
+    name      : String;
+    byte_size : u64;
+}
+
+Type_Info_Data :: struct
+{
+    type_infos      : *Type_Info;
+    type_info_count : u64;
+}
+
 is_power_of_two :: (x: u64) -> bool
 {
     return (x & (x - 1)) == 0;

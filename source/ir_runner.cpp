@@ -1891,6 +1891,21 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_GET_TYPE_INFO:
+            {
+                IR_Value* index_value = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
+
+                Type_Info_Data* tid = &runner->context->type_info_data;
+
+                assert(index_value->type == Builtin::type_u64);
+                assert(index_value->value.u64 < tid->type_info_count);
+
+                Type_Info* type_info = &tid->type_infos[index_value->value.u64];
+                result_value->value.pointer = type_info;
+                break;
+            }
+
             default: assert(false);
         }
     }

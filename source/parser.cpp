@@ -1257,6 +1257,10 @@ namespace Zodiac
             {
                 result = parse_sizeof_expression(parser, scope);
             }
+            else if (is_token(parser, TOK_KW_GET_TYPE_INFO))
+            {
+                result = parse_get_type_info_expression(parser, scope);
+            }
             else
             {
 				auto fp = current_token(parser).file_pos;
@@ -1510,6 +1514,21 @@ namespace Zodiac
         expect_token(parser, TOK_RPAREN);
 
         return ast_sizeof_expression_new(parser->context, ft.file_pos, type_spec);
+    }
+
+    static AST_Expression* parse_get_type_info_expression(Parser* parser, AST_Scope* scope)
+    {
+        assert(parser);
+        assert(scope);
+
+        auto ft = current_token(parser);
+
+        expect_token(parser, TOK_KW_GET_TYPE_INFO);
+        expect_token(parser, TOK_LPAREN);
+        AST_Type_Spec* type_spec = parse_type_spec(parser, scope);
+        expect_token(parser, TOK_RPAREN);
+
+        return ast_get_type_info_expression_new(parser->context, ft.file_pos, type_spec);
     }
 
     static AST_Expression* parse_call_expression(Parser* parser, AST_Expression* ident_expression,

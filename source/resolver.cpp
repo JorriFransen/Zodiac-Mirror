@@ -1549,6 +1549,20 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_GET_TYPE_INFO:
+            {
+                result &= try_resolve_type_spec(resolver,
+                                                expression->get_type_info_expr.type_spec,
+                                                &expression->get_type_info_expr.type, scope);
+                if (result)
+                {
+                    expression->type = Builtin::type_pointer_to_Type_Info;
+                    maybe_register_type_info(resolver->context,
+                                             expression->get_type_info_expr.type);
+                }
+                break;
+            }
+
             default:
             {
                 assert(false);

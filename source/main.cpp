@@ -80,6 +80,19 @@ int main(int argc, char** argv)
     assert(string_length_decl->kind == AST_DECL_FUNC);
     Builtin::decl_string_length = string_length_decl;
 
+    AST_Declaration* type_info_type_decl = ast_scope_find_declaration(context,
+                                                                      std_ast_module->module_scope,
+                                                                      Builtin::atom_Type_Info);
+    assert(type_info_type_decl);
+    assert(type_info_type_decl->kind == AST_DECL_AGGREGATE_TYPE);
+    AST_Type* type_info_type = type_info_type_decl->aggregate_type.type;
+    assert(type_info_type->kind == AST_TYPE_STRUCT);
+    Builtin::type_Type_Info = type_info_type;
+
+    AST_Type* pointer_to_type_info = ast_find_or_create_pointer_type(context, type_info_type);
+    assert(pointer_to_type_info);
+    Builtin::type_pointer_to_Type_Info = pointer_to_type_info;
+
     const char* file_string = read_file_string(file_name);
     // fprintf(stderr, "File contents:\n%s\n", file_string);
 

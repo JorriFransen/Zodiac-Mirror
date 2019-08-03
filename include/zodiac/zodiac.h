@@ -3,6 +3,7 @@
 #include "atom.h"
 #include "common.h"
 #include "token.h"
+#include "type_info.h"
 
 namespace Zodiac
 {
@@ -79,9 +80,9 @@ namespace Zodiac
         BUF(Registered_Keyword) keywords = nullptr;
         BUF(AST_Declaration*) builtin_decls = nullptr;
 
-        // BUF(AST_Type*) types = nullptr;
         AST_Type** type_hash = nullptr;
         uint64_t type_count = 0;
+        Type_Info_Data type_info_data = {};
 
         BUF(Compiled_Module) compiled_modules = nullptr;
         BUF(Compiled_Module) modules_with_errors = nullptr;

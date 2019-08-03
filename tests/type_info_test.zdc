@@ -1,0 +1,35 @@
+
+std :: import std;
+using std;
+
+main :: ()
+{
+    print("Type info test");
+
+    int_info : *Type_Info = get_type_info(int);
+    print_type_info("int", int_info);
+    print_type_info("u64", get_type_info(u64));
+    print_type_info("*int", get_type_info(*int));
+}
+
+print_type_info :: (name: *u8, info: *Type_Info)
+{
+    _c.printf("%s: ", name);
+
+    switch (info.kind)
+    {
+        case (:Type_Info_Kind)Type_Info_Kind.BASE:
+        {
+            _c.printf("%.*s (%lu bytes)", info.name.length, info.name.data, info.byte_size);
+        }
+
+        case (:Type_Info_Kind)Type_Info_Kind.POINTER:
+        {
+            assert(false);
+        }
+
+        default: assert(false);
+    }
+
+    _c.printf("\n");
+}

@@ -137,6 +137,7 @@ namespace Zodiac
         IR_OP_ASSERT,
 
         IR_OP_PHI,
+        IR_OP_GET_TYPE_INFO,
 
         IR_OP_CREATE_THREAD,
         IR_OP_JOIN_THREAD,
@@ -422,6 +423,8 @@ namespace Zodiac
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);
 
     IR_Value* ir_builder_emit_phi(IR_Builder* ir_builder, AST_Type* type, File_Pos file_pos);
+    IR_Value* ir_builder_emit_get_type_info(IR_Builder* ir_builder, uint64_t index,
+                                            File_Pos file_pos);
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, File_Pos file_pos, const char* name,
                                  AST_Type* func_type);

@@ -59,6 +59,7 @@ namespace Zodiac
         AST_EXPR_DOT,
 		AST_EXPR_CAST,
         AST_EXPR_SIZEOF,
+        AST_EXPR_GET_TYPE_INFO,
         AST_EXPR_POST_INCREMENT,
         AST_EXPR_POST_DECREMENT,
     };
@@ -209,6 +210,12 @@ namespace Zodiac
                 AST_Type_Spec* type_spec;
                 uint64_t byte_size;
             } sizeof_expr;
+
+            struct
+            {
+                AST_Type_Spec* type_spec;
+                AST_Type* type;
+            } get_type_info_expr;
         };
     };
 
@@ -529,6 +536,8 @@ namespace Zodiac
         const char* name;
         BUF(AST_Overload_Directive) overloads = nullptr;
 
+        uint64_t info_index = 0;
+
         union
         {
             struct
@@ -692,6 +701,8 @@ namespace Zodiac
                                                     AST_Expression* ident_expr);
     AST_Expression* ast_sizeof_expression_new(Context* context, File_Pos file_pos,
                                               AST_Type_Spec* type_spec);
+    AST_Expression* ast_get_type_info_expression_new(Context* context, File_Pos file_pos,
+                                                     AST_Type_Spec* type_spec);
     AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos,
                                            AST_Expression* base_expr,
                                            AST_Expression* member_expr);

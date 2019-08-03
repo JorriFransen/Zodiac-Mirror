@@ -234,13 +234,25 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_sizeof_expression_new(Context* context, File_Pos file_pos, AST_Type_Spec* type_spec)
+    AST_Expression* ast_sizeof_expression_new(Context* context, File_Pos file_pos,
+                                              AST_Type_Spec* type_spec)
     {
         assert(context);
         assert(type_spec);
 
         auto result = ast_expression_new(context, file_pos, AST_EXPR_SIZEOF);
         result->sizeof_expr.type_spec = type_spec;
+        return result;
+    }
+
+    AST_Expression* ast_get_type_info_expression_new(Context* context, File_Pos file_pos,
+                                                     AST_Type_Spec* type_spec)
+    {
+        assert(context);
+        assert(type_spec);
+
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_GET_TYPE_INFO);
+        result->get_type_info_expr.type_spec = type_spec;
         return result;
     }
 
@@ -879,6 +891,7 @@ namespace Zodiac
         result->bit_size = bit_size;
         result->name = name;
         result->overloads = nullptr;
+        result->info_index = 0;
 
         return result;
     }

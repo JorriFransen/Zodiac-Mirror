@@ -1226,6 +1226,17 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_GET_TYPE_INFO:
+            {
+                assert(expression->get_type_info_expr.type);
+                AST_Type* type = expression->get_type_info_expr.type;
+                assert(type->info_index);
+
+                return ir_builder_emit_get_type_info(ir_builder, type->info_index,
+                                                     expression->file_pos);
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -3297,6 +3308,23 @@ namespace Zodiac
         return result;
     }
 
+    IR_Value* ir_builder_emit_get_type_info(IR_Builder* ir_builder, uint64_t index,
+                                            File_Pos file_pos)
+    {
+        assert(ir_builder);
+        assert(index);
+
+
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY,
+                                              Builtin::type_pointer_to_Type_Info);
+        IR_Value* index_value = ir_integer_literal(ir_builder, Builtin::type_u64, index);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, file_pos, IR_OP_GET_TYPE_INFO,
+                                                 index_value, nullptr, result_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result_value;
+    }
+
     void phi_node_add_incoming(IR_Value* phi_value, IR_Block* block, IR_Value* value)
     {
         assert(phi_value);
@@ -4021,6 +4049,13 @@ namespace Zodiac
                         string_builder_append(sb, ", ");
                     }
                 }
+                break;
+            }
+
+            case IR_OP_GET_TYPE_INFO:
+            {
+                string_builder_append(sb, "GET_TYPE_INFO ");
+                ir_print_value(instruction->arg1, sb);
                 break;
             }
 
