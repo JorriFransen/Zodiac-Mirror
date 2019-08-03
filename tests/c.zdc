@@ -15,7 +15,7 @@ else static_if (PLATFORM_LINUX)
     #foreign fdopen :: (fd: int, mode: *u8) -> *FILE;
 
     #foreign usleep :: (usec: int) -> int;
-    _msleep :: (msec: int) { usleep(usec * 1000); }
+    _msleep :: (msec: int) { usleep(msec * 1000); }
 }
 else
 {
