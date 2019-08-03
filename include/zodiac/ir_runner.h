@@ -64,6 +64,7 @@ namespace Zodiac
         IR_Stack_Frame* free_stack_frames = nullptr;
         Stack<IR_Pushed_Arg> arg_stack = {};
         IR_Block* jump_block = nullptr;
+        IR_Block* from_block = nullptr;
         bool returned = false;
         bool asserted = false;
 

@@ -18,6 +18,7 @@ namespace Zodiac
         stack_init(&ir_runner->call_stack, 8);
         stack_init(&ir_runner->arg_stack, 8);
         ir_runner->jump_block = nullptr;
+        ir_runner->from_block = nullptr;
         ir_runner->returned = false;
         ir_runner->asserted = false;
 
@@ -435,6 +436,7 @@ namespace Zodiac
             ir_runner_execute_block(runner, block);
             if (runner->jump_block)
             {
+                runner->from_block = block;
                 block = runner->jump_block;
                 runner->jump_block = nullptr;
             }
@@ -873,49 +875,39 @@ namespace Zodiac
                 break;
             }
 
-            case IR_OP_AND_AND:
+            case IR_OP_AND:
             {
                 IR_Value* arg1 = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
                 AST_Type* type = arg1->type;
-
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 && arg2->value.s64;
-                }
-                else if (type == Builtin::type_double)
-                {
-                    dest->value.s64 = arg1->value.r64 && arg2->value.r64;
+                    dest->value.s64 = arg1->value.s64 & arg2->value.s64;
                 }
                 else if (type->kind == AST_TYPE_ENUM)
                 {
-                    dest->value.s64 = arg1->value.s64 && arg2->value.s64;
+                    dest->value.s64 = arg1->value.s64 & arg2->value.s64;
                 }
                 else assert(false);
                 break;
             }
 
-            case IR_OP_OR_OR:
+            case IR_OP_OR:
             {
                 IR_Value* arg1 = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
                 AST_Type* type = arg1->type;
-
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 || arg2->value.s64;
-                }
-                else if (type == Builtin::type_double)
-                {
-                    dest->value.s64 = arg1->value.r64 || arg2->value.r64;
+                    dest->value.s64 = arg1->value.s64 | arg2->value.s64;
                 }
                 else if (type->kind == AST_TYPE_ENUM)
                 {
-                    dest->value.s64 = arg1->value.s64 || arg2->value.s64;
+                    dest->value.s64 = arg1->value.s64 | arg2->value.s64;
                 }
                 else assert(false);
                 break;
@@ -1849,6 +1841,29 @@ namespace Zodiac
 					old_value->value.u64, new_value->value.u64);
 
                 result_value->value.boolean = result;
+                break;
+            }
+
+            case IR_OP_PHI:
+            {
+                assert(runner->from_block);
+
+                IR_Value* value_to_load = nullptr;
+                for (uint64_t i = 0; i < BUF_LENGTH(iri->phi_pairs); i++)
+                {
+                    auto pair = iri->phi_pairs[i];
+                    if (pair.from_block == runner->from_block)
+                    {
+                        value_to_load = pair.value_to_load;
+                        break;
+                    }
+                }
+                assert(value_to_load);
+
+                IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
+                IR_Value* loaded_value = ir_runner_get_local_temporary(runner, value_to_load);
+
+                *result_value = *loaded_value;
                 break;
             }
 

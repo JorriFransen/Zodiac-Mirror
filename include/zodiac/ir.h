@@ -6,6 +6,7 @@
 namespace Zodiac
 {
 
+    struct IR_Instruction;
     struct IR_Function;
     struct IR_Block;
 
@@ -56,6 +57,7 @@ namespace Zodiac
             struct
             {
                 uint64_t index;
+                IR_Instruction* phi;
             } temp;
 
             struct
@@ -96,8 +98,6 @@ namespace Zodiac
         IR_OP_GTEQ,
         IR_OP_EQ,
         IR_OP_NEQ,
-        IR_OP_AND_AND,
-        IR_OP_OR_OR,
         IR_OP_AND,
         IR_OP_OR,
         IR_OP_NOT,
@@ -136,16 +136,34 @@ namespace Zodiac
 		IR_OP_CAST,
         IR_OP_ASSERT,
 
+        IR_OP_PHI,
+
         IR_OP_CREATE_THREAD,
         IR_OP_JOIN_THREAD,
         IR_OP_COMPARE_AND_SWAP,
     };
 
+    struct IR_Phi_Pair
+    {
+        IR_Block* from_block = nullptr;
+        IR_Value* value_to_load = nullptr;
+    };
+
     struct IR_Instruction
     {
         IR_Operator op = IR_OP_NOP;
-        IR_Value* arg1 = nullptr;
-        IR_Value* arg2 = nullptr;
+
+        union
+        {
+            struct
+            {
+                IR_Value* arg1 = nullptr;
+                IR_Value* arg2 = nullptr;
+            };
+
+            BUF(IR_Phi_Pair) phi_pairs;
+        };
+
         IR_Value* result = nullptr;
 
         File_Pos origin;
@@ -340,10 +358,10 @@ namespace Zodiac
                                  File_Pos origin);
     IR_Value* ir_builder_emit_neq(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
                                   File_Pos origin);
-    IR_Value* ir_builder_emit_and_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
-                                      File_Pos origin);
-    IR_Value* ir_builder_emit_or_or(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
-                                    File_Pos origin);
+    IR_Value* ir_builder_emit_and_and(IR_Builder* ir_builder, AST_Expression* lhs,
+                                      AST_Expression* rhs, File_Pos origin);
+    IR_Value* ir_builder_emit_or_or(IR_Builder* ir_builder, AST_Expression* lhs,
+                                    AST_Expression* rhs, File_Pos origin);
     IR_Value* ir_builder_emit_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
                                   File_Pos origin);
     IR_Value* ir_builder_emit_or(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
@@ -403,8 +421,11 @@ namespace Zodiac
     IR_Value* ir_character_literal(IR_Builder* ir_builder, AST_Type* type, char c);
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);
 
+    IR_Value* ir_builder_emit_phi(IR_Builder* ir_builder, AST_Type* type, File_Pos file_pos);
+
     IR_Function* ir_function_new(IR_Builder* ir_builder, File_Pos file_pos, const char* name,
                                  AST_Type* func_type);
+    void phi_node_add_incoming(IR_Value* phi_value, IR_Block* block, IR_Value* value);
 
     IR_Value* ir_value_new(IR_Builder* ir_builder, IR_Value_Kind kind, AST_Type* type);
     IR_Value* ir_value_function_new(IR_Builder* ir_builder, IR_Function* function);
