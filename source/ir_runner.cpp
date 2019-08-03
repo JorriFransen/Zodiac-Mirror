@@ -84,6 +84,8 @@ namespace Zodiac
             }
             printf("Arena size: %.2fMB\n", (double)arena_cap / MB(1));
         }
+
+        ir_runner_cancel_all_threads(ir_runner);
     }
 
     void ir_runner_allocate_global_structs(IR_Runner* ir_runner)
@@ -129,6 +131,11 @@ namespace Zodiac
                                              1, &return_value);
         void* retval = frame->return_value->value.pointer;
 
+        if (thread_ir_runner.asserted)
+        {
+            ir_thread->parent_ir_runner->asserted = true;
+        }
+
         // assert(!thread_ir_runner.threads);
         assert(!thread_ir_runner.free_threads);
 
@@ -146,6 +153,18 @@ namespace Zodiac
 		dcFree(thread_ir_runner.dyn_vm);
 
         return retval;
+    }
+
+    void ir_runner_cancel_all_threads(IR_Runner* runner)
+    {
+        assert(runner);
+
+        IR_Thread* thread = runner->threads;
+        while (thread)
+        {
+            CANCEL_THREAD(thread->handle);
+            thread = thread->next;
+        }
     }
 
     bool ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* ast_module,
@@ -443,6 +462,11 @@ namespace Zodiac
             else
             {
                 block = block->next;
+            }
+
+            if (runner->asserted)
+            {
+                break;
             }
         }
 

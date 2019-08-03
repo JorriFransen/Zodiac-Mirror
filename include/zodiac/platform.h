@@ -94,6 +94,7 @@ static bool _join_thread(Thread_Handle handle, void** ret_val)
 
 #define CREATE_THREAD(func, user_data, handle) _create_thread(func, user_data, handle)
 #define JOIN_THREAD(handle, ret_val) _join_thread(handle, ret_val)
+#define CANCEL_THREAD(handle) pthread_cancel(handle)
 #define COMPARE_AND_SWAP(pointer, old_value, new_value) \
 	__sync_bool_compare_and_swap(pointer, old_value, new_value)
 

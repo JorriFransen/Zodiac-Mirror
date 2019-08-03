@@ -83,6 +83,7 @@ namespace Zodiac
     void ir_runner_allocate_global_structs(IR_Runner* ir_runner);
 
     void* ir_runner_thread_entry(void* user_data);
+    void ir_runner_cancel_all_threads(IR_Runner* runner);
 
     bool ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* AST_Module,
                                      IR_Module* ir_module);
