@@ -296,6 +296,11 @@ namespace Zodiac
             {
                 break;
             }
+
+			if (resolver.import_error)
+			{
+				break;
+			}
         }
 
         if (!resolver.done)

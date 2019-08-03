@@ -252,3 +252,8 @@ queue_free :: (queue: *Queue($T))
     queue.count = 0;
     queue.capacity = 0;
 }
+
+sleep :: (msec: int) -> void
+{
+    _c._msleep(msec);
+}

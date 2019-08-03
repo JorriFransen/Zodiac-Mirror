@@ -227,7 +227,7 @@ produce :: (thread: *Thread) -> *void
         for (i : u64 = 0; i < SEM_BUFFER_CAP; i++)
         {
             buffer[i] = i * i;
-            _c.usleep(1000 * 100);
+            std.sleep(100);
         }
 
         semaphore_wait(*sem_lock);

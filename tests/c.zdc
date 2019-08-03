@@ -3,12 +3,19 @@ static_if (PLATFORM_WINDOWS)
     #dynamic_link "msvcrt.dll";
     #foreign _fdopen :: (fd: int, mode: *u8) -> *FILE;
     fdopen :: (fd: int, mode: *u8) -> *FILE { return _fdopen(fd, mode); }
+
+    #dynamic_link "Kernel32.dll";
+    #foreign Sleep :: (msec: int) -> void;
+    _msleep :: (msec: int) { Sleep(msec); }
 }
 else static_if (PLATFORM_LINUX)
 {
     #dynamic_link "libc.so.6";
     #dynamic_link "libm.so.6";
     #foreign fdopen :: (fd: int, mode: *u8) -> *FILE;
+
+    #foreign usleep :: (usec: int) -> int;
+    _msleep :: (msec: int) { usleep(usec * 1000); }
 }
 else
 {
@@ -41,7 +48,6 @@ stderr : *FILE = null;
 #foreign cosf :: (x: float) -> float;
 
 #foreign time   :: (timer: *int) -> int;
-#foreign usleep :: (usec: int) -> int;
 
 open_std_handles :: () -> void
 {

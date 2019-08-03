@@ -66,6 +66,7 @@ int main(int argc, char** argv)
     AST_Declaration* string_type_decl = ast_scope_find_declaration(context,
                                                                    std_ast_module->module_scope,
                                                                    Builtin::atom_String);
+	assert(string_type_decl);
     assert(string_type_decl->kind == AST_DECL_AGGREGATE_TYPE);
     AST_Type* string_type = string_type_decl->aggregate_type.type;
     assert(string_type->kind == AST_TYPE_STRUCT);
