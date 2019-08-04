@@ -15,6 +15,13 @@ namespace Zodiac
         BASE,
     };
 
+    struct Type_Info;
+    union Type_Info_Pointer_Or_Id
+    {
+        Type_Info* type_info;
+        uint64_t id;
+    };
+
     struct Type_Info
     {
         Type_Info_Kind kind = INVALID;
@@ -26,6 +33,11 @@ namespace Zodiac
         } name;
 
         uint64_t byte_size = 0;
+
+        union
+        {
+            Type_Info_Pointer_Or_Id base;
+        };
     };
 
     struct Type_Info_Data
@@ -41,4 +53,7 @@ namespace Zodiac
     void maybe_register_type_info(Context* context, AST_Type* type);
     uint64_t next_type_info_index(Context* context);
     void grow_type_info_data(Context* context);
+
+    void copy_type_info(Arena* arena, Type_Info_Data* dest, Type_Info_Data* source);
+    void patch_type_info_ids_with_pointers(Type_Info_Data* tid);
 }

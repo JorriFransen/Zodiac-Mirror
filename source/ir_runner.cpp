@@ -35,12 +35,17 @@ namespace Zodiac
             ir_runner->loaded_dyn_libs = thread_parent->loaded_dyn_libs;
             ir_runner->loaded_foreign_symbols = thread_parent->loaded_foreign_symbols;
             ir_runner->threads = thread_parent->threads;
+            ir_runner->type_info_data = thread_parent->type_info_data;
         }
         else
         {
             ir_runner->loaded_dyn_libs = nullptr;
             ir_runner->loaded_foreign_symbols = nullptr;
             ir_runner->threads = nullptr;
+
+            ir_runner->type_info_data = {};
+            copy_type_info(&ir_runner->arena, &ir_runner->type_info_data, &context->type_info_data);
+            patch_type_info_ids_with_pointers(&ir_runner->type_info_data);
         }
     }
 
@@ -86,6 +91,7 @@ namespace Zodiac
         }
 
         ir_runner_cancel_all_threads(ir_runner);
+        arena_free(&ir_runner->arena);
     }
 
     void ir_runner_allocate_global_structs(IR_Runner* ir_runner)
@@ -1896,7 +1902,8 @@ namespace Zodiac
                 IR_Value* index_value = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
 
-                Type_Info_Data* tid = &runner->context->type_info_data;
+                Type_Info_Data* tid = &runner->type_info_data;
+                // Type_Info_Data* tid = &runner->context->type_info_data;
 
                 assert(index_value->type == Builtin::type_u64);
                 assert(index_value->value.u64 < tid->type_info_count);

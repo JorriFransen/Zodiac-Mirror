@@ -17,6 +17,13 @@ Type_Info :: struct
     kind      : Type_Info_Kind;
     name      : String;
     byte_size : u64;
+
+    union
+    {
+        // TODO: FIXME: Nested pointers to self
+        // base  : *Type_Info;
+        base  : *void;
+    }
 }
 
 Type_Info_Data :: struct

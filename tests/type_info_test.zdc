@@ -10,12 +10,22 @@ main :: ()
     print_type_info("int", int_info);
     print_type_info("u64", get_type_info(u64));
     print_type_info("*int", get_type_info(*int));
+    print_type_info("*u64", get_type_info(*u64));
+    print_type_info("u8", get_type_info(u8));
+
+    // print_type_info("Type_Info", get_type_info(Type_Info));
 }
 
 print_type_info :: (name: *u8, info: *Type_Info)
 {
     _c.printf("%s: ", name);
+    print_type_info(info);
+    _c.printf("\n");
+}
 
+print_type_info :: (info: *Type_Info)
+{
+    assert(info);
     switch (info.kind)
     {
         case (:Type_Info_Kind)Type_Info_Kind.BASE:
@@ -25,11 +35,11 @@ print_type_info :: (name: *u8, info: *Type_Info)
 
         case (:Type_Info_Kind)Type_Info_Kind.POINTER:
         {
-            assert(false);
+            _c.printf("*");
+            base := (:*Type_Info)info.base;
+            print_type_info(base);
         }
 
         default: assert(false);
     }
-
-    _c.printf("\n");
 }

@@ -38,6 +38,8 @@ namespace Zodiac
             case AST_TYPE_POINTER:
             {
                 tid->type_infos[index].kind = POINTER;
+                maybe_register_type_info(context, type->pointer.base);
+                tid->type_infos[index].base.id = type->pointer.base->info_index;
                 break;
             }
 
@@ -89,5 +91,68 @@ namespace Zodiac
         mem_free(tid->type_infos);
         tid->type_infos = new_infos;
         tid->type_info_cap = new_cap;
+    }
+
+    void copy_type_info(Arena* arena, Type_Info_Data* dest, Type_Info_Data* source)
+    {
+        assert(arena);
+        assert(dest);
+        assert(dest->type_infos == nullptr);
+        assert(dest->type_info_count == 0);
+        assert(source);
+        if (!source->type_infos || !source->type_info_count)
+        {
+            return;
+        }
+        assert(source->type_infos);
+        assert(source->type_info_count);
+
+        dest->type_infos = (Type_Info*)arena_alloc_array(arena, Type_Info, source->type_info_count);
+        dest->type_info_count = source->type_info_count;
+        dest->type_info_cap = source->type_info_cap;
+
+        memcpy(dest->type_infos, source->type_infos, sizeof(Type_Info) * source->type_info_count);
+    }
+
+    void patch_type_info_ids_with_pointers(Type_Info_Data* tid)
+    {
+        assert(tid);
+
+        if (!tid->type_infos || !tid->type_info_count)
+        {
+            return;
+        }
+
+        assert(tid->type_infos);
+        assert(tid->type_info_count);
+
+        for (uint64_t i = 0; i < tid->type_info_count; i++)
+        {
+            Type_Info* type_info = &tid->type_infos[i];
+
+            switch (type_info->kind)
+            {
+                case INVALID:
+                {
+                    *type_info = {};
+                    break;
+                }
+
+                case BASE:
+                {
+                    break;
+                }
+
+                case POINTER:
+                {
+                    auto id = type_info->base.id;
+                    assert(id < tid->type_info_count);
+                    type_info->base.type_info = &tid->type_infos[id];
+                    break;
+                }
+
+                default: assert(false);
+            }
+        }
     }
 }

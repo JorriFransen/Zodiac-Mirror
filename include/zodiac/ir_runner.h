@@ -74,6 +74,8 @@ namespace Zodiac
 
         IR_Thread* threads = nullptr;
         IR_Thread* free_threads = nullptr;
+
+        Type_Info_Data type_info_data = {};
     };
 
     void ir_runner_init(Context* context, IR_Runner* ir_runner,

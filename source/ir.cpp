@@ -1333,6 +1333,11 @@ namespace Zodiac
             assert(aggregate_type->kind == AST_TYPE_STRUCT ||
                    aggregate_type->kind == AST_TYPE_UNION);
 
+            while (base_value->type->kind == AST_TYPE_POINTER)
+            {
+                base_value = ir_builder_emit_load(ir_builder, base_value, expression->file_pos);
+            }
+
             uint64_t member_index = 0;
 
             auto member_decls = aggregate_type->aggregate_type.member_declarations;

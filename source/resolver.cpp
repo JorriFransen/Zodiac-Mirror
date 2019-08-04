@@ -148,10 +148,12 @@ namespace Zodiac
                         }
                         else
                         {
+                            if (overload_container)
+                                add_overload(resolver, overload_container, declaration);
                             result &= try_resolve_function_declaration(resolver, declaration,
                                                                        scope);
-                            if (result && overload_container)
-                                add_overload(resolver, overload_container, declaration);
+                            // if (result && overload_container)
+                            //     add_overload(resolver, overload_container, declaration);
                         }
                         break;
                     }
@@ -324,6 +326,11 @@ namespace Zodiac
                 declaration->flags |= AST_DECL_FLAG_FOREIGN;
                 assert(!declaration->function.body_block);
             }
+        }
+
+        if (!declaration->function.return_type && !declaration->function.return_type_spec)
+        {
+            declaration->function.suggested_return_type = Builtin::type_void;
         }
 
         if (declaration->function.body_block)
@@ -1551,14 +1558,18 @@ namespace Zodiac
 
             case AST_EXPR_GET_TYPE_INFO:
             {
-                result &= try_resolve_type_spec(resolver,
-                                                expression->get_type_info_expr.type_spec,
-                                                &expression->get_type_info_expr.type, scope);
-                if (result)
+                if (!expression->get_type_info_expr.type)
                 {
-                    expression->type = Builtin::type_pointer_to_Type_Info;
-                    maybe_register_type_info(resolver->context,
-                                             expression->get_type_info_expr.type);
+                    result &= try_resolve_type_spec(resolver,
+                                                    expression->get_type_info_expr.type_spec,
+                                                    &expression->get_type_info_expr.type, scope);
+
+                    if (result)
+                    {
+                        expression->type = Builtin::type_pointer_to_Type_Info;
+                        maybe_register_type_info(resolver->context,
+                                                 expression->get_type_info_expr.type);
+                    }
                 }
                 break;
             }
@@ -1643,7 +1654,7 @@ namespace Zodiac
         }
         else assert(false);
 
-        assert(func_decl);
+         assert(func_decl);
 
         const char* overload_name = nullptr;
 
@@ -1652,6 +1663,11 @@ namespace Zodiac
             overload_name = func_decl->identifier->atom.data;
             func_decl = find_overload_signature_match(resolver, func_decl, expression, scope);
             if (!func_decl) return false;
+
+            if (func_decl->identifier->atom == resolver->current_func_decl->identifier->atom)
+            {
+                recursive = true;
+            }
         }
 
         if (func_decl->flags & AST_DECL_FLAG_FUNC_POLY)
@@ -1699,6 +1715,11 @@ namespace Zodiac
                     return false;
                 }
             }
+        }
+
+        if (recursive && BUF_LENGTH(func_decl->function.args) != BUF_LENGTH(expression->call.arg_expressions))
+        {
+            return false;
         }
 
         for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
@@ -1822,14 +1843,26 @@ namespace Zodiac
             else
             {
                 assert(func_decl);
-                assert(func_decl->function.return_type_spec);
+                // if (!(func_decl->flags & AST_DECL_FLAG_RESOLVED))
+                // {
+                //     return false;
+                // }
+                assert(func_decl->function.return_type_spec ||
+                       func_decl->function.suggested_return_type);
 
-                AST_Type* return_type = nullptr;
-                result &= try_resolve_type_spec(resolver, func_decl->function.return_type_spec,
-                                                &return_type, scope);
-                if (result)
+                if (func_decl->function.return_type_spec)
                 {
-                    expression->type = return_type;
+                    AST_Type* return_type = nullptr;
+                    result &= try_resolve_type_spec(resolver, func_decl->function.return_type_spec,
+                                                    &return_type, scope);
+                    if (result)
+                    {
+                        expression->type = return_type;
+                    }
+                }
+                else
+                {
+                    expression->type = func_decl->function.suggested_return_type;
                 }
             }
 
