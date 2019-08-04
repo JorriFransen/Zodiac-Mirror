@@ -23,7 +23,19 @@ Type_Info :: struct
         // TODO: FIXME: Nested pointers to self
         // base  : *Type_Info;
         base  : *void;
+
+        aggregate :: struct
+        {
+            count : u64;
+            first : *Type_Info_Aggregate_Member;
+        }
     }
+}
+
+Type_Info_Aggregate_Member :: struct
+{
+    name : String;
+    type : *void;
 }
 
 Type_Info_Data :: struct

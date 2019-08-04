@@ -13,7 +13,7 @@ main :: ()
     print_type_info("*u64", get_type_info(*u64));
     print_type_info("u8", get_type_info(u8));
 
-    // print_type_info("Type_Info", get_type_info(Type_Info));
+    print_type_info("String", get_type_info(String));
 }
 
 print_type_info :: (name: *u8, info: *Type_Info)
@@ -30,7 +30,7 @@ print_type_info :: (info: *Type_Info)
     {
         case (:Type_Info_Kind)Type_Info_Kind.BASE:
         {
-            _c.printf("%.*s (%lu bytes)", info.name.length, info.name.data, info.byte_size);
+            _c.printf("%.*s ", info.name.length, info.name.data);
         }
 
         case (:Type_Info_Kind)Type_Info_Kind.POINTER:
@@ -38,6 +38,34 @@ print_type_info :: (info: *Type_Info)
             _c.printf("*");
             base := (:*Type_Info)info.base;
             print_type_info(base);
+        }
+
+        case (:Type_Info_Kind)Type_Info_Kind.STRUCT:
+        {
+            _c.printf("%.*s :: struct { ", info.name.length, info.name.data);
+            first_member := info.aggregate.first;
+
+            for (i : u64 = 0; i < info.aggregate.count; i++)
+            {
+                member := first_member[i];
+                _c.printf("%.*s: ", member.name.length, member.name.data);
+
+                mti := (:*Type_Info)member.type;
+                print_type_info(mti);
+
+                if (i < info.aggregate.count - 1)
+                {
+                    _c.printf(", ");
+                }
+
+            }
+
+            _c.printf("} ");
+        }
+
+        case (:Type_Info_Kind)Type_Info_Kind.INVALID:
+        {
+            assert(false);
         }
 
         default: assert(false);

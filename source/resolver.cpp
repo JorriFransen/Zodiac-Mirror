@@ -618,6 +618,11 @@ namespace Zodiac
                 mem_result &=
                     try_replace_nested_aggregate_with_mutable(resolver, member_decl,
                                                               member_decl->aggregate_type.scope);
+
+                if (!mem_result)
+                {
+                    return false;
+                }
             }
             assert(member_decl->kind == AST_DECL_MUTABLE);
             mem_result = try_resolve_declaration(resolver, member_decl,
@@ -2634,8 +2639,9 @@ namespace Zodiac
                             {
                                 AST_Declaration* anon_member = anon_members[j];
                                 assert(anon_member->kind == AST_DECL_MUTABLE);
-                                if (anon_member->mutable_decl.type->kind == AST_TYPE_STRUCT ||
-                                    anon_member->mutable_decl.type->kind == AST_TYPE_UNION)
+                                if (!anon_member->identifier &&
+                                    (anon_member->mutable_decl.type->kind == AST_TYPE_STRUCT ||
+                                     anon_member->mutable_decl.type->kind == AST_TYPE_UNION))
                                 {
                                     resolver_report_error(resolver, anon_member->file_pos,
                                                           "Multiple levels of anonymous aggregates are not allowed");

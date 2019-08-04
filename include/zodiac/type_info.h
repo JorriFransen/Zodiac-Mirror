@@ -16,9 +16,11 @@ namespace Zodiac
     };
 
     struct Type_Info;
+    struct Type_Info_Aggregate_Member;
     union Type_Info_Pointer_Or_Id
     {
         Type_Info* type_info;
+        Type_Info_Aggregate_Member* aggregate_member;
         uint64_t id;
     };
 
@@ -37,7 +39,24 @@ namespace Zodiac
         union
         {
             Type_Info_Pointer_Or_Id base;
+
+            struct
+            {
+                uint64_t count;
+                Type_Info_Pointer_Or_Id first;
+            } aggregate;
         };
+    };
+
+    struct Type_Info_Aggregate_Member
+    {
+        struct
+        {
+            const char* data = nullptr;
+            uint64_t length = 0;
+        } name;
+
+        Type_Info_Pointer_Or_Id type;
     };
 
     struct Type_Info_Data
@@ -45,14 +64,22 @@ namespace Zodiac
         Type_Info* type_infos = nullptr;
         uint64_t type_info_count = 0;
         uint64_t type_info_cap = 0;
+
+        Type_Info_Aggregate_Member* aggregate_members = nullptr;
+        uint64_t agg_count = 0;
+        uint64_t agg_cap = 0;
     };
 
     struct Context;
     struct AST_Type;
+    struct AST_Declaration;
 
     void maybe_register_type_info(Context* context, AST_Type* type);
     uint64_t next_type_info_index(Context* context);
     void grow_type_info_data(Context* context);
+    uint64_t register_aggregate_members(Context* context, BUF(uint64_t) indices,
+                                        BUF(AST_Declaration*) member_decls);
+    void ensure_aggregate_member_capacity(Context* context, uint64_t free_required);
 
     void copy_type_info(Arena* arena, Type_Info_Data* dest, Type_Info_Data* source);
     void patch_type_info_ids_with_pointers(Type_Info_Data* tid);
