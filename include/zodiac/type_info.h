@@ -55,6 +55,13 @@ namespace Zodiac
                 uint64_t member_count;
                 Type_Info_Pointer_Or_Id first;
             } enum_info;
+
+            struct
+            {
+                Type_Info_Pointer_Or_Id return_type;
+                uint64_t arg_count;
+                Type_Info_Pointer_Or_Id first_arg;
+            } function;
         };
     };
 

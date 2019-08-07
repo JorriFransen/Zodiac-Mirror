@@ -103,21 +103,33 @@ namespace Zodiac
                     type->aggregate_type.base_type->info_index;
 
                 auto aggregate_members = type->aggregate_type.member_declarations;
-                // BUF(Atom) member_names = nullptr;
-
-                // for (uint64_t i = 0; i < BUF_LENGTH(aggregate_members); i++)
-                // {
-                //     AST_Declaration* member_decl = aggregate_members[i];
-                //     assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
-                //     assert(member_decl->identifier);
-
-                //     BUF_PUSH(member_names, member_decl->identifier->atom);
-                // }
 
                 tid->type_infos[index].enum_info.member_count = BUF_LENGTH(aggregate_members);
                 tid->type_infos[index].enum_info.first.id =
                     register_enum_members(context, aggregate_members,
                                           type->aggregate_type.base_type);
+                break;
+            }
+
+            case AST_TYPE_FUNCTION:
+            {
+                tid->type_infos[index].kind = FUNCTION;
+                maybe_register_type_info(context, type->function.return_type);
+                tid->type_infos[index].function.return_type.id =
+                    type->function.return_type->info_index;
+                tid->type_infos[index].function.arg_count = BUF_LENGTH(type->function.arg_types);
+
+                BUF(uint64_t) indices = nullptr;
+
+                for (uint64_t i = 0; i < BUF_LENGTH(type->function.arg_types); i++)
+                {
+                    AST_Type* arg_type = type->function.arg_types[i];
+                    maybe_register_type_info(context, arg_type);
+                    BUF_PUSH(indices, arg_type->info_index);
+                }
+                tid->type_infos[index].function.first_arg.id =
+                    register_aggregate_members(context, indices, nullptr);
+                BUF_FREE(indices);
                 break;
             }
 
@@ -176,8 +188,11 @@ namespace Zodiac
     {
         assert(context);
         assert(indices);
-        assert(member_decls);
-        assert(BUF_LENGTH(indices) == BUF_LENGTH(member_decls));
+
+        if (member_decls)
+        {
+            assert(BUF_LENGTH(indices) == BUF_LENGTH(member_decls));
+        }
 
         auto count = BUF_LENGTH(indices);
 
@@ -189,15 +204,18 @@ namespace Zodiac
 
         for (uint64_t i = 0; i < count; i++)
         {
-            AST_Declaration* decl = member_decls[i];
-
             Type_Info_Aggregate_Member agg_mem = {};
             agg_mem.type.id = indices[i];
 
-            if (decl->identifier)
+            if (member_decls)
             {
-                agg_mem.name.data = decl->identifier->atom.data;
-                agg_mem.name.length = decl->identifier->atom.length;
+                AST_Declaration* decl = member_decls[i];
+
+                if (decl->identifier)
+                {
+                    agg_mem.name.data = decl->identifier->atom.data;
+                    agg_mem.name.length = decl->identifier->atom.length;
+                }
             }
 
             tid->aggregate_members[first_index + i] = agg_mem;
@@ -394,6 +412,19 @@ namespace Zodiac
                     type_info->enum_info.first.enum_member = &tid->enum_members[mem_id];
                     break;
                 };
+
+                case FUNCTION:
+                {
+                    auto return_id = type_info->function.return_type.id;
+                    assert(return_id < tid->type_info_count);
+                    type_info->function.return_type.type_info = &tid->type_infos[return_id];
+
+                    auto mem_id = type_info->function.first_arg.id;
+                    assert(mem_id < tid->agg_count);
+                    type_info->function.first_arg.aggregate_member =
+                        &tid->aggregate_members[mem_id];
+                    break;
+                }
 
                 default: assert(false);
             }

@@ -36,6 +36,13 @@ Type_Info :: struct
             member_count : u64;
             first        : *Type_Info_Enum_Member;
         }
+
+        function :: struct
+        {
+            return_type : *void;
+            arg_count   : u64;
+            first_arg   : *Type_Info_Aggregate_Member;
+        }
     }
 }
 

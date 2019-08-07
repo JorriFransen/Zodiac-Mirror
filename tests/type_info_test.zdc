@@ -43,6 +43,11 @@ main :: ()
     _c.printf("enum_to_string(Mode.OFF): %.*s\n", off_str.length, off_str.data);
     _c.printf("enum_to_string(Mode.HIBERNATE): %.*s\n", hib_str.length, hib_str.data);
 
+    pti_func_info := get_type_info(typeof(print_type_info));
+    print_type_info("typeof(print_type_info)", pti_func_info);
+    print_type_info("typeof(*print_type_info)", get_type_info(typeof(*print_type_info)));
+    print_type_info("typeof(_print_type_info)", get_type_info(typeof(_print_type_info)));
+    print_type_info("typeof(_c.printf)", get_type_info(typeof(_c.printf)));
 }
 
 print_type_info :: (name: *u8, info: *Type_Info)
@@ -64,9 +69,10 @@ _print_type_info :: (info: *Type_Info, recurse: bool, indent: u64)
 
         case Type_Info_Kind.POINTER:
         {
-            _c.printf("*");
+            _c.printf("*(");
             base := (:*Type_Info)info.base;
             _print_type_info(base, false, indent);
+            _c.printf(")");
         }
 
         case STRUCT, UNION:
@@ -137,6 +143,23 @@ _print_type_info :: (info: *Type_Info, recurse: bool, indent: u64)
             _c.printf(")");
         }
 
+        case FUNCTION:
+        {
+            _c.printf("function(");
+            args := info.function.first_arg;
+            for (i : u64 = 0; i < info.function.arg_count; i++)
+            {
+                if (i > 0)
+                {
+                    _c.printf(", ");
+                }
+                arg := args[i];
+                _print_type_info(arg.type, false, indent);
+            }
+
+            _c.printf(") -> ");
+            _print_type_info(info.function.return_type, false, indent);
+        }
 
         case INVALID:
         {
