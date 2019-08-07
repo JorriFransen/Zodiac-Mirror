@@ -1594,6 +1594,15 @@ namespace Zodiac
             }
             return ast_type_spec_pointer_new(parser->context, ft.file_pos, base_type_spec);
         }
+        else if (match_token(parser, TOK_KW_TYPEOF))
+        {
+            expect_token(parser, TOK_LPAREN);
+            AST_Expression* type_expr = parse_expression(parser, scope);
+            expect_token(parser, TOK_RPAREN);
+
+            return ast_type_spec_typeof_new(parser->context, ft.file_pos, type_expr);
+
+        }
 		else if (is_token(parser, TOK_LPAREN))
 		{
 			return parse_function_type_spec(parser, scope);

@@ -3047,6 +3047,18 @@ namespace Zodiac
 				return false;
 			}
 
+            case AST_TYPE_SPEC_TYPEOF:
+            {
+                if (try_resolve_expression(resolver, type_spec->typeof_expr.expr, scope))
+                {
+                    assert(type_spec->typeof_expr.expr->type);
+                    *type_dest = type_spec->typeof_expr.expr->type;
+                    return true;
+                }
+
+                return false;
+            }
+
             default: assert(false);
         }
 

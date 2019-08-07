@@ -1126,6 +1126,18 @@ namespace Zodiac
         return result;
     }
 
+    AST_Type_Spec* ast_type_spec_typeof_new(Context* context, File_Pos file_pos,
+                                            AST_Expression* expr)
+    {
+        assert(context);
+        assert(expr);
+
+        AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_TYPEOF);
+        result->typeof_expr.expr = expr;
+
+        return result;
+    }
+
     AST_Type_Spec* ast_type_spec_from_type_new(Context* context, File_Pos file_pos, AST_Type* type)
     {
         assert(context);

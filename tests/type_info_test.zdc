@@ -18,6 +18,9 @@ main :: ()
 
     int_info : *Type_Info = get_type_info(int);
     print_type_info("int", int_info);
+    x : int;
+    print_type_info("typeof(x)", get_type_info(typeof(x)));
+    print_type_info("typeof(*x)", get_type_info(typeof(*x)));
     print_type_info("u64", get_type_info(u64));
     print_type_info("*int", get_type_info(*int));
     print_type_info("*u64", get_type_info(*u64));
@@ -39,6 +42,7 @@ main :: ()
     _c.printf("enum_to_string(Mode.ON): %.*s\n", on_str.length, on_str.data);
     _c.printf("enum_to_string(Mode.OFF): %.*s\n", off_str.length, off_str.data);
     _c.printf("enum_to_string(Mode.HIBERNATE): %.*s\n", hib_str.length, hib_str.data);
+
 }
 
 print_type_info :: (name: *u8, info: *Type_Info)
