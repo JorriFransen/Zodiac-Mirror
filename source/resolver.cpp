@@ -96,7 +96,7 @@ namespace Zodiac
     }
 
     bool try_resolve_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                        AST_Scope* scope)
+                                 AST_Scope* scope, AST_Scope* poly_scope /*=nullptr*/)
     {
         assert(resolver);
         assert(declaration);
@@ -151,7 +151,7 @@ namespace Zodiac
                             if (overload_container)
                                 add_overload(resolver, overload_container, declaration);
                             result &= try_resolve_function_declaration(resolver, declaration,
-                                                                       scope);
+                                                                       scope, poly_scope);
                             // if (result && overload_container)
                             //     add_overload(resolver, overload_container, declaration);
                         }
@@ -160,7 +160,8 @@ namespace Zodiac
 
                     case AST_DECL_MUTABLE:
                     {
-                        result &= try_resolve_mutable_declaration(resolver, declaration, scope);
+                        result &= try_resolve_mutable_declaration(resolver, declaration, scope,
+                                                                  poly_scope);
                         break;
                     }
 
@@ -278,7 +279,8 @@ namespace Zodiac
     }
 
     static bool try_resolve_function_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                                 AST_Scope* scope)
+                                                 AST_Scope* scope,
+                                                 AST_Scope* poly_scope /*=nullptr*/)
     {
         assert(resolver);
         assert(declaration);
@@ -299,7 +301,7 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(declaration->function.args); i++)
         {
             AST_Declaration* arg_decl = declaration->function.args[i];
-            result &= try_resolve_declaration(resolver, arg_decl, arg_scope);
+            result &= try_resolve_declaration(resolver, arg_decl, arg_scope, poly_scope);
 			if (result)
 			{
 				assert(arg_decl->kind == AST_DECL_MUTABLE);
@@ -380,7 +382,8 @@ namespace Zodiac
     }
 
     static bool try_resolve_mutable_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                                AST_Scope* scope)
+                                                AST_Scope* scope,
+                                                AST_Scope* poly_scope /*= nullptr*/)
     {
         assert(resolver);
         assert(declaration);
@@ -393,7 +396,7 @@ namespace Zodiac
             declaration->mutable_decl.type_spec)
         {
             result &= try_resolve_type_spec(resolver, declaration->mutable_decl.type_spec,
-                                            &declaration->mutable_decl.type, scope);
+                                            &declaration->mutable_decl.type, scope, poly_scope);
 
             if (!result)
             {
@@ -774,6 +777,16 @@ namespace Zodiac
                                                                 declaration->identifier,
                                                                 member_type,
                                                                 aggregate_decls);
+
+            for (uint64_t i = 0; i < BUF_LENGTH(aggregate_decls); i++)
+            {
+                AST_Declaration* member_decl = aggregate_decls[i];
+                assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
+                assert(member_decl->constant_var.init_expression);
+                AST_Expression* init_expr = member_decl->constant_var.init_expression;
+                assert(init_expr->type->flags & AST_TYPE_FLAG_INT);
+                init_expr->type = declaration->aggregate_type.type;
+            }
         }
 
         return result;
@@ -2584,7 +2597,7 @@ namespace Zodiac
                     }
                     assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
 
-                    expression->type = member_decl->constant_var.type;
+                    expression->type = base_decl->aggregate_type.type;
                     expression->flags |= AST_EXPR_FLAG_CONST;
                     expression->dot.declaration = member_decl;
                 }
@@ -2805,7 +2818,8 @@ namespace Zodiac
     }
 
     bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec,
-                                      AST_Type** type_dest, AST_Scope* scope)
+                               AST_Type** type_dest, AST_Scope* scope,
+                               AST_Scope* poly_scope /*= nullptr*/)
     {
         assert(resolver);
         assert(type_spec);
@@ -2836,6 +2850,12 @@ namespace Zodiac
 
                 AST_Declaration* type_decl = find_declaration(resolver->context, scope,
 					                                          type_spec->identifier.identifier);
+                if (!type_decl && poly_scope)
+                {
+                    type_decl = find_declaration(resolver->context, poly_scope,
+                                                 type_spec->identifier.identifier);
+                }
+
                 if (type_decl && type_decl->kind == AST_DECL_AGGREGATE_TYPE &&
                     type_decl->aggregate_type.parameter_idents)
                 {

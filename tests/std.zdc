@@ -29,6 +29,13 @@ Type_Info :: struct
             count : u64;
             first : *Type_Info_Aggregate_Member;
         }
+
+        enum_info :: struct
+        {
+            enum_base    : *void;
+            member_count : u64;
+            first        : *Type_Info_Enum_Member;
+        }
     }
 }
 
@@ -38,10 +45,35 @@ Type_Info_Aggregate_Member :: struct
     type : *void;
 }
 
+Type_Info_Enum_Member :: struct
+{
+    name  : String;
+    value : u64;
+    type  : *void;
+}
+
 Type_Info_Data :: struct
 {
     type_infos      : *Type_Info;
     type_info_count : u64;
+}
+
+enum_to_string :: (enum_member: $T) -> String
+{
+    ti := get_type_info(T);
+    assert(ti.kind == Type_Info_Kind.ENUM);
+
+    for (i : u64 = 0; i < ti.enum_info.member_count; i++)
+    {
+        member_info := ti.enum_info.first[i];
+
+        if ((:T)member_info.value == enum_member)
+        {
+            return member_info.name;
+        }
+    }
+
+    assert(false);
 }
 
 is_power_of_two :: (x: u64) -> bool

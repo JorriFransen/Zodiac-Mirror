@@ -154,7 +154,7 @@ namespace Zodiac
         auto was_resolving = resolver->current_func_decl;
         resolver->current_func_decl = nullptr;
         result &= try_resolve_declaration(resolver, poly_function_instance,
-                                          poly_func_decl->function.argument_scope->parent);
+                                          poly_func_decl->function.argument_scope->parent, scope);
         resolver->current_func_decl = was_resolving;
 
 
@@ -654,6 +654,12 @@ namespace Zodiac
                 return ast_post_increment_expression_new(context, expression->file_pos, base_copy);
             }
 
+            case AST_EXPR_GET_TYPE_INFO:
+            {
+                auto ts_copy = copy_type_spec(context, expression->get_type_info_expr.type_spec);
+                return ast_get_type_info_expression_new(context, expression->file_pos, ts_copy);
+            }
+
             default: assert(false);
         }
 
@@ -1052,6 +1058,13 @@ namespace Zodiac
             case AST_EXPR_POST_INCREMENT:
             {
                 replace_poly_type_specs(expression->base_expression, replacements);
+                break;
+            }
+
+            case AST_EXPR_GET_TYPE_INFO:
+            {
+                maybe_replace_poly_type_spec(&expression->get_type_info_expr.type_spec,
+                                             replacements);
                 break;
             }
 

@@ -1290,8 +1290,11 @@ namespace Zodiac
                 assert(member);
                 assert(member->kind == AST_DECL_CONSTANT_VAR);
                 assert(member->constant_var.init_expression);
-                return ir_builder_emit_expression(ir_builder,
+                IR_Value* value = ir_builder_emit_expression(ir_builder,
                                                   member->constant_var.init_expression);
+                return value;
+                // return ir_builder_emit_cast(ir_builder, value, base_decl->aggregate_type.type,
+                //                             expression->file_pos);
             }
             else assert(false);
 
@@ -2844,7 +2847,8 @@ namespace Zodiac
         assert(arg_value->kind == IRV_ARGUMENT);
         assert(new_value->kind == IRV_TEMPORARY ||
                new_value->kind == IRV_ARGUMENT ||
-               new_value->kind == IRV_INT_LITERAL);
+               new_value->kind == IRV_INT_LITERAL ||
+               new_value->kind == IRV_BOOL_LITERAL);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_STOREA, arg_value,
                                                  new_value, nullptr);

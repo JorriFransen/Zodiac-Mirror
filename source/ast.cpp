@@ -1170,6 +1170,17 @@ namespace Zodiac
                 return ast_type_spec_identifier_new(context, file_pos, identifier);
             }
 
+            case AST_TYPE_ENUM:
+            {
+                assert(type->name);
+                AST_Identifier* identifier = ast_identifier_new(context,
+                                                                atom_get(context->atom_table,
+                                                                         type->name),
+                                                                file_pos);
+
+                return ast_type_spec_identifier_new(context, file_pos, identifier);
+            }
+
             default: assert(false);
         }
 

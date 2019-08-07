@@ -54,11 +54,12 @@ namespace Zodiac
     void resolver_do_cycle(Resolver* resolver);
 
     bool try_resolve_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                        AST_Scope* scope);
+                                 AST_Scope* scope, AST_Scope* poly_scope = nullptr);
     static bool try_resolve_function_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                                 AST_Scope* scope);
+                                                 AST_Scope* scope,
+                                                 AST_Scope* poly_scope = nullptr);
     static bool try_resolve_mutable_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                                AST_Scope* scope);
+                                                AST_Scope* scope, AST_Scope* poly_scope = nullptr);
     static bool try_resolve_constant_var_declaration(Resolver* resolver,
                                                      AST_Declaration* declaration,
                                                      AST_Scope* scope);
@@ -132,8 +133,8 @@ namespace Zodiac
                                        AST_Scope* scope);
 
     bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec,
-                                      AST_Type** type_dest,
-                                      AST_Scope* scope);
+                               AST_Type** type_dest, AST_Scope* scope,
+                               AST_Scope* poly_scope = nullptr);
     bool try_resolve_poly_type_spec_args(Resolver* resolver, AST_Type_Spec* type_spec,
                                          AST_Scope* scope);
 

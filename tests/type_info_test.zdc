@@ -2,6 +2,16 @@
 std :: import std;
 using std;
 
+using Type_Info_Kind;
+
+Mode :: enum
+{
+    ON;
+    OFF;
+    SLEEP;
+    HIBERNATE;
+}
+
 main :: ()
 {
     print("Type info test");
@@ -14,60 +24,150 @@ main :: ()
     print_type_info("u8", get_type_info(u8));
 
     print_type_info("String", get_type_info(String));
+    print_type_info("Type_Info", get_type_info(Type_Info));
+
+    mode_info := get_type_info(Mode);
+    assert(mode_info.kind == Type_Info_Kind.ENUM);
+    print_type_info("Mode", mode_info);
+
+    print_enum(mode_info);
+
+    on_str := enum_to_string(Mode.ON);
+    off_str := enum_to_string(Mode.OFF);
+    hib_str := enum_to_string(Mode.HIBERNATE);
+
+    _c.printf("enum_to_string(Mode.ON): %.*s\n", on_str.length, on_str.data);
+    _c.printf("enum_to_string(Mode.OFF): %.*s\n", off_str.length, off_str.data);
+    _c.printf("enum_to_string(Mode.HIBERNATE): %.*s\n", hib_str.length, hib_str.data);
 }
 
 print_type_info :: (name: *u8, info: *Type_Info)
 {
     _c.printf("%s: ", name);
-    print_type_info(info);
+    _print_type_info(info, true, 0);
     _c.printf("\n");
 }
 
-print_type_info :: (info: *Type_Info)
+_print_type_info :: (info: *Type_Info, recurse: bool, indent: u64)
 {
     assert(info);
     switch (info.kind)
     {
-        case (:Type_Info_Kind)Type_Info_Kind.BASE:
+        case Type_Info_Kind.BASE:
         {
-            _c.printf("%.*s ", info.name.length, info.name.data);
+            _c.printf("%.*s", info.name.length, info.name.data);
         }
 
-        case (:Type_Info_Kind)Type_Info_Kind.POINTER:
+        case Type_Info_Kind.POINTER:
         {
             _c.printf("*");
             base := (:*Type_Info)info.base;
-            print_type_info(base);
+            _print_type_info(base, false, indent);
         }
 
-        case (:Type_Info_Kind)Type_Info_Kind.STRUCT:
+        case STRUCT, UNION:
         {
-            _c.printf("%.*s :: struct { ", info.name.length, info.name.data);
-            first_member := info.aggregate.first;
-
-            for (i : u64 = 0; i < info.aggregate.count; i++)
+            if (info.kind == Type_Info_Kind.STRUCT)
             {
-                member := first_member[i];
-                _c.printf("%.*s: ", member.name.length, member.name.data);
-
-                mti := (:*Type_Info)member.type;
-                print_type_info(mti);
-
-                if (i < info.aggregate.count - 1)
+                if (info.name.data)
+                    _c.printf("%.*s :: struct", info.name.length, info.name.data);
+                else
                 {
-                    _c.printf(", ");
+                    recurse = true;
+                    _c.printf("anon_struct");
                 }
-
+            }
+            else
+            {
+                if (info.name.data)
+                    _c.printf("%.*s :: union", info.name.length, info.name.data);
+                else
+                {
+                    recurse = true;
+                    _c.printf("anon_union");
+                }
             }
 
-            _c.printf("} ");
+            if (recurse)
+            {
+                _c.printf(" { ");
+                members := info.aggregate.first;
+
+                for (i : u64 = 0; i < info.aggregate.count; i++)
+                {
+                    member := members[i];
+                    _c.printf("\n");
+                    indent += 1;
+                    for (in : u64 = 0; in < indent; in++) _c.printf("\t");
+                    if (member.name.data)
+                    {
+                        _c.printf("%.*s: ", member.name.length, member.name.data);
+                    }
+
+                    mti := (:*Type_Info)member.type;
+                    _print_type_info(mti, true, indent);
+
+                    if (i < info.aggregate.count - 1)
+                    {
+                        _c.printf(", ");
+                    }
+
+                    indent -= 1;
+
+                }
+
+                _c.printf("\n");
+                for (in : u64 = 0; in < indent; in++)
+                {
+                    _c.printf("\t");
+                }
+                _c.printf("}");
+            }
         }
 
-        case (:Type_Info_Kind)Type_Info_Kind.INVALID:
+        case ENUM:
+        {
+            _c.printf("%.*s :: enum(", info.name.length, info.name.data);
+            base := (:*Type_Info)info.base;
+            _print_type_info(base, false, indent);
+            _c.printf(")");
+        }
+
+
+        case INVALID:
         {
             assert(false);
         }
 
         default: assert(false);
     }
+}
+
+print_enum :: (enum_info: *Type_Info)
+{
+    assert(enum_info.kind == ENUM);
+
+    if (enum_info.name.data)
+    {
+        _c.printf("%.*s : ", enum_info.name.length, enum_info.name.data);
+    }
+
+    base_info := enum_info.enum_info.enum_base;
+    _print_type_info(base_info, false, 0);
+
+    _c.printf(" : enum {\n");
+
+
+    members := enum_info.enum_info.first;
+
+    for (i : u64 = 0; i < enum_info.enum_info.member_count; i++)
+    {
+        member := members[i];
+
+        // _c.printf("member.name.data: %p\n", member.name.data);
+        _c.printf("\t%.*s;\n", member.name.length, member.name.data);
+    }
+
+    _c.printf("}\n");
+
 }
