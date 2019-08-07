@@ -20,9 +20,7 @@ Type_Info :: struct
 
     union
     {
-        // TODO: FIXME: Nested pointers to self
-        // base  : *Type_Info;
-        base  : *void;
+        base  : *Type_Info;
 
         aggregate :: struct
         {

@@ -43,6 +43,8 @@ main :: ()
     _c.printf("enum_to_string(Mode.OFF): %.*s\n", off_str.length, off_str.data);
     _c.printf("enum_to_string(Mode.HIBERNATE): %.*s\n", hib_str.length, hib_str.data);
 
+    print(" ");
+
     pti_func_info := get_type_info(typeof(print_type_info));
     print_type_info("typeof(print_type_info)", pti_func_info);
     print_type_info("typeof(*print_type_info)", get_type_info(typeof(*print_type_info)));
@@ -70,8 +72,7 @@ _print_type_info :: (info: *Type_Info, recurse: bool, indent: u64)
         case Type_Info_Kind.POINTER:
         {
             _c.printf("*(");
-            base := (:*Type_Info)info.base;
-            _print_type_info(base, false, indent);
+            _print_type_info(info.base, false, indent);
             _c.printf(")");
         }
 
@@ -114,8 +115,7 @@ _print_type_info :: (info: *Type_Info, recurse: bool, indent: u64)
                         _c.printf("%.*s: ", member.name.length, member.name.data);
                     }
 
-                    mti := (:*Type_Info)member.type;
-                    _print_type_info(mti, true, indent);
+                    _print_type_info(member.type, true, indent);
 
                     if (i < info.aggregate.count - 1)
                     {

@@ -1637,7 +1637,18 @@ namespace Zodiac
                     }
                     else
                     {
-                        member_hash = ast_get_type_hash(member_decl->mutable_decl.type);
+                        if (member_decl->mutable_decl.type->kind == AST_TYPE_POINTER)
+                        {
+                            if (member_decl->mutable_decl.type->pointer.base == type ||
+                                (strcmp(type->name, member_decl->mutable_decl.type->pointer.base->name) == 0))
+                            {
+                                member_hash = hash_string("pointer_to_self_hasd;fsadjf;aksjf");
+                            }
+                        }
+                        else
+                        {
+                            member_hash = ast_get_type_hash(member_decl->mutable_decl.type);
+                        }
                     }
                     base_hash = hash_mix(base_hash, member_hash);
                 }

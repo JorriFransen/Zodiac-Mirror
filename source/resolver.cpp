@@ -221,7 +221,8 @@ namespace Zodiac
                             {
                                 result &= try_resolve_aggregate_type_declaration(resolver,
                                                                                  declaration,
-                                                                                 scope);
+                                                                                 scope, nullptr,
+                                                                                 nullptr);
                             }
                         }
                         break;
@@ -587,7 +588,9 @@ namespace Zodiac
 
     static bool try_resolve_aggregate_type_declaration(Resolver* resolver,
                                                        AST_Declaration* declaration,
-                                                       AST_Scope* scope)
+                                                       AST_Scope* scope,
+                                                       BUF(AST_Declaration*) _pointers_to_self,
+                                                       AST_Identifier* _self_ident)
     {
         assert(resolver);
         assert(declaration);
@@ -596,17 +599,31 @@ namespace Zodiac
 
         bool result = true;
 
-        AST_Identifier* identifier = declaration->identifier;
+        AST_Identifier* identifier = _self_ident;
+        if (identifier == nullptr)
+        {
+            assert(declaration->identifier);
+            identifier = declaration->identifier;
+        }
 
-
-        if (identifier)
+        if (declaration->identifier)
         {
             assert(!find_declaration(resolver->context, scope, declaration->identifier));
         }
 
         auto aggregate_decl = declaration->aggregate_type.aggregate_decl;
         auto aggregate_decls = aggregate_decl->members;
+
         BUF(AST_Declaration*) pointers_to_self = nullptr;
+        if (_pointers_to_self)
+        {
+            pointers_to_self = _pointers_to_self;
+        }
+        else
+        {
+            BUF_PUSH(pointers_to_self, nullptr);
+        }
+
         for (uint64_t i = 0; i < BUF_LENGTH(aggregate_decls); i++)
         {
             bool mem_result = true;
@@ -620,7 +637,8 @@ namespace Zodiac
                 assert(member_decl->aggregate_type.scope);
                 mem_result &=
                     try_replace_nested_aggregate_with_mutable(resolver, member_decl,
-                                                              member_decl->aggregate_type.scope);
+                                                              member_decl->aggregate_type.scope,
+                                                              pointers_to_self, identifier);
 
                 if (!mem_result)
                 {
@@ -667,13 +685,13 @@ namespace Zodiac
             }
             else assert(false);
 
-            if (pointers_to_self)
+            if (pointers_to_self && identifier && !_pointers_to_self)
             {
                 auto self_pointer_type =
                     ast_find_or_create_pointer_type(resolver->context,
                                                     declaration->aggregate_type.type);
 
-                for (uint64_t i = 0; i < BUF_LENGTH(pointers_to_self); i++)
+                for (uint64_t i = 1; i < BUF_LENGTH(pointers_to_self); i++)
                 {
                     AST_Declaration* pointer_to_self = pointers_to_self[i];
                     pointer_to_self->mutable_decl.type = self_pointer_type;
@@ -688,7 +706,10 @@ namespace Zodiac
             assert(declaration->aggregate_type.type);
         }
 
-        BUF_FREE(pointers_to_self);
+        if (!_pointers_to_self)
+        {
+            BUF_FREE(pointers_to_self);
+        }
 
         return result;
     }
@@ -3796,7 +3817,9 @@ namespace Zodiac
 
     bool try_replace_nested_aggregate_with_mutable(Resolver* resolver,
                                                    AST_Declaration* nested_aggregate,
-                                                   AST_Scope* scope)
+                                                   AST_Scope* scope,
+                                                   BUF(AST_Declaration*) pointers_to_self,
+                                                   AST_Identifier* self_ident)
     {
         assert(resolver);
         assert(nested_aggregate);
@@ -3804,8 +3827,11 @@ namespace Zodiac
         assert(nested_aggregate->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
                nested_aggregate->aggregate_type.kind == AST_AGG_DECL_UNION);
         assert(scope);
+        assert(pointers_to_self);
+        assert(self_ident);
 
-        bool result = try_resolve_declaration(resolver, nested_aggregate, scope);
+        bool result = try_resolve_aggregate_type_declaration(resolver, nested_aggregate, scope,
+                                                             pointers_to_self, self_ident);
         if (!result) return false;
 
         assert(nested_aggregate->aggregate_type.type);

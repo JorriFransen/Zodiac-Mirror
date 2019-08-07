@@ -36,6 +36,7 @@ namespace Zodiac
         }
 
         uint64_t index = next_type_info_index(context);
+        type->info_index = index;
 
         switch (type->kind)
         {
@@ -150,8 +151,6 @@ namespace Zodiac
             type_info->name.length = 0;
         }
         type_info->byte_size = type->bit_size / 8;
-
-        type->info_index = index;
     }
 
     uint64_t next_type_info_index(Context* context)

@@ -74,7 +74,9 @@ namespace Zodiac
                                                AST_Scope* scope);
     static bool try_resolve_aggregate_type_declaration(Resolver* resolver,
                                                        AST_Declaration* declaration,
-                                                       AST_Scope* scope);
+                                                       AST_Scope* scope,
+                                                       BUF(AST_Declaration*) _pointers_to_self,
+                                                       AST_Identifier* _self_ident);
     static bool try_resolve_enum_aggregate_type_declaration(Resolver* resolver, AST_Declaration* declaration,
                                                             AST_Scope* scope);
 	static bool try_resolve_typedef_declaration(Resolver* resolver, AST_Declaration* declaration,
@@ -178,7 +180,9 @@ namespace Zodiac
 
     bool try_replace_nested_aggregate_with_mutable(Resolver* resolver,
                                                    AST_Declaration* nested_aggregate,
-                                                   AST_Scope* scope);
+                                                   AST_Scope* scope,
+                                                   BUF(AST_Declaration*) pointers_to_self,
+                                                   AST_Identifier* self_ident);
 
     char* run_insert(Resolver* resolver, AST_Expression* call_expression);
 
