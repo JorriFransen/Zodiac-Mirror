@@ -46,6 +46,7 @@ static bool _compare_and_swap(uint64_t* pointer, uint64_t old_value, uint64_t ne
 
 #define CREATE_THREAD(func, user_data, handle) _create_thread((LPTHREAD_START_ROUTINE)func, user_data, handle);
 #define JOIN_THREAD(handle, ret_val) _join_thread(handle, ret_val)
+#define CANCEL_THREAD(handle) TerminateThread(handle, 0)
 #define COMPARE_AND_SWAP(pointer, old_value, new_value) \
 	_compare_and_swap(pointer, old_value, new_value)
 

@@ -374,6 +374,32 @@ namespace Zodiac
         return found;
     }
 
+	void grow_type_hash(Context* context)
+	{
+		assert(context);
+
+		assert(context->type_hash);
+		assert(context->type_count);
+
+		uint64_t new_count = context->type_count * 2;
+		AST_Type** new_mem = (AST_Type * *)mem_alloc(sizeof(AST_Type*) * new_count);
+
+		AST_Type** old_mem = context->type_hash;
+		uint64_t old_count = context->type_count;
+		context->type_hash = new_mem;
+		context->type_count = new_count;
+
+		for (uint64_t i = 0; i < old_count; i++)
+		{
+			AST_Type* type = old_mem[i];
+
+			uint64_t hash = ast_get_type_hash(type);
+			uint64_t hash_index = hash & (new_count - 1);
+
+			new_mem[hash_index] = type;
+		}
+	}
+
 #define DEFINE_KW(string, kw_kind) \
     { \
         Atom atom_for_string = atom_get(context->atom_table, string); \

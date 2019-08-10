@@ -1696,6 +1696,11 @@ namespace Zodiac
                 {
                     dest->value.u64 = (uint64_t)source->value.pointer;
                 }
+				else if (iri->arg1->type->kind == AST_TYPE_ENUM &&
+					(iri->result->type->flags & AST_TYPE_FLAG_INT))
+				{
+					dest->value.u64 = source->value.u64;
+				}
                 else assert(false);
 
 				break;

@@ -1431,12 +1431,18 @@ namespace Zodiac
             }
         }
 
-        assert(found_free_slot);
+		if (found_free_slot)
+		{
+			AST_Type* pointer_type = ast_type_pointer_new(context, base_type);
+			context->type_hash[hash_index] = pointer_type;
 
-        AST_Type* pointer_type = ast_type_pointer_new(context, base_type);
-        context->type_hash[hash_index] = pointer_type;
-
-        return pointer_type;
+			return pointer_type;
+		}
+		else
+		{
+			grow_type_hash(context);
+			return ast_find_or_create_pointer_type(context, base_type);
+		}
     }
 
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type,
@@ -1637,7 +1643,8 @@ namespace Zodiac
                     }
                     else
                     {
-                        if (member_decl->mutable_decl.type->kind == AST_TYPE_POINTER)
+                        if (member_decl->mutable_decl.type->kind == AST_TYPE_POINTER &&
+							member_decl->mutable_decl.type->pointer.base->name)
                         {
                             if (member_decl->mutable_decl.type->pointer.base == type ||
                                 (strcmp(type->name, member_decl->mutable_decl.type->pointer.base->name) == 0))

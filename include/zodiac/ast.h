@@ -882,6 +882,7 @@ namespace Zodiac
                                                BUF(AST_Type*) arg_types,
 		                                       AST_Type* return_type, const char* original_name);
 
+
     uint64_t ast_get_type_hash(AST_Type* type);
     uint64_t ast_get_pointer_type_hash(AST_Type* base_type);
     uint64_t ast_get_static_array_type_hash(AST_Type* base_type, uint64_t count);

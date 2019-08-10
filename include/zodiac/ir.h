@@ -158,8 +158,8 @@ namespace Zodiac
         {
             struct
             {
-                IR_Value* arg1 = nullptr;
-                IR_Value* arg2 = nullptr;
+                IR_Value* arg1;
+                IR_Value* arg2;
             };
 
             BUF(IR_Phi_Pair) phi_pairs;

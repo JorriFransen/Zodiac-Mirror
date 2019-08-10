@@ -78,10 +78,10 @@ main :: () -> int
     op_last_math := Binary_Op.LAST_MATH;
     assert(op_div == op_last_math);
     assert(Binary_Op.LT == Binary_Op.FIRST_CMP);
-    std.print(op_div);
-    std.print(Binary_Op.EQ);
-    std.print(Binary_Op.NEQ);
-    std.print(Binary_Op.LAST_CMP);
+    std.print((:int)op_div);
+    std.print((:int)Binary_Op.EQ);
+    std.print((:int)Binary_Op.NEQ);
+    std.print((:int)Binary_Op.LAST_CMP);
 }
 
 print_day :: (day : Day) -> void
