@@ -1871,8 +1871,8 @@ namespace Zodiac
             case AST_TYPE_POINTER:
             {
                 // TODO: Temp mem
-                ast_type_to_string(type->pointer.base, string_builder);
                 string_builder_append(string_builder, "*");
+                ast_type_to_string(type->pointer.base, string_builder);
                 break;
             }
 

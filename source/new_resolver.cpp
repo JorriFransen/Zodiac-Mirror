@@ -134,6 +134,7 @@ namespace Zodiac_
                     BUF_PUSH(resolver->module->import_decls, declaration);
 
                     result = true;
+                    break;
                 }
 
 
@@ -142,9 +143,9 @@ namespace Zodiac_
                     resolver_report_error(resolver, declaration->file_pos,
                                         "Failed to find module: %s",
                                         module_name.data);
+                    result = false;
                 }
 
-                result = false;
                 break;
             }
 
@@ -168,9 +169,13 @@ namespace Zodiac_
                 for (uint64_t i = 0; i < BUF_LENGTH(declaration->function.args); i++)
                 {
                     AST_Declaration* arg_decl = declaration->function.args[i];
-                    arg_result &=
-                        resolver_resolve_declaration(resolver, arg_decl,
-                                                     declaration->function.argument_scope);
+                    if (!(arg_decl->flags & AST_DECL_FLAG_RESOLVED))
+                    {
+                        arg_result &=
+                            resolver_resolve_declaration(resolver, arg_decl,
+                                                         declaration->function.argument_scope);
+                        ast_scope_push_declaration(declaration->function.argument_scope, arg_decl);
+                    }
                 }
 
                 if (!arg_result)
@@ -207,6 +212,10 @@ namespace Zodiac_
 
                 assert(result);
                 bool is_vararg = false;
+                if (declaration->flags & AST_DECL_FLAG_FUNC_VARARG)
+                {
+                    is_vararg = true;
+                }
                 BUF(AST_Type*) arg_types = nullptr;
                 for (uint64_t i = 0; i < BUF_LENGTH(declaration->function.args); i++)
                 {
@@ -251,6 +260,11 @@ namespace Zodiac_
                     }
                 }
 
+                if (result && (declaration->location == AST_DECL_LOC_LOCAL))
+                {
+                    ast_scope_push_declaration(scope, declaration);
+                }
+
                 break;
             }
 
@@ -284,14 +298,34 @@ namespace Zodiac_
                 if (declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
                     declaration->aggregate_type.kind == AST_AGG_DECL_UNION)
                 {
+                    uint64_t total_size = 0;
+                    uint64_t biggest_size = 0;
                     for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->members); i++)
                     {
                         AST_Declaration* member_decl = agg_decl->members[i];
                         result &= resolver_resolve_declaration(resolver, member_decl,
                                                           declaration->aggregate_type.scope);
+
+                        AST_Type* member_type = resolver_get_declaration_type(member_decl);
+                        assert(member_type);
+
+                        total_size += member_type->bit_size;
+                        if (member_type->bit_size > biggest_size)
+                        {
+                            biggest_size = member_type->bit_size;
+                        }
                     }
 
                     uint64_t bit_size = 0;
+                    if (declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT)
+                    {
+                        bit_size = total_size;
+                    }
+                    else
+                    {
+                        bit_size = biggest_size;
+                    }
+
                     const char* name = nullptr;
                     if (declaration->identifier)
                     {
@@ -371,6 +405,41 @@ namespace Zodiac_
                 break;
             }
 
+            case AST_DECL_USING:
+            {
+                AST_Expression* ident_expr = declaration->using_decl.ident_expression;
+                result &= resolver_resolve_expression(resolver, ident_expr, scope);
+
+                if (!result) break;
+
+                AST_Declaration* decl = nullptr;
+                if (ident_expr->kind == AST_EXPR_IDENTIFIER)
+                {
+                    assert(ident_expr->identifier->declaration);
+                    decl = ident_expr->identifier->declaration;
+                }
+                else if (ident_expr->kind == AST_EXPR_DOT)
+                {
+                    assert(ident_expr->dot.declaration);
+                    decl = ident_expr->dot.declaration;
+                }
+                else assert(false);
+
+                assert(decl);
+
+                if (decl->kind == AST_DECL_IMPORT)
+                {
+                    assert(decl->import.module);
+                    BUF_PUSH(scope->using_modules, decl->import.module);
+                }
+                else if (decl->kind == AST_DECL_AGGREGATE_TYPE)
+                {
+                    BUF_PUSH(scope->using_declarations, decl);
+                }
+                else assert(false);
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -413,8 +482,13 @@ namespace Zodiac_
             {
                 result &= resolver_resolve_expression(resolver,
                                                       statement->assign.lvalue_expression, scope);
+                AST_Type* suggested_type = nullptr;
+                if (result)
+                {
+                    suggested_type = statement->assign.lvalue_expression->type;
+                }
                 result &= resolver_resolve_expression(resolver, statement->assign.expression,
-                                                      scope);
+                                                      scope, suggested_type);
 
                 if (!result) break;
 
@@ -492,30 +566,72 @@ namespace Zodiac_
         assert(scope);
 
         bool result = true;
+        bool points_to_import_decl = false;
 
         switch (expression->kind)
         {
             case AST_EXPR_CALL:
             {
-                result &= resolver_resolve_expression(resolver, expression->call.ident_expression,
-                                                      scope);
+                AST_Expression* ident_expr = expression->call.ident_expression;
+                result &= resolver_resolve_expression(resolver, ident_expr, scope);
                 if (!result) break;
 
-                AST_Identifier* ident = expression->call.ident_expression->identifier;
-                AST_Declaration* func_decl = ident->declaration;
+                AST_Declaration* func_decl = nullptr;
+
+                if (ident_expr->kind == AST_EXPR_IDENTIFIER)
+                {
+                    AST_Identifier* ident = expression->call.ident_expression->identifier;
+                    func_decl = ident->declaration;
+                }
+                else if (ident_expr->kind == AST_EXPR_DOT)
+                {
+                    func_decl = ident_expr->dot.declaration;
+                }
+
+                assert(func_decl);
+                assert(func_decl->kind == AST_DECL_FUNC);
+
                 expression->call.callee_declaration = func_decl;
 
                 auto arg_expr_count = BUF_LENGTH(expression->call.arg_expressions);
                 auto arg_decl_count = BUF_LENGTH(func_decl->function.args);
 
-                assert(BUF_LENGTH(expression->call.arg_expressions) ==
-                       BUF_LENGTH(expression->call.callee_declaration->function.args));
+                if (func_decl->flags & AST_DECL_FLAG_FUNC_VARARG)
+                {
+                    assert(arg_expr_count >= arg_decl_count);
+                }
+                else
+                {
+                    assert(arg_expr_count == arg_decl_count);
+                }
 
-                for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
+                for (uint64_t i = 0; i < arg_expr_count; i++)
                 {
                     AST_Expression* arg_expr = expression->call.arg_expressions[i];
 
                     result &= resolver_resolve_expression(resolver, arg_expr, scope);
+
+                    if (result && i < BUF_LENGTH(func_decl->function.args))
+                    {
+                        AST_Declaration* arg_decl = func_decl->function.args[i];
+                        AST_Type* arg_type = resolver_get_declaration_type(arg_decl);
+                        bool types_match = resolver_check_assign_types(resolver, arg_type,
+                                                                       arg_expr->type);
+
+                        if (!types_match)
+                        {
+                            result = false;
+
+                            auto arg_type_str = ast_type_to_string(arg_type);
+                            auto expr_type_str = ast_type_to_string(arg_expr->type);
+
+                            resolver_report_error(resolver, arg_expr->file_pos,
+                                                  "Mismatching types for argument %lu\n\tExpected: %s\n\tGot: %s\n",
+                                                  i, arg_type_str, expr_type_str);
+                            mem_free(arg_type_str);
+                            mem_free(expr_type_str);
+                        }
+                    }
                 }
 
                 assert(func_decl->function.return_type);
@@ -532,6 +648,12 @@ namespace Zodiac_
 
                 AST_Declaration* decl = expression->identifier->declaration;
                 assert(decl);
+
+                if (decl->kind == AST_DECL_IMPORT)
+                {
+                    points_to_import_decl = true;
+                }
+
                 expression->type = resolver_get_declaration_type(decl);
 
                 break;
@@ -541,13 +663,33 @@ namespace Zodiac_
             {
                 if (suggested_type)
                 {
-                    assert(suggested_type->flags & AST_TYPE_FLAG_INT);
+                    if (suggested_type->flags & AST_TYPE_FLAG_INT)
+                    {
+                    }
+                    else if (suggested_type->flags & AST_TYPE_FLAG_FLOAT)
+                    {
+                        uint64_t int_value= expression->integer_literal.u64;
+                        expression->kind = AST_EXPR_FLOAT_LITERAL;
+                        expression->float_literal.r32 = (float)int_value;
+                        expression->float_literal.r64 = (double)int_value;
+                    }
+                    else assert(false);
+
                     expression->type = suggested_type;
                 }
                 else
                 {
                     expression->type = Builtin::type_int;
                 }
+
+                expression->flags |= AST_EXPR_FLAG_LITERAL;
+                break;
+            }
+
+            case AST_EXPR_BOOL_LITERAL:
+            {
+                expression->type = Builtin::type_bool;
+                expression->flags |= AST_EXPR_FLAG_CONST;
                 break;
             }
 
@@ -588,7 +730,7 @@ namespace Zodiac_
 
                     case AST_UNOP_NOT:
                     {
-                        assert(false);
+                        expression->type = operand_type;
                         break;
                     }
 
@@ -601,7 +743,7 @@ namespace Zodiac_
             {
                 result &= resolver_resolve_type_spec(resolver, expression->cast_expr.type_spec,
                                                      &expression->type, scope);
-                if (!result) return false;
+                if (!result) break;
 
                 result &= resolver_resolve_expression(resolver, expression->cast_expr.expr, scope);
                 break;
@@ -609,19 +751,34 @@ namespace Zodiac_
 
             case AST_EXPR_SUBSCRIPT:
             {
-                result &= resolver_resolve_expression(resolver,
-                                                      expression->subscript.base_expression, scope);
-                if (!result) return false;
+                result &=
+                    resolver_resolve_expression(resolver, expression->subscript.base_expression,
+                                                scope);
+                if (!result) break;
 
                 result &= resolver_resolve_expression(resolver,
                                                       expression->subscript.index_expression,
                                                       scope);
+
+                if (!result) break;
 
                 AST_Type* base_type = expression->subscript.base_expression->type;
                 AST_Type* index_type = expression->subscript.index_expression->type;
 
                 assert(base_type->kind == AST_TYPE_STATIC_ARRAY ||
                        base_type->kind == AST_TYPE_POINTER);
+
+                if (base_type->kind == AST_TYPE_STATIC_ARRAY)
+                {
+                    assert(base_type->static_array.base);
+                    expression->type = base_type->static_array.base;
+                }
+                else if (base_type->kind == AST_TYPE_POINTER)
+                {
+                    assert(base_type->pointer.base);
+                    expression->type = base_type->pointer.base;
+                }
+                else assert(false);
 
                 assert(index_type->flags & AST_TYPE_FLAG_INT);
                 break;
@@ -653,13 +810,59 @@ namespace Zodiac_
                 break;
             }
 
+            case AST_EXPR_SIZEOF:
+            {
+                AST_Type* type = nullptr;
+                result &= resolver_resolve_type_spec(resolver, expression->sizeof_expr.type_spec,
+                                                     &type, scope);
+                if (!result) break;
+
+                assert(type);
+                expression->sizeof_expr.byte_size = type->bit_size / 8;
+                expression->type = Builtin::type_u64;
+                break;
+            }
+
+            case AST_EXPR_COMPOUND_LITERAL:
+            {
+                assert(suggested_type);
+
+                if (suggested_type->kind == AST_TYPE_STRUCT)
+                {
+                    assert(BUF_LENGTH(suggested_type->aggregate_type.member_declarations) ==
+                           BUF_LENGTH(expression->compound_literal.expressions));
+
+                    auto member_decls = suggested_type->aggregate_type.member_declarations;
+                    auto compound_exprs = expression->compound_literal.expressions;
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+                    {
+                        AST_Declaration* member_decl = member_decls[i];
+                        AST_Expression* compound_expr = compound_exprs[i];
+
+                        assert(member_decl->flags & AST_DECL_FLAG_RESOLVED);
+
+                        AST_Type* member_type = resolver_get_declaration_type(member_decl);
+
+                        result &= resolver_resolve_expression(resolver, compound_expr, scope,
+                                                              member_type);
+                    }
+
+                    if (!result) break;
+
+                    expression->type = suggested_type;
+                }
+                else assert(false);
+                break;
+            }
+
             default: assert(false);
         }
 
 
         if (result)
         {
-            assert(expression->type);
+            assert(expression->type || points_to_import_decl);
         }
         return result;
     }
@@ -677,28 +880,35 @@ namespace Zodiac_
         AST_Expression* lhs = expression->binary.lhs;
         AST_Expression* rhs = expression->binary.rhs;
 
-        if (binop_is_cmp(expression))
+        if ((lhs->flags & AST_EXPR_FLAG_LITERAL) && !(rhs->flags & AST_EXPR_FLAG_LITERAL))
+        {
+            result &= resolver_resolve_expression(resolver, rhs, scope);
+            if (!result) return false;
+            result &= resolver_resolve_expression(resolver, lhs, scope, rhs->type);
+        }
+        else if (!(lhs->flags & AST_EXPR_FLAG_LITERAL) && (rhs->flags & AST_EXPR_FLAG_LITERAL))
         {
             result &= resolver_resolve_expression(resolver, lhs, scope);
-            result &= resolver_resolve_expression(resolver, rhs, scope);
-
             if (!result) return false;
-
-            assert(lhs->type == rhs->type);
-
-            assert(!expression->type);
-            expression->type = Builtin::type_bool;
+            result &= resolver_resolve_expression(resolver, rhs, scope, lhs->type);
         }
         else
         {
             result &= resolver_resolve_expression(resolver, lhs, scope);
             result &= resolver_resolve_expression(resolver, rhs, scope);
+        }
 
-            if (!result) return false;
+        if (!result) return false;
 
-            assert(lhs->type == rhs->type);
+        assert(lhs->type == rhs->type);
+        assert(!expression->type);
 
-            assert(!expression->type);
+        if (binop_is_cmp(expression))
+        {
+            expression->type = Builtin::type_bool;
+        }
+        else
+        {
             expression->type = lhs->type;
         }
 
@@ -722,7 +932,67 @@ namespace Zodiac_
         result &= resolver_resolve_expression(resolver, base_expr, scope);
         if (!result) return false;
 
-        assert(false);
+        assert(member_expr->kind == AST_EXPR_IDENTIFIER);
+        assert(base_expr->kind == AST_EXPR_IDENTIFIER);
+
+        AST_Declaration* base_decl = base_expr->identifier->declaration;
+        assert(base_decl);
+
+        if (base_decl->kind == AST_DECL_MUTABLE)
+        {
+            AST_Type* base_type = resolver_get_declaration_type(base_decl);
+
+            if (base_type->kind == AST_TYPE_POINTER &&
+                base_type->pointer.base->kind == AST_TYPE_STRUCT) {
+                base_type = base_type->pointer.base;
+            }
+
+            if (base_type->kind == AST_TYPE_STRUCT)
+            {
+                auto member_decls = base_type->aggregate_type.member_declarations;
+                bool found = false;
+                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+                {
+                    AST_Declaration* member_decl = member_decls[i];
+                    assert(member_decl->flags & AST_DECL_FLAG_RESOLVED);
+                    assert(member_decl->kind == AST_DECL_MUTABLE);
+                    assert(member_decl->identifier);
+
+                    if (member_decl->identifier->atom == member_expr->identifier->atom)
+                    {
+                        dot_expr->type = resolver_get_declaration_type(member_decl);
+                        dot_expr->dot.declaration = member_decl;
+                        found = true;
+                        break;
+                    }
+                }
+
+                assert(found);
+            }
+            else assert(false);
+        }
+        else if (base_decl->kind == AST_DECL_IMPORT)
+        {
+            assert(base_decl->import.module);
+
+            AST_Module* ast_module = base_decl->import.module;
+
+            result &= resolver_resolve_expression(resolver, member_expr, ast_module->module_scope);
+
+            if (result)
+            {
+                dot_expr->type = member_expr->type;
+                if (member_expr->flags & AST_EXPR_FLAG_CONST)
+                {
+                    dot_expr->flags |= AST_EXPR_FLAG_CONST;
+                }
+                assert(member_expr->identifier->declaration);
+                dot_expr->dot.declaration = member_expr->identifier->declaration;
+            }
+        }
+        else assert(false);
+
+        return result;
     }
 
     bool resolver_resolve_identifier(Resolver* resolver, AST_Identifier* identifier,
@@ -870,6 +1140,11 @@ namespace Zodiac_
                 return decl->aggregate_type.type;
             }
 
+            case AST_DECL_IMPORT:
+            {
+                return nullptr;
+            }
+
             default: assert(false);
         }
     }
@@ -882,7 +1157,7 @@ namespace Zodiac_
 
         if (lhs == rhs) return true;
 
-        assert(false);
+        return false;
     }
 
     AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module,

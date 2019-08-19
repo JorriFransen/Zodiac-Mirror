@@ -12,56 +12,56 @@ Type_Info_Kind : u64 : enum
     BASE;
 }
 
-Type_Info :: struct
-{
-    kind      : Type_Info_Kind;
-    name      : String;
-    byte_size : u64;
+// Type_Info :: struct
+// {
+//     kind      : Type_Info_Kind;
+//     name      : String;
+//     byte_size : u64;
 
-    union
-    {
-        base  : *Type_Info;
+//     union
+//     {
+//         base  : *Type_Info;
 
-        aggregate :: struct
-        {
-            count : u64;
-            first : *Type_Info_Aggregate_Member;
-        }
+//         aggregate :: struct
+//         {
+//             count : u64;
+//             first : *Type_Info_Aggregate_Member;
+//         }
 
-        enum_info :: struct
-        {
-            enum_base    : *void;
-            member_count : u64;
-            first        : *Type_Info_Enum_Member;
-        }
+//         enum_info :: struct
+//         {
+//             enum_base    : *void;
+//             member_count : u64;
+//             first        : *Type_Info_Enum_Member;
+//         }
 
-        function :: struct
-        {
-            return_type : *void;
-            arg_count   : u64;
-            first_arg   : *Type_Info_Aggregate_Member;
-        }
-    }
-}
+//         function :: struct
+//         {
+//             return_type : *void;
+//             arg_count   : u64;
+//             first_arg   : *Type_Info_Aggregate_Member;
+//         }
+//     }
+// }
 
-Type_Info_Aggregate_Member :: struct
-{
-    name : String;
-    type : *void;
-}
+// Type_Info_Aggregate_Member :: struct
+// {
+//     name : String;
+//     type : *void;
+// }
 
-Type_Info_Enum_Member :: struct
-{
-    name  : String;
-    value : u64;
-    type  : *void;
-}
+// Type_Info_Enum_Member :: struct
+// {
+//     name  : String;
+//     value : u64;
+//     type  : *void;
+// }
 
-Type_Info_Data :: struct
-{
-    type_infos      : *Type_Info;
-    type_info_count : u64;
-}
+// Type_Info_Data :: struct
+// {
+//     type_infos      : *Type_Info;
+//     type_info_count : u64;
+// }
 
 enum_to_string :: (enum_member: $T) -> String
 {

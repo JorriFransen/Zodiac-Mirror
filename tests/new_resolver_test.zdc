@@ -1,10 +1,65 @@
 
+_c :: import c;
 
-#dynamic_link "libc.so.6";
-#dynamic_link "libm.so.6";
-#foreign printf :: (format: *u8, ...) -> int;
+using _c;
+
+Vec2 :: struct
+{
+    x : float;
+    y : float;
+}
 
 main :: ()
 {
-    printf("new_resolver_test\n");
+    _c.printf("new_resolver_test\n");
+    printf("using test\n");
+
+
+    // printf("x: %d\n", x);
+    x : int = 4;
+
+    printf("x: %d\n", x);
+
+    x = x + 8;
+
+    printf("x: %d\n", x);
+
+    printf("sizeof(Vec2): %d\n", sizeof(Vec2));
+
+    v : Vec2;
+    printf("v: "); print_vec2(v);
+
+    v.x = 1;
+    v.y = 2;
+    printf("v: "); print_vec2(v);
+
+    v = { 3, 4 };
+    printf("v: "); print_vec2(v);
+
+    v2 : Vec2 = { 4, 5 };
+    printf("v2: "); print_vec2(v2);
+
+    printf("*v: "); print_vec2p(*v);
+    printf("*v2: "); print_vec2p(*v2);
+
+    b : bool = false;
+
+    if (!b && false)
+    {
+        printf("b = true\n");
+    }
+    else
+    {
+        printf("b = false\n");
+    }
+}
+
+print_vec2 :: (v: Vec2)
+{
+    printf("{ %f, %f }\n", v.x, v.y);
+}
+
+print_vec2p :: (v: *Vec2)
+{
+    printf("*{ %f, %f }\n", v.x, v.y);
 }
