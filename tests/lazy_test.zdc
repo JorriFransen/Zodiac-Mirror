@@ -2,6 +2,7 @@ std :: import std;
 
 main :: ()
 {
+    std.print("wire");
     test_lazy_and();
     test_lazy_or();
 }

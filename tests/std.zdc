@@ -63,23 +63,23 @@ Type_Info_Kind : u64 : enum
 //     type_info_count : u64;
 // }
 
-enum_to_string :: (enum_member: $T) -> String
-{
-    ti := get_type_info(T);
-    assert(ti.kind == Type_Info_Kind.ENUM);
+// enum_to_string :: (enum_member: $T) -> String
+// {
+//     ti := get_type_info(T);
+//     assert(ti.kind == Type_Info_Kind.ENUM);
 
-    for (i : u64 = 0; i < ti.enum_info.member_count; i++)
-    {
-        member_info := ti.enum_info.first[i];
+//     for (i : u64 = 0; i < ti.enum_info.member_count; i++)
+//     {
+//         member_info := ti.enum_info.first[i];
 
-        if ((:T)member_info.value == enum_member)
-        {
-            return member_info.name;
-        }
-    }
+//         if ((:T)member_info.value == enum_member)
+//         {
+//             return member_info.name;
+//         }
+//     }
 
-    assert(false);
-}
+//     assert(false);
+// }
 
 is_power_of_two :: (x: u64) -> bool
 {
@@ -161,177 +161,177 @@ print :: (num: int)
     print({ buf, (:u64)length });
 }
 
-Array :: struct(T)
-{
-    data     : *T;
-    count    : u64;
-    capacity : u64;
+// Array :: struct(T)
+// {
+//     data     : *T;
+//     count    : u64;
+//     capacity : u64;
 
-    #overload[] array_index;
-}
+//     #overload[] array_index;
+// }
 
-array_add :: (array: *Array($T), element: T)
-{
-    assert(array);
+// array_add :: (array: *Array($T), element: T)
+// {
+//     assert(array);
 
-    if (array.count >= array.capacity)
-    {
-        new_cap := array.capacity * 2;
-        if (new_cap < 8) new_cap = 8;
-        array_grow(array, new_cap);
-    }
+//     if (array.count >= array.capacity)
+//     {
+//         new_cap := array.capacity * 2;
+//         if (new_cap < 8) new_cap = 8;
+//         array_grow(array, new_cap);
+//     }
 
-    assert(array.data);
+//     assert(array.data);
 
-    array.data[array.count] = element;
-    array.count += 1;
-}
+//     array.data[array.count] = element;
+//     array.count += 1;
+// }
 
-array_index :: (array: Array($T), index: u64) -> T
-{
-    if (index < array.count)
-    {
-        return array.data[index];
-    }
+// array_index :: (array: Array($T), index: u64) -> T
+// {
+//     if (index < array.count)
+//     {
+//         return array.data[index];
+//     }
 
-    assert(false);
-}
+//     assert(false);
+// }
 
-array_index :: (array: *Array($T), index: u64) -> T
-{
-    return array_index(<array, index);
-}
+// array_index :: (array: *Array($T), index: u64) -> T
+// {
+//     return array_index(<array, index);
+// }
 
-array_grow :: (array: *Array($T), new_cap: u64)
-{
-    assert(array);
-    assert(new_cap > array.capacity);
+// array_grow :: (array: *Array($T), new_cap: u64)
+// {
+//     assert(array);
+//     assert(new_cap > array.capacity);
 
-    new_data := _c.malloc(sizeof(T) * new_cap);
-    assert(new_data);
+//     new_data := _c.malloc(sizeof(T) * new_cap);
+//     assert(new_data);
 
-    if (array.data)
-    {
-        assert(array.capacity);
-        _c.memcpy(new_data, array.data, array.capacity * sizeof(T));
-        _c.free(array.data);
-    }
-    else
-    {
-        assert(array.capacity == 0);
-        assert(array.count == 0);
-    }
+//     if (array.data)
+//     {
+//         assert(array.capacity);
+//         _c.memcpy(new_data, array.data, array.capacity * sizeof(T));
+//         _c.free(array.data);
+//     }
+//     else
+//     {
+//         assert(array.capacity == 0);
+//         assert(array.count == 0);
+//     }
 
-    array.data = new_data;
-    array.capacity = new_cap;
-}
+//     array.data = new_data;
+//     array.capacity = new_cap;
+// }
 
-array_free :: (array: *Array($T))
-{
-    assert(array);
-    if (array.data)
-    {
-        _c.free(array.data);
-        array.data = null;
-        array.count = 0;
-        array.capacity = 0;
-    }
-}
+// array_free :: (array: *Array($T))
+// {
+//     assert(array);
+//     if (array.data)
+//     {
+//         _c.free(array.data);
+//         array.data = null;
+//         array.count = 0;
+//         array.capacity = 0;
+//     }
+// }
 
-Queue :: struct(T)
-{
-    data        : *T;
-    capacity    : u64;
-    first_index : u64;
-    count       : u64;
-}
+// Queue :: struct(T)
+// {
+//     data        : *T;
+//     capacity    : u64;
+//     first_index : u64;
+//     count       : u64;
+// }
 
-queue_init :: (queue: *Queue($T), capacity: u64)
-{
-    queue.capacity = capacity;
-    queue.data = (:*T)_c.malloc(capacity * sizeof(T));
-    queue.first_index = 0;
-    queue.count = 0;
-}
+// queue_init :: (queue: *Queue($T), capacity: u64)
+// {
+//     queue.capacity = capacity;
+//     queue.data = (:*T)_c.malloc(capacity * sizeof(T));
+//     queue.first_index = 0;
+//     queue.count = 0;
+// }
 
-queue_enqueue :: (queue: *Queue($T), element: T)
-{
-    // _c.printf("__queue_enqueue, count: %lu, cap: %lu\n", queue.count, queue.capacity);
-    if (queue.count + 1 > queue.capacity)
-    {
-        queue_grow(queue);
-        // _c.printf("__queue grown\n");
-    }
+// queue_enqueue :: (queue: *Queue($T), element: T)
+// {
+//     // _c.printf("__queue_enqueue, count: %lu, cap: %lu\n", queue.count, queue.capacity);
+//     if (queue.count + 1 > queue.capacity)
+//     {
+//         queue_grow(queue);
+//         // _c.printf("__queue grown\n");
+//     }
 
-    new_index := queue.first_index + queue.count;
-    if (new_index >= queue.capacity)
-    {
-        new_index = new_index - queue.capacity;
-        // _c.printf("__wrapped index to: %lu\n", new_index);
-    }
-    // _c.printf("__new_index: %lu\n", new_index);
-    // _c.printf("__ptr: %p\n", (:u64)queue.data + (new_index * sizeof(T)));
-    queue.data[new_index] = element;
-    queue.count += 1;
+//     new_index := queue.first_index + queue.count;
+//     if (new_index >= queue.capacity)
+//     {
+//         new_index = new_index - queue.capacity;
+//         // _c.printf("__wrapped index to: %lu\n", new_index);
+//     }
+//     // _c.printf("__new_index: %lu\n", new_index);
+//     // _c.printf("__ptr: %p\n", (:u64)queue.data + (new_index * sizeof(T)));
+//     queue.data[new_index] = element;
+//     queue.count += 1;
 
-    // _c.printf("_enqueued %p at %lu (%p)\n", element, new_index, *queue.data[new_index]);
-}
+//     // _c.printf("_enqueued %p at %lu (%p)\n", element, new_index, *queue.data[new_index]);
+// }
 
-queue_grow :: (queue: *Queue($T))
-{
-    assert(queue.data);
+// queue_grow :: (queue: *Queue($T))
+// {
+//     assert(queue.data);
 
-    new_cap := queue.capacity * 2;
-    new_data := (:*T)_c.malloc(new_cap * sizeof(T));
+//     new_cap := queue.capacity * 2;
+//     new_data := (:*T)_c.malloc(new_cap * sizeof(T));
 
-    old_index := queue.first_index;
-    for (i : u64 = 0; i < queue.count; i++)
-    {
-        new_data[i] = queue.data[old_index];
+//     old_index := queue.first_index;
+//     for (i : u64 = 0; i < queue.count; i++)
+//     {
+//         new_data[i] = queue.data[old_index];
 
-        old_index += 1;
-        if (old_index >= queue.capacity)
-        {
-            old_index = 0;
-        }
-    }
+//         old_index += 1;
+//         if (old_index >= queue.capacity)
+//         {
+//             old_index = 0;
+//         }
+//     }
 
-    _c.free(queue.data);
-    queue.capacity = new_cap;
-    queue.data = new_data;
-    queue.first_index = 0;
+//     _c.free(queue.data);
+//     queue.capacity = new_cap;
+//     queue.data = new_data;
+//     queue.first_index = 0;
 
-    // _c.printf("_queu grown to %lu\n", new_cap);
-}
+//     // _c.printf("_queu grown to %lu\n", new_cap);
+// }
 
-queue_dequeue :: (queue: *Queue($T)) -> T
-{
-    assert(queue.data);
-    assert(queue.count);
+// queue_dequeue :: (queue: *Queue($T)) -> T
+// {
+//     assert(queue.data);
+//     assert(queue.count);
 
-    result_index := queue.first_index;
+//     result_index := queue.first_index;
 
-    queue.first_index += 1;
-    queue.count -= 1;
-    if (queue.first_index >= queue.capacity)
-    {
-        queue.first_index = 0;
-    }
+//     queue.first_index += 1;
+//     queue.count -= 1;
+//     if (queue.first_index >= queue.capacity)
+//     {
+//         queue.first_index = 0;
+//     }
 
-    result := queue.data[result_index];
-    // _c.printf("_dequeued %p from %lu (%p)\n", result, result_index, *queue.data[result_index]);
+//     result := queue.data[result_index];
+//     // _c.printf("_dequeued %p from %lu (%p)\n", result, result_index, *queue.data[result_index]);
 
-    return result;
-}
+//     return result;
+// }
 
-queue_free :: (queue: *Queue($T))
-{
-    assert(queue.data);
+// queue_free :: (queue: *Queue($T))
+// {
+//     assert(queue.data);
 
-    _c.free(queue.data);
-    queue.count = 0;
-    queue.capacity = 0;
-}
+//     _c.free(queue.data);
+//     queue.count = 0;
+//     queue.capacity = 0;
+// }
 
 sleep :: (msec: int) -> void
 {

@@ -14,6 +14,7 @@ namespace Zodiac_
 
         resolver->context = context;
         resolver->module = nullptr;
+        resolver->current_break_context = nullptr;
         resolver->result = {};
     }
 
@@ -254,9 +255,16 @@ namespace Zodiac_
 
                     if (result)
                     {
-                        result &=
-                            resolver_check_assign_types(resolver, declaration->mutable_decl.type,
-                                                        init_expr->type);
+                        if (specified_type)
+                        {
+                            result &= resolver_check_assign_types(resolver,
+                                                                  declaration->mutable_decl.type,
+                                                                  init_expr->type);
+                        }
+                        else
+                        {
+                            declaration->mutable_decl.type = init_expr->type;
+                        }
                     }
                 }
 
@@ -500,7 +508,11 @@ namespace Zodiac_
 
             case AST_STMT_RETURN:
             {
-                result &= resolver_resolve_expression(resolver, statement->return_expression, scope);
+                if (statement->return_expression)
+                {
+                    result &= resolver_resolve_expression(resolver, statement->return_expression,
+                                                          scope);
+                }
                 break;
             }
 
@@ -547,8 +559,51 @@ namespace Zodiac_
 
                 assert(statement->while_stmt.cond_expr->type == Builtin::type_bool);
 
+                auto old_break_context = resolver->current_break_context;
+                resolver->current_break_context = statement;
                 result &= resolver_resolve_statement(resolver, statement->while_stmt.body_stmt,
                                                      scope);
+                resolver->current_break_context = old_break_context;
+                break;
+            }
+
+            case AST_STMT_FOR:
+            {
+                result &= resolver_resolve_statement(resolver, statement->for_stmt.init_stmt,
+                                                     statement->for_stmt.scope);
+                if (!result) break;
+
+                result &= resolver_resolve_expression(resolver, statement->for_stmt.cond_expr,
+                                                      statement->for_stmt.scope);
+                result &= resolver_resolve_statement(resolver, statement->for_stmt.step_stmt,
+                                                     statement->for_stmt.scope);
+
+                auto old_break_context = resolver->current_break_context;
+                resolver->current_break_context = statement;
+                result &= resolver_resolve_statement(resolver, statement->for_stmt.body_stmt,
+                                                     statement->for_stmt.scope);
+                resolver->current_break_context = old_break_context;
+                break;
+            }
+
+            case AST_STMT_BREAK:
+            {
+                assert(resolver->current_break_context);
+                assert(resolver->current_break_context->kind == AST_STMT_WHILE ||
+                       resolver->current_break_context->kind == AST_STMT_FOR);
+                break;
+            }
+
+            case AST_STMT_DEFER:
+            {
+                result &= resolver_resolve_statement(resolver, statement->defer_statement, scope);
+                if (!result) break;
+
+                result &= defer_statement_is_legal(resolver, statement->defer_statement);
+                if (!result) break;
+
+                BUF_PUSH(scope->defer_statements, statement);
+
                 break;
             }
 
@@ -564,6 +619,11 @@ namespace Zodiac_
         assert(resolver);
         assert(expression);
         assert(scope);
+
+        if (expression->flags & AST_EXPR_FLAG_RESOLVED)
+        {
+            return true;
+        }
 
         bool result = true;
         bool points_to_import_decl = false;
@@ -608,15 +668,29 @@ namespace Zodiac_
                 for (uint64_t i = 0; i < arg_expr_count; i++)
                 {
                     AST_Expression* arg_expr = expression->call.arg_expressions[i];
+                    AST_Declaration* arg_decl = nullptr;
+                    AST_Type* arg_type = nullptr;
 
-                    result &= resolver_resolve_expression(resolver, arg_expr, scope);
-
-                    if (result && i < BUF_LENGTH(func_decl->function.args))
+                    if (i < arg_decl_count)
                     {
-                        AST_Declaration* arg_decl = func_decl->function.args[i];
-                        AST_Type* arg_type = resolver_get_declaration_type(arg_decl);
+                        arg_decl = func_decl->function.args[i];
+                        arg_type = resolver_get_declaration_type(arg_decl);
+                    }
+
+                    result &= resolver_resolve_expression(resolver, arg_expr, scope, arg_type);
+
+                    if (arg_type)
+                    {
                         bool types_match = resolver_check_assign_types(resolver, arg_type,
                                                                        arg_expr->type);
+
+                        if (!types_match &&
+                            arg_type == Builtin::type_String &&
+                            arg_expr->type == Builtin::type_pointer_to_u8)
+                        {
+                            resolver_convert_to_builtin_string(resolver, arg_expr);
+                            types_match = true;
+                        }
 
                         if (!types_match)
                         {
@@ -626,7 +700,7 @@ namespace Zodiac_
                             auto expr_type_str = ast_type_to_string(arg_expr->type);
 
                             resolver_report_error(resolver, arg_expr->file_pos,
-                                                  "Mismatching types for argument %lu\n\tExpected: %s\n\tGot: %s\n",
+                                                  "Mismatching types for argument %lu\n\tExpected: %s\n\tGot: %s",
                                                   i, arg_type_str, expr_type_str);
                             mem_free(arg_type_str);
                             mem_free(expr_type_str);
@@ -663,7 +737,8 @@ namespace Zodiac_
             {
                 if (suggested_type)
                 {
-                    if (suggested_type->flags & AST_TYPE_FLAG_INT)
+                    if (suggested_type->flags & AST_TYPE_FLAG_INT ||
+                        suggested_type->kind == AST_TYPE_POINTER)
                     {
                     }
                     else if (suggested_type->flags & AST_TYPE_FLAG_FLOAT)
@@ -683,6 +758,21 @@ namespace Zodiac_
                 }
 
                 expression->flags |= AST_EXPR_FLAG_LITERAL;
+                break;
+            }
+
+            case AST_EXPR_FLOAT_LITERAL:
+            {
+                if (suggested_type && (suggested_type->flags & AST_TYPE_FLAG_FLOAT))
+                {
+                    expression->type = suggested_type;
+                }
+                else
+                {
+                    expression->type = Builtin::type_float;
+                }
+
+                expression->flags |= AST_EXPR_FLAG_CONST;
                 break;
             }
 
@@ -863,6 +953,7 @@ namespace Zodiac_
         if (result)
         {
             assert(expression->type || points_to_import_decl);
+            expression->flags |= AST_EXPR_FLAG_RESOLVED;
         }
         return result;
     }
@@ -1160,6 +1251,167 @@ namespace Zodiac_
         return false;
     }
 
+    bool defer_statement_is_legal(Resolver* resolver, AST_Statement* statement)
+    {
+        assert(resolver);
+        assert(statement);
+
+        switch (statement->kind)
+        {
+            case AST_STMT_DECLARATION:
+            {
+                return true;
+            }
+
+            case AST_STMT_RETURN:
+            {
+                resolver_report_error(resolver, statement->file_pos,
+                                      "Return statement is not allow in a defer statement");
+                return false;
+            }
+
+            case AST_STMT_BLOCK:
+            {
+                for (uint64_t i = 0; i < BUF_LENGTH(statement->block.statements); i++)
+                {
+                    bool legal = defer_statement_is_legal(resolver,
+                                                          statement->block.statements[i]);
+                    if (!legal)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            case AST_STMT_IF:
+            {
+                bool then_legal = defer_statement_is_legal(resolver,
+                                                           statement->if_stmt.then_statement);
+                if (!then_legal)
+                    return false;
+
+                if (statement->if_stmt.else_statement)
+                {
+                    return defer_statement_is_legal(resolver, statement->if_stmt.else_statement);
+                }
+
+                return true;
+            }
+
+            case AST_STMT_ASSIGN:
+            {
+                return true;
+            }
+
+            case AST_STMT_CALL:
+            {
+                return true;
+            }
+
+            case AST_STMT_WHILE:
+            {
+                return defer_statement_is_legal(resolver, statement->while_stmt.body_stmt);
+            }
+
+            case AST_STMT_FOR:
+            {
+                bool init_legal = defer_statement_is_legal(resolver,
+                                                           statement->for_stmt.init_stmt);
+                if (!init_legal)
+                    return false;
+
+                bool step_legal = defer_statement_is_legal(resolver,
+                                                           statement->for_stmt.step_stmt);
+                if (!step_legal)
+                    return false;
+
+                return defer_statement_is_legal(resolver, statement->for_stmt.body_stmt);
+            }
+
+            case AST_STMT_SWITCH:
+            {
+                resolver_report_error(resolver, statement->file_pos,
+                                      "Switch statement not allowed in defer statement");
+                return false;
+            }
+
+            case AST_STMT_BREAK:
+            {
+                resolver_report_error(resolver, statement->file_pos,
+                                      "Break statement not allowed in defer statement");
+                return false;
+            }
+
+            case AST_STMT_INSERT:
+            {
+                // Disallow this for now, need to think about if we want to support this
+                return false;
+            }
+
+            case AST_STMT_ASSERT:
+            {
+                return true;
+            }
+
+            case AST_STMT_DEFER:
+            {
+                resolver_report_error(resolver, statement->file_pos,
+                                      "Defer statement not allow in defer statement");
+                    return false;
+            }
+
+            default: assert(false);
+        }
+
+		assert(false);
+		return false;
+    }
+
+    void resolver_convert_to_builtin_string(Resolver* resolver, AST_Expression* string_lit_expr)
+    {
+        assert(resolver);
+        assert(string_lit_expr);
+        assert(string_lit_expr->type == Builtin::type_pointer_to_u8);
+
+        AST_Expression* old_expr = ast_expression_new(resolver->context, string_lit_expr->file_pos,
+                                                      string_lit_expr->kind);
+
+        *old_expr = *string_lit_expr;
+
+        string_lit_expr->kind = AST_EXPR_COMPOUND_LITERAL;
+        string_lit_expr->type = Builtin::type_String;
+        string_lit_expr->compound_literal.expressions = nullptr;
+
+        BUF_PUSH(string_lit_expr->compound_literal.expressions, old_expr);
+
+        AST_Expression* length_expr = nullptr;
+        if (old_expr->kind == AST_EXPR_STRING_LITERAL)
+        {
+            auto str_length = old_expr->string_literal.atom.length;
+            length_expr = ast_integer_literal_expression_new(resolver->context,
+                                                             string_lit_expr->file_pos,
+                                                             str_length);
+            length_expr->type = Builtin::type_u64;
+        }
+        else
+        {
+            BUF(AST_Expression*) args = nullptr;
+            BUF_PUSH(args, old_expr);
+
+            auto strlen_ident_expr =
+                ast_ident_expression_new(resolver->context, old_expr->file_pos,
+                                         Builtin::decl_string_length->identifier);
+            length_expr = ast_call_expression_new(resolver->context, old_expr->file_pos,
+                                                  strlen_ident_expr, args);
+            length_expr->call.callee_declaration = Builtin::decl_string_length;
+        }
+
+        assert(length_expr);
+        BUF_PUSH(string_lit_expr->compound_literal.expressions, length_expr);
+    }
+
     AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module,
                                               Atom module_path, Atom module_name)
     {
@@ -1314,6 +1566,8 @@ namespace Zodiac_
             case AST_BINOP_MUL:
             case AST_BINOP_DIV:
             case AST_BINOP_MOD:
+            case AST_BINOP_AND:
+            case AST_BINOP_OR:
             {
                 return false;
             }
@@ -1326,8 +1580,6 @@ namespace Zodiac_
             case AST_BINOP_NEQ:
             case AST_BINOP_AND_AND:
             case AST_BINOP_OR_OR:
-            case AST_BINOP_AND:
-            case AST_BINOP_OR:
             {
                 return true;
             }

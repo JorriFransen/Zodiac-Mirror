@@ -104,6 +104,7 @@ namespace Zodiac
         AST_EXPR_FLAG_LITERAL      = (1 << 1),
         AST_EXPR_FLAG_CONST        = (1 << 2),
         AST_EXPR_FLAG_POINTER_MATH = (1 << 3),
+        AST_EXPR_FLAG_RESOLVED     = (1 << 4),
     };
 
     enum AST_Builtin_Function

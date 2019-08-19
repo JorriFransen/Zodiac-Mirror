@@ -33,6 +33,8 @@ namespace Zodiac_
         Context* context = nullptr;
         AST_Module* module = nullptr;
 
+        AST_Statement* current_break_context = nullptr;
+
         Resolve_Result result = {};
     };
 
@@ -60,6 +62,9 @@ namespace Zodiac_
 
     bool resolver_check_assign_types(Resolver* resolver, AST_Type* lhs, AST_Type* rhs);
 
+    bool defer_statement_is_legal(Resolver* resolver, AST_Statement* statement);
+
+    void resolver_convert_to_builtin_string(Resolver* resolver, AST_Expression* string_lit_expr);
     AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module,
                                               Atom module_path, Atom module_name);
 
