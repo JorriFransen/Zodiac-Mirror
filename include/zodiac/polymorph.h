@@ -1,6 +1,8 @@
 #pragma once
 
 #include "resolver.h"
+#include "new_resolver.h"
+using namespace Zodiac_;
 
 namespace Zodiac
 {

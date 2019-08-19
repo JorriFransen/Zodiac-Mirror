@@ -3,7 +3,9 @@
 #include "zodiac.h"
 #include "ast.h"
 
-namespace Zodiac
+using namespace Zodiac;
+
+namespace _Zodiac
 {
     enum Resolve_Error_Flag : uint64_t
     {

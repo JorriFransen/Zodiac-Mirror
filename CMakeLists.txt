@@ -30,6 +30,7 @@ set (ZODIAC_COMPILER_SOURCE
     source/ir.cpp
     source/ir_runner.cpp
     source/lexer.cpp
+    source/new_resolver.cpp
     source/parser.cpp
     source/platform.cpp
     source/polymorph.cpp

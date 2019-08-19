@@ -13,7 +13,8 @@
 #include <stdarg.h>
 #include <inttypes.h>
 
-namespace Zodiac
+
+namespace _Zodiac
 {
     void resolver_init(Resolver* resolver, Context* context, AST_Module* module)
     {
@@ -1712,11 +1713,12 @@ namespace Zodiac
         if (func_decl->flags & AST_DECL_FLAG_FUNC_POLY)
         {
             assert(!recursive);
-            if (!find_or_create_poly_function(resolver, expression, &func_decl, scope))
-            {
-                resolver_report_error(resolver, expression->file_pos, "Could not create polymorphic function instance");
-                return false;
-            }
+            assert(false);
+            // if (!find_or_create_poly_function(resolver, expression, &func_decl, scope))
+            // {
+            //     resolver_report_error(resolver, expression->file_pos, "Could not create polymorphic function instance");
+            //     return false;
+            // }
         }
 
         AST_Type* func_type = nullptr;
@@ -2883,8 +2885,9 @@ namespace Zodiac
                     if (type_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
                         type_decl->aggregate_type.kind == AST_AGG_DECL_UNION)
                     {
-                        return find_or_create_poly_aggregate_type(resolver, type_decl, type_spec,
-                                                                  type_dest, scope);
+                        assert(false);
+                        // return find_or_create_poly_aggregate_type(resolver, type_decl, type_spec,
+                                                                  // type_dest, scope);
                     }
                     else assert(false);
                 }

@@ -5,7 +5,10 @@
 #include "parser.h"
 #include "platform.h"
 #include "resolver.h"
+#include "new_resolver.h"
 #include "ir.h"
+
+using namespace Zodiac_;
 
 namespace Zodiac
 {
@@ -282,33 +285,40 @@ namespace Zodiac
         }
 
         Resolver resolver;
-        resolver_init(&resolver, context, parse_result.ast_module);
-
-        while (!resolver.done)
+        resolver_init(&resolver, context);
+        Resolve_Result rr = resolver_resolve_module(&resolver, parse_result.ast_module);
+        if (resolve_result_has_errors(&rr))
         {
-            resolver_do_cycle(&resolver);
-
-            if (!resolver.progressed_on_last_cycle)
-            {
-                break;
-            }
-
-            if (resolver.override_done)
-            {
-                break;
-            }
-
-			if (resolver.import_error)
-			{
-				break;
-			}
-        }
-
-        if (!resolver.done)
-        {
-            resolver_report_errors(&resolver);
+            resolve_result_report_errors(&rr);
             return nullptr;
         }
+        // resolver_init(&resolver, context, parse_result.ast_module);
+
+        // while (!resolver.done)
+        // {
+        //     resolver_do_cycle(&resolver);
+
+        //     if (!resolver.progressed_on_last_cycle)
+        //     {
+        //         break;
+        //     }
+
+        //     if (resolver.override_done)
+        //     {
+        //         break;
+        //     }
+
+		// 	if (resolver.import_error)
+		// 	{
+		// 		break;
+		// 	}
+        // }
+
+        // if (!resolver.done)
+        // {
+        //     resolver_report_errors(&resolver);
+        //     return nullptr;
+        // }
 
         if (context->options.verbose)
         {

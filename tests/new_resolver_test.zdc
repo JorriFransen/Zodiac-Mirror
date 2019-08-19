@@ -1,0 +1,10 @@
+
+
+#dynamic_link "libc.so.6";
+#dynamic_link "libm.so.6";
+#foreign printf :: (format: *u8, ...) -> int;
+
+main :: ()
+{
+    printf("new_resolver_test\n");
+}

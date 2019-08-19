@@ -125,7 +125,8 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(call_args); i++)
         {
             auto call_arg = call_args[i];
-            result &= try_resolve_expression(resolver, call_arg, scope);
+            // result &= try_resolve_expression(resolver, call_arg, scope);
+            assert(false);
 
             if (result)
             {
@@ -151,18 +152,20 @@ namespace Zodiac
         replace_poly_type_specs(poly_function_instance, replacements);
 
 
-        auto was_resolving = resolver->current_func_decl;
-        resolver->current_func_decl = nullptr;
-        result &= try_resolve_declaration(resolver, poly_function_instance,
-                                          poly_func_decl->function.argument_scope->parent, scope);
-        resolver->current_func_decl = was_resolving;
+        assert(false);
+        // auto was_resolving = resolver->current_func_decl;
+        // resolver->current_func_decl = nullptr;
+        // result &= try_resolve_declaration(resolver, poly_function_instance,
+        //                                   poly_func_decl->function.argument_scope->parent, scope);
+        // resolver->current_func_decl = was_resolving;
 
 
         if (result)
         {
             if (poly_func_decl->location == AST_DECL_LOC_GLOBAL)
             {
-                BUF_PUSH(resolver->module->global_declarations, poly_function_instance);
+                assert(false);
+                // BUF_PUSH(resolver->module->global_declarations, poly_function_instance);
             }
 
             auto func_type = poly_function_instance->function.type;
@@ -206,7 +209,8 @@ namespace Zodiac
         {
             AST_Type_Spec* arg_type_spec = type_spec->identifier.poly_args[i];
             AST_Type* arg_type_dest = nullptr;
-            result &= try_resolve_type_spec(resolver, arg_type_spec, &arg_type_dest, scope);
+            // result &= try_resolve_type_spec(resolver, arg_type_spec, &arg_type_dest, scope);
+            assert(false);
 
             if (result)
             {
@@ -233,7 +237,8 @@ namespace Zodiac
         replace_poly_type_specs(type_decl->aggregate_type.parameter_idents, poly_aggregate_decl,
                                 type_spec->identifier.poly_args);
 
-        result &= try_resolve_declaration(resolver, poly_aggregate_decl, scope);
+        // result &= try_resolve_declaration(resolver, poly_aggregate_decl, scope);
+        assert(false);
 
         if (result)
         {
@@ -270,8 +275,9 @@ namespace Zodiac
         if (BUF_LENGTH(type_decl->aggregate_type.parameter_idents) !=
             BUF_LENGTH(type_spec->identifier.poly_args))
         {
-            resolver_report_error(resolver, type_spec->file_pos,
-                                  "Mismatching poly arguments for aggregate type");
+            // resolver_report_error(resolver, type_spec->file_pos,
+            //                       "Mismatching poly arguments for aggregate type");
+            assert(false);
             return false;
         }
 

@@ -7,11 +7,13 @@
 #include "lexer.h"
 #include "parser.h"
 #include "resolver.h"
+#include "new_resolver.h"
 
 #include "ir.h"
 #include "ir_runner.h"
 
 using namespace Zodiac;
+using namespace Zodiac_;
 
 void usage(const char* exe_name)
 {
@@ -130,30 +132,38 @@ int main(int argc, char** argv)
 
 
     Resolver resolver;
-    resolver_init(&resolver, context, parse_result.ast_module);
-
-    while (!resolver.done)
+    resolver_init(&resolver, context);
+    Resolve_Result rr = resolver_resolve_module(&resolver, parse_result.ast_module);
+    if (resolve_result_has_errors(&rr))
     {
-        resolver_do_cycle(&resolver);
-
-        if (!resolver.progressed_on_last_cycle)
-        {
-            break;
-        }
-
-        if (resolver.override_done)
-        {
-            break;
-        }
-
-    }
-
-    if (!resolver.done || resolver.import_error)
-    {
-        resolver_report_errors(&resolver);
+        resolve_result_report_errors(&rr);
         fprintf(stderr, "Exitting with resolve error(s)\n");
         return -1;
     }
+    // resolver_init(&resolver, context, parse_result.ast_module);
+
+    // while (!resolver.done)
+    // {
+    //     resolver_do_cycle(&resolver);
+
+    //     if (!resolver.progressed_on_last_cycle)
+    //     {
+    //         break;
+    //     }
+
+    //     if (resolver.override_done)
+    //     {
+    //         break;
+    //     }
+
+    // }
+
+    // if (!resolver.done || resolver.import_error)
+    // {
+    //     resolver_report_errors(&resolver);
+    //     fprintf(stderr, "Exitting with resolve error(s)\n");
+    //     return -1;
+    // }
 
     if (context->options.verbose)
     {
