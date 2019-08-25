@@ -10,6 +10,8 @@ namespace Zodiac
 
     int64_t const_interpret_int_expression(Context* context, AST_Expression* expression,
                                            AST_Type* type, AST_Scope* scope);
+    int64_t const_interpret_int_unary_expression(Context* context, AST_Expression* expression,
+                                                 AST_Scope* scope);
     int64_t const_interpret_int_literal_expression(Context* context, AST_Expression* expression,
                                                    AST_Type* type);
     uint64_t const_interpret_uint_expression(Context* context, AST_Expression* expression,

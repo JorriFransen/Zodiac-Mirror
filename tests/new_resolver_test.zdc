@@ -14,7 +14,20 @@ State :: enum
     INVALID;
     PLAYING;
     PAUSED;
-    MENU;
+    MAIN_MENU;
+    SETTINGS_MENU;
+    GRAPHICS_MENU;
+}
+
+Custom_State :: enum
+{
+    INVALID :: -1;
+    PLAYING;
+    PAUSED;
+
+    MAIN_MENU :: 100;
+    SETTINGS_MENU;
+    GRAPHICS_MENU;
 }
 
 main :: ()
@@ -62,10 +75,19 @@ main :: ()
     }
 
     using State;
-    printf("State.INVALID: %d\n", State.INVALID);
-    printf("State.PLAYING: %d\n", PLAYING);
-    printf("State.PAUSED:  %d\n", State.PAUSED);
-    printf("State.MENU:    %d\n", State.MENU);
+    printf("State.INVALID:       %d\n", State.INVALID);
+    printf("State.PLAYING:       %d\n", PLAYING);
+    printf("State.PAUSED:        %d\n", State.PAUSED);
+    printf("State.MAIN_MENU:     %d\n", State.MAIN_MENU);
+    printf("State.SETTINGS_MENU: %d\n", State.SETTINGS_MENU);
+    printf("State.GRAPHICS_MENU: %d\n", State.GRAPHICS_MENU);
+
+    printf("Custom_State.INVALID:       %d\n", Custom_State.INVALID);
+    printf("Custom_State.PLAYING:       %d\n", Custom_State.PLAYING);
+    printf("Custom_State.PAUSED:        %d\n", Custom_State.PAUSED);
+    printf("Custom_State.MAIN_MENU:     %d\n", Custom_State.MAIN_MENU);
+    printf("Custom_State.SETTINGS_MENU: %d\n", Custom_State.SETTINGS_MENU);
+    printf("Custom_State.GRAPHICS_MENU: %d\n", Custom_State.GRAPHICS_MENU);
 }
 
 print_vec2 :: (v: Vec2)

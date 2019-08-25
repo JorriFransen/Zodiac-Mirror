@@ -1,6 +1,7 @@
 #include "new_resolver.h"
 
 #include "builtin.h"
+#include "const_interpreter.h"
 
 #include <stdarg.h>
 #include <inttypes.h>
@@ -286,6 +287,7 @@ namespace Zodiac_
                     if (!result) break;
                 }
 
+                assert(declaration->constant_var.init_expression);
                 result &= resolver_resolve_expression(resolver,
                                                       declaration->constant_var.init_expression,
                                                       scope);
@@ -399,17 +401,46 @@ namespace Zodiac_
                             init_expr = ast_integer_literal_expression_new(resolver->context,
                                                                            member_decl->file_pos,
                                                                            next_value);
+                            member_decl->constant_var.init_expression = init_expr;
+                            result &= resolver_resolve_expression(resolver, init_expr, enum_scope,
+                                                                  enum_type);
                         }
                         else
                         {
-                            assert(false);
+                            init_expr = member_decl->constant_var.init_expression;
+                            if (init_expr->kind == AST_EXPR_IDENTIFIER)
+                            {
+                                assert(false);
+                            }
+                            else
+                            {
+                                result &= resolver_resolve_expression(resolver, init_expr,
+                                                                      enum_scope, enum_type);
+                                assert(result);
+                                assert(init_expr->flags & AST_EXPR_FLAG_CONST);
+                                assert(init_expr->type->flags & AST_TYPE_FLAG_INT);
+                                next_value = const_interpret_int_expression(resolver->context,
+                                                                            init_expr,
+                                                                            init_expr->type,
+                                                                            enum_scope);
+                                AST_Expression* new_init_expr =
+                                    ast_integer_literal_expression_new(resolver->context,
+                                                                       init_expr->file_pos,
+                                                                       next_value);
+
+
+                                //TODO: FIXME: LEAK:
+                                init_expr = new_init_expr;
+                                member_decl->constant_var.init_expression = init_expr;
+
+                                result &= resolver_resolve_expression(resolver, init_expr,
+                                                                      enum_scope, enum_type);
+                            }
+                            assert(result);
                         }
 
                         assert(init_expr);
-                        member_decl->constant_var.init_expression = init_expr;
 
-                        result &= resolver_resolve_expression(resolver, init_expr, enum_scope,
-                                                              enum_type);
                         if (!result) break;
                         result &= resolver_resolve_declaration(resolver, member_decl, enum_scope);
                         assert(result);
@@ -815,11 +846,14 @@ namespace Zodiac_
 
                 AST_Type* operand_type = expression->unary.operand->type;
 
+                bool inherit_const = false;
+
                 switch (expression->unary.op)
                 {
                     case AST_UNOP_MINUS:
                     {
                         expression->type = operand_type;
+                        inherit_const = true;
                         break;
                     }
 
@@ -840,11 +874,18 @@ namespace Zodiac_
                     case AST_UNOP_NOT:
                     {
                         expression->type = operand_type;
+                        inherit_const = true;
                         break;
                     }
 
                     default: assert(false);
                 }
+
+                if (inherit_const && (expression->unary.operand->flags & AST_EXPR_FLAG_CONST))
+                {
+                    expression->flags |= AST_EXPR_FLAG_CONST;
+                }
+
                 break;
             }
 

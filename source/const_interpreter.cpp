@@ -85,6 +85,12 @@ namespace Zodiac
                 return const_interpret_int_literal_expression(context, expression, type);
             }
 
+
+            case AST_EXPR_UNARY:
+            {
+                return const_interpret_int_unary_expression(context, expression, scope);
+            }
+
             case AST_EXPR_BINARY:
             {
                 uint64_t lhs = const_interpret_int_expression(context, expression->binary.lhs,
@@ -110,6 +116,20 @@ namespace Zodiac
 
         assert(false);
 		return 0;
+    }
+
+    int64_t const_interpret_int_unary_expression(Context* context, AST_Expression* expression,
+                                                 AST_Scope* scope)
+    {
+        assert(context);
+        assert(expression);
+        assert(scope);
+
+        if (expression->type->flags & AST_TYPE_FLAG_SIGNED)
+        {
+            return const_interpret_s64_unary_expression(context, expression, scope);
+        }
+        else assert(false);
     }
 
     int64_t const_interpret_int_literal_expression(Context* context, AST_Expression* expression,
