@@ -25,9 +25,11 @@ Custom_State :: enum
     PLAYING;
     PAUSED;
 
-    MAIN_MENU :: 100;
-    SETTINGS_MENU;
-    GRAPHICS_MENU;
+    MENU_FIRST :: 100;
+        MAIN_MENU :: MENU_FIRST;
+        SETTINGS_MENU;
+        GRAPHICS_MENU;
+    MENU_LAST :: GRAPHICS_MENU;
 }
 
 main :: ()
@@ -85,9 +87,11 @@ main :: ()
     printf("Custom_State.INVALID:       %d\n", Custom_State.INVALID);
     printf("Custom_State.PLAYING:       %d\n", Custom_State.PLAYING);
     printf("Custom_State.PAUSED:        %d\n", Custom_State.PAUSED);
+    printf("Custom_State.MENU_FIRST:    %d\n", Custom_State.MENU_FIRST);
     printf("Custom_State.MAIN_MENU:     %d\n", Custom_State.MAIN_MENU);
     printf("Custom_State.SETTINGS_MENU: %d\n", Custom_State.SETTINGS_MENU);
     printf("Custom_State.GRAPHICS_MENU: %d\n", Custom_State.GRAPHICS_MENU);
+    printf("Custom_State.MENU_LAST:     %d\n", Custom_State.MENU_LAST);
 }
 
 print_vec2 :: (v: Vec2)
