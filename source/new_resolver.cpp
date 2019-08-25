@@ -289,6 +289,13 @@ namespace Zodiac_
                 result &= resolver_resolve_expression(resolver,
                                                       declaration->constant_var.init_expression,
                                                       scope);
+
+                if (!declaration->constant_var.type)
+                {
+                    declaration->constant_var.type =
+                        declaration->constant_var.init_expression->type;
+                }
+
                 break;
             }
 
@@ -340,19 +347,21 @@ namespace Zodiac_
                         name = declaration->identifier->atom.data;
                     }
 
+                    auto agg_scope = declaration->aggregate_type.scope;
+                    assert(agg_scope);
                     if (declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT)
                     {
                         declaration->aggregate_type.type = ast_type_struct_new(resolver->context,
                                                                                agg_decl->members,
-                                                                               name,
-                                                                               bit_size, nullptr);
+                                                                               name, bit_size,
+                                                                               agg_scope, nullptr);
                     }
                     else
                     {
                         declaration->aggregate_type.type = ast_type_union_new(resolver->context,
                                                                               agg_decl->members,
-                                                                              name,
-                                                                              bit_size, nullptr);
+                                                                              name, bit_size,
+                                                                              agg_scope, nullptr);
                     }
                 }
                 else
@@ -375,6 +384,11 @@ namespace Zodiac_
 
                     assert(enum_type->flags & AST_TYPE_FLAG_INT);
 
+                    AST_Expression* init_expr = nullptr;
+
+                    auto enum_scope = declaration->aggregate_type.scope;
+                    assert(enum_scope);
+
                     int64_t next_value = 0;
                     for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->members); i++)
                     {
@@ -382,31 +396,36 @@ namespace Zodiac_
                         assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
                         if (!member_decl->constant_var.init_expression)
                         {
-                            member_decl->constant_var.init_expression =
-                                ast_integer_literal_expression_new(resolver->context,
-                                                                   member_decl->file_pos,
-                                                                   next_value);
+                            init_expr = ast_integer_literal_expression_new(resolver->context,
+                                                                           member_decl->file_pos,
+                                                                           next_value);
                         }
                         else
                         {
                             assert(false);
                         }
 
-                        AST_Expression* init_expr = member_decl->constant_var.init_expression;
-                        result &= resolver_resolve_expression(resolver, init_expr,
-                                                              declaration->aggregate_type.scope,
+                        assert(init_expr);
+                        member_decl->constant_var.init_expression = init_expr;
+
+                        result &= resolver_resolve_expression(resolver, init_expr, enum_scope,
                                                               enum_type);
                         if (!result) break;
-                        result &= resolver_resolve_declaration(resolver, member_decl,
-                                                               declaration->aggregate_type.scope);
+                        result &= resolver_resolve_declaration(resolver, member_decl, enum_scope);
+                        assert(result);
+
+                        ast_scope_push_declaration(enum_scope, member_decl);
 
                         next_value++;
                     }
 
+                    auto enum_name = declaration->identifier->atom.data;
+                    auto agg_scope = declaration->aggregate_type.scope;
+                    assert(agg_scope);
                     declaration->aggregate_type.type = ast_type_enum_new(resolver->context,
                                                                          agg_decl->members,
-                                                                         declaration->identifier->atom.data,
-                                                                         enum_type);
+                                                                         enum_name, enum_type,
+                                                                         agg_scope);
                 }
 
                 if (result) assert(declaration->aggregate_type.type);
@@ -1051,7 +1070,8 @@ namespace Zodiac_
 
                     if (member_decl->identifier->atom == member_expr->identifier->atom)
                     {
-                        dot_expr->type = resolver_get_declaration_type(member_decl);
+                        member_expr->type = resolver_get_declaration_type(member_decl);
+                        // dot_expr->type = resolver_get_declaration_type(member_decl);
                         dot_expr->dot.declaration = member_decl;
                         found = true;
                         break;
@@ -1072,16 +1092,30 @@ namespace Zodiac_
 
             if (result)
             {
-                dot_expr->type = member_expr->type;
-                if (member_expr->flags & AST_EXPR_FLAG_CONST)
-                {
-                    dot_expr->flags |= AST_EXPR_FLAG_CONST;
-                }
                 assert(member_expr->identifier->declaration);
                 dot_expr->dot.declaration = member_expr->identifier->declaration;
             }
         }
+        else if (base_decl->kind == AST_DECL_AGGREGATE_TYPE)
+        {
+            assert(base_decl->aggregate_type.kind == AST_AGG_DECL_ENUM);
+            assert(base_decl->aggregate_type.scope);
+
+            result &= resolver_resolve_expression(resolver, member_expr,
+                                                  base_decl->aggregate_type.scope);
+
+        }
         else assert(false);
+
+        if (result)
+        {
+            dot_expr->type = member_expr->type;
+            assert(dot_expr->type);
+            if (member_expr->flags & AST_EXPR_FLAG_CONST)
+            {
+                dot_expr->flags |= AST_EXPR_FLAG_CONST;
+            }
+        }
 
         return result;
     }
@@ -1223,6 +1257,12 @@ namespace Zodiac_
             {
                 assert(decl->mutable_decl.type);
                 return decl->mutable_decl.type;
+            }
+
+            case AST_DECL_CONSTANT_VAR:
+            {
+                assert(decl->constant_var.type);
+                return decl->constant_var.type;
             }
 
             case AST_DECL_AGGREGATE_TYPE:

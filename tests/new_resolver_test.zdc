@@ -9,6 +9,14 @@ Vec2 :: struct
     y : float;
 }
 
+State :: enum
+{
+    INVALID;
+    PLAYING;
+    PAUSED;
+    MENU;
+}
+
 main :: ()
 {
     _c.printf("new_resolver_test\n");
@@ -52,6 +60,12 @@ main :: ()
     {
         printf("b = false\n");
     }
+
+    using State;
+    printf("State.INVALID: %d\n", State.INVALID);
+    printf("State.PLAYING: %d\n", PLAYING);
+    printf("State.PAUSED:  %d\n", State.PAUSED);
+    printf("State.MENU:    %d\n", State.MENU);
 }
 
 print_vec2 :: (v: Vec2)

@@ -1309,6 +1309,13 @@ namespace Zodiac
             {
                 base_decl = base_expression->identifier->declaration;
                 base_value = ir_builder_value_for_declaration(ir_builder, base_decl);
+
+                if (base_expression->type->kind == AST_TYPE_ENUM)
+                {
+                    assert(base_value == nullptr);
+                    return ir_builder_emit_expression(ir_builder, member_expression);
+                }
+
                 if (base_expression->type->kind == AST_TYPE_STRUCT ||
                     base_expression->type->kind == AST_TYPE_UNION)
                 {

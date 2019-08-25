@@ -557,6 +557,7 @@ namespace Zodiac
             struct
             {
                 BUF(AST_Declaration*) member_declarations;
+                AST_Scope* scope;
                 AST_Type* base_type; // for enums
                 AST_Declaration* poly_from;
                 BUF(AST_Type_Spec*) poly_types;
@@ -833,13 +834,13 @@ namespace Zodiac
     AST_Type* ast_type_pointer_new(Context* context, AST_Type* base_type);
     AST_Type* ast_type_static_array_new(Context* context, AST_Type* base_type, uint64_t count);
     AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations,
-                                  const char* name, uint64_t bit_size,
+                                  const char* name, uint64_t bit_size, AST_Scope* scope,
                                   BUF(AST_Overload_Directive) overloads);
     AST_Type* ast_type_union_new(Context* context, BUF(AST_Declaration*) member_declarations,
-                                 const char* name, uint64_t bit_size,
+                                 const char* name, uint64_t bit_size, AST_Scope* scope,
                                  BUF(AST_Overload_Directive) overloads);
     AST_Type* ast_type_enum_new(Context* context, BUF(AST_Declaration*) member_decls,
-                                const char* name, AST_Type* base_type);
+                                const char* name, AST_Type* base_type, AST_Scope* scope);
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type, const char* original_name);
 

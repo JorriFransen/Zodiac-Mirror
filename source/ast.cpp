@@ -938,15 +938,17 @@ namespace Zodiac
     }
 
     AST_Type* ast_type_struct_new(Context* context, BUF(AST_Declaration*) member_declarations,
-                                  const char* name, uint64_t bit_size,
+                                  const char* name, uint64_t bit_size, AST_Scope* scope,
                                   BUF(AST_Overload_Directive) overloads)
     {
         assert(context);
+        assert(scope);
         // assert(member_declarations);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_STRUCT, AST_TYPE_FLAG_NONE, name,
                                         bit_size);
         result->aggregate_type.member_declarations = member_declarations;
+        result->aggregate_type.scope = scope;
         result->aggregate_type.poly_from = nullptr;
         result->aggregate_type.poly_types = nullptr;
         result->overloads = overloads;
@@ -955,15 +957,17 @@ namespace Zodiac
     }
 
     AST_Type* ast_type_union_new(Context* context, BUF(AST_Declaration*) member_declarations,
-                                 const char* name, uint64_t bit_size,
+                                 const char* name, uint64_t bit_size, AST_Scope* scope,
                                  BUF(AST_Overload_Directive) overloads)
     {
         assert(context);
+        assert(scope);
         // assert(name);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_UNION, AST_TYPE_FLAG_NONE, name,
                                         bit_size);
         result->aggregate_type.member_declarations = member_declarations;
+        result->aggregate_type.scope = scope;
         result->aggregate_type.poly_from = nullptr;
         result->aggregate_type.poly_types = nullptr;
         result->overloads = overloads;
@@ -972,17 +976,19 @@ namespace Zodiac
     }
 
     AST_Type* ast_type_enum_new(Context* context, BUF(AST_Declaration*) member_decls,
-                                const char* name, AST_Type* base_type)
+                                const char* name, AST_Type* base_type, AST_Scope* scope)
     {
         assert(context);
         assert(member_decls);
         assert(base_type);
         assert(base_type->bit_size);
         assert(base_type->flags & AST_TYPE_FLAG_INT);
+        assert(scope);
 
         AST_Type* result = ast_type_new(context, AST_TYPE_ENUM, AST_TYPE_FLAG_NONE,
                                         name, base_type->bit_size);
         result->aggregate_type.member_declarations = member_decls;
+        result->aggregate_type.scope = scope;
         result->aggregate_type.base_type = base_type;
 
         return result;
