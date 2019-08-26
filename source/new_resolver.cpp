@@ -287,10 +287,19 @@ namespace Zodiac_
                     if (!result) break;
                 }
 
-                assert(declaration->constant_var.init_expression);
-                result &= resolver_resolve_expression(resolver,
-                                                      declaration->constant_var.init_expression,
-                                                      scope);
+
+                if (declaration->constant_var.init_expression)
+                {
+                    result &= resolver_resolve_expression(resolver,
+                                                          declaration->constant_var.init_expression,
+                                                          scope);
+                }
+                else if (scope->flags & AST_SCOPE_FLAG_IS_ENUM_SCOPE)
+                {
+                    result = false;
+                    break;
+                }
+                else assert(false);
 
                 if (!declaration->constant_var.type)
                 {
@@ -386,77 +395,86 @@ namespace Zodiac_
 
                     assert(enum_type->flags & AST_TYPE_FLAG_INT);
 
-                    AST_Expression* init_expr = nullptr;
-
                     auto enum_scope = declaration->aggregate_type.scope;
                     assert(enum_scope);
 
-                    int64_t next_value = 0;
                     for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->members); i++)
                     {
                         AST_Declaration* member_decl = agg_decl->members[i];
                         assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
-                        if (!member_decl->constant_var.init_expression)
+
+                        ast_scope_push_declaration(enum_scope, member_decl);
+                    }
+
+                    bool all_resolved = false;
+                    while (!all_resolved)
+                    {
+                        int64_t next_value = 0;
+                        bool member_result = true;
+
+                        for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->members); i++)
                         {
-                            init_expr = ast_integer_literal_expression_new(resolver->context,
-                                                                           member_decl->file_pos,
-                                                                           next_value);
-                            member_decl->constant_var.init_expression = init_expr;
-                            result &= resolver_resolve_expression(resolver, init_expr, enum_scope,
-                                                                  enum_type);
-                        }
-                        else
-                        {
-                            init_expr = member_decl->constant_var.init_expression;
-                            if (init_expr->kind == AST_EXPR_IDENTIFIER)
+                            AST_Declaration* member_decl = agg_decl->members[i];
+                            assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
+
+                            if (member_decl->constant_var.init_expression)
                             {
-                                assert(false);
-                            }
-                            else
-                            {
-                                result &= resolver_resolve_expression(resolver, init_expr,
-                                                                      enum_scope, enum_type);
-                                assert(result);
-                                assert(init_expr->flags & AST_EXPR_FLAG_CONST);
-                                assert(init_expr->type->flags & AST_TYPE_FLAG_INT);
+                                if (resolver_resolve_declaration(resolver, member_decl,
+                                                                 enum_scope))
+                                {
+                                    
+                                }
+                                else
+                                {
+                                    member_result = false;
+                                    continue;
+                                }
+
+
+                                auto init_expr = member_decl->constant_var.init_expression;
                                 next_value = const_interpret_int_expression(resolver->context,
                                                                             init_expr,
                                                                             init_expr->type,
                                                                             enum_scope);
-                                AST_Expression* new_init_expr =
+
+                                auto new_init_expr =
                                     ast_integer_literal_expression_new(resolver->context,
                                                                        init_expr->file_pos,
                                                                        next_value);
+                                bool expr_res = resolver_resolve_expression(resolver,
+                                                                            new_init_expr,
+                                                                            enum_scope);
+                                assert(expr_res);
 
-
-                                //TODO: FIXME: LEAK:
-                                init_expr = new_init_expr;
-                                member_decl->constant_var.init_expression = init_expr;
-
-                                result &= resolver_resolve_expression(resolver, init_expr,
-                                                                      enum_scope, enum_type);
+                                // LEAK: FIXME: TODO:
+                                member_decl->constant_var.init_expression = new_init_expr;
                             }
-                            assert(result);
+                            else
+                            {
+                                AST_Expression* init_expr =
+                                    ast_integer_literal_expression_new(resolver->context,
+                                                                       member_decl->file_pos,
+                                                                       next_value);
+                                member_decl->constant_var.init_expression = init_expr;
+                                member_result &= resolver_resolve_declaration(resolver,
+                                                                              member_decl,
+                                                                              enum_scope);
+                            }
+
+                            next_value++;
                         }
 
-                        assert(init_expr);
-
-                        if (!result) break;
-                        result &= resolver_resolve_declaration(resolver, member_decl, enum_scope);
-                        assert(result);
-
-                        ast_scope_push_declaration(enum_scope, member_decl);
-
-                        next_value++;
+                        if (member_result)
+                        {
+                            all_resolved = true;
+                        }
                     }
 
                     auto enum_name = declaration->identifier->atom.data;
-                    auto agg_scope = declaration->aggregate_type.scope;
-                    assert(agg_scope);
                     declaration->aggregate_type.type = ast_type_enum_new(resolver->context,
                                                                          agg_decl->members,
                                                                          enum_name, enum_type,
-                                                                         agg_scope);
+                                                                         enum_scope);
                 }
 
                 if (result) assert(declaration->aggregate_type.type);

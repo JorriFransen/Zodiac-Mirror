@@ -32,6 +32,16 @@ Custom_State :: enum
     MENU_LAST :: GRAPHICS_MENU;
 }
 
+
+Menu :: enum
+{
+    FIRST :: MAIN;
+    MAIN;
+    SETTINGS;
+    GRAPHICS;
+    LAST :: GRAPHICS;
+}
+
 main :: ()
 {
     _c.printf("new_resolver_test\n");
@@ -92,6 +102,12 @@ main :: ()
     printf("Custom_State.SETTINGS_MENU: %d\n", Custom_State.SETTINGS_MENU);
     printf("Custom_State.GRAPHICS_MENU: %d\n", Custom_State.GRAPHICS_MENU);
     printf("Custom_State.MENU_LAST:     %d\n", Custom_State.MENU_LAST);
+
+    printf("Menu.FIRST:    %d\n", Menu.FIRST);
+    printf("Menu.MAIN:     %d\n", Menu.MAIN);
+    printf("Menu.SETTINGS: %d\n", Menu.SETTINGS);
+    printf("Menu.GRAPHICS: %d\n", Menu.GRAPHICS);
+    printf("Menu.LAST:     %d\n", Menu.LAST);
 }
 
 print_vec2 :: (v: Vec2)
