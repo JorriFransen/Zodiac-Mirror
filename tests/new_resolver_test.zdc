@@ -36,9 +36,9 @@ Custom_State :: enum
 Menu :: enum
 {
     FIRST :: MAIN;
-    MAIN;
-    SETTINGS;
-    GRAPHICS;
+        MAIN;
+        SETTINGS;
+        GRAPHICS;
     LAST :: GRAPHICS;
 }
 

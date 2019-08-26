@@ -419,10 +419,12 @@ namespace Zodiac_
 
                             if (member_decl->constant_var.init_expression)
                             {
-                                if (resolver_resolve_declaration(resolver, member_decl,
-                                                                 enum_scope))
+                                auto init_expr = member_decl->constant_var.init_expression;
+
+                                if (resolver_resolve_expression(resolver, init_expr, enum_scope,
+                                                                enum_type) &&
+                                    resolver_resolve_declaration(resolver, member_decl, enum_scope))
                                 {
-                                    
                                 }
                                 else
                                 {
@@ -431,7 +433,6 @@ namespace Zodiac_
                                 }
 
 
-                                auto init_expr = member_decl->constant_var.init_expression;
                                 next_value = const_interpret_int_expression(resolver->context,
                                                                             init_expr,
                                                                             init_expr->type,
@@ -443,11 +444,16 @@ namespace Zodiac_
                                                                        next_value);
                                 bool expr_res = resolver_resolve_expression(resolver,
                                                                             new_init_expr,
-                                                                            enum_scope);
+                                                                            enum_scope,
+                                                                            enum_type);
                                 assert(expr_res);
 
                                 // LEAK: FIXME: TODO:
                                 member_decl->constant_var.init_expression = new_init_expr;
+
+                                member_decl->flags ^= AST_DECL_FLAG_RESOLVED;
+                                result &= resolver_resolve_declaration(resolver, member_decl,
+                                                                       enum_scope);
                             }
                             else
                             {
@@ -455,10 +461,11 @@ namespace Zodiac_
                                     ast_integer_literal_expression_new(resolver->context,
                                                                        member_decl->file_pos,
                                                                        next_value);
+                                member_result &= resolver_resolve_expression(resolver, init_expr,
+                                                                             enum_scope, enum_type);
                                 member_decl->constant_var.init_expression = init_expr;
                                 member_result &= resolver_resolve_declaration(resolver,
-                                                                              member_decl,
-                                                                              enum_scope);
+                                                                              member_decl, scope);
                             }
 
                             next_value++;
@@ -471,10 +478,22 @@ namespace Zodiac_
                     }
 
                     auto enum_name = declaration->identifier->atom.data;
-                    declaration->aggregate_type.type = ast_type_enum_new(resolver->context,
-                                                                         agg_decl->members,
-                                                                         enum_name, enum_type,
-                                                                         enum_scope);
+                    AST_Type* enum_member_type = ast_type_enum_new(resolver->context,
+                                                                   agg_decl->members, enum_name,
+                                                                   enum_type, enum_scope);
+                    declaration->aggregate_type.type = enum_member_type;
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->members); i++)
+                    {
+                        AST_Declaration* member_decl = agg_decl->members[i];
+                        assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
+                        assert(member_decl->constant_var.type->flags & AST_TYPE_FLAG_INT);
+                        assert(member_decl->constant_var.type->bit_size <=
+                               enum_member_type->bit_size);
+
+                        member_decl->constant_var.type = enum_member_type;
+                        member_decl->constant_var.init_expression->type = enum_member_type;
+                    }
                 }
 
                 if (result) assert(declaration->aggregate_type.type);
@@ -675,6 +694,70 @@ namespace Zodiac_
                 break;
             }
 
+            case AST_STMT_SWITCH:
+            {
+                AST_Expression* switch_expr = statement->switch_stmt.switch_expression;
+                result &= resolver_resolve_expression(resolver, switch_expr, scope);
+                if (!result) break;
+
+                AST_Type* switch_type = switch_expr->type;
+                assert(switch_type->flags & AST_TYPE_FLAG_INT ||
+                       ((switch_type->kind == AST_TYPE_ENUM) &&
+                        (switch_type->aggregate_type.base_type->flags & AST_TYPE_FLAG_INT)));
+
+                bool found_default = false;
+
+                auto cases = statement->switch_stmt.cases;
+                for (uint64_t i = 0; i < BUF_LENGTH(cases); i++)
+                {
+                    const AST_Switch_Case& switch_case = cases[i];
+                    if (switch_case.is_default)
+                    {
+                        assert(!found_default);
+                        found_default = true;
+                    }
+                    else
+                    {
+                        for (uint64_t i = 0; i < BUF_LENGTH(switch_case.case_expressions); i++)
+                        {
+                            AST_Expression* case_expr = switch_case.case_expressions[i];
+                            result &= resolver_resolve_expression(resolver, case_expr, scope,
+                                                                  switch_expr->type);
+                            if (result)
+                            {
+                                if (!(case_expr->flags & AST_EXPR_FLAG_CONST))
+                                {
+                                    resolver_report_error(resolver, case_expr->file_pos,
+                                                          "Case expression must be const");
+                                }
+                            }
+                        }
+
+                        for (uint64_t i = 0; i < BUF_LENGTH(switch_case.range_expressions); i += 2)
+                        {
+                            AST_Expression* min = switch_case.range_expressions[i];
+                            AST_Expression* max = switch_case.range_expressions[i + 1];
+
+                            result &= resolver_resolve_expression(resolver, min, scope);
+                            result &= resolver_resolve_expression(resolver, max, scope);
+
+                            if (result)
+                            {
+                                assert(min->flags & AST_EXPR_FLAG_CONST);
+                                assert(max->flags & AST_EXPR_FLAG_CONST);
+                                assert(min->type == max->type);
+                            }
+                        }
+                    }
+
+                    auto old_break_context = resolver->current_break_context;
+                    resolver->current_break_context = statement;
+                    result &= resolver_resolve_statement(resolver, switch_case.stmt, scope);
+                    resolver->current_break_context = old_break_context;
+                }
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -806,7 +889,8 @@ namespace Zodiac_
                 if (suggested_type)
                 {
                     if (suggested_type->flags & AST_TYPE_FLAG_INT ||
-                        suggested_type->kind == AST_TYPE_POINTER)
+                        suggested_type->kind == AST_TYPE_POINTER ||
+                        suggested_type->kind == AST_TYPE_ENUM)
                     {
                     }
                     else if (suggested_type->flags & AST_TYPE_FLAG_FLOAT)
@@ -1161,7 +1245,14 @@ namespace Zodiac_
             assert(base_decl->aggregate_type.scope);
 
             result &= resolver_resolve_expression(resolver, member_expr,
-                                                  base_decl->aggregate_type.scope);
+                                                  base_decl->aggregate_type.scope,
+                                                  base_decl->aggregate_type.type);
+
+
+            if (result)
+            {
+                member_expr->flags |= AST_EXPR_FLAG_CONST;
+            }
 
         }
         else assert(false);
