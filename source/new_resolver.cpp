@@ -338,17 +338,22 @@ namespace Zodiac_
                     for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->members); i++)
                     {
                         AST_Declaration* member_decl = agg_decl->members[i];
-                        result &= resolver_resolve_declaration(resolver, member_decl,
+                        bool member_res = resolver_resolve_declaration(resolver, member_decl,
                                                           declaration->aggregate_type.scope);
 
-                        AST_Type* member_type = resolver_get_declaration_type(member_decl);
-                        assert(member_type);
-
-                        total_size += member_type->bit_size;
-                        if (member_type->bit_size > biggest_size)
+                        if (member_res)
                         {
-                            biggest_size = member_type->bit_size;
+                            AST_Type* member_type = resolver_get_declaration_type(member_decl);
+                            assert(member_type);
+
+                            total_size += member_type->bit_size;
+                            if (member_type->bit_size > biggest_size)
+                            {
+                                biggest_size = member_type->bit_size;
+                            }
                         }
+
+                        result &= member_res;
                     }
 
                     uint64_t bit_size = 0;
@@ -1464,6 +1469,31 @@ namespace Zodiac_
                     AST_Type* result_type = ast_find_or_create_function_type(resolver->context,
                                                                              is_vararg, arg_types,
                                                                              return_type, name);
+                    *type_dest = result_type;
+                    type_spec->type = result_type;
+                }
+
+                break;
+            }
+
+            case AST_TYPE_SPEC_DOT:
+            {
+                auto module_ident = type_spec->dot.module_ident;
+                result &= resolver_resolve_identifier(resolver, module_ident, scope);
+
+                if (result)
+                {
+                    assert(module_ident->declaration);
+                    auto module_decl = module_ident->declaration;
+                    assert(module_decl->kind == AST_DECL_IMPORT);
+                    assert(module_decl->import.module);
+                    auto module = module_decl->import.module;
+
+                    AST_Type* result_type = nullptr;
+                    result &= resolver_resolve_type_spec(resolver, type_spec->dot.member_type_spec,
+                                                         &result_type, module->module_scope);
+                    if (!result) break;
+                    assert(result_type);
                     *type_dest = result_type;
                     type_spec->type = result_type;
                 }
