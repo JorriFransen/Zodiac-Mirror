@@ -1329,8 +1329,13 @@ namespace Zodiac
             }
             else if (base_expression->kind == AST_EXPR_DOT)
             {
-                base_value = ir_builder_emit_dot_expression(ir_builder,
-                                                                      base_expression);
+                if (base_expression->dot.declaration->kind == AST_DECL_AGGREGATE_TYPE &&
+                    base_expression->dot.declaration->aggregate_type.kind == AST_AGG_DECL_ENUM)
+                {
+                    assert(member_expression->identifier->declaration);
+                    return ir_builder_value_for_declaration(ir_builder, member_expression->identifier->declaration);
+                }
+                base_value = ir_builder_emit_dot_expression(ir_builder, base_expression);
                 aggregate_type = base_value->type;
                 base_decl = base_expression->dot.declaration;
             }

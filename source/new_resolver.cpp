@@ -49,6 +49,15 @@ namespace Zodiac_
 
         for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
         {
+            auto decl = module->global_declarations[i];
+            if (decl->kind == AST_DECL_USING)
+            {
+                resolver_resolve_declaration(resolver, decl, module->module_scope);
+            }
+        }
+
+        for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
+        {
             AST_Declaration* global_decl = module->global_declarations[i];
             resolver_resolve_declaration(resolver, global_decl, module->module_scope);
         }
@@ -622,10 +631,13 @@ namespace Zodiac_
 
             case AST_STMT_IF:
             {
-                result &= resolver_resolve_expression(resolver, statement->if_stmt.if_expression,
+                auto if_expr = statement->if_stmt.if_expression;
+                result &= resolver_resolve_expression(resolver, if_expr,
                                                       scope);
                 if (!result) return false;
-                assert(statement->if_stmt.if_expression->type == Builtin::type_bool);
+                assert(if_expr->type == Builtin::type_bool ||
+                       if_expr->type->kind == AST_TYPE_POINTER ||
+                       (if_expr->type->flags & AST_TYPE_FLAG_INT));
                 result &= resolver_resolve_statement(resolver, statement->if_stmt.then_statement,
                                                      scope);
                 if (!result) return false;
@@ -640,11 +652,13 @@ namespace Zodiac_
 
             case AST_STMT_WHILE:
             {
-                result &= resolver_resolve_expression(resolver, statement->while_stmt.cond_expr,
-                                                      scope);
+                auto cond_expr = statement->while_stmt.cond_expr;
+                result &= resolver_resolve_expression(resolver, cond_expr, scope);
                 if (!result) return false;
 
-                assert(statement->while_stmt.cond_expr->type == Builtin::type_bool);
+                assert(cond_expr->type == Builtin::type_bool ||
+                       cond_expr->type->kind == AST_TYPE_POINTER ||
+                       (cond_expr->type->flags & AST_TYPE_FLAG_INT));
 
                 auto old_break_context = resolver->current_break_context;
                 resolver->current_break_context = statement;
@@ -844,6 +858,7 @@ namespace Zodiac_
                     }
 
                     result &= resolver_resolve_expression(resolver, arg_expr, scope, arg_type);
+                    if (!result) break;
 
                     if (arg_type)
                     {
@@ -1077,6 +1092,12 @@ namespace Zodiac_
                 break;
             }
 
+            case AST_EXPR_CHAR_LITERAL:
+            {
+                expression->type = Builtin::type_u8;
+                break;
+            }
+
             case AST_EXPR_SIZEOF:
             {
                 AST_Type* type = nullptr;
@@ -1201,9 +1222,17 @@ namespace Zodiac_
         if (!result) return false;
 
         assert(member_expr->kind == AST_EXPR_IDENTIFIER);
-        assert(base_expr->kind == AST_EXPR_IDENTIFIER);
 
-        AST_Declaration* base_decl = base_expr->identifier->declaration;
+        AST_Declaration* base_decl = nullptr;
+        if (base_expr->kind == AST_EXPR_IDENTIFIER)
+        {
+            base_decl = base_expr->identifier->declaration;
+        }
+        else if (base_expr->kind == AST_EXPR_DOT)
+        {
+            base_decl = base_expr->dot.declaration;
+        }
+        else assert(false);
         assert(base_decl);
 
         if (base_decl->kind == AST_DECL_MUTABLE)
@@ -1259,6 +1288,12 @@ namespace Zodiac_
             assert(base_decl->aggregate_type.kind == AST_AGG_DECL_ENUM);
             assert(base_decl->aggregate_type.scope);
 
+            AST_Declaration* member_decl = find_declaration(resolver->context,
+                                                            base_decl->aggregate_type.scope,
+                                                            member_expr->identifier);
+
+            assert(member_decl);
+
             result &= resolver_resolve_expression(resolver, member_expr,
                                                   base_decl->aggregate_type.scope,
                                                   base_decl->aggregate_type.type);
@@ -1266,7 +1301,9 @@ namespace Zodiac_
 
             if (result)
             {
+                dot_expr->type = base_decl->aggregate_type.type;
                 member_expr->flags |= AST_EXPR_FLAG_CONST;
+                dot_expr->dot.declaration = member_decl;
             }
 
         }
@@ -1383,8 +1420,60 @@ namespace Zodiac_
                 break;
             }
 
+            case AST_TYPE_SPEC_FUNCTION:
+            {
+                bool result = true;
+                BUF(AST_Type*) arg_types = nullptr;
+                AST_Scope* arg_scope = type_spec->function.arg_scope;
+
+                assert(arg_scope);
+
+                for (uint64_t i = 0; i < BUF_LENGTH(type_spec->function.args); i++)
+                {
+                    AST_Declaration* arg_decl = type_spec->function.args[i];
+                    bool arg_result = resolver_resolve_declaration(resolver, arg_decl, arg_scope);
+
+                    if (!arg_result)
+                    {
+                        result = false;
+                        BUF_FREE(arg_types);
+                        break;
+                    }
+
+                    assert(arg_decl->kind == AST_DECL_MUTABLE);
+                    BUF_PUSH(arg_types, arg_decl->mutable_decl.type);
+                }
+
+                AST_Type* return_type = nullptr;
+                AST_Type_Spec* return_type_spec = type_spec->function.return_type_spec;
+
+                if (return_type_spec)
+                {
+                    result &= resolver_resolve_type_spec(resolver, return_type_spec, &return_type,
+                                                         scope);
+                }
+                else
+                {
+                    return_type = Builtin::type_void;
+                }
+
+                if (result)
+                {
+                    bool is_vararg = type_spec->flags & AST_TYPE_SPEC_FLAG_FUNC_VARARG;
+                    auto name = type_spec->function.name;
+                    AST_Type* result_type = ast_find_or_create_function_type(resolver->context,
+                                                                             is_vararg, arg_types,
+                                                                             return_type, name);
+                    *type_dest = result_type;
+                    type_spec->type = result_type;
+                }
+
+                break;
+            }
+
             default: assert(false);
         }
+
 
         if (result)
         {

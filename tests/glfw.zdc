@@ -1,12 +1,12 @@
 
-static_if (PLATFORM_WINDOWS)
-{
-    #dynamic_link "glfw3.dll";
-}
-else static_if (PLATFORM_LINUX)
-{
+// static_if (PLATFORM_WINDOWS)
+// {
+//     #dynamic_link "glfw3.dll";
+// }
+// else static_if (PLATFORM_LINUX)
+// {
     #dynamic_link "libglfw.so.3.3";
-}
+// }
 
 GLFWmonitor :: struct {}
 GLFWwindow :: struct {}
