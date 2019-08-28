@@ -1,16 +1,16 @@
 
-static_if (PLATFORM_WINDOWS)
-{
-    #dynamic_link "msvcrt.dll";
-}
-else static_if (PLATFORM_LINUX)
-{
+// static_if (PLATFORM_WINDOWS)
+// {
+//     #dynamic_link "msvcrt.dll";
+// }
+// else static_if (PLATFORM_LINUX)
+// {
     #dynamic_link "libc.so.6";
-}
-else
-{
-    static_assert(false);
-}
+// }
+// else
+// {
+//     static_assert(false);
+// }
 
 #foreign puts :: (string: *u8) -> int;
 

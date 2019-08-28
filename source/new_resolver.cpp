@@ -799,13 +799,27 @@ namespace Zodiac_
                     func_decl = ident_expr->dot.declaration;
                 }
 
+                AST_Type* func_type = nullptr;
+
                 assert(func_decl);
-                assert(func_decl->kind == AST_DECL_FUNC);
+
+                if (func_decl->kind == AST_DECL_FUNC)
+                {
+                    func_type = func_decl->function.type;
+                }
+                else if (func_decl->kind == AST_DECL_MUTABLE &&
+                         func_decl->mutable_decl.type->kind == AST_TYPE_POINTER &&
+                         func_decl->mutable_decl.type->pointer.base->kind == AST_TYPE_FUNCTION)
+                {
+                    func_type = func_decl->mutable_decl.type->pointer.base;
+                }
+
+                assert(func_type);
 
                 expression->call.callee_declaration = func_decl;
 
                 auto arg_expr_count = BUF_LENGTH(expression->call.arg_expressions);
-                auto arg_decl_count = BUF_LENGTH(func_decl->function.args);
+                auto arg_decl_count = BUF_LENGTH(func_type->function.arg_types);
 
                 if (func_decl->flags & AST_DECL_FLAG_FUNC_VARARG)
                 {
@@ -824,8 +838,9 @@ namespace Zodiac_
 
                     if (i < arg_decl_count)
                     {
-                        arg_decl = func_decl->function.args[i];
-                        arg_type = resolver_get_declaration_type(arg_decl);
+                        // arg_decl = func_decl->function.args[i];
+                        // arg_type = resolver_get_declaration_type(arg_decl);
+                        arg_type = func_type->function.arg_types[i];
                     }
 
                     result &= resolver_resolve_expression(resolver, arg_expr, scope, arg_type);
@@ -859,8 +874,8 @@ namespace Zodiac_
                     }
                 }
 
-                assert(func_decl->function.return_type);
-                expression->type = func_decl->function.return_type;
+                assert(func_type->function.return_type);
+                expression->type = func_type->function.return_type;
 
                 break;
             }
