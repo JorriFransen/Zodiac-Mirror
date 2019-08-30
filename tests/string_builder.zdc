@@ -30,7 +30,7 @@ create_block :: (block_size: u64) -> *_String_Builder_Block
 {
     result := (:*_String_Builder_Block)malloc(sizeof(_String_Builder_Block));
 
-    result.data = malloc(block_size);
+    result.data = (:*u8)malloc(block_size);
     result.size = block_size;
     result.used_size = 0;
     result.next_block = null;
@@ -59,7 +59,7 @@ append :: (sb: *String_Builder, str: std.String)
     }
 }
 
-append :: (sb: *String_Builder, number: u64)
+appendi :: (sb: *String_Builder, number: u64)
 {
     _buf: [32]u8;
     buf := *_buf[0];
@@ -128,8 +128,8 @@ free :: (sb: *String_Builder)
     {
         next := block.next_block;
 
-        free(block.data);
-        free(block);
+        _c.free(block.data);
+        _c.free(block);
 
         block = next;
     }

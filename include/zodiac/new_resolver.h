@@ -77,6 +77,8 @@ namespace Zodiac_
 
     bool binop_is_cmp(AST_Expression* expression);
 
+    char* run_insert(Resolver* resolver, AST_Expression* call_expression);
+
     Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
                                          const char* format, ...);
     Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,

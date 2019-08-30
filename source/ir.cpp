@@ -323,6 +323,7 @@ namespace Zodiac
 
             case AST_DECL_AGGREGATE_TYPE:
             {
+                // TODO: FIXME: These should be in the enums scope instead of global scope
                 if (global_decl->aggregate_type.kind == AST_AGG_DECL_ENUM)
                 {
                     auto agg_members = global_decl->aggregate_type.aggregate_decl->members;

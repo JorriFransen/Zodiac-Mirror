@@ -2,6 +2,10 @@
 
 #include "builtin.h"
 #include "const_interpreter.h"
+#include "ir.h"
+#include "ir_runner.h"
+#include "lexer.h"
+#include "parser.h"
 
 #include <stdarg.h>
 #include <inttypes.h>
@@ -59,7 +63,10 @@ namespace Zodiac_
         for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
         {
             AST_Declaration* global_decl = module->global_declarations[i];
-            resolver_resolve_declaration(resolver, global_decl, module->module_scope);
+            bool res = resolver_resolve_declaration(resolver, global_decl, module->module_scope);
+            if (global_decl->kind == AST_DECL_IMPORT && !res)
+                resolver_report_error(resolver, global_decl->file_pos, "Import failed");
+            if (!res) break;
         }
 
         resolver->module = old_module;
@@ -75,8 +82,12 @@ namespace Zodiac_
 
         if (declaration->flags & AST_DECL_FLAG_RESOLVING)
         {
-            resolver_report_error(resolver, declaration->file_pos,
-                                  "Circular dependency while trying to resolve declaration");
+            if (!(declaration->flags & AST_DECL_FLAG_ERROR))
+            {
+                declaration->flags |= AST_DECL_FLAG_ERROR;
+                resolver_report_error(resolver, declaration->file_pos,
+                                      "Circular dependency while trying to resolve declaration");
+            }
             return false;
         }
 
@@ -330,64 +341,88 @@ namespace Zodiac_
             {
                 AST_Aggregate_Declaration* agg_decl = declaration->aggregate_type.aggregate_decl;
 
+                // TODO: Do two passes, find out the total bit size, and the amount of members
+                //        in the first pass, so we can create a type for the struct. When whe
+                //        have a pointer to the type we can do a second pass (whith the
+                //        declaration of the struct not set to resolving anymore so we won't
+                //        get cycles). This pass will fill in the members (types) pointing to
+                //        ourself, either directly or through another struct.
+                //
+                //       Alternatively we could create empty types for all declarations
+                //        before doing anything else... This will probably have other downsides.
                 if (declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
                     declaration->aggregate_type.kind == AST_AGG_DECL_UNION)
                 {
-                    uint64_t total_size = 0;
-                    uint64_t biggest_size = 0;
-                    for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->members); i++)
-                    {
-                        AST_Declaration* member_decl = agg_decl->members[i];
-                        bool member_res = resolver_resolve_declaration(resolver, member_decl,
-                                                          declaration->aggregate_type.scope);
+                     uint64_t total_size = 0;
+                     uint64_t biggest_size = 0;
+                     auto agg_scope = declaration->aggregate_type.scope;
 
-                        if (member_res)
-                        {
-                            AST_Type* member_type = resolver_get_declaration_type(member_decl);
-                            assert(member_type);
+                     bool all_members_resolved = true;
 
-                            total_size += member_type->bit_size;
-                            if (member_type->bit_size > biggest_size)
-                            {
-                                biggest_size = member_type->bit_size;
-                            }
-                        }
+                     for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->members); i++)
+                     {
+                         AST_Declaration* member_decl = agg_decl->members[i];
+                         assert(member_decl->kind == AST_DECL_MUTABLE);
+                         AST_Type_Spec* member_ts = member_decl->mutable_decl.type_spec;
+                         AST_Type* member_type = nullptr;
 
-                        result &= member_res;
-                    }
+                         if (member_ts->kind == AST_TYPE_SPEC_POINTER)
+                         {
+                             total_size += Builtin::pointer_size;
+                             biggest_size = MAX(biggest_size, Builtin::pointer_size);
 
-                    uint64_t bit_size = 0;
-                    if (declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT)
-                    {
-                        bit_size = total_size;
-                    }
-                    else
-                    {
-                        bit_size = biggest_size;
-                    }
+                             all_members_resolved = false;
+                         }
+                         else
+                         {
+                             bool member_res = resolver_resolve_declaration(resolver, member_decl,
+                                                                            agg_scope);
+                             assert(member_res);
 
+                             AST_Type* member_type = resolver_get_declaration_type(member_decl);
+
+                             total_size += member_type->bit_size;
+                             biggest_size = MAX(biggest_size, member_type->bit_size);
+                         }
+                     }
+                     uint64_t bit_size = declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT ?
+                                                total_size : biggest_size;
                     const char* name = nullptr;
                     if (declaration->identifier)
                     {
                         name = declaration->identifier->atom.data;
                     }
 
-                    auto agg_scope = declaration->aggregate_type.scope;
-                    assert(agg_scope);
+
+                    AST_Type* agg_type = nullptr;
                     if (declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT)
                     {
-                        declaration->aggregate_type.type = ast_type_struct_new(resolver->context,
-                                                                               agg_decl->members,
-                                                                               name, bit_size,
-                                                                               agg_scope, nullptr);
+                        agg_type = ast_type_struct_new(resolver->context, agg_decl->members,
+                                                       name, bit_size, agg_scope, nullptr);
                     }
-                    else
+                    else if (declaration->aggregate_type.kind == AST_AGG_DECL_UNION)
                     {
-                        declaration->aggregate_type.type = ast_type_union_new(resolver->context,
-                                                                              agg_decl->members,
-                                                                              name, bit_size,
-                                                                              agg_scope, nullptr);
+                        agg_type = ast_type_union_new(resolver->context, agg_decl->members,
+                                                      name, bit_size, agg_scope, nullptr);
                     }
+                    assert(agg_type);
+                    declaration->aggregate_type.type = agg_type;
+
+                    assert(result);
+                    declaration->flags |= AST_DECL_FLAG_RESOLVED;
+                    declaration->flags ^= AST_DECL_FLAG_RESOLVING;
+
+                    if (!all_members_resolved)
+                    {
+                        for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->members); i++)
+                        {
+                            AST_Declaration* member_decl = agg_decl->members[i];
+                            result &= resolver_resolve_declaration(resolver, member_decl,
+                                                                   agg_scope);
+                            if (!result) break;
+                        }
+                    }
+
                 }
                 else
                 {
@@ -549,6 +584,121 @@ namespace Zodiac_
                 break;
             }
 
+            case AST_DECL_INSERT:
+            {
+                assert(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE);
+
+                if (declaration->flags & AST_DECL_FLAG_INSERT_GENERATED)
+                {
+                    break;
+                }
+
+                AST_Statement* insert_stmt = declaration->insert_decl.call_statement;
+
+                bool insert_res = resolver_resolve_statement(resolver, insert_stmt, scope);
+                if (insert_res)
+                {
+                    assert(insert_stmt->kind == AST_STMT_CALL);
+                    assert(insert_stmt->call_expression->type == Builtin::type_pointer_to_u8);
+                    char* insert_string = run_insert(resolver, insert_stmt->call_expression);
+                    assert(insert_string);
+
+                    if (resolver->context->options.verbose)
+                    {
+                        printf("Insert string:\n%s\n", insert_string);
+                    }
+
+                    Lexer lexer;
+                    init_lexer(&lexer, resolver->context);
+
+                    Lex_Result lex_result = lex_file(&lexer, insert_string, "<insert_auto_gen>");
+                    if (BUF_LENGTH(lex_result.errors) != 0)
+                    {
+                        lexer_report_errors(&lexer);
+                        result = false;
+                        break;
+                    }
+
+                    Parser parser;
+                    parser_init(&parser, resolver->context);
+
+                    parser.result.module_name = resolver->module->module_name;
+                    parser.result.ast_module = resolver->module;
+                    parser.tokens = lex_result.tokens;
+                    parser.ti = 0;
+
+                    BUF(AST_Declaration*) insert_decls = nullptr;
+
+                    while (parser.ti < BUF_LENGTH(parser.tokens) && result)
+                    {
+                        AST_Declaration* insert_decl = parse_declaration(&parser, scope, true);
+
+                        if (BUF_LENGTH(parser.result.errors) > 0)
+                        {
+                            result = false;
+                            break;
+                        }
+
+                        BUF_PUSH(insert_decls, insert_decl);
+                    }
+
+                    if (BUF_LENGTH(parser.result.errors) > 0)
+                    {
+                        parser_report_errors(&parser);
+                        result = false;
+                        break;
+                    }
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(insert_decls); i++)
+                    {
+                        AST_Declaration* insert_decl = insert_decls[i];
+                        ast_scope_push_declaration(scope, insert_decl);
+                    }
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(insert_decls); i++)
+                    {
+                        AST_Declaration* insert_decl = insert_decls[i];
+                        if (insert_decl->kind == AST_DECL_USING)
+                        {
+                            resolver_resolve_declaration(resolver, insert_decl, scope);
+                        }
+                    }
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(insert_decls); i++)
+                    {
+                        AST_Declaration* insert_decl = insert_decls[i];
+                        bool res = resolver_resolve_declaration(resolver, insert_decl, scope);
+                        if (insert_decl->kind == AST_DECL_IMPORT && !res)
+                        {
+                            resolver_report_error(resolver, insert_decl->file_pos, "Import failed");
+                        }
+
+                        if (!res)
+                        {
+                            result = false;
+                            break;
+                        }
+                        else
+                        {
+                            BUF_PUSH(resolver->module->global_declarations, insert_decl);
+                        }
+                    }
+
+                    if (result)
+                    {
+                        declaration->flags |= AST_DECL_FLAG_INSERT_GENERATED;
+                    }
+                }
+                else
+                {
+                    resolver_report_error(resolver, insert_stmt->file_pos,
+                                          "Failed to resolve insert call");
+                    result = false;
+                    break;
+                }
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -601,9 +751,23 @@ namespace Zodiac_
 
                 if (!result) break;
 
-                result &= resolver_check_assign_types(resolver,
-                                                      statement->assign.lvalue_expression->type,
-                                                      statement->assign.expression->type);
+                bool types_match =
+                    resolver_check_assign_types(resolver,
+                                                statement->assign.lvalue_expression->type,
+                                                statement->assign.expression->type);
+
+                if (!types_match)
+                {
+                    result = false;
+                    auto expected_str =
+                        ast_type_to_string(statement->assign.lvalue_expression->type);
+                    auto got_str = ast_type_to_string(statement->assign.expression->type);
+                    resolver_report_error(resolver, statement->file_pos,
+                                          "Mismatching types in assignement statement\n\tExpected: %s\n\tGot: %s",
+                                          expected_str, got_str);
+                    mem_free(expected_str);
+                    mem_free(got_str);
+                }
                 break;
             }
 
@@ -777,6 +941,61 @@ namespace Zodiac_
                 break;
             }
 
+            case AST_STMT_INSERT:
+            {
+                AST_Statement* insert_stmt = statement->insert.statement;
+
+                bool insert_res = resolver_resolve_statement(resolver, insert_stmt, scope);
+
+                if (insert_res)
+                {
+                    assert(insert_stmt->kind == AST_STMT_CALL);
+                    assert(insert_stmt->call_expression->type == Builtin::type_pointer_to_u8);
+
+                    char* insert_string = run_insert(resolver, insert_stmt->call_expression);
+                    assert(insert_string);
+
+                    Lexer lexer;
+                    init_lexer(&lexer, resolver->context);
+
+                    Lex_Result lex_result = lex_file(&lexer, insert_string, "<insert_auto_gen>");
+                    if (BUF_LENGTH(lex_result.errors) != 0)
+                    {
+                        lexer_report_errors(&lexer);
+                        result = false;
+                        break;
+                    }
+
+                    Parser parser;
+                    parser_init(&parser, resolver->context);
+
+                    parser.result.module_name = resolver->module->module_name;
+                    parser.result.ast_module = resolver->module;
+                    parser.tokens = lex_result.tokens;
+                    parser.ti = 0;
+
+                    AST_Statement* gen_stmt = parse_statement(&parser, scope);
+                    Parse_Result parse_result = parser.result;
+                    if (BUF_LENGTH(parse_result.errors) != 0)
+                    {
+                        parser_report_errors(&parser);
+                        result = false;
+                        break;
+                    }
+
+                    result &= resolver_resolve_statement(resolver, gen_stmt, scope);
+                    if (result)
+                    {
+                        statement->insert.gen_statement = gen_stmt;
+                    }
+                }
+                else
+                {
+                    result = false;
+                }
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -803,7 +1022,7 @@ namespace Zodiac_
             case AST_EXPR_CALL:
             {
                 AST_Expression* ident_expr = expression->call.ident_expression;
-                result &= resolver_resolve_expression(resolver, ident_expr, scope);
+               result &= resolver_resolve_expression(resolver, ident_expr, scope);
                 if (!result) break;
 
                 AST_Declaration* func_decl = nullptr;
@@ -870,12 +1089,20 @@ namespace Zodiac_
                         bool types_match = resolver_check_assign_types(resolver, arg_type,
                                                                        arg_expr->type);
 
-                        if (!types_match &&
-                            arg_type == Builtin::type_String &&
-                            arg_expr->type == Builtin::type_pointer_to_u8)
+                        if (!types_match)
                         {
-                            resolver_convert_to_builtin_string(resolver, arg_expr);
-                            types_match = true;
+                            if (arg_type == Builtin::type_String &&
+                                arg_expr->type == Builtin::type_pointer_to_u8)
+                            {
+                                resolver_convert_to_builtin_string(resolver, arg_expr);
+                                types_match = true;
+                            }
+                            else if (arg_type == Builtin::type_pointer_to_void &&
+                                     arg_expr->type->kind == AST_TYPE_POINTER)
+                            {
+                                // assert(false);
+                                types_match = true;
+                            }
                         }
 
                         if (!types_match)
@@ -1913,6 +2140,93 @@ namespace Zodiac_
 
         assert(false);
         return false;
+    }
+
+    char* run_insert(Resolver* resolver, AST_Expression* call_expression)
+    {
+        assert(resolver);
+        assert(call_expression);
+        assert(call_expression->kind == AST_EXPR_CALL);
+
+        IR_Builder ir_builder;
+        ir_builder_init(&ir_builder, resolver->context);
+
+        IR_Module ir_module = ir_builder_emit_module(&ir_builder, resolver->module);
+
+        if (ir_module.error_count)
+        {
+            fprintf(stderr, "Exitting with error(s) from insert module\n");
+            return nullptr;
+        }
+
+        IR_Validation_Result validation = ir_validate(&ir_builder);
+
+        if (resolver->context->options.print_ir)
+        {
+            ir_builder_print_result(&ir_builder);
+        }
+
+        if (!validation.messages)
+        {
+            IR_Runner ir_runner;
+            ir_runner_init(resolver->context, &ir_runner);
+
+            AST_Declaration* insert_decl = call_expression->call.callee_declaration;
+            assert(insert_decl);
+
+            IR_Value* func_value = ir_builder_value_for_declaration(&ir_builder, insert_decl);
+            assert(func_value);
+            assert(func_value->function);
+
+            if (!ir_runner_load_dynamic_libs(&ir_runner, resolver->module, &ir_module))
+            {
+                return nullptr;
+            }
+            ir_runner_load_foreigns(&ir_runner, &ir_module);
+            ir_runner_execute_block(&ir_runner, ir_runner.context->global_init_block->block);
+
+            auto num_args = BUF_LENGTH(call_expression->call.arg_expressions);
+
+            for (uint64_t i = 0; i < num_args; i++)
+            {
+                AST_Expression* arg_expr = call_expression->call.arg_expressions[i];
+
+                IR_Value* arg_value= nullptr;
+                if (arg_expr->kind == AST_EXPR_STRING_LITERAL)
+                {
+                    arg_value = ir_string_literal(&ir_builder, Builtin::type_pointer_to_u8,
+                                                  arg_expr->string_literal.atom);
+                }
+                else if (arg_expr->kind == AST_EXPR_INTEGER_LITERAL)
+                {
+                    arg_value = ir_integer_literal(&ir_builder, arg_expr->type,
+                                                   arg_expr->integer_literal.u64);
+                }
+                assert(arg_value);
+
+                IR_Pushed_Arg pa = { *arg_value, false };
+                stack_push(ir_runner.arg_stack, pa);
+            }
+
+            IR_Value return_value = {};
+            IR_Stack_Frame* entry_stack_frame = ir_runner_call_function(&ir_runner,
+                                                                        call_expression->file_pos,
+                                                                        func_value->function,
+                                                                        num_args, &return_value);
+
+            resolver->module->gen_data = nullptr;
+
+            return (char*)return_value.value.pointer;
+        }
+        else
+        {
+            for (uint64_t i = 0; i < BUF_LENGTH(validation.messages); i++)
+            {
+                fprintf(stderr, "%s\n", validation.messages[i]);
+            }
+        }
+
+        return nullptr;
     }
 
     Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,

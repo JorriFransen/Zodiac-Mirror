@@ -400,11 +400,12 @@ namespace Zodiac
         AST_DECL_FLAG_NONE             = 0x00,
         AST_DECL_FLAG_RESOLVING        = (1 << 0),
         AST_DECL_FLAG_RESOLVED         = (1 << 1),
-        AST_DECL_FLAG_GENERATED        = (1 << 2),
-        AST_DECL_FLAG_FOREIGN          = (1 << 3),
-        AST_DECL_FLAG_FUNC_POLY        = (1 << 4),
-        AST_DECL_FLAG_FUNC_VARARG      = (1 << 5),
-        AST_DECL_FLAG_INSERT_GENERATED = (1 << 6),
+        AST_DECL_FLAG_ERROR            = (1 << 2),
+        AST_DECL_FLAG_GENERATED        = (1 << 3),
+        AST_DECL_FLAG_FOREIGN          = (1 << 4),
+        AST_DECL_FLAG_FUNC_POLY        = (1 << 5),
+        AST_DECL_FLAG_FUNC_VARARG      = (1 << 6),
+        AST_DECL_FLAG_INSERT_GENERATED = (1 << 7),
     };
 
     enum AST_Declaration_Location
