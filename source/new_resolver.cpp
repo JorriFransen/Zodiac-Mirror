@@ -1372,7 +1372,53 @@ namespace Zodiac_
 
                     expression->type = suggested_type;
                 }
+                else if (suggested_type->kind == AST_TYPE_STATIC_ARRAY)
+                {
+                    assert(suggested_type->static_array.count ==
+                           BUF_LENGTH(expression->compound_literal.expressions));
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions);
+                         i++)
+                    {
+                        AST_Expression* member_expr = expression->compound_literal.expressions[i];
+                        AST_Type* suggested_member_type = nullptr;
+                        if (suggested_type && suggested_type->kind == AST_TYPE_STRUCT)
+                        {
+                            auto member_decls = suggested_type->aggregate_type.member_declarations;
+                            assert(i < BUF_LENGTH(member_decls));
+                            AST_Declaration* member_decl = member_decls[i];
+
+                            assert(member_decl->kind == AST_DECL_MUTABLE);
+                            assert(member_decl->mutable_decl.type);
+                            suggested_member_type = member_decl->mutable_decl.type;
+                        }
+                        else if (suggested_type && suggested_type->kind == AST_TYPE_STATIC_ARRAY)
+                        {
+                            suggested_member_type = suggested_type->static_array.base;
+                        }
+
+                        result &= resolver_resolve_expression(resolver, member_expr, scope,
+                                                              suggested_member_type);
+
+                        if (result)
+                        {
+                            assert(member_expr->type == suggested_member_type);
+                            expression->type = suggested_type;
+                        }
+                    }
+                }
                 else assert(false);
+                break;
+            }
+
+            case AST_EXPR_ARRAY_LENGTH:
+            {
+                result &= resolver_resolve_expression(resolver,
+                                                      expression->array_length.ident_expr, scope);
+                if (result)
+                {
+                    expression->type = Builtin::type_int;
+                }
                 break;
             }
 
@@ -1798,6 +1844,23 @@ namespace Zodiac_
         assert(rhs);
 
         if (lhs == rhs) return true;
+
+        bool lhs_integer = lhs->flags & AST_TYPE_FLAG_INT;
+        bool rhs_integer = rhs->flags & AST_TYPE_FLAG_INT;
+        bool lhs_sign = lhs->flags & AST_TYPE_FLAG_SIGNED;
+        bool rhs_sign = rhs->flags & AST_TYPE_FLAG_SIGNED;
+
+        if (lhs_integer && rhs_integer)
+        {
+            if (lhs_sign == rhs_sign)
+            {
+                return lhs->bit_size >= rhs->bit_size;
+            }
+            else if (lhs_sign)
+            {
+                return lhs->bit_size >= rhs->bit_size * 2;
+            }
+        }
 
         return false;
     }

@@ -14,8 +14,9 @@ main :: ()
 
     for (i : u64 = 0; i < count; i += 1)
     {
-        <int_cur = (i + 1) * 5;
+        <int_cur = (:int)(i + 1) * 5;
         int_cur += 1;
+
     }
 
     int_cur -= 1;
