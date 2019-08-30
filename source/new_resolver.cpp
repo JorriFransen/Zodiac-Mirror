@@ -872,7 +872,7 @@ namespace Zodiac_
                 result &= defer_statement_is_legal(resolver, statement->defer_statement);
                 if (!result) break;
 
-                BUF_PUSH(scope->defer_statements, statement);
+                BUF_PUSH(scope->defer_statements, statement->defer_statement);
 
                 break;
             }

@@ -57,7 +57,8 @@ defer_test2 :: (arg: int)
 
     while (true)
     {
-        defer print(arg);
+        // defer print(arg);
+        defer _c.printf("%d\n", arg);
 
         arg -= 1;
         if (arg < 0)
