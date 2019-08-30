@@ -67,7 +67,9 @@ namespace Zodiac
         // assert(expression->type);
         // assert(expression->type->flags & AST_TYPE_FLAG_INT);
         assert(type);
-        assert(type->flags & AST_TYPE_FLAG_INT);
+        assert((type->flags & AST_TYPE_FLAG_INT) ||
+               (type->kind == AST_TYPE_ENUM &&
+                (type->aggregate_type.base_type->flags & AST_TYPE_FLAG_INT)));
         // assert(type->flags & AST_TYPE_FLAG_SIGNED);
         assert(scope);
 
@@ -138,10 +140,18 @@ namespace Zodiac
         assert(context);
         assert(expression);
         assert(expression->type);
-        assert(expression->type->flags & AST_TYPE_FLAG_INT);
+        assert((expression->type->flags & AST_TYPE_FLAG_INT) ||
+               (expression->type->kind == AST_TYPE_ENUM &&
+                (expression->type->aggregate_type.base_type->flags & AST_TYPE_FLAG_INT)));
         assert(type);
-        assert(type->flags & AST_TYPE_FLAG_INT);
+        assert(type->flags & AST_TYPE_FLAG_INT ||
+               type->kind == AST_TYPE_ENUM);
         // assert(type->flags & AST_TYPE_FLAG_SIGNED);
+
+        if (type->kind == AST_TYPE_ENUM)
+        {
+            type = type->aggregate_type.base_type;
+        }
 
         if (type == Builtin::type_int)
         {
@@ -263,7 +273,8 @@ namespace Zodiac
     {
         assert(context);
         assert(expression);
-        assert(expression->type == Builtin::type_int);
+        assert(expression->type == Builtin::type_int ||
+               expression->type->kind == AST_TYPE_ENUM);
         assert(scope);
 
         switch (expression->kind)

@@ -369,13 +369,13 @@ namespace Zodiac
         result->function.return_type = nullptr;
         result->function.inferred_return_type = nullptr;
         result->function.body_block = body_block;
-        result->function.overloads = nullptr;
-        if (is_poly)
-        {
-            result->flags |= AST_DECL_FLAG_FUNC_POLY;
-        }
-        result->function.poly_count = 0;
-        result->function.poly_instances = nullptr;
+        // result->function.overloads = nullptr;
+        // if (is_poly)
+        // {
+        //     result->flags |= AST_DECL_FLAG_FUNC_POLY;
+        // }
+        // result->function.poly_count = 0;
+        // result->function.poly_instances = nullptr;
 
         result->function.argument_scope = argument_scope;
         if (body_block)
@@ -1459,7 +1459,9 @@ namespace Zodiac
         assert(base_type);
         assert(count_expr);
         assert(count_expr->flags & AST_EXPR_FLAG_CONST);
-        assert(count_expr->type == Builtin::type_int);
+        assert((count_expr->type->flags & AST_TYPE_FLAG_INT) ||
+               (count_expr->type->kind == AST_TYPE_ENUM &&
+                (count_expr->type->aggregate_type.base_type->flags & AST_TYPE_FLAG_INT)));
         assert(scope);
 
         int64_t count_value = const_interpret_s64_expression(context, count_expr, scope);
@@ -1650,109 +1652,18 @@ namespace Zodiac
                 break;
             }
 
+            case AST_TYPE_STATIC_ARRAY:
+            {
+                return hash_mix(ast_get_type_hash(type->static_array.base),
+                                hash_string("static_array_typep qweer89tynocdsa"));
+                break;
+            }
+
             default: assert(false);
         }
 
         return base_hash;
     }
-    // uint64_t ast_get_type_hash(AST_Type* type)
-    // {
-    //     assert(type);
-
-    //     uint64_t kind_hash = hash_pointer((void*)type->kind);
-    //     uint64_t flag_hash = hash_pointer((void*)type->flags);
-
-    //     uint64_t base_hash = hash_mix(kind_hash, flag_hash);
-
-    //     if (type->name)
-    //     {
-    //         base_hash = hash_mix(base_hash, hash_string(type->name));
-    //     }
-
-    //     switch (type->kind)
-    //     {
-    //         case AST_TYPE_POINTER:
-    //         {
-    //             return ast_get_pointer_type_hash(type->pointer.base);
-    //             break;
-    //         }
-
-    //         case AST_TYPE_STATIC_ARRAY:
-    //         {
-    //             uint64_t count_hash = hash_pointer((void*)type->static_array.count);
-    //             return hash_mix(base_hash, count_hash);
-    //             break;
-    //         };
-
-    //         case AST_TYPE_FUNCTION:
-    //         {
-    //             return ast_get_function_type_hash((type->flags & AST_TYPE_FLAG_FUNC_VARARG),
-    //                                               type->function.arg_types,
-    //                                               type->function.return_type);
-    //             break;
-    //         }
-
-    //         case AST_TYPE_STRUCT:
-    //         case AST_TYPE_UNION:
-    //         {
-    //             auto member_decls = type->aggregate_type.member_declarations;
-    //             for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
-    //             {
-    //                 AST_Declaration* member_decl = member_decls[i];
-    //                 assert(member_decl->kind == AST_DECL_MUTABLE);
-    //                 uint64_t member_hash = 0;
-    //                 if (!member_decl->mutable_decl.type ||
-    //                     (member_decl->mutable_decl.type->kind == AST_TYPE_POINTER &&
-    //                      member_decl->mutable_decl.type->pointer.base == type))
-    //                 {
-    //                     assert(member_decl->mutable_decl.type_spec->kind == AST_TYPE_SPEC_POINTER);
-    //                     assert(member_decl->mutable_decl.type_spec->pointer.base->kind ==
-    //                            AST_TYPE_SPEC_IDENT);
-    //                     const char* member_type_str =
-    //                         member_decl->mutable_decl.type_spec->pointer.base->identifier.identifier->atom.data;
-    //                     const char* type_str = type->name;
-    //                     assert(strcmp(member_type_str, type_str) == 0);
-    //                 }
-    //                 else
-    //                 {
-    //                     if (member_decl->mutable_decl.type->kind == AST_TYPE_POINTER &&
-	// 						member_decl->mutable_decl.type->pointer.base->name)
-    //                     {
-    //                         if (member_decl->mutable_decl.type->pointer.base == type ||
-    //                             (strcmp(type->name, member_decl->mutable_decl.type->pointer.base->name) == 0))
-    //                         {
-    //                             member_hash = hash_string("pointer_to_self_hasd;fsadjf;aksjf");
-    //                         }
-    //                     }
-    //                     else
-    //                     {
-    //                         member_hash = ast_get_type_hash(member_decl->mutable_decl.type);
-    //                     }
-    //                 }
-    //                 base_hash = hash_mix(base_hash, member_hash);
-    //             }
-    //             return base_hash;
-    //             break;
-    //         }
-
-    //         case AST_TYPE_BASE:
-    //         {
-    //             return base_hash;
-    //             break;
-    //         }
-
-    //         case AST_TYPE_ENUM:
-    //         {
-    //             return hash_mix(base_hash, ast_get_type_hash(type->aggregate_type.base_type));
-    //             break;
-    //         }
-
-    //         default: assert(false);
-    //     }
-
-    //     assert(false);
-    //     return 0;
-    // }
 
     uint64_t ast_get_pointer_type_hash(AST_Type* base_type)
     {

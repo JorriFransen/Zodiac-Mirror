@@ -34,6 +34,7 @@ namespace Zodiac_
         AST_Module* module = nullptr;
 
         AST_Statement* current_break_context = nullptr;
+        AST_Declaration* current_func_decl = nullptr;
 
         Resolve_Result result = {};
     };

@@ -350,7 +350,6 @@ namespace Zodiac
         BUF(AST_Declaration*) locals = nullptr;
         AST_Type_Spec* return_type_spec = nullptr;
         AST_Type* return_type = nullptr;
-        AST_Type* suggested_return_type = nullptr;
         AST_Type* inferred_return_type = nullptr;
         AST_Statement* body_block = nullptr;
 
@@ -358,10 +357,6 @@ namespace Zodiac
         AST_Scope* argument_scope = nullptr;
 
 		AST_Type* type = nullptr;
-
-        BUF(AST_Declaration*) overloads = nullptr;
-        uint64_t poly_count = 0;
-        BUF(AST_Poly_Instance) poly_instances;
     };
 
     struct AST_Mutable_Declaration
