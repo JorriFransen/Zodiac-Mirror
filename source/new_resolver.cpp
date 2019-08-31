@@ -83,11 +83,26 @@ namespace Zodiac_
 
         if (declaration->flags & AST_DECL_FLAG_RESOLVING)
         {
+            if (declaration == resolver->current_func_decl)
+            {
+                return true;
+            }
+
             if (!(declaration->flags & AST_DECL_FLAG_ERROR))
             {
                 declaration->flags |= AST_DECL_FLAG_ERROR;
-                resolver_report_error(resolver, declaration->file_pos,
-                                      "Circular dependency while trying to resolve declaration");
+
+                const char* format = nullptr;
+                if (declaration->identifier)
+                {
+                    format = "Circular dependency while trying to resolve declaration: %s";
+                }
+                else
+                {
+                    format = "Circular dependency while trying to resolve declaration";
+                }
+                resolver_report_error(resolver, declaration->file_pos, format,
+                                      declaration->identifier->atom.data);
             }
             return false;
         }
@@ -1066,7 +1081,21 @@ namespace Zodiac_
             case AST_EXPR_CALL:
             {
                 AST_Expression* ident_expr = expression->call.ident_expression;
-               result &= resolver_resolve_expression(resolver, ident_expr, scope);
+                bool recursive = false;
+
+                if (ident_expr->kind == AST_EXPR_IDENTIFIER)
+                {
+                    AST_Declaration* decl = find_declaration(resolver->context, scope,
+                                                             ident_expr->identifier);
+                    if (decl == resolver->current_func_decl)
+                    {
+                        decl->function.type = resolver_create_recursive_function_type(resolver,
+                                                                                      decl);
+                        recursive = true;
+                    }
+                }
+
+                result &= resolver_resolve_expression(resolver, ident_expr, scope);
                 if (!result) break;
 
                 AST_Declaration* func_decl = nullptr;
@@ -1080,10 +1109,9 @@ namespace Zodiac_
                 {
                     func_decl = ident_expr->dot.declaration;
                 }
+                assert(func_decl);
 
                 AST_Type* func_type = nullptr;
-
-                assert(func_decl);
 
                 if (func_decl->kind == AST_DECL_FUNC)
                 {
@@ -2422,6 +2450,63 @@ namespace Zodiac_
         }
 
         return nullptr;
+    }
+
+    AST_Type* resolver_create_recursive_function_type(Resolver* resolver, AST_Declaration* decl)
+    {
+        assert(resolver);
+        assert(decl);
+        assert(decl->kind == AST_DECL_FUNC);
+
+        if (decl->function.type)
+        {
+            return decl->function.type;
+        }
+
+        bool is_vararg = false;
+        BUF(AST_Type*) arg_types = nullptr;
+        AST_Type* return_type = Builtin::type_void;
+        const char* original_name = decl->identifier->atom.data;
+
+        bool result = true;
+
+        if (decl->flags & AST_DECL_FLAG_FUNC_VARARG)
+        {
+            is_vararg = true;
+        }
+
+        for (uint64_t i = 0; i < BUF_LENGTH(decl->function.args); i++)
+        {
+            AST_Declaration* arg_decl = decl->function.args[i];
+
+            result &= resolver_resolve_declaration(resolver, arg_decl,
+                                                   decl->function.argument_scope);
+            assert(arg_decl->kind == AST_DECL_MUTABLE);
+            assert(arg_decl->mutable_decl.type);
+
+            BUF_PUSH(arg_types, arg_decl->mutable_decl.type);
+        }
+
+        if (!result) return nullptr;
+
+        if (decl->function.return_type_spec)
+        {
+            AST_Type* new_ret_type = nullptr;
+            result &= resolver_resolve_type_spec(resolver, decl->function.return_type_spec,
+                                                 &new_ret_type, decl->function.argument_scope);
+
+            if (result)
+            {
+                assert(new_ret_type);
+                return_type = new_ret_type;
+            }
+        }
+
+        AST_Type* func_type = ast_find_or_create_function_type(resolver->context, is_vararg,
+                                                               arg_types, return_type,
+                                                               original_name);
+
+        return func_type;
     }
 
     Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,

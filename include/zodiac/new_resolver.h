@@ -83,6 +83,8 @@ namespace Zodiac_
 
     char* run_insert(Resolver* resolver, AST_Expression* call_expression);
 
+    AST_Type* resolver_create_recursive_function_type(Resolver* resolver, AST_Declaration* decl);
+
     Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
                                          const char* format, ...);
     Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
