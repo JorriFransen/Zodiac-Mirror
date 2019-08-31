@@ -63,6 +63,9 @@ namespace Zodiac_
 
     bool resolver_check_assign_types(Resolver* resolver, AST_Type* lhs, AST_Type* rhs);
 
+    void resolver_transform_to_cast_expression(Resolver* resolver, AST_Expression* expr,
+                                               AST_Type* type);
+
     bool defer_statement_is_legal(Resolver* resolver, AST_Statement* statement);
 
     void resolver_convert_to_builtin_string(Resolver* resolver, AST_Expression* string_lit_expr);

@@ -775,13 +775,7 @@ namespace Zodiac_
                     if ((lvalue->type->flags & AST_TYPE_FLAG_FLOAT) &&
                         (expr->type->flags & AST_TYPE_FLAG_INT))
                     {
-                        auto expr_copy = ast_expression_new(resolver->context, expr->file_pos,
-                                                            expr->kind);
-                        *expr_copy = *expr;
-
-                        expr->kind = AST_EXPR_CAST;
-                        expr->cast_expr.expr = expr_copy;
-                        expr->type = lvalue->type;
+                        resolver_transform_to_cast_expression(resolver, expr, lvalue->type);
                     }
                     else
                     {
@@ -1134,41 +1128,15 @@ namespace Zodiac_
 
                     if (arg_type)
                     {
-                        bool types_match = resolver_check_assign_types(resolver, arg_type,
-                                                                       arg_expr->type);
+                        bool valid_conversion = resolver_check_assign_types(resolver, arg_type,
+                                                                            arg_expr->type);
 
-                        if (!types_match)
+                        if (valid_conversion && arg_type != arg_expr->type)
                         {
-
-                            if (arg_type == Builtin::type_String &&
-                                arg_expr->type == Builtin::type_pointer_to_u8)
-                            {
-                                resolver_convert_to_builtin_string(resolver, arg_expr);
-                                types_match = true;
-                            }
-                            else if (arg_type == Builtin::type_pointer_to_void &&
-                                     arg_expr->type->kind == AST_TYPE_POINTER)
-                            {
-                                // assert(false);
-                                types_match = true;
-                            }
-                            else if ((arg_type->flags & AST_TYPE_FLAG_FLOAT) &&
-                                     (arg_expr->type->flags & AST_TYPE_FLAG_INT))
-                            {
-                                assert(arg_type->bit_size >= arg_expr->type->bit_size);
-                                types_match = true;
-
-                                auto arg_expr_copy = ast_expression_new(resolver->context,
-                                                                        arg_expr->file_pos,
-                                                                        arg_expr->kind);
-                                *arg_expr_copy = *arg_expr;
-                                arg_expr->kind = AST_EXPR_CAST;
-                                arg_expr->cast_expr.expr = arg_expr_copy;
-                                arg_expr->type = arg_type;
-                            }
+                            resolver_transform_to_cast_expression(resolver, arg_expr, arg_type);
                         }
 
-                        if (!types_match)
+                        if (!valid_conversion && arg_type != arg_expr->type)
                         {
                             result = false;
 
@@ -1210,6 +1178,12 @@ namespace Zodiac_
                 }
 
                 expression->type = resolver_get_declaration_type(decl);
+
+                if (suggested_type && suggested_type != expression->type &&
+                    resolver_check_assign_types(resolver, suggested_type, expression->type))
+                {
+                    resolver_transform_to_cast_expression(resolver, expression, suggested_type);
+                }
 
                 break;
             }
@@ -1435,6 +1409,18 @@ namespace Zodiac_
 
                         result &= resolver_resolve_expression(resolver, compound_expr, scope,
                                                               member_type);
+
+                        if (result && compound_expr->type != member_type)
+                        {
+                            result = false;
+                            auto got_str = ast_type_to_string(compound_expr->type);
+                            auto expected_str = ast_type_to_string(member_type);
+                            resolver_report_error(resolver, compound_expr->file_pos,
+                                                  "Mismatching types in compound literal\n\tExpected: %s\n\tGot: %s",
+                                                  expected_str, got_str);
+                            mem_free(got_str);
+                            mem_free(expected_str);
+                        }
                     }
 
                     if (!result) break;
@@ -1541,36 +1527,17 @@ namespace Zodiac_
             if ((lhs->type->flags & AST_TYPE_FLAG_INT) &&
                 (rhs->type->flags & AST_TYPE_FLAG_FLOAT))
             {
-                auto lhs_copy = ast_expression_new(resolver->context, lhs->file_pos,
-                                                    lhs->kind);
-                *lhs_copy = *lhs;
-
-                lhs->kind = AST_EXPR_CAST;
-                lhs->cast_expr.expr = lhs_copy;
-                lhs->type = rhs->type;
+                resolver_transform_to_cast_expression(resolver, lhs, rhs->type);
             }
             else if ((lhs->type->flags & AST_TYPE_FLAG_FLOAT) &&
                         (rhs->type->flags & AST_TYPE_FLAG_INT))
             {
-                auto rhs_copy = ast_expression_new(resolver->context, rhs->file_pos,
-                                                    rhs->kind);
-
-                *rhs_copy = *rhs;
-
-                rhs->kind = AST_EXPR_CAST;
-                rhs->cast_expr.expr = rhs_copy;
-                rhs->type = lhs->type;
+                resolver_transform_to_cast_expression(resolver, rhs, lhs->type);
             }
             else if ((lhs->type->flags & AST_TYPE_FLAG_INT) &&
                      rhs->type == Builtin::type_bool)
             {
-                auto lhs_copy = ast_expression_new(resolver->context, lhs->file_pos,
-                                                   lhs->kind);
-                *lhs_copy = *lhs;
-
-                lhs->kind = AST_EXPR_CAST;
-                lhs->cast_expr.expr = lhs_copy;
-                lhs->type = rhs->type;
+                resolver_transform_to_cast_expression(resolver, lhs, rhs->type);
             }
             else assert(false);
         }
@@ -1966,8 +1933,12 @@ namespace Zodiac_
 
         bool lhs_integer = lhs->flags & AST_TYPE_FLAG_INT;
         bool rhs_integer = rhs->flags & AST_TYPE_FLAG_INT;
+        bool lhs_float = lhs->flags & AST_TYPE_FLAG_FLOAT;
+        bool rhs_float = rhs->flags & AST_TYPE_FLAG_FLOAT;
         bool lhs_sign = lhs->flags & AST_TYPE_FLAG_SIGNED;
         bool rhs_sign = rhs->flags & AST_TYPE_FLAG_SIGNED;
+        bool lhs_pointer = lhs->kind == AST_TYPE_POINTER;
+        bool rhs_pointer = rhs->kind == AST_TYPE_POINTER;
 
         if (lhs_integer && rhs_integer)
         {
@@ -1980,8 +1951,32 @@ namespace Zodiac_
                 return lhs->bit_size >= rhs->bit_size * 2;
             }
         }
+        else if (lhs_float && rhs_integer)
+        {
+            return lhs->bit_size >= rhs->bit_size;
+        }
+        else if (lhs == Builtin::type_pointer_to_void && rhs_pointer)
+        {
+            return true;
+        }
 
         return false;
+    }
+
+    void resolver_transform_to_cast_expression(Resolver* resolver, AST_Expression* expr,
+                                               AST_Type* type)
+    {
+        assert(resolver);
+        assert(expr);
+        assert(type);
+
+        auto expr_copy = ast_expression_new(resolver->context, expr->file_pos, expr->kind);
+
+        *expr_copy = *expr;
+
+        expr->kind = AST_EXPR_CAST;
+        expr->cast_expr.expr = expr_copy;
+        expr->type = type;
     }
 
     bool defer_statement_is_legal(Resolver* resolver, AST_Statement* statement)

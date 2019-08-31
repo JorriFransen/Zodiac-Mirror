@@ -1043,7 +1043,7 @@ namespace Zodiac
                             is_vararg = true;
                         }
 						AST_Expression* arg_expr = expression->call.arg_expressions[i];
-						IR_Value* arg_value = ir_builder_emit_expression(ir_builder, arg_expr);
+                        IR_Value* arg_value = ir_builder_emit_expression(ir_builder, arg_expr);
 						ir_builder_emit_call_arg(ir_builder, arg_value, arg_expr->file_pos,
                                                  is_vararg);
 					}
@@ -2905,12 +2905,16 @@ namespace Zodiac
                new_value->kind == IRV_NULL_LITERAL ||
                new_value->kind == IRV_STRING_LITERAL);
 
-        IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_STOREP, pointer_allocl,
+        assert(pointer_allocl->type->pointer.base == new_value->type);
+
+        IR_Instruction* iri = ir_instruction_new(ir_builder, origin,
+                                                 IR_OP_STOREP, pointer_allocl,
                                                  new_value, nullptr);
         ir_builder_emit_instruction(ir_builder, iri);
     }
 
-    IR_Value* ir_builder_emit_loadp(IR_Builder* ir_builder, IR_Value* pointer, File_Pos origin)
+    IR_Value* ir_builder_emit_loadp(IR_Builder* ir_builder, IR_Value* pointer,
+                                    File_Pos origin)
     {
         assert(ir_builder);
         assert(pointer);
@@ -2920,8 +2924,9 @@ namespace Zodiac
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY,
                                               pointer->type->pointer.base);
 
-        IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_LOADP, pointer, nullptr,
-                                                 result_value);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, origin,
+                                                IR_OP_LOADP, pointer, nullptr,
+                                                result_value);
         ir_builder_emit_instruction(ir_builder, iri);
 
         return result_value;
