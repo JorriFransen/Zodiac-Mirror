@@ -23,7 +23,6 @@ main :: ()
     // defer while (true) break;
 }
 
-
 defer_test1 :: (arg: int)
 {
     defer print("beginning of defer_test()");

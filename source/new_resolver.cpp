@@ -1131,7 +1131,12 @@ namespace Zodiac_
                         bool valid_conversion = resolver_check_assign_types(resolver, arg_type,
                                                                             arg_expr->type);
 
-                        if (valid_conversion && arg_type != arg_expr->type)
+                        if (valid_conversion && arg_type == Builtin::type_String &&
+                            arg_expr->type == Builtin::type_pointer_to_u8)
+                        {
+                            resolver_convert_to_builtin_string(resolver, arg_expr);
+                        }
+                        else if (valid_conversion && arg_type != arg_expr->type)
                         {
                             resolver_transform_to_cast_expression(resolver, arg_expr, arg_type);
                         }
@@ -1182,7 +1187,16 @@ namespace Zodiac_
                 if (suggested_type && suggested_type != expression->type &&
                     resolver_check_assign_types(resolver, suggested_type, expression->type))
                 {
-                    resolver_transform_to_cast_expression(resolver, expression, suggested_type);
+                    if (suggested_type == Builtin::type_String &&
+                        expression->type == Builtin::type_pointer_to_u8)
+                    {
+                        resolver_convert_to_builtin_string(resolver, expression);
+                    }
+                    else
+                    {
+                        resolver_transform_to_cast_expression(resolver, expression,
+                                                              suggested_type);
+                    }
                 }
 
                 break;
@@ -1956,6 +1970,10 @@ namespace Zodiac_
             return lhs->bit_size >= rhs->bit_size;
         }
         else if (lhs == Builtin::type_pointer_to_void && rhs_pointer)
+        {
+            return true;
+        }
+        else if (lhs == Builtin::type_String && rhs == Builtin::type_pointer_to_u8)
         {
             return true;
         }
