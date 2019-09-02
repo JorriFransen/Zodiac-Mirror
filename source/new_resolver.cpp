@@ -1659,6 +1659,45 @@ namespace Zodiac_
 
         if (!result) return false;
 
+        AST_Overload_Operator_Kind overload_op = binary_op_to_overload_op(expression->binary.op);
+        if (overload_op != AST_OVERLOAD_OP_INVALID)
+        {
+            AST_Identifier* overload_ident = find_overload(lhs->type, overload_op);
+            if (overload_ident)
+            {
+                result &= resolver_resolve_identifier(resolver, overload_ident, scope);
+                if (!result) return false;
+                assert(overload_ident->declaration);
+                auto overload_decl = overload_ident->declaration;
+                assert(overload_decl->flags & AST_DECL_FLAG_RESOLVED);
+                assert(overload_decl->kind == AST_DECL_FUNC);
+                assert(BUF_LENGTH(overload_decl->function.args) == 2);
+
+                BUF(AST_Expression*) args = nullptr;
+                BUF_PUSH(args, lhs);
+                BUF_PUSH(args, rhs);
+
+                auto overload_ident_expr = ast_ident_expression_new(resolver->context,
+                                                                    expression->file_pos,
+                                                                    overload_ident);
+
+                auto call_expression = ast_call_expression_new(resolver->context,
+                                                               expression->file_pos,
+                                                               overload_ident_expr, args);
+
+                result &= resolver_resolve_expression(resolver, call_expression, scope);
+                if (!result) return false;
+
+                assert(call_expression->call.callee_declaration);
+                auto callee_decl = call_expression->call.callee_declaration;
+                assert(callee_decl->flags & AST_DECL_FLAG_RESOLVED);
+
+                expression->type = callee_decl->function.return_type;
+                expression->binary.call_expression = call_expression;
+                return result;
+            }
+        }
+
         if (lhs->type != rhs->type)
         {
             if ((lhs->type->flags & AST_TYPE_FLAG_INT) &&
