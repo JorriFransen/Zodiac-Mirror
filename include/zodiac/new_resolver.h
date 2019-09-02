@@ -71,6 +71,9 @@ namespace Zodiac_
     void resolver_convert_to_builtin_string(Resolver* resolver, AST_Expression* string_lit_expr);
     AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module,
                                               Atom module_path, Atom module_name);
+    void resolver_replace_aggregate_declaration_with_mutable(Resolver* resolver,
+                                                             AST_Declaration** decl_ptr,
+                                                             AST_Scope* scope);
 
     bool resolve_result_has_errors(Resolve_Result* rr);
     void resolve_result_report_errors(Resolve_Result* rr);

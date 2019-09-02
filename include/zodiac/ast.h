@@ -577,6 +577,7 @@ namespace Zodiac
         AST_TYPE_SPEC_STATIC_ARRAY,
         AST_TYPE_SPEC_FUNCTION,
         AST_TYPE_SPEC_TYPEOF,
+        AST_TYPE_SPEC_FROM_TYPE,
     };
 
     typedef uint64_t _AST_Type_Spec_Flags_;

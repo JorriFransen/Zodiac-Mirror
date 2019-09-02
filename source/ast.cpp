@@ -395,7 +395,7 @@ namespace Zodiac
                                                  AST_Declaration_Location location)
     {
         assert(context);
-        assert(identifier);
+        assert(identifier || location == AST_DECL_LOC_AGGREGATE_MEMBER);
         assert(type_spec || init_expr);
         assert(location != AST_DECL_LOC_INVALID);
 
@@ -1150,61 +1150,10 @@ namespace Zodiac
         assert(context);
         assert(type);
 
-        switch (type->kind)
-        {
-            case AST_TYPE_POINTER:
-            {
-                auto base_type_spec = ast_type_spec_from_type_new(context, file_pos,
-                                                                  type->pointer.base);
-                return ast_type_spec_pointer_new(context, file_pos, base_type_spec);
-            }
+        AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_FROM_TYPE);
+        result->type = type;
 
-            case AST_TYPE_STRUCT:
-            {
-                assert(type->name);
-                BUF(AST_Type_Spec*) poly_args = nullptr;
-                AST_Identifier* identifier = nullptr;
-                if (type->aggregate_type.poly_from)
-                {
-                    assert(type->aggregate_type.poly_from->identifier);
-                    identifier =
-                        ast_identifier_new(context,
-                                           type->aggregate_type.poly_from->identifier->atom,
-                                           file_pos);
-                }
-                else
-                {
-                    auto ident_atom = atom_get(context->atom_table, type->name);
-                    identifier = ast_identifier_new(context, ident_atom, file_pos);
-                }
-                assert(identifier);
-                return ast_type_spec_identifier_new(context, file_pos, identifier, poly_args);
-            }
-
-            case AST_TYPE_BASE:
-            {
-                assert(type->name);
-                Atom ident_atom = atom_get(context->atom_table, type->name);
-                AST_Identifier* identifier = ast_identifier_new(context, ident_atom, file_pos);
-                return ast_type_spec_identifier_new(context, file_pos, identifier);
-            }
-
-            case AST_TYPE_ENUM:
-            {
-                assert(type->name);
-                AST_Identifier* identifier = ast_identifier_new(context,
-                                                                atom_get(context->atom_table,
-                                                                         type->name),
-                                                                file_pos);
-
-                return ast_type_spec_identifier_new(context, file_pos, identifier);
-            }
-
-            default: assert(false);
-        }
-
-		assert(false);
-		return nullptr;
+        return result;
     }
 
     AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,

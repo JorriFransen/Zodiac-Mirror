@@ -383,6 +383,15 @@ namespace Zodiac_
                      for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->members); i++)
                      {
                          AST_Declaration* member_decl = agg_decl->members[i];
+                         if (member_decl->kind != AST_DECL_MUTABLE)
+                         {
+                             assert(member_decl->kind == AST_DECL_AGGREGATE_TYPE);
+                             auto member_ptr = &agg_decl->members[i];
+                             resolver_replace_aggregate_declaration_with_mutable(resolver,
+                                                                                 member_ptr,
+                                                                                 agg_scope);
+                             member_decl = *member_ptr;
+                         }
                          assert(member_decl->kind == AST_DECL_MUTABLE);
                          AST_Type_Spec* member_ts = member_decl->mutable_decl.type_spec;
                          AST_Type* member_type = nullptr;
@@ -398,14 +407,23 @@ namespace Zodiac_
                          {
                              bool member_res = resolver_resolve_declaration(resolver, member_decl,
                                                                             agg_scope);
-                             assert(member_res);
 
-                             AST_Type* member_type = resolver_get_declaration_type(member_decl);
+                             if (member_res)
+                             {
+                                 AST_Type* member_type = resolver_get_declaration_type(member_decl);
 
-                             total_size += member_type->bit_size;
-                             biggest_size = MAX(biggest_size, member_type->bit_size);
+                                 total_size += member_type->bit_size;
+                                 biggest_size = MAX(biggest_size, member_type->bit_size);
+                             }
+                             else
+                             {
+                                 result = false;
+                             }
                          }
                      }
+
+                     if (!result) return false;
+
                      uint64_t bit_size = declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT ?
                                                 total_size : biggest_size;
                     const char* name = nullptr;
@@ -413,7 +431,6 @@ namespace Zodiac_
                     {
                         name = declaration->identifier->atom.data;
                     }
-
 
                     AST_Type* agg_type = nullptr;
                     if (declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT)
@@ -1648,7 +1665,7 @@ namespace Zodiac_
                 base_type = base_type->pointer.base;
             }
 
-            if (base_type->kind == AST_TYPE_STRUCT)
+            if (base_type->kind == AST_TYPE_STRUCT || base_type->kind == AST_TYPE_UNION)
             {
                 auto member_decls = base_type->aggregate_type.member_declarations;
                 bool found = false;
@@ -1657,15 +1674,58 @@ namespace Zodiac_
                     AST_Declaration* member_decl = member_decls[i];
                     assert(member_decl->flags & AST_DECL_FLAG_RESOLVED);
                     assert(member_decl->kind == AST_DECL_MUTABLE);
-                    assert(member_decl->identifier);
 
-                    if (member_decl->identifier->atom == member_expr->identifier->atom)
+                    if (member_decl->identifier)
                     {
-                        member_expr->type = resolver_get_declaration_type(member_decl);
-                        // dot_expr->type = resolver_get_declaration_type(member_decl);
-                        dot_expr->dot.declaration = member_decl;
-                        found = true;
-                        break;
+                        if (member_decl->identifier->atom == member_expr->identifier->atom)
+                        {
+                            member_expr->type = resolver_get_declaration_type(member_decl);
+                            dot_expr->dot.declaration = member_decl;
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!found)
+                {
+                    for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+                    {
+                        AST_Declaration* member_decl = member_decls[i];
+                        assert(member_decl->kind == AST_DECL_MUTABLE);
+                        if (!member_decl->identifier)
+                        {
+                            // assert(false);
+                            auto anon_aggregate_type = member_decl->mutable_decl.type;
+                            assert(anon_aggregate_type->kind == AST_TYPE_STRUCT ||
+                                   anon_aggregate_type->kind == AST_TYPE_UNION);
+
+                            auto anon_members =
+                                anon_aggregate_type->aggregate_type.member_declarations;
+                            for (uint64_t j = 0; j < BUF_LENGTH(anon_members); j++)
+                            {
+                                AST_Declaration* anon_member = anon_members[j];
+                                assert(anon_member->kind == AST_DECL_MUTABLE);
+                                if (!anon_member->identifier &&
+                                    (anon_member->mutable_decl.type->kind == AST_TYPE_STRUCT ||
+                                     anon_member->mutable_decl.type->kind == AST_TYPE_UNION))
+                                {
+                                    resolver_report_error(resolver, anon_member->file_pos,
+                                                          "Multiple levels of anonymous aggregates are not allowed");
+                                    return false;
+                                }
+
+                                if (anon_member->identifier->atom == member_expr->identifier->atom)
+                                {
+                                    member_expr->type = resolver_get_declaration_type(anon_member);
+                                    dot_expr->dot.declaration = anon_member;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (found) break;
                     }
                 }
 
@@ -2218,6 +2278,50 @@ namespace Zodiac_
         }
 
         return import_module;
+    }
+
+    void resolver_replace_aggregate_declaration_with_mutable(Resolver* resolver,
+                                                             AST_Declaration** decl_ptr,
+                                                             AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(decl_ptr);
+        auto decl = *decl_ptr;
+        assert(decl);
+        assert(decl->kind == AST_DECL_AGGREGATE_TYPE);
+        assert(scope);
+
+        bool result = resolver_resolve_declaration(resolver, decl, scope);
+
+        assert(result);
+
+        AST_Identifier* ident_copy = nullptr;
+        if (decl->identifier)
+        {
+            ident_copy = ast_identifier_new(resolver->context, decl->identifier->atom,
+                                            decl->identifier->file_pos);
+        }
+        else
+        {
+            auto agg_decl = decl->aggregate_type.aggregate_decl;
+            for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->members); i++)
+            {
+                auto member = agg_decl->members[i];
+                if (!member->identifier)
+                {
+                    resolver_report_error(resolver, member->file_pos,
+                                          "Multiple levels of anonymous aggregates not supported");
+                }
+            }
+        }
+
+        AST_Type_Spec* type_spec = ast_type_spec_from_type_new(resolver->context, decl->file_pos,
+                                                               decl->aggregate_type.type);
+        auto new_decl = ast_mutable_declaration_new(resolver->context, decl->file_pos, ident_copy,
+                                                    type_spec, nullptr,
+                                                    AST_DECL_LOC_AGGREGATE_MEMBER);
+
+        *decl_ptr = new_decl;
     }
 
     bool resolve_result_has_errors(Resolve_Result* rr)
