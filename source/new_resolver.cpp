@@ -196,7 +196,17 @@ namespace Zodiac_
 
             case AST_DECL_STATIC_IF:
             {
-                assert(false);
+                result &= resolver_resolve_static_if_declaration(resolver, declaration, scope);
+                break;
+            }
+
+            case AST_DECL_BLOCK:
+            {
+                for (uint64_t i = 0; i < BUF_LENGTH(declaration->block.decls); i++)
+                {
+                    result &= resolver_resolve_declaration(resolver, declaration->block.decls[i],
+                                                           scope);
+                }
                 break;
             }
 
@@ -2342,6 +2352,75 @@ namespace Zodiac_
             fprintf(stderr, "%s:%" PRIu64 ":%" PRIu64 ": %s\n", error.file_pos.file_name,
                     error.file_pos.line, error.file_pos.line_relative_char_pos,
                     error.message);
+        }
+    }
+
+    bool resolver_resolve_static_if_declaration(Resolver* resolver, AST_Declaration* if_decl,
+                                                AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(if_decl);
+        assert(if_decl->kind == AST_DECL_STATIC_IF);
+        assert(scope);
+
+        bool result = true;
+
+        auto if_expr = if_decl->static_if.cond_expr;
+        result &= resolver_resolve_expression(resolver, if_expr, scope);
+
+        if (result)
+        {
+            assert(if_expr->flags & AST_EXPR_FLAG_CONST);
+            bool cond_value = const_interpret_bool_expression(resolver->context, if_expr,
+                                                                scope);
+            AST_Declaration* decl_to_emit = nullptr;
+            if (cond_value)
+            {
+                decl_to_emit = if_decl->static_if.then_declaration;
+            }
+            else
+            {
+                decl_to_emit = if_decl->static_if.else_declaration;
+            }
+
+            resolver_push_declaration_to_scope(resolver, decl_to_emit, scope);
+            if (decl_to_emit->kind != AST_DECL_STATIC_IF &&
+                decl_to_emit->kind != AST_DECL_BLOCK)
+            {
+                result &= resolver_resolve_declaration(resolver, decl_to_emit, scope);
+                assert(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE);
+                BUF_PUSH(resolver->module->global_declarations, decl_to_emit);
+            }
+        }
+
+        return result;
+    }
+
+    void resolver_push_declaration_to_scope(Resolver* resolver, AST_Declaration* decl_to_emit,
+                                            AST_Scope* scope)
+    {
+        assert(resolver);
+        assert(decl_to_emit);
+        assert(scope);
+
+        if (decl_to_emit->kind == AST_DECL_BLOCK)
+        {
+            for (uint64_t i = 0; i < BUF_LENGTH(decl_to_emit->block.decls); i++)
+            {
+                auto block_decl = decl_to_emit->block.decls[i];
+                resolver_push_declaration_to_scope(resolver, block_decl, scope);
+            }
+        }
+        else if (decl_to_emit->kind == AST_DECL_STATIC_IF)
+        {
+            bool res = resolver_resolve_static_if_declaration(resolver, decl_to_emit, scope);
+            assert(res);
+        }
+        else
+        {
+            ast_scope_push_declaration(scope, decl_to_emit);
+            assert(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE);
+            BUF_PUSH(resolver->module->global_declarations, decl_to_emit);
         }
     }
 

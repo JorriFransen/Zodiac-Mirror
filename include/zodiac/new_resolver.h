@@ -78,6 +78,11 @@ namespace Zodiac_
     bool resolve_result_has_errors(Resolve_Result* rr);
     void resolve_result_report_errors(Resolve_Result* rr);
 
+    bool resolver_resolve_static_if_declaration(Resolver* resolver, AST_Declaration* if_decl,
+                                                AST_Scope* scope);
+    void resolver_push_declaration_to_scope(Resolver* resolver, AST_Declaration* decl_to_emit,
+                                            AST_Scope* scope);
+
     AST_Declaration* find_declaration(Context* context, AST_Scope* scope,
 		                              AST_Identifier* identifier,
                                       bool allow_import_check = true);
