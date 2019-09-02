@@ -446,12 +446,14 @@ namespace Zodiac_
                     if (declaration->aggregate_type.kind == AST_AGG_DECL_STRUCT)
                     {
                         agg_type = ast_type_struct_new(resolver->context, agg_decl->members,
-                                                       name, bit_size, agg_scope, nullptr);
+                                                       name, bit_size, agg_scope,
+                                                       agg_decl->overload_directives);
                     }
                     else if (declaration->aggregate_type.kind == AST_AGG_DECL_UNION)
                     {
                         agg_type = ast_type_union_new(resolver->context, agg_decl->members,
-                                                      name, bit_size, agg_scope, nullptr);
+                                                      name, bit_size, agg_scope,
+                                                      agg_decl->overload_directives);
                     }
                     assert(agg_type);
                     declaration->aggregate_type.type = agg_type;
@@ -1082,6 +1084,12 @@ namespace Zodiac_
                 break;
             }
 
+            case AST_STMT_POST_INCREMENT:
+            {
+                result &= resolver_resolve_expression(resolver, statement->post_increment, scope);
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -1390,10 +1398,60 @@ namespace Zodiac_
                 AST_Type* base_type = expression->subscript.base_expression->type;
                 AST_Type* index_type = expression->subscript.index_expression->type;
 
-                assert(base_type->kind == AST_TYPE_STATIC_ARRAY ||
-                       base_type->kind == AST_TYPE_POINTER);
+                AST_Identifier* index_overload_ident = find_overload(base_type,
+                                                                     AST_OVERLOAD_OP_INDEX);
 
-                if (base_type->kind == AST_TYPE_STATIC_ARRAY)
+                assert(base_type->kind == AST_TYPE_STATIC_ARRAY ||
+                       base_type->kind == AST_TYPE_POINTER ||
+                       index_overload_ident);
+
+
+                if (index_overload_ident)
+                {
+                    auto lvalue_expr = expression->subscript.base_expression;
+
+                    result &= resolver_resolve_identifier(resolver, index_overload_ident, scope);
+                    if (!result) break;
+
+                    auto overload_decl = index_overload_ident->declaration;
+                    assert(overload_decl->flags & AST_DECL_FLAG_RESOLVED);
+                    assert(overload_decl->kind == AST_DECL_FUNC);
+                    assert(BUF_LENGTH(overload_decl->function.args) == 2);
+
+                    auto index_expr = expression->subscript.index_expression;
+                    auto index_arg_decl = overload_decl->function.args[1];
+                    assert(index_arg_decl->kind == AST_DECL_MUTABLE);
+                    auto index_arg_type = index_arg_decl->mutable_decl.type;
+                    if (index_type != index_arg_type)
+                    {
+                        assert(index_type->flags & AST_TYPE_FLAG_INT);
+                        assert(index_arg_type->flags & AST_TYPE_FLAG_INT);
+
+                        resolver_transform_to_cast_expression(resolver, index_expr, index_arg_type);
+                    }
+
+                    BUF(AST_Expression*) args = nullptr;
+                    BUF_PUSH(args, lvalue_expr);
+                    BUF_PUSH(args, index_expr);
+
+                    auto overload_ident_expr = ast_ident_expression_new(resolver->context,
+                                                                        lvalue_expr->file_pos,
+                                                                        index_overload_ident);
+                    auto call_expression = ast_call_expression_new(resolver->context,
+                                                                   expression->file_pos,
+                                                                   overload_ident_expr, args);
+
+                    result &= resolver_resolve_expression(resolver, call_expression, scope);
+                    if (!result) break;
+
+                    auto callee_decl = call_expression->call.callee_declaration;
+                    assert(callee_decl->flags & AST_DECL_FLAG_RESOLVED);
+
+                    expression->type = callee_decl->function.return_type;
+                    expression->subscript.call_expression = call_expression;
+
+                }
+                else if (base_type->kind == AST_TYPE_STATIC_ARRAY)
                 {
                     assert(base_type->static_array.base);
                     expression->type = base_type->static_array.base;
@@ -1546,9 +1604,19 @@ namespace Zodiac_
                 break;
             }
 
+            case AST_EXPR_POST_INCREMENT:
+            case AST_EXPR_POST_DECREMENT:
+            {
+                result &= resolver_resolve_expression(resolver, expression->base_expression, scope);
+                if (result)
+                {
+                    expression->type = expression->base_expression->type;
+                }
+                break;
+            }
+
             default: assert(false);
         }
-
 
         if (result)
         {
