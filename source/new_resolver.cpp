@@ -1270,16 +1270,19 @@ namespace Zodiac_
                 if (suggested_type)
                 {
                     if (suggested_type->flags & AST_TYPE_FLAG_INT ||
-                        suggested_type->kind == AST_TYPE_POINTER ||
                         suggested_type->kind == AST_TYPE_ENUM)
                     {
                     }
                     else if (suggested_type->flags & AST_TYPE_FLAG_FLOAT)
                     {
-                        uint64_t int_value= expression->integer_literal.u64;
+                        uint64_t int_value = expression->integer_literal.u64;
                         expression->kind = AST_EXPR_FLOAT_LITERAL;
                         expression->float_literal.r32 = (float)int_value;
                         expression->float_literal.r64 = (double)int_value;
+                    }
+                    else if (suggested_type->kind == AST_TYPE_POINTER)
+                    {
+                        suggested_type = Builtin::type_int;
                     }
                     else assert(false);
 
@@ -1324,7 +1327,8 @@ namespace Zodiac_
 
             case AST_EXPR_UNARY:
             {
-                result &= resolver_resolve_expression(resolver, expression->unary.operand, scope);
+                result &= resolver_resolve_expression(resolver, expression->unary.operand,
+                                                      scope);
                 if (!result) break;
 
                 AST_Type* operand_type = expression->unary.operand->type;
@@ -1596,7 +1600,8 @@ namespace Zodiac_
             case AST_EXPR_ARRAY_LENGTH:
             {
                 result &= resolver_resolve_expression(resolver,
-                                                      expression->array_length.ident_expr, scope);
+                                                      expression->array_length.ident_expr,
+                                                      scope);
                 if (result)
                 {
                     expression->type = Builtin::type_int;
@@ -1607,7 +1612,8 @@ namespace Zodiac_
             case AST_EXPR_POST_INCREMENT:
             case AST_EXPR_POST_DECREMENT:
             {
-                result &= resolver_resolve_expression(resolver, expression->base_expression, scope);
+                result &= resolver_resolve_expression(resolver, expression->base_expression,
+                                                      scope);
                 if (result)
                 {
                     expression->type = expression->base_expression->type;
@@ -1715,28 +1721,47 @@ namespace Zodiac_
             {
                 resolver_transform_to_cast_expression(resolver, lhs, rhs->type);
             }
+            else if (lhs->type->kind == AST_TYPE_POINTER &&
+                     (rhs->type->flags & AST_TYPE_FLAG_INT))
+            {
+                expression->flags |= AST_EXPR_FLAG_POINTER_MATH;
+                expression->type = lhs->type;
+            }
+            else if ((lhs->type->flags & AST_TYPE_FLAG_INT) &&
+                     rhs->type->kind == AST_TYPE_POINTER)
+            {
+                expression->flags |= AST_EXPR_FLAG_POINTER_MATH;
+                expression->type = rhs->type;
+            }
             else assert(false);
         }
 
         if (!((lhs->type->flags & AST_TYPE_FLAG_INT) ||
               (lhs->type->flags & AST_TYPE_FLAG_FLOAT) ||
               lhs->type->kind == AST_TYPE_ENUM ||
-              lhs->type == Builtin::type_bool))
+              lhs->type == Builtin::type_bool ||
+              (expression->flags & AST_EXPR_FLAG_POINTER_MATH)))
         {
             resolver_report_error(resolver, expression->file_pos,
                                   "Binary expression is not of numeric type, and no overload was found");
             return false;
         }
 
-        assert(!expression->type);
-
-        if (binop_is_cmp(expression))
+        if (!expression->type)
         {
-            expression->type = Builtin::type_bool;
+            if (binop_is_cmp(expression))
+            {
+                expression->type = Builtin::type_bool;
+            }
+            else
+            {
+                expression->type = lhs->type;
+            }
         }
         else
         {
-            expression->type = lhs->type;
+            assert(expression->type->kind == AST_TYPE_POINTER);
+            assert(expression->flags & AST_EXPR_FLAG_POINTER_MATH);
         }
 
         return result;
@@ -2747,6 +2772,7 @@ namespace Zodiac_
         assert(resolver);
         assert(decl);
         assert(decl->kind == AST_DECL_FUNC);
+
 
         if (decl->function.type)
         {

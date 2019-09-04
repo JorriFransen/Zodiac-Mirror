@@ -140,30 +140,6 @@ int main(int argc, char** argv)
         fprintf(stderr, "Exitting with resolve error(s)\n");
         return -1;
     }
-    // resolver_init(&resolver, context, parse_result.ast_module);
-
-    // while (!resolver.done)
-    // {
-    //     resolver_do_cycle(&resolver);
-
-    //     if (!resolver.progressed_on_last_cycle)
-    //     {
-    //         break;
-    //     }
-
-    //     if (resolver.override_done)
-    //     {
-    //         break;
-    //     }
-
-    // }
-
-    // if (!resolver.done || resolver.import_error)
-    // {
-    //     resolver_report_errors(&resolver);
-    //     fprintf(stderr, "Exitting with resolve error(s)\n");
-    //     return -1;
-    // }
 
     if (context->options.verbose)
     {
