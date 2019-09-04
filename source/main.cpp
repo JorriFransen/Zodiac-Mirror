@@ -7,13 +7,11 @@
 #include "lexer.h"
 #include "parser.h"
 #include "resolver.h"
-#include "new_resolver.h"
 
 #include "ir.h"
 #include "ir_runner.h"
 
 using namespace Zodiac;
-using namespace Zodiac_;
 
 void usage(const char* exe_name)
 {

@@ -5,10 +5,7 @@
 #include "parser.h"
 #include "platform.h"
 #include "resolver.h"
-#include "new_resolver.h"
 #include "ir.h"
-
-using namespace Zodiac_;
 
 namespace Zodiac
 {

@@ -1,11 +1,8 @@
 #pragma once
 
-#include "zodiac.h"
 #include "ast.h"
 
-using namespace Zodiac;
-
-namespace _Zodiac
+namespace Zodiac
 {
     enum Resolve_Error_Flag : uint64_t
     {
@@ -24,183 +21,81 @@ namespace _Zodiac
         File_Pos auto_gen_file_pos = {};
     };
 
+    struct Resolve_Result
+    {
+        BUF(Resolve_Error) errors = nullptr;
+    };
+
     struct Resolver
     {
         Context* context = nullptr;
         AST_Module* module = nullptr;
 
-        bool done = false;
-        bool override_done = false;
-        bool progressed_on_last_cycle = false;
-
-        uint64_t unresolved_decl_count = 0;
-        uint64_t unresolved_decl_count_last_cycle = UINT64_MAX;
-
-        uint64_t undeclared_decl_count = 0;
-        uint64_t undeclared_decl_count_last_cycle = UINT64_MAX;
-
-        bool silent = false;
-        bool import_error = false;
-        bool resolving_auto_gen = false;
-        File_Pos auto_gen_file_pos = {};
-
-        BUF(AST_Declaration*) unresolved_decls = nullptr;
-
-		BUF(Resolve_Error) errors = nullptr;
-
+        AST_Statement* current_break_context = nullptr;
         AST_Declaration* current_func_decl = nullptr;
+
+        Resolve_Result result = {};
     };
 
-    void resolver_init(Resolver* resolver, Context* context, AST_Module* module);
 
-    void resolver_do_cycle(Resolver* resolver);
-
-    bool try_resolve_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                 AST_Scope* scope, AST_Scope* poly_scope = nullptr);
-    static bool try_resolve_function_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                                 AST_Scope* scope,
-                                                 AST_Scope* poly_scope = nullptr);
-    static bool try_resolve_mutable_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                                AST_Scope* scope, AST_Scope* poly_scope = nullptr);
-    static bool try_resolve_constant_var_declaration(Resolver* resolver,
-                                                     AST_Declaration* declaration,
-                                                     AST_Scope* scope);
-    static bool try_resolve_static_if_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                                  AST_Scope* scope);
-    static bool try_resolve_block_declaration(Resolver* resolver, AST_Declaration* declaration,
+    void resolver_init(Resolver* resolver, Context* context);
+    void resolver_do_initial_scope_population(Resolver* resolver, AST_Module* module,
                                               AST_Scope* scope);
-    static bool try_resolve_static_assert_declaration(Resolver* resolver,
-                                                      AST_Declaration* declaration,
-                                                      AST_Scope* scope);
-    static bool try_resolve_import_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                               AST_Scope* scope);
-    static bool try_resolve_aggregate_type_declaration(Resolver* resolver,
-                                                       AST_Declaration* declaration,
-                                                       AST_Scope* scope,
-                                                       BUF(AST_Declaration*) _pointers_to_self,
-                                                       AST_Identifier* _self_ident);
-    static bool try_resolve_enum_aggregate_type_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                                            AST_Scope* scope);
-	static bool try_resolve_typedef_declaration(Resolver* resolver, AST_Declaration* declaration,
-		                                        AST_Scope* scope);
-    static bool try_resolve_using_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                              AST_Scope* scope);
-    static bool try_resolve_insert_declaration(Resolver* resolver, AST_Declaration* declaration,
-                                               AST_Scope* scope);
-
-    static bool try_resolve_statement(Resolver* resolver, AST_Statement* statement,
-                                      AST_Scope* scope, AST_Statement* break_context);
-    static bool try_resolve_return_statement(Resolver* resolver, AST_Statement* statement,
-                                             AST_Scope* scope);
-    static bool try_resolve_if_statement(Resolver* resolver, AST_Statement* statement,
-                                         AST_Scope* scope, AST_Statement* break_context);
-    static bool try_resolve_insert_statement(Resolver* resolver, AST_Statement* statement, AST_Scope* scope,
-                                             AST_Statement* break_context);
-
-    bool try_resolve_expression(Resolver* resolver, AST_Expression* expression,
-                                       AST_Scope* scope,
-                                       AST_Type* suggested_type = nullptr);
-    static bool try_resolve_call_expression(Resolver* resolver, AST_Expression* expression,
+    Resolve_Result resolver_resolve_module(Resolver* resolver, AST_Module* module);
+    bool resolver_resolve_declaration(Resolver* resolver, AST_Declaration* declaration,
+                                      AST_Scope* scope);
+    bool resolver_resolve_statement(Resolver* resolver, AST_Statement* statement,
+                                    AST_Scope* scope);
+    bool resolver_resolve_expression(Resolver* resolver, AST_Expression* expression,
+                                     AST_Scope* scope, AST_Type* suggested_type = nullptr);
+    bool resolver_resolve_binary_expression(Resolver* resolver, AST_Expression* expression,
                                             AST_Scope* scope);
-    static bool try_resolve_boolean_literal_expression(Resolver* resolver,
-                                                       AST_Expression* expression);
-    static bool try_resolve_null_literal_expression(Resolver* resolver,
-                                                    AST_Expression* expression);
-    static bool try_resolve_string_literal_expression(Resolver* resolver,
-                                                      AST_Expression* expression);
-    static bool try_resolve_integer_literal_expression(Resolver* resolver,
-                                                       AST_Expression* expression,
-                                                       AST_Type* suggested_type);
-    static bool try_resolve_float_literal_expression(Resolver* resolver,
-                                                     AST_Expression* expression,
-                                                     AST_Type* suggested_type);
-    static bool try_resolve_character_literal_expression(Resolver* resolver,
-                                                         AST_Expression* expression);
-    static bool try_resolve_compound_literal_expression(Resolver* resolver,
-                                                        AST_Expression* expression,
-                                                        AST_Scope* scope,
-                                                        AST_Type* suggested_type = nullptr);
-    static bool try_resolve_array_length_expression(Resolver* resolver,
-                                                    AST_Expression* expression, AST_Scope* scope);
-    static bool try_resolve_identifier_expression(Resolver* resolver, AST_Expression* expression,
-                                                  AST_Scope* scope);
-    static bool try_resolve_binary_expression(Resolver* resolver, AST_Expression* expression,
-                                              AST_Scope* scope);
-    static bool try_resolve_unary_expression(Resolver* resolver, AST_Expression* expression,
-                                             AST_Scope* scope, AST_Type* suggested_type);
-    static bool try_resolve_dot_expression(Resolver* resolver, AST_Expression* expression,
-        AST_Scope* scope);
-	static bool try_resolve_cast_expression(Resolver* resolver, AST_Expression* expression,
-		AST_Scope* scope);
-
-    static bool try_resolve_identifier(Resolver* resolver, AST_Identifier* identifier,
-                                       AST_Scope* scope);
-
-    bool try_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec,
-                               AST_Type** type_dest, AST_Scope* scope,
-                               AST_Scope* poly_scope = nullptr);
-    bool try_resolve_poly_type_spec_args(Resolver* resolver, AST_Type_Spec* type_spec,
+    bool resolver_resolve_dot_expression(Resolver* resolver, AST_Expression* dot_expr,
                                          AST_Scope* scope);
+    bool resolver_resolve_identifier(Resolver* resolver, AST_Identifier* identifier,
+                                     AST_Scope* scope);
+    bool resolver_resolve_type_spec(Resolver* resolver, AST_Type_Spec* type_spec,
+                                    AST_Type** type_dest, AST_Scope* scope);
 
+    AST_Type* resolver_get_declaration_type(AST_Declaration* decl);
+
+    bool resolver_check_assign_types(Resolver* resolver, AST_Type* lhs, AST_Type* rhs);
+
+    void resolver_transform_to_cast_expression(Resolver* resolver, AST_Expression* expr,
+                                               AST_Type* type);
+
+    bool defer_statement_is_legal(Resolver* resolver, AST_Statement* statement);
+
+    void resolver_convert_to_builtin_string(Resolver* resolver, AST_Expression* string_lit_expr);
     AST_Module* resolver_add_import_to_module(Resolver* resolver, AST_Module* module,
-                                              const Atom& module_path,
-                                              const Atom& module_name);
+                                              Atom module_path, Atom module_name);
+    void resolver_replace_aggregate_declaration_with_mutable(Resolver* resolver,
+                                                             AST_Declaration** decl_ptr,
+                                                             AST_Scope* scope);
 
-    static bool is_valid_integer_conversion(Resolver* resolver, AST_Type* dest_type,
-                                            AST_Type* source_type);
+    bool resolve_result_has_errors(Resolve_Result* rr);
+    void resolve_result_report_errors(Resolve_Result* rr);
 
-    AST_Type* create_struct_type(Resolver* resolver, AST_Identifier* identifier,
-                                 BUF(AST_Declaration*) member_decls,
-                                 BUF(AST_Overload_Directive) overloads);
-    AST_Type* create_union_type(Resolver* resolver, AST_Identifier* identifier,
-                                BUF(AST_Declaration*) member_decls,
-                                BUF(AST_Overload_Directive) overloads);
-    AST_Type* create_enum_type(Resolver* resolver, AST_Identifier* identifier,
-                               AST_Type* member_type,
-                               BUF(AST_Declaration*) member_decls);
+    bool resolver_resolve_static_if_declaration(Resolver* resolver, AST_Declaration* if_decl,
+                                                AST_Scope* scope);
+    void resolver_push_declaration_to_scope(Resolver* resolver, AST_Declaration* decl_to_emit,
+                                            AST_Scope* scope);
 
     AST_Declaration* find_declaration(Context* context, AST_Scope* scope,
 		                              AST_Identifier* identifier,
                                       bool allow_import_check = true);
 
-    bool is_valid_integer_promotion(AST_Type* source_type, AST_Type* target_type);
-
-    bool function_signatures_match(Resolver* resolver, AST_Declaration* decl_a,
-                                   AST_Declaration* decl_b, AST_Scope* scope);
-    AST_Declaration* find_overload_signature_match(Resolver* resolver,
-                                                   AST_Declaration* overload_decl,
-                                                   AST_Expression* call_expr, AST_Scope* scope);
-    void add_overload(Resolver* resolver, AST_Declaration* container, AST_Declaration* overload);
-
-    bool defer_statement_is_legal(Resolver* resolver, AST_Statement* statement);
-    void add_defer_statement(AST_Scope* scope, AST_Statement* statement);
-
-    AST_Expression* try_resolve_index_overload(Resolver* resolver, AST_Expression* subscript_expr,
-                                               AST_Identifier* overload_ident, AST_Scope* scope);
-    AST_Expression* try_resolve_binary_overload(Resolver* resolver, AST_Expression* bin_expr,
-                                                AST_Identifier* overload_ident, AST_Scope* scope);
-
-    bool try_replace_nested_aggregate_with_mutable(Resolver* resolver,
-                                                   AST_Declaration* nested_aggregate,
-                                                   AST_Scope* scope,
-                                                   BUF(AST_Declaration*) pointers_to_self,
-                                                   AST_Identifier* self_ident);
+    bool binop_is_cmp(AST_Expression* expression);
 
     char* run_insert(Resolver* resolver, AST_Expression* call_expression);
 
-    bool match_builtin_function(Resolver* resolver, AST_Expression* call_expression, AST_Scope* scope);
+    AST_Type* resolver_create_recursive_function_type(Resolver* resolver, AST_Declaration* decl);
 
-    static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,
-                                             AST_Identifier* identifier);
-    static void report_undeclared_identifier(Resolver* resolver, File_Pos file_pos,
-                                             AST_Module* module,
-                                             AST_Identifier* identifier);
     Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
-                                      const char* format, ...);
+                                         const char* format, ...);
     Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
-                                      Resolve_Error_Flag flags, const char* format, va_list args);
+                                         Resolve_Error_Flag flags, const char* format, va_list args);
     Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
-                                      Resolve_Error_Flag flags, const char* format,
-                                      ...);
-    void resolver_report_errors(Resolver* resolver);
+                                         Resolve_Error_Flag flags, const char* format,
+                                         ...);
 }
