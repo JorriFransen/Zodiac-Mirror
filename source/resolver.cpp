@@ -286,12 +286,10 @@ namespace Zodiac
                     BUF_PUSH(arg_types, type);
                 }
                 AST_Type* return_type = declaration->function.return_type;
-                auto original_name = declaration->identifier->atom.data;
                 declaration->function.type = ast_find_or_create_function_type(resolver->context,
                                                                               is_vararg,
                                                                               arg_types,
-                                                                              return_type,
-                                                                              original_name);
+                                                                              return_type);
                 break;
             }
 
@@ -1981,7 +1979,7 @@ namespace Zodiac
         {
             case AST_TYPE_SPEC_IDENT:
             {
-                AST_Identifier* ident = type_spec->identifier.identifier;
+                AST_Identifier* ident = type_spec->identifier;
                 result &= resolver_resolve_identifier(resolver, ident, scope);
                 if (!result) break;
 
@@ -2068,10 +2066,9 @@ namespace Zodiac
                 if (result)
                 {
                     bool is_vararg = type_spec->flags & AST_TYPE_SPEC_FLAG_FUNC_VARARG;
-                    auto name = type_spec->function.name;
                     AST_Type* result_type = ast_find_or_create_function_type(resolver->context,
                                                                              is_vararg, arg_types,
-                                                                             return_type, name);
+                                                                             return_type);
                     *type_dest = result_type;
                     type_spec->type = result_type;
                 }
@@ -2782,7 +2779,6 @@ namespace Zodiac
         bool is_vararg = false;
         BUF(AST_Type*) arg_types = nullptr;
         AST_Type* return_type = Builtin::type_void;
-        const char* original_name = decl->identifier->atom.data;
 
         bool result = true;
 
@@ -2819,8 +2815,7 @@ namespace Zodiac
         }
 
         AST_Type* func_type = ast_find_or_create_function_type(resolver->context, is_vararg,
-                                                               arg_types, return_type,
-                                                               original_name);
+                                                               arg_types, return_type);
 
         return func_type;
     }

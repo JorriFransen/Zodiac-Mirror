@@ -346,7 +346,7 @@ namespace Zodiac
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
-                                                  bool is_vararg, bool is_poly,
+                                                  bool is_vararg, 
                                                   AST_Type_Spec* return_type_spec,
                                                   AST_Statement* body_block,
                                                   AST_Scope* argument_scope)
@@ -554,8 +554,6 @@ namespace Zodiac
         result->aggregate_type.type = nullptr;
         result->aggregate_type.aggregate_decl = aggregate_decl;
         result->aggregate_type.parameter_idents = parameters;
-        result->aggregate_type.poly_count = 0;
-        result->aggregate_type.poly_instances = nullptr;
         result->aggregate_type.scope = scope;
 
         return result;
@@ -579,8 +577,6 @@ namespace Zodiac
         result->aggregate_type.type = nullptr;
         result->aggregate_type.aggregate_decl = aggregate_decl;
         result->aggregate_type.parameter_idents = parameters;
-        result->aggregate_type.poly_count = 0;
-        result->aggregate_type.poly_instances = nullptr;
         result->aggregate_type.scope = scope;
 
         return result;
@@ -949,8 +945,6 @@ namespace Zodiac
                                         bit_size);
         result->aggregate_type.member_declarations = member_declarations;
         result->aggregate_type.scope = scope;
-        result->aggregate_type.poly_from = nullptr;
-        result->aggregate_type.poly_types = nullptr;
         result->overloads = overloads;
 
         return result;
@@ -968,8 +962,6 @@ namespace Zodiac
                                         bit_size);
         result->aggregate_type.member_declarations = member_declarations;
         result->aggregate_type.scope = scope;
-        result->aggregate_type.poly_from = nullptr;
-        result->aggregate_type.poly_types = nullptr;
         result->overloads = overloads;
 
         return result;
@@ -995,7 +987,7 @@ namespace Zodiac
     }
 
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
-                                    AST_Type* return_type, const char* original_name)
+                                    AST_Type* return_type)
     {
         assert(context);
         assert(return_type);
@@ -1007,8 +999,6 @@ namespace Zodiac
         }
         result->function.arg_types = arg_types;
         result->function.return_type = return_type;
-        result->function.poly_from = nullptr;
-        result->function.original_name = nullptr;
 
         return result;
     }
@@ -1026,30 +1016,13 @@ namespace Zodiac
     }
 
     AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos,
-                                                AST_Identifier* identifier,
-                                                BUF(AST_Type_Spec*) poly_args/*=nullptr*/)
+                                                AST_Identifier* identifier)
     {
         assert(context);
         assert(identifier);
 
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_IDENT);
-        result->identifier.identifier = identifier;
-        result->identifier.poly_args = poly_args;
-
-        if (poly_args)
-        {
-            result->flags |= AST_TYPE_SPEC_FLAG_POLY;
-        }
-
-        // for (uint64_t i = 0; i < BUF_LENGTH(poly_args); i++)
-        // {
-        //     auto poly_arg = poly_args[i];
-        //     if (poly_arg->flags & AST_TYPE_SPEC_FLAG_POLY)
-        //     {
-        //         result->flags |= AST_TYPE_SPEC_FLAG_POLY;
-        //         break;
-        //     }
-        // }
+        result->identifier = identifier;
 
         return result;
     }
@@ -1066,11 +1039,6 @@ namespace Zodiac
         result->dot.module_ident = module_ident;
         result->dot.member_type_spec = member_type_spec;
 
-        if (member_type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
-        {
-            result->flags |= AST_TYPE_SPEC_FLAG_POLY;
-        }
-
         return result;
     }
 
@@ -1082,11 +1050,6 @@ namespace Zodiac
 
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_POINTER);
         result->pointer.base = base_type_spec;
-
-        if (base_type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
-        {
-            result->flags |= AST_TYPE_SPEC_FLAG_POLY;
-        }
 
         return result;
     }
@@ -1102,11 +1065,6 @@ namespace Zodiac
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_STATIC_ARRAY);
         result->static_array.count_expr = count_expr;
         result->static_array.base = base_type_spec;
-
-        if (base_type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
-        {
-            result->flags |= AST_TYPE_SPEC_FLAG_POLY;
-        }
 
         return result;
     }
@@ -1463,12 +1421,10 @@ namespace Zodiac
     }
 
 	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
-                                               BUF(AST_Type*) arg_types,
-                                               AST_Type* return_type, const char* original_name)
+                                               BUF(AST_Type*) arg_types, AST_Type* return_type)
 	{
 		assert(context);
         assert(return_type);
-        assert(original_name);
 
         uint64_t hash = ast_get_function_type_hash(is_vararg, arg_types, return_type);
         uint64_t hash_index = hash & (context->type_count - 1);
@@ -1527,16 +1483,14 @@ namespace Zodiac
 
         if (found_slot)
         {
-            AST_Type* result = ast_type_function_new(context, is_vararg, arg_types, return_type,
-                                                     original_name);
+            AST_Type* result = ast_type_function_new(context, is_vararg, arg_types, return_type);
             context->type_hash[hash_index] = result;
             return result;
         }
         else
         {
             ast_grow_type_hash(context);
-            return ast_find_or_create_function_type(context, is_vararg, arg_types, return_type,
-                                                    original_name);
+            return ast_find_or_create_function_type(context, is_vararg, arg_types, return_type);
         }
 
 	}

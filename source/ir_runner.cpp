@@ -2050,16 +2050,6 @@ namespace Zodiac
 
         const char* result = func->name;
 
-        if (func->type->function.poly_from)
-        {
-            result = func->type->function.poly_from->identifier->atom.data;
-        }
-
-        if (func->type->function.original_name)
-        {
-            result = func->type->function.original_name;
-        }
-
         return result;
     }
 

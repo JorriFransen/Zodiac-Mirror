@@ -155,7 +155,8 @@ namespace Zodiac
 
         Atom type_spec_atom = atom_get(context->atom_table, "bool");
         AST_Identifier* type_spec_ident = ast_identifier_new(context, type_spec_atom, file_pos);
-        AST_Type_Spec* type_spec = ast_type_spec_identifier_new(context, file_pos, type_spec_ident);
+        AST_Type_Spec* type_spec = ast_type_spec_identifier_new(context, file_pos,
+                                                                type_spec_ident);
 
         AST_Expression* init_expression = ast_boolean_literal_expression_new(context, file_pos,
             value);

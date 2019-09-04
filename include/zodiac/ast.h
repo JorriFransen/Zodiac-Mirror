@@ -338,12 +338,6 @@ namespace Zodiac
         AST_DECL_INSERT,
     };
 
-    struct AST_Poly_Instance
-    {
-        uint64_t hash = 0;
-        AST_Declaration* instance;
-    };
-
     struct AST_Function_Declaration
     {
         BUF(AST_Declaration*) args = nullptr;
@@ -398,9 +392,8 @@ namespace Zodiac
         AST_DECL_FLAG_ERROR            = (1 << 2),
         AST_DECL_FLAG_GENERATED        = (1 << 3),
         AST_DECL_FLAG_FOREIGN          = (1 << 4),
-        AST_DECL_FLAG_FUNC_POLY        = (1 << 5),
-        AST_DECL_FLAG_FUNC_VARARG      = (1 << 6),
-        AST_DECL_FLAG_INSERT_GENERATED = (1 << 7),
+        AST_DECL_FLAG_FUNC_VARARG      = (1 << 5),
+        AST_DECL_FLAG_INSERT_GENERATED = (1 << 6),
     };
 
     enum AST_Declaration_Location
@@ -476,8 +469,6 @@ namespace Zodiac
                 AST_Type* type;
                 AST_Aggregate_Declaration* aggregate_decl;
                 BUF(AST_Identifier*) parameter_idents;
-                BUF(AST_Poly_Instance) poly_instances;
-                uint64_t poly_count;
                 AST_Scope* scope;
                 AST_Type_Spec* enum_type_spec;
             } aggregate_type;
@@ -555,16 +546,12 @@ namespace Zodiac
                 BUF(AST_Declaration*) member_declarations;
                 AST_Scope* scope;
                 AST_Type* base_type; // for enums
-                AST_Declaration* poly_from;
-                BUF(AST_Type_Spec*) poly_types;
             } aggregate_type;
 
             struct
             {
                 BUF(AST_Type*) arg_types;
                 AST_Type* return_type;
-                AST_Declaration* poly_from;
-                const char* original_name;
             } function;
         };
     };
@@ -584,8 +571,7 @@ namespace Zodiac
     enum AST_Type_Spec_Flags : _AST_Type_Spec_Flags_
     {
         AST_TYPE_SPEC_FLAG_NONE        = 0,
-        AST_TYPE_SPEC_FLAG_POLY        = (1 << 0),
-        AST_TYPE_SPEC_FLAG_FUNC_VARARG = (1 << 1),
+        AST_TYPE_SPEC_FLAG_FUNC_VARARG = (1 << 0),
     };
 
     struct AST_Type_Spec
@@ -598,11 +584,7 @@ namespace Zodiac
 
         union
         {
-            struct
-            {
-                AST_Identifier* identifier;
-                BUF(AST_Type_Spec*) poly_args;
-            } identifier;
+            AST_Identifier* identifier;
 
             struct
             {
@@ -674,7 +656,8 @@ namespace Zodiac
 
     AST_Module* ast_module_new(Context* context, const char* module_name);
     AST_Identifier* ast_identifier_new(Context* context, Atom atom, File_Pos file_pos);
-    AST_Directive* ast_directive_new(Context* context, AST_Directive_Kind kind, File_Pos file_pos);
+    AST_Directive* ast_directive_new(Context* context, AST_Directive_Kind kind,
+                                     File_Pos file_pos);
 
     AST_Expression* ast_expression_new(Context* context, File_Pos file_pos,
                                        AST_Expression_Kind kind);
@@ -733,7 +716,7 @@ namespace Zodiac
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
-                                                  bool is_vararg, bool is_poly,
+                                                  bool is_vararg,
                                                   AST_Type_Spec* return_type_spec,
                                                   AST_Statement* body_block,
                                                   AST_Scope* argument_scope);
@@ -839,12 +822,11 @@ namespace Zodiac
     AST_Type* ast_type_enum_new(Context* context, BUF(AST_Declaration*) member_decls,
                                 const char* name, AST_Type* base_type, AST_Scope* scope);
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
-                                    AST_Type* return_type, const char* original_name);
+                                    AST_Type* return_type);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind);
     AST_Type_Spec* ast_type_spec_identifier_new(Context* context, File_Pos file_pos,
-                                                AST_Identifier* identifier,
-                                                BUF(AST_Type_Spec*) poly_args = nullptr);
+                                                AST_Identifier* identifier);
     AST_Type_Spec* ast_type_spec_dot_new(Context* context, File_Pos file_pos,
                                          AST_Identifier* module_ident,
                                          AST_Type_Spec* member_type_spec);
@@ -879,8 +861,7 @@ namespace Zodiac
                                             AST_Expression* count_expr, AST_Scope* scope);
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type, uint64_t count);
 	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
-                                               BUF(AST_Type*) arg_types,
-		                                       AST_Type* return_type, const char* original_name);
+                                               BUF(AST_Type*) arg_types, AST_Type* return_type);
 
 
     uint64_t ast_get_type_hash(AST_Type* type);

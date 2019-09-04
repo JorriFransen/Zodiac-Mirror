@@ -244,7 +244,6 @@ namespace Zodiac
             BUF(AST_Declaration*) arg_decls = nullptr;
             expect_token(parser, TOK_LPAREN);
             bool is_vararg = false;
-            bool is_poly = false;
             while (!match_token(parser, TOK_RPAREN))
             {
                 // No arguments allowed after this
@@ -268,10 +267,6 @@ namespace Zodiac
                         return nullptr;
                     }
                     assert(decl->kind == AST_DECL_MUTABLE);
-                    if (decl->mutable_decl.type_spec->flags & AST_TYPE_SPEC_FLAG_POLY)
-                    {
-                        is_poly = true;
-                    }
                     BUF_PUSH(arg_decls, decl);
                 }
             }
@@ -294,7 +289,7 @@ namespace Zodiac
             }
 
             AST_Declaration* result = ast_function_declaration_new(parser->context, fp, identifier,
-                                                                   arg_decls, is_vararg, is_poly,
+                                                                   arg_decls, is_vararg,
                                                                    return_type_spec,
                                                                    body_block, argument_scope);
             return result;
@@ -1621,30 +1616,9 @@ namespace Zodiac
             AST_Type_Spec* result = nullptr;
             if (match_token(parser, TOK_DOT))
             {
-                // AST_Identifier* member_ident = parse_identifier(parser);
-                // AST_Type_Spec* member_type_spec =
-                //     ast_type_spec_identifier_new(parser->context, member_ident->file_pos,
-                //                                  member_ident);
                 AST_Type_Spec* member_type_spec = parse_type_spec(parser, scope);
                 return ast_type_spec_dot_new(parser->context, base_ident->file_pos, base_ident,
                                              member_type_spec);
-            }
-            else if (match_token(parser, TOK_LPAREN))
-            {
-                BUF(AST_Type_Spec*) poly_args = nullptr;
-                while (!match_token(parser, TOK_RPAREN))
-                {
-                    if (poly_args)
-                    {
-                        expect_token(parser, TOK_COMMA);
-                    }
-
-                    AST_Type_Spec* poly_arg = parse_type_spec(parser, scope);
-                    BUF_PUSH(poly_args, poly_arg);
-                }
-
-                return ast_type_spec_identifier_new(parser->context, base_ident->file_pos,
-                                                    base_ident, poly_args);
             }
             else
             {
@@ -1655,8 +1629,8 @@ namespace Zodiac
         }
         else if (match_token(parser, TOK_DOLLAR))
         {
+            assert(false);
             AST_Type_Spec* result = parse_type_spec(parser, scope);
-            result->flags |= AST_TYPE_SPEC_FLAG_POLY;
             return result;
         }
         else assert(false);

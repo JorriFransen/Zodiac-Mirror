@@ -83,10 +83,6 @@ namespace Zodiac
 		{
 			case AST_DECL_FUNC:
 			{
-                if (decl->flags & AST_DECL_FLAG_FUNC_POLY)
-                {
-                    return;
-                }
 				IR_Value* ir_value = ir_builder_value_for_declaration(ir_builder, decl);
 				assert(ir_value);
 				assert(ir_value->kind == IRV_FUNCTION);
@@ -181,11 +177,6 @@ namespace Zodiac
         {
             case AST_DECL_FUNC:
             {
-                if (global_decl->flags & AST_DECL_FLAG_FUNC_POLY)
-                {
-                    return;
-                }
-
                 AST_Identifier* ident = global_decl->identifier;
                 AST_Type* return_type = global_decl->function.return_type;
                 IR_Value* func_value = ir_builder_begin_function(ir_builder, global_decl->file_pos,
