@@ -1,0 +1,39 @@
+
+c :: import c;
+
+int :: typedef s64;
+
+main :: () -> u64
+{
+    c.open_std_handles();
+
+    i_am_i : int;
+
+    for (i := 0; i < 20; i += 1)
+    {
+        i_am_i = i;
+        c.printf("i: %ld\n", i);
+
+        if (i >= 9)
+            break;
+    }
+
+    assert(i_am_i == 9);
+
+    c.printf("\n");
+
+    j := 20;
+    while (true)
+    {
+        c.printf("j: %ld\n", j);
+
+        if (j <= 10)
+            break;
+
+        j -= 1;
+    }
+
+    assert(j == 10);
+
+    return 0;
+}

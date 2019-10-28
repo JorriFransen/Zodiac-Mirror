@@ -1,0 +1,29 @@
+_c :: import c;
+
+Vec2i :: struct
+{
+    x : s64;
+    y : s64;
+}
+
+
+main :: () -> u64
+{
+    _c.printf("struct copy test\n");
+
+    a : Vec2i = { 48, 94 };
+    b := a;
+
+    a_ptr := *a;
+    c := <a_ptr;
+
+    _c.printf("a: %d,%d\n", a.x, a.y);
+    _c.printf("b: %d,%d\n", b.x, b.y);
+    _c.printf("c: %d,%d\n", c.x, c.y);
+
+
+    assert(b.x == 48);
+    assert(b.y == 94);
+
+    return 0;
+}

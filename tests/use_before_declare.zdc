@@ -1,0 +1,25 @@
+
+c_ :: import c;
+using c_;
+
+
+main :: () -> int
+{
+    printf("use_before_declare test\n");
+
+    printf("x: %d\n", x);
+
+    x : int = 3;
+
+    printf("x: %d\n", x);
+
+    test_func(x);
+
+    return 0;
+}
+
+
+test_func :: (x: int)
+{
+    printf("Called test_func with %d\n", x);
+}

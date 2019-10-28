@@ -1,0 +1,90 @@
+
+c :: import c;
+glfw :: import glfw;
+glfw_keys :: import glfw_keys;
+gl :: import gl;
+
+using glfw;
+using gl;
+
+
+main :: () -> int
+{
+    c.printf("GLFW_KEY_ESCAPE: %lu\n", glfw_keys.GLFWkey.GLFW_KEY_ESCAPE);
+    if (!glfwInit())
+    {
+        c.printf("glfwInit failed\n");
+        return 9;
+    }
+
+    width := 640;
+    height := 480;
+
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    window : *GLFWwindow = glfwCreateWindow(width, height, "Triangles!!!", null, null);
+    if (!window)
+    {
+        c.printf("glfwCreateWindow failed\n");
+        return 9;
+    }
+
+    glfwSetKeyCallback(window, *key_callback);
+    glfwSetErrorCallback(*error_callback);
+
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
+    load(*glfwGetProcAddress);
+    glViewport(0, 0, (:GLsizei)width, (:GLsizei)height);
+
+    vendor := glGetString(GL_VENDOR);
+    renderer := glGetString(GL_RENDERER);
+    version := glGetString(GL_VERSION);
+
+    c.printf("GL vendor: %s\n", vendor);
+    c.printf("GL renderer: %s\n", renderer);
+    c.printf("GL version: %s\n", version);
+
+    // glClearColor(0.1, 0.3, 0.5, 1.0);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+
+
+    while (!glfwWindowShouldClose(window))
+    {
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glBegin(GL_TRIANGLES);
+        glColor4f(1.0, 0.0, 0.0, 1.0);
+        glVertex2f(-0.5, -0.5);
+        glColor4f(0.0, 1.0, 0.0, 1.0);
+        glVertex2f(0.5, -0.5);
+        glColor4f(0.0, 0.0, 1.0, 1.0);
+        glVertex2f(0.0, 0.5);
+        glEnd();
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    glfwDestroyWindow(window);
+    glfwTerminate();
+
+    return 0;
+}
+
+using glfw_keys;
+
+key_callback :: (window: *GLFWwindow, key: int, scancode: int, action: int, mods: int) -> void
+{
+    using glfw_keys.GLFWkey;
+
+    if ((:GLFWkey)key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    {
+        c.printf("Exit requested by user\n");
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+}
+
+error_callback :: (error: int, description: *u8) -> void
+{
+    c.fprintf(c._stderr, "GLFW error:%lu:s\n", error, description);
+}

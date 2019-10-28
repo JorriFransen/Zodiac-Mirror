@@ -1,0 +1,140 @@
+
+_c :: import c;
+using _c;
+
+Vec2i :: struct
+{
+    x : int;
+    y : int;
+}
+
+main :: () -> u64
+{
+    pos : Vec2i;
+    pos.x = 1;
+    pos.y = 2;
+
+    size : Vec2i = { 3, pos.y };
+
+    printf("pos: %lu,%lu\n", pos.x, pos.y);
+    printf("size: %lu,%lu\n\n", size.x, size.y);
+
+    pos = size;
+    size.x = 88;
+
+    size_y_ptr := *size.y;
+    <size_y_ptr = 99;
+
+    printf("pos: %lu,%lu\n", pos.x, pos.y);
+    print_vec("size", size);
+
+    size_ptr : *Vec2i = *size;
+    printf("size_ptr: %p\n", size_ptr);
+    printf("size_x_ptr: %p\n", *size.x);
+    printf("size_y_ptr: %p\n", size_y_ptr);
+    printf("*size.y: %p\n", *size.y);
+    <size_ptr = { 34, 56 };
+    printf("size_ptr.x: %lu\n", size_ptr.x);
+    printf("size_ptr.y: %lu\n", size_ptr.y);
+    print_vec("size", size);
+    size_ptr.x = 11;
+    size_ptr.y = 22;
+    print_vec("size", size);
+    print_vec_ptr("size_ptr", size_ptr);
+
+    v : Vec2i = { 5, 6 };
+    v = { 55, 66 };
+    print_vec("v", v);
+
+
+    loop();
+    array_test();
+
+    return 0;
+}
+
+print_vec :: (name: *u8, vec: Vec2i) -> void
+{
+    printf("%s: %lu, %lu\n", name, vec.x, vec.y);
+}
+
+print_vec_ptr :: (name: *u8, vec: *Vec2i) -> void
+{
+    printf("%s: %lu, %lu\n", name, vec.x, vec.y);
+}
+
+array_test :: () -> void
+{
+    printf("array_test()\n");
+
+    int_array : [5]int = { 255, 256, 33, 44, 555 };
+    printf("Array length: %lu\n", array_length(int_array));
+
+    for (i := 0; i < array_length(int_array); i += 1)
+    {
+        printf("int_array[%ld] = %ld\n", i, int_array[i]);
+    }
+
+    int_array[3] = 444;
+
+    printf("\n");
+
+    for (i := 0; i < array_length(int_array); i += 1)
+    {
+        printf("int_array[%ld] = %ld\n", i, int_array[i]);
+    }
+
+    int_array_3_ptr := *int_array[3];
+    <int_array_3_ptr = 888;
+
+    printf("\n");
+
+    for (i := 0; i < array_length(int_array); i += 1)
+    {
+        printf("int_array[%ld] = %ld\n", i, int_array[i]);
+    }
+
+    int_array = { 5, 4, 3, 2, 1 };
+
+    printf("\n");
+
+    for (i := 0; i < array_length(int_array); i += 1)
+    {
+        printf("int_array[%ld] = %ld\n", i, int_array[i]);
+    }
+}
+
+loop :: () -> void
+{
+    i := 0;
+    while (i < 10)
+    {
+        printf("%ld\n", i);
+        i += 1;
+    }
+
+    i -= 1;
+
+    while (i >= 0)
+    {
+        printf("%ld\n", i);
+        i -= 1;
+    }
+
+    for (j := 0; j < 5; j += 1)
+    {
+        printf("%ld\n", j);
+    }
+
+    for (y := 0; y < 10; y += 1)
+    {
+        for (x := 0; x < 10; x += 1)
+        {
+            printf("%ld,%ld  ", x, y);
+        }
+
+        printf("\n");
+    }
+
+    putchar('\n');
+}

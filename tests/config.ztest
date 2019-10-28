@@ -1,0 +1,5 @@
+expect_fail:
+  use_before_declare.zdc
+
+dont_run:
+  game.zdc

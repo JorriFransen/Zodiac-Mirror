@@ -1,0 +1,63 @@
+
+_c :: import c;
+using _c;
+
+print_digit :: (digit: int) -> void
+{
+    printf("%ld\n", digit);
+}
+
+newline :: () { printf("\n"); }
+
+main :: ()
+{
+    pointer_test();
+
+    return 0;
+}
+
+copy_string :: (str: *u8) -> *u8
+{
+    len := _c.strlen(str);
+    res := (:*u8)_c.malloc(len + 1);
+    _c.memcpy(res, str, len + 1);
+
+    return res;
+}
+
+pointer_test :: () -> void
+{
+    x: int = 3;
+
+    print_digit(x);
+
+    x_ptr : *int;
+    x_ptr = *x;
+
+    print_digit(<x_ptr);
+
+    <x_ptr = 4;
+
+    print_digit(x);
+
+    ch : u8 = 'c';
+    putchar((:int)ch);
+    newline();
+
+    hello_zodiac := "Hello zodiac!";
+    hello_zodiac = copy_string(hello_zodiac);
+    puts(hello_zodiac);
+
+    putchar((:int)hello_zodiac[1]);
+    newline();
+
+    hello_zodiac[4] = 'x';
+
+    puts(hello_zodiac);
+
+    z_ptr := *hello_zodiac[5];
+    <z_ptr = 'z';
+    puts(hello_zodiac);
+
+    _c.free(hello_zodiac);
+}

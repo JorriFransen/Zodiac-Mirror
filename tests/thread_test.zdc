@@ -1,0 +1,338 @@
+
+std :: import std;
+using std;
+
+// _c :: import c;
+using _c;
+
+_thread :: import thread;
+using _thread;
+
+global_counter : u64 = 0;
+global_counter_2 : u64 = 0;
+
+// global_counter_2_mutex : Mutex = { 0 };
+global_counter_2_mutex : Mutex;
+
+main :: ()
+{
+    std.print("thread _main");
+    _main();
+
+    std.print("\nthread test");
+    printf("global_counter: %llu\n", global_counter);
+
+    adders : std.Array(Thread) = { null, 0, 0 };
+
+    adder_count := 100;
+    amount_per_adder := 100;
+
+    for (i := 0; i < adder_count; i++)
+    {
+        at : Thread;
+        if (i % 2)
+        {
+            at = create_thread(*add_func, amount_per_adder);
+        }
+        else
+        {
+            at = create_thread(*add_func2, amount_per_adder);
+        }
+
+        if (at.handle)
+        {
+            array_add(*adders, at);
+        }
+        else
+        {
+            fprintf(_stderr, "Thread creation failed!\n");
+            adder_count = i;
+            break;
+        }
+
+        if (i % 1000 == 0)
+        {
+            std.print("\t1000 threads created for pool 1");
+            _c.printf("\t\tglobal_counter: %lu\n", global_counter);
+        }
+
+    }
+
+
+    std.print("All threads for pool 1 created");
+
+    all_returns : u64 = 0;
+
+    for (i : s64 = 0; i < adders.count; i++)
+    {
+        at := adders[i];
+        all_returns += (:u64)join_thread(at);
+    }
+
+    printf("global_counter: %llu\n", global_counter);
+    printf("\texpected: %llu\n", (:u64)(adder_count * amount_per_adder));
+    assert(global_counter == (:u64)(adder_count * amount_per_adder));
+    printf("\tall_returns: %lu\n\n", all_returns);
+
+    adders.count = 0;
+
+    for (i := 0; i < adder_count; i++)
+    {
+        at : Thread;
+        if (i % 2)
+        {
+            at = create_thread(*add_func_mut, amount_per_adder);
+        }
+        else
+        {
+            at = create_thread(*add_func_mut2, amount_per_adder);
+        }
+
+        if (at.handle)
+        {
+            array_add(*adders, at);
+        }
+        else
+        {
+            fprintf(_stderr, "Thread creation failed\n");
+            adder_count = i;
+            break;
+        }
+    }
+
+    std.print("All threads for pool 2 created");
+
+    all_returns_2 : u64 = 0;
+
+    for (i : s64 = 0; i < adders.count; i++)
+    {
+        at := adders[i];
+        all_returns_2 += (:u64)join_thread(at);
+    }
+
+    printf("global_counter_2: %llu\n", global_counter_2);
+    printf("\texpected: %llu\n", (:u64)(adder_count * amount_per_adder));
+    assert(global_counter_2 == (:u64)(adder_count * amount_per_adder));
+    printf("\tall_returns_2: %lu\n\n", all_returns_2);
+
+    array_free(*adders);
+
+    semaphore_test();
+
+    return 0;
+}
+
+SEM_BUFFER_CAP     : s64 : 8;
+SEM_BUFFER_COUNT   : s64 : 11;
+SEM_PRODUCER_COUNT : s64 : 10;
+SEM_CONSUMER_COUNT : s64 : 7;
+
+SEM_PRODUCE_MAX : s64 = 30;
+
+sem_lock      : Semaphore;
+sem_buf_full  : Semaphore;
+sem_buf_empty : Semaphore;
+
+print_lock : Mutex;
+
+pc_done : u64 = 0;
+produced_count : s64 = 0;
+
+PC_Data :: struct
+{
+    empty_buffers : Queue(*u64);
+    full_buffers  : Queue(*u64);
+}
+
+semaphore_test :: ()
+{
+    std.print(" ");
+    std.print("Semaphore test");
+
+    semaphore_init(*sem_lock, 1);
+    semaphore_init(*sem_buf_full, 0);
+    semaphore_init(*sem_buf_empty, (:int)SEM_BUFFER_COUNT);
+
+    mutex_init(*print_lock);
+
+    pc_data : PC_Data;
+    std.print(SEM_BUFFER_COUNT);
+    queue_init(*pc_data.empty_buffers, SEM_BUFFER_COUNT);
+    queue_init(*pc_data.full_buffers, SEM_BUFFER_COUNT);
+
+    for (i : s64 = 0; i < SEM_BUFFER_COUNT; i++)
+    {
+        buffer := (:*u64)_c.malloc((:u64)(SEM_BUFFER_CAP * sizeof(u64)));
+        queue_enqueue(*pc_data.empty_buffers, buffer);
+    }
+
+    producers : Array(Thread);
+    producers.data = null;
+    producers.count = 0;
+    producers.capacity = 0;
+    defer array_free(*producers);
+
+    for (i : s64 = 0; i < SEM_PRODUCER_COUNT; i++)
+    {
+        pt := create_thread(*produce, *pc_data);
+        array_add(*producers, pt);
+    }
+
+    consumers : Array(Thread);
+    consumers.data = null;
+    consumers.count = 0;
+    consumers.capacity = 0;
+    defer array_free(*consumers);
+    for (i : s64 = 0; i < SEM_CONSUMER_COUNT; i++)
+    {
+        ct := create_thread(*consume, *pc_data);
+        array_add(*consumers, ct);
+    }
+
+    while (produced_count < SEM_PRODUCE_MAX) { std.sleep(1); }
+
+    assert(pc_done == 0);
+    while (!compare_and_swap(*pc_done, 0, 1)) {}
+    for (i : s64 = 0; i < producers.count; i++)
+    {
+        join_thread(producers[i]);
+    }
+    for (i : s64 = 0; i < consumers.count; i++)
+    {
+        join_thread(consumers[i]);
+    }
+
+    _c.printf("produced_count %d\n", produced_count);
+
+    // _c.printf("empty_buffers.count: %lu\n", pc_data.empty_buffers.count);
+    // assert(pc_data.empty_buffers.count == SEM_BUFFER_COUNT);
+    assert(pc_data.empty_buffers.count + pc_data.full_buffers.count == SEM_BUFFER_COUNT);
+
+    while (pc_data.empty_buffers.count)
+    {
+        buffer := queue_dequeue(*pc_data.empty_buffers);
+        _c.free(buffer);
+    }
+
+    while (pc_data.full_buffers.count)
+    {
+        buffer := queue_dequeue(*pc_data.full_buffers);
+        _c.free(buffer);
+    }
+}
+
+produce :: (thread: *Thread) -> *void
+{
+    while (!compare_and_swap(*pc_done, 1, 1) && produced_count < SEM_PRODUCE_MAX)
+    {
+        while (!compare_and_swap(*produced_count, produced_count, produced_count + 1)) {}
+
+        semaphore_wait(*sem_buf_empty);
+
+        semaphore_wait(*sem_lock);
+        pc_data := (:*PC_Data)thread.user_data;
+        buffer := queue_dequeue(*pc_data.empty_buffers);
+        _c.printf("Producing in buffer: %p\n", buffer);
+        semaphore_signal(*sem_lock);
+
+        for (i : s64 = 0; i < SEM_BUFFER_CAP; i++)
+        {
+            buffer[i] = (:u64)(i * i);
+            std.sleep(50);
+        }
+
+        semaphore_wait(*sem_lock);
+        queue_enqueue(*pc_data.full_buffers, buffer);
+        semaphore_signal(*sem_lock);
+
+        semaphore_signal(*sem_buf_full);
+
+    }
+
+    return null;
+}
+
+consume :: (thread: *Thread) -> *void
+{
+    while (!compare_and_swap(*pc_done, 1, 1))
+    {
+        semaphore_wait(*sem_buf_full);
+
+        semaphore_wait(*sem_lock);
+        pc_data := (:*PC_Data)thread.user_data;
+        buffer := queue_dequeue(*pc_data.full_buffers);
+        semaphore_signal(*sem_lock);
+
+        mutex_lock(*print_lock);
+        std.print("=========================================");
+        for (i : s64 = 0; i < SEM_BUFFER_CAP; i++)
+        {
+            _c.printf("buffer[%lu]: %lu\n", i, buffer[i]);
+            assert(buffer[i] == (:u64)(i * i));
+        }
+        std.print("=========================================\n");
+        mutex_unlock(*print_lock);
+
+        semaphore_wait(*sem_lock);
+        queue_enqueue(*pc_data.empty_buffers, buffer);
+        semaphore_signal(*sem_lock);
+
+        semaphore_signal(*sem_buf_empty);
+    }
+
+    return null;
+}
+
+add_func_mut :: (thread: *Thread) -> *void
+{
+    to_add := (:u64)thread.user_data;
+    mutex_lock(*global_counter_2_mutex);
+    for (i : u64 = 0; i < to_add; i++)
+    {
+        global_counter_2 += 1;
+    }
+    mutex_unlock(*global_counter_2_mutex);
+
+    return (:*void)to_add;
+}
+
+add_func_mut2 :: (thread: *Thread) -> *void
+{
+    to_add := (:u64)thread.user_data;
+    mutex_lock(*global_counter_2_mutex);
+    global_counter_2 += to_add;
+    mutex_unlock(*global_counter_2_mutex);
+
+    return (:*void)to_add;
+}
+
+add_func :: (thread: *Thread) -> *void
+{
+    to_add := (:u64)thread.user_data;
+
+    for (i : u64 = 0; i < to_add; i++)
+    {
+        done := false;
+        while (!done)
+        {
+            value := global_counter;
+            done = compare_and_swap(*global_counter, value, value + 1);
+        }
+    }
+
+    return (:*void)to_add;
+}
+
+add_func2 :: (thread: *Thread) -> *void
+{
+    to_add := (:u64)thread.user_data;
+
+    done := false;
+    while (!done)
+    {
+        value := global_counter;
+        done = compare_and_swap(*global_counter, value, value + to_add);
+    }
+
+    return (:*void)to_add;
+}

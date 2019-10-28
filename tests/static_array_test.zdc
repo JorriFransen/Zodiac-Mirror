@@ -1,0 +1,36 @@
+
+_c :: import c;
+
+WA :: struct
+{
+    bytes : [8]u8;
+}
+
+main :: ()
+{
+    _c.printf("static array test\n");
+
+    wa : WA;
+
+    wa.bytes[0] = 1;
+    wa.bytes[1] = 2;
+    wa.bytes[2] = 4;
+
+    bytes : [8]u8;
+    bytes[0] = 2;
+    bytes[1] = 4;
+
+    // _c.printf("*wa.bytes[0]: %p\n", *wa.bytes[0]);
+
+    for (i := 0; i < array_length(wa.bytes); i++)
+    {
+        _c.printf("wa.bytes[%d]: %d\n", i, wa.bytes[i]);
+    }
+
+    for (i := 0; i < array_length(bytes); i++)
+    {
+        _c.printf("bytes[%d]: %d\n", i, bytes[i]);
+    }
+
+    return 0;
+}

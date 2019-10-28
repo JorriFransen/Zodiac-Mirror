@@ -1,0 +1,75 @@
+
+_std :: import std;
+using _std;
+
+main :: () -> int
+{
+    _c.open_std_handles();
+
+    defer_test1(1);
+    print(" ");
+    defer_test1(2);
+    print(" ");
+    defer_test1(3);
+    print(" ");
+
+    defer_test2(1);
+    print(" ");
+
+    defer print("main defer 1");
+    defer print("main defer 2");
+    defer print("main defer 3");
+
+    // defer defer print("nested defer");
+    // defer { print("abc"); return -1; }
+    // defer while (true) break;
+
+    return 0;
+}
+
+defer_test1 :: (arg: int)
+{
+    defer print("beginning of defer_test()");
+
+    if (arg == 1)
+    {
+        defer print("deferred arg = 1");
+        print("arg is 1");
+        return;
+    }
+    else if (arg == 2)
+    {
+        defer print("Arg is 2");
+    }
+
+    defer print("end of defer_test()");
+}
+
+defer_test2 :: (arg: int)
+{
+    defer print("calling defer test2");
+
+    assert(arg >= 0);
+
+    while (arg >= 0)
+    {
+        defer print(arg);
+
+        arg = arg - 1;
+    }
+
+    while (true)
+    {
+        defer print(arg);
+        defer _c.printf("%d\n", arg);
+
+        arg -= 1;
+        if (arg < 0)
+        {
+            defer print("defer in break block");
+            break;
+        }
+    }
+
+    defer print("end of defer_test2");
+}

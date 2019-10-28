@@ -1,0 +1,91 @@
+
+static_if (PLATFORM_WINDOWS)
+{
+    #dynamic_link "Opengl32.dll";
+}
+else static_if (PLATFORM_LINUX)
+{
+    #dynamic_link "/usr/lib/libGL.so";
+}
+
+GLbitfield :: typedef u32;
+GLboolean  :: typedef u8;
+GLenum     :: typedef u32;
+GLubyte    :: typedef u8;
+GLint      :: typedef s32;
+GLsizei    :: typedef u32;
+GLfloat    :: typedef float;
+GLdouble   :: typedef double;
+GLclampf   :: typedef float;
+
+GL_FALSE : GLboolean : 0;
+GL_TRUE  : GLboolean : 1;
+
+GL_COLOR_BUFFER_BIT : GLbitfield : 0x00004000;
+
+GL_NO_ERROR  : GLenum : 0;
+
+GL_VENDOR    : GLenum : 0x1F00;
+GL_RENDERER  : GLenum : 0x1F01;
+GL_VERSION   : GLenum : 0x1F02;
+
+GL_POINTS    : GLenum : 0x0000;
+GL_TRIANGLES : GLenum : 0x0004;
+
+GL_PROJECTION : GLenum : 0x1701;
+
+glGetStringProc :: typedef *(name: GLenum) -> *GLubyte;
+glGetString : glGetStringProc = null;
+
+glClearProc :: typedef *(mask: GLbitfield) -> void;
+glClear : glClearProc = null;
+
+glClearColorProc :: typedef *(r: GLclampf, g: GLclampf, b: GLclampf, a: GLclampf) -> void;
+glClearColor : glClearColorProc = null;
+
+glViewportProc :: typedef *(x: GLint, y: GLint, width: GLsizei, height: GLsizei) -> void;
+glViewport : glViewportProc = null;
+
+glBeginProc :: typedef *(mode: GLenum) -> void;
+glBegin : glBeginProc = null;
+
+glEndProc :: typedef *() -> void;
+glEnd : glEndProc = null;
+
+glColor4fProc :: typedef *(red: GLfloat, green: GLfloat, blue: GLfloat, alpha: GLfloat) -> void;
+glColor4f : glColor4fProc = null;
+
+glVertex2fProc :: typedef *(x: GLfloat, y: GLfloat) -> void;
+glVertex2f : glVertex2fProc = null;
+
+glMatrixModeProc :: typedef *(mode: GLenum);
+glMatrixMode : glMatrixModeProc = null;
+
+glLoadIdentityProc :: typedef *();
+glLoadIdentity : glLoadIdentityProc = null;
+
+glOrthoProc :: typedef *(left: GLdouble, right: GLdouble,
+                         bottom: GLdouble, top: GLdouble,
+                         near_val: GLdouble, far_val: GLdouble);
+glOrtho : glOrthoProc = null;
+
+glPointSizeProc :: typedef *(size: GLfloat);
+glPointSize : glPointSizeProc = null;
+
+Load_Proc :: typedef *(proc_name: *u8) -> *void;
+
+load :: (load_proc: Load_Proc) -> void
+{
+    glGetString = (:glGetStringProc)load_proc("glGetString");
+    glClear = (:glClearProc)load_proc("glClear");
+    glClearColor = (:glClearColorProc)load_proc("glClearColor");
+    glViewport = (:glViewportProc)load_proc("glViewport");
+    glBegin = (:glBeginProc)load_proc("glBegin");
+    glEnd = (:glEndProc)load_proc("glEnd");
+    glColor4f = (:glColor4fProc)load_proc("glColor4f");
+    glVertex2f = (:glVertex2fProc)load_proc("glVertex2f");
+    glMatrixMode = (:glMatrixModeProc)load_proc("glMatrixMode");
+    glLoadIdentity = (:glLoadIdentityProc)load_proc("glLoadIdentity");
+    glOrtho = (:glOrthoProc)load_proc("glOrtho");
+    glPointSize = (:glPointSizeProc)load_proc("glPointSize");
+}

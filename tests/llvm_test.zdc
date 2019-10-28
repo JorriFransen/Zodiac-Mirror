@@ -1,0 +1,90 @@
+
+_c :: import c;
+using _c;
+
+Person :: struct
+{
+    name: *u8;
+    age : int;
+}
+
+global_variable : int = 4;
+
+main :: () -> int
+{
+    _c.open_std_handles();
+    // _c.fprintf(_c.stdout, "llvm_test\n");
+    _c.printf("llvm_test\n");
+    // putchar(getchar() - 32);
+    // putchar('\n');
+
+    assert(global_variable == 4);
+    printf("global_variable: %d\n", global_variable);
+    global_variable++;
+    assert(global_variable == 5);
+    printf("global_variable: %d\n", global_variable);
+
+    printf("add(1, 2): %d\n", add(1, 2));
+    assert(add(1, 2) == 3);
+    printf("printing a float: %f\n", 12.3456);
+
+    x := add(40, 1);
+    if (x > 40)
+    {
+        printf("x: %d\n", x);
+    }
+    else
+    {
+        printf("x has no meaning\n");
+    }
+
+    me : Person;
+    me.name = "Jorri Fransen";
+    me.age = 23;
+    print_person("me", me);
+    print_person_ptr("*me", *me);
+
+    print_num(41);
+
+    my_float : float;
+    my_float = -4;
+    printf("my_float: %f\n", my_float);
+
+    // return add(40, 1);
+    return 0;
+}
+
+print_person :: (prefix: *u8, p: Person)
+{
+    printf("%s: %s, age: %d\n", prefix, p.name, p.age);
+}
+
+print_person_ptr :: (prefix: *u8, p: *Person)
+{
+    printf("%s: %s, age: %d\n", prefix, p.name, p.age);
+}
+
+add :: (a: int, b: int) -> int
+{
+    return a + b;
+}
+
+_String :: struct
+{
+    data  : *u8;
+    length: u64;
+}
+
+print_num :: (num: u64)
+{
+    _buf: [32]u8;
+    buf := *_buf[0];
+    length := sprintf(buf, "%llu", num);
+    // printf("%.*s\n", length, buf);
+    print_str({ buf, (:u64)length });
+}
+
+print_str :: (str: _String)
+{
+    _c.printf("%.*s\n", str.length, str.data);
+}

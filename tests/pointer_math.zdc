@@ -1,0 +1,48 @@
+
+std :: import std;
+using std;
+
+print_buf :: (buf: *int, length: int)
+{
+    for (i := 0; i < length; i++)
+    {
+        _c.printf("buf[%d] = %d\n", i, buf[i]);
+    }
+}
+
+main :: () -> int
+{
+    _c.open_std_handles();
+
+    print("pointer math test");
+
+    count : s64 = 5;
+
+    int_buf : *int = (:*int)_c.malloc((:u64)(sizeof(int) * count));
+
+    int_cur := int_buf;
+
+    for (i : s64 = 0; i < count; i += 1)
+    {
+        <int_cur = (:int)(i + 1) * 5;
+        // _c.printf("<int_cur: %d\n", <int_cur);
+        // _c.printf("int_cur: %p\n", int_cur);
+        // _c.printf("*int_buf[i]: %p\n", *int_buf[i]);
+        // int_cur += 1;
+        int_cur++;
+
+    }
+
+    // print_buf(int_buf, count);
+
+    int_cur -= 1;
+
+    for (i : s64 = 0; i < count; i += 1)
+    {
+        _c.printf("int_buf[%d] = %d\n", 4 - i, <int_cur);
+        int_cur -= 1;
+    }
+
+    return 0;
+}
+

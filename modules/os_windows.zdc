@@ -1,0 +1,120 @@
+
+static_assert(PLATFORM_WINDOWS);
+
+std :: import std;
+using std;
+
+LPCSTR :: typedef *u8;
+LPSTR :: typedef *u8;
+DWORD :: typedef u32;
+TCHAR :: typedef u8;
+HANDLE :: typedef *void;
+BOOL :: typedef s64;
+
+#foreign GetFullPathNameA :: (lpFileName: LPCSTR, nBufferLength: DWORD, lpBuffer: LPSTR, lpFilePart: *LPSTR) -> DWORD;
+#foreign GetFileAttributesA :: (lpFileName: LPCSTR) -> DWORD;
+#foreign FindFirstFileA :: (lpFileName: LPCSTR, lpFindFileData: *WIN32_FIND_DATA) -> HANDLE;
+#foreign FindNextFileA :: (hFindFile: HANDLE, lpFindFileData: *WIN32_FIND_DATA) -> BOOL;
+#foreign FindClose :: (hFindFile: HANDLE) -> BOOL;
+#foreign GetLastError :: () -> DWORD;
+
+INVALID_HANDLE_VALUE :: -1;
+INVALID_FILE_ATTRIBUTES :: -1;
+FILE_ATTRIBUTE_DIRECTORY :: 16;
+
+ERROR_FILE_NOT_FOUND :: 2;
+ERROR_NO_MORE_FILES :: 18;
+
+MAX_PATH :: 256;
+
+FILETIME :: struct 
+{
+    dwLowDateTime : DWORD;
+    dwHighDateTime : DWORD;
+}
+
+WIN32_FIND_DATA :: struct
+{
+    dwFileAttributes : DWORD;
+    ftCreationTime : FILETIME;
+    ftLastAccessTime : FILETIME;
+    ftLastWriteTime: FILETIME;
+    nFileSizeHigh: DWORD;
+    nFileSizeLow: DWORD;
+    dwReserved0: DWORD;
+    dwReserved1: DWORD;
+    cFileName: [MAX_PATH]TCHAR;
+    cAlternateFileName: [14]TCHAR;
+}
+
+get_full_path :: (name: String) -> String
+{
+    length := GetFullPathNameA(name.data, 0, null, null);
+
+    result : String;
+    result.data = (:*u8)_c.malloc(length);
+    result.length = length - 1;
+
+    l := GetFullPathNameA(name.data, length, result.data, null);
+    assert(l == result.length);
+
+    return result;
+}
+
+is_directory :: (path: String) -> bool
+{
+    result := GetFileAttributesA(path.data);
+    if (result == INVALID_FILE_ATTRIBUTES)
+    {
+        return false;
+    }
+
+    return (:bool)(result & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+is_regular_file :: (path: String) -> bool
+{
+    result := GetFileAttributesA(path.data);
+    if (result == INVALID_FILE_ATTRIBUTES)
+    {
+        return false;
+    }
+
+    return !((:bool)(result & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+list_files_in_directory :: (path: String) -> Array(String)
+{
+    search_path := string_append(path, "\\*");
+    defer _c.free(search_path.data);
+
+    find_data : WIN32_FIND_DATA;
+    handle := FindFirstFileA(search_path.data, *find_data);
+    if (handle == INVALID_HANDLE_VALUE)
+    {
+        error := GetLastError();
+        if (error == ERROR_FILE_NOT_FOUND)
+        {
+            _c.printf("Path is not a directory: '%s'\n", path.data);
+            assert(false);
+        }
+        else assert(false);
+    }
+
+    assert(handle != INVALID_HANDLE_VALUE);
+
+    result : Array(String) = { null, 0, 0 };
+    array_add(*result, string_new(*find_data.cFileName[0]));
+
+    while (FindNextFileA(handle, *find_data) != 0)
+    {
+        array_add(*result, string_new(*find_data.cFileName[0]));
+    }
+
+    assert(GetLastError() == ERROR_NO_MORE_FILES);
+
+
+    FindClose(handle);
+
+    return result;
+}

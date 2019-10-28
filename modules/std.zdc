@@ -1,0 +1,439 @@
+
+_c :: import c;
+
+int :: typedef s64;
+
+Type_Info_Kind : u64 : enum
+{
+    INVALID;
+    BASE;
+    POINTER;
+    STRUCT;
+    UNION;
+    ENUM;
+    FUNCTION;
+}
+
+Type_Info :: struct
+{
+    kind      : Type_Info_Kind;
+    name      : String;
+    byte_size : u64;
+
+    union
+    {
+        base  : *Type_Info;
+
+        aggregate :: struct
+        {
+            count : u64;
+            first : *Type_Info_Aggregate_Member;
+        }
+
+        enum_info :: struct
+        {
+            enum_base    : *Type_Info;
+            member_count : u64;
+            first        : *Type_Info_Enum_Member;
+        }
+
+        function :: struct
+        {
+            return_type : *Type_Info;
+            arg_count   : u64;
+            first_arg   : *Type_Info_Aggregate_Member;
+        }
+    }
+}
+
+Type_Info_Aggregate_Member :: struct
+{
+    name : String;
+    type : *Type_Info;
+}
+
+Type_Info_Enum_Member :: struct
+{
+    name  : String;
+    value : u64;
+    type  : *Type_Info;
+}
+
+// Type_Info_Data :: struct
+// {
+//     type_infos      : *Type_Info;
+//     type_info_count : u64;
+// }
+
+enum_to_string :: (value: u64, ti: *Type_Info) -> String
+{
+    assert(ti.kind == Type_Info_Kind.ENUM);
+
+    for (i : u64 = 0; i < ti.enum_info.member_count; i++)
+    {
+        member_info := ti.enum_info.first[i];
+
+        if ((:u64)member_info.value == value)
+        {
+            return member_info.name;
+        }
+    }
+
+    assert(false);
+
+    return { null, 0 };
+}
+
+enum_to_string :: (enum_member: $T) -> String
+{
+  ti := get_type_info(T);
+  return enum_to_string((:u64)enum_member, ti);
+}
+
+is_power_of_two :: (x: u64) -> bool
+{
+    return (x & (x - 1)) == 0;
+}
+
+is_power_of_two :: (x: s64) -> bool
+{
+    if (x <= 0) return false;
+    return is_power_of_two((:u64)x);
+}
+
+align_forward :: (ptr: *u8, align: u64) -> *u8
+{
+    assert(is_power_of_two(align));
+    assert(ptr);
+
+    addr : u64 = (:u64)ptr;
+    if (addr % align != 0)
+    {
+        addr += align - addr % align;
+    }
+    assert(addr >= (:u64)ptr);
+    return (:*u8)addr;
+}
+
+align_forward_b :: (ptr: *u8, align: u64) -> *u8
+{
+    assert(is_power_of_two(align));
+    assert(ptr);
+
+    addr := (:u64)ptr;
+    addr = (addr + (align  - 1)) & -align;
+    assert(addr >= (:u64)ptr);
+    return (:*u8)addr;
+}
+
+String :: struct
+{
+    data   : *u8;
+    length : u64;
+
+    #overload[] string_index;
+}
+
+string_ref :: (c_str: *u8) -> String
+{
+    result : String = { c_str, string_length(c_str) };
+    return result;
+}
+
+string_new :: (c_str: *u8, length: u64) -> String
+{
+    c_str_copy := (:*u8)_c.malloc(length + 1);
+    _c.memcpy(c_str_copy, c_str, length);
+    c_str_copy[length] = '\0';
+    result : String = { c_str_copy, length };
+    return result;
+}
+
+string_new :: (c_str: *u8) -> String
+{
+    length := string_length(c_str);
+    return string_new(c_str, length);
+}
+
+string_length :: (c_str: *u8) -> u64
+{
+    length : u64 = 0;
+    i : u64 = 0;
+
+    while (c_str[i] != 0)
+    {
+        i += 1;
+        length += 1;
+    }
+
+    return length;
+}
+
+string_equal :: (a: String, b: String) -> bool
+{
+    if (a.length != b.length) return false;
+
+    for (i : u64 = 0; i < a.length; i++)
+    {
+        if (a[i] != b[i]) return false;
+    }
+
+    return true;
+}
+
+string_index :: (str: String, index: u64) -> u8
+{
+    assert(index < str.length);
+
+    return str.data[index];
+}
+
+// string_index :: (str: *String, index: u64) -> u8
+// {
+//     return string_index(<str, index);
+// }
+
+string_append :: (a: String, b: String) -> String
+{
+    new_len := a.length + b.length;
+
+    result : String = { null, new_len };
+    result.data = (:*u8)_c.malloc(new_len + 1);
+    _c.memcpy(result.data, a.data, a.length);
+    _c.memcpy(result.data + a.length, b.data, b.length);
+    result.data[new_len] = '\0';
+
+    return result;
+}
+
+string_ends_with :: (a: String, b: String) -> bool
+{
+    if (b.length > a.length) return false;
+
+    a_offset := a.length - b.length;
+
+    for (i : u64 = 0; i < b.length; i++)
+    {
+        if (a[i + a_offset] != b[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+print :: (str: String)
+{
+    _c.printf("%.*s\n", str.length, str.data);
+}
+
+print :: (num: u64)
+{
+    _buf: [32]u8;
+    buf := *_buf[0];
+    length := _c.sprintf(buf, "%llu", num);
+    print({ buf, (:u64)length });
+}
+
+print :: (num: int)
+{
+    _buf: [32]u8;
+    buf := *_buf[0];
+    length := _c.sprintf(buf, "%lld", num);
+    print({ buf, (:u64)length });
+}
+
+Array :: struct(T)
+{
+    data     : *T;
+    count    : s64;
+    capacity : s64;
+
+    #overload[] array_index;
+}
+
+array_add :: (array: *Array($T), element: T)
+{
+    assert(array);
+
+    if (array.count >= array.capacity)
+    {
+        new_cap := array.capacity * 2;
+        if (new_cap < 8) new_cap = 8;
+        array_grow(array, new_cap);
+    }
+
+    assert(array.data);
+
+    array.data[array.count] = element;
+    array.count += 1;
+}
+
+array_remove_unordered :: (array: *Array($T), index: s64)
+{
+    assert(array.count);
+    assert(array.count > index);
+
+    array.count -= 1;
+
+    if (index == array.count)
+    {
+        return;
+    }
+
+    array.data[index] = array.data[array.count];
+}
+
+array_index :: (array: Array($T), index: s64) -> T
+{
+    assert(index < array.count);
+
+    return array.data[index];
+}
+
+// array_index :: (array: *Array($T), index: s64) -> T
+// {
+//     return array_index(<array, index);
+// }
+
+array_grow :: (array: *Array($T), new_cap: s64)
+{
+    assert(array);
+    assert(new_cap > array.capacity);
+
+    new_data := _c.malloc((:u64)(sizeof(T) * new_cap));
+    assert(new_data);
+
+
+    if (array.data)
+    {
+        assert(array.capacity);
+        _c.memcpy(new_data, array.data, (:u64)(array.capacity * sizeof(T)));
+        _c.free(array.data);
+    }
+    else
+    {
+        assert(array.capacity == 0);
+        assert(array.count == 0);
+    }
+
+    array.data = (:*T)new_data;
+    array.capacity = new_cap;
+}
+
+array_free :: (array: *Array($T))
+{
+    assert(array);
+    if (array.data)
+    {
+        _c.free(array.data);
+        array.data = null;
+        array.count = 0;
+        array.capacity = 0;
+    }
+}
+
+Queue :: struct(T)
+{
+    data        : *T;
+    capacity    : s64;
+    first_index : s64;
+    count       : s64;
+}
+
+queue_init :: (queue: *Queue($T), capacity: s64)
+{
+    assert(capacity > 0);
+
+    queue.capacity = capacity;
+    queue.data = (:*T)_c.malloc((:u64)(capacity * sizeof(T)));
+    queue.first_index = 0;
+    queue.count = 0;
+}
+
+queue_enqueue :: (queue: *Queue($T), element: T)
+{
+    // _c.printf("__queue: %p\n", queue);
+    // _c.printf("__queue.data: %p\n", queue.data);
+    // _c.printf("__queue_enqueue, count: %lu, cap: %lu\n", queue.count, queue.capacity);
+    if (queue.count + 1 > queue.capacity)
+    {
+        queue_grow(queue);
+        _c.printf("__queue grown\n");
+    }
+
+    new_index := queue.first_index + queue.count;
+    if (new_index >= queue.capacity)
+    {
+        new_index = new_index - queue.capacity;
+        // _c.printf("__wrapped index to: %lu\n", new_index);
+    }
+    // _c.printf("__new_index: %lu\n", new_index);
+    // _c.printf("__ptr: %p\n", (:u64)queue.data + (:u64)(new_index * sizeof(T)));
+    queue.data[new_index] = element;
+    queue.count += 1;
+
+    // _c.printf("_enqueued %p at %lu (%p)\n", element, new_index, *queue.data[new_index]);
+}
+
+queue_grow :: (queue: *Queue($T))
+{
+    // assert(queue.data);
+
+    new_cap := queue.capacity * 2;
+    new_data := (:*T)_c.malloc((:u64)(new_cap * sizeof(T)));
+
+    old_index := queue.first_index;
+    for (i : s64 = 0; i < queue.count; i++)
+    {
+        new_data[i] = queue.data[old_index];
+
+        old_index += 1;
+        if (old_index >= queue.capacity)
+        {
+            old_index = 0;
+        }
+    }
+
+    _c.free(queue.data);
+    queue.capacity = new_cap;
+    queue.data = new_data;
+    queue.first_index = 0;
+
+    // _c.printf("_queu grown to %lu\n", new_cap);
+}
+
+queue_dequeue :: (queue: *Queue($T)) -> T
+{
+    assert(queue.data);
+    assert(queue.count);
+
+    result_index := queue.first_index;
+
+    queue.first_index += 1;
+    queue.count -= 1;
+    if (queue.first_index >= queue.capacity)
+    {
+        queue.first_index = 0;
+    }
+
+    result := queue.data[result_index];
+    // _c.printf("_dequeued %p from %lu (%p)\n", result, result_index, *queue.data[result_index]);
+
+    return result;
+}
+
+queue_free :: (queue: *Queue($T))
+{
+    assert(queue.data);
+
+    _c.free(queue.data);
+    queue.count = 0;
+    queue.capacity = 0;
+}
+
+sleep :: (msec: int) -> void
+{
+    _c._msleep(msec);
+}

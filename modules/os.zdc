@@ -1,0 +1,84 @@
+_c :: import c;
+std :: import std;
+posix :: import posix;
+
+using std;
+
+static_if (PLATFORM_WINDOWS)
+{
+    os_specific :: import os_windows;
+} 
+else static_if (PLATFORM_LINUX)
+{
+    os_specific :: import os_linux;
+}
+
+get_cwd :: () -> String
+{
+    found := false;
+    result := get_environment_variable("PWD", *found);
+    assert(found);
+    return result;
+}
+
+get_environment_variable :: (name: String, found: *bool) -> String
+{
+    c_str := posix.getenv(name.data);
+
+    if (c_str)
+    {
+        <found = true;
+        return string_ref(c_str);
+    }
+
+    <found = false;
+}
+
+get_full_path :: (name: String) -> String
+{
+    return os_specific.get_full_path(name);
+}
+
+is_directory :: (path: String) -> bool
+{
+    return os_specific.is_directory(path);
+}
+
+is_regular_file :: (path: String) -> bool
+{
+    return os_specific.is_regular_file(path);    
+}
+
+list_files_in_directory :: (path: String) -> Array(String)
+{
+    return os_specific.list_files_in_directory(path);
+}
+
+read_file_string :: (path: String, result_ptr: *bool) -> String
+{
+    assert(is_regular_file(path));
+
+    file := posix.fopen(path.data, "rb");
+
+    if (file)
+    {
+        posix.fseek(file, 0, posix.SEEK_END);
+        file_size := posix.ftell(file);
+        posix.fseek(file, 0, posix.SEEK_SET);
+
+        result_str : String = { null, (:u64)file_size };
+        result_str.data = (:*u8)_c.malloc((:u64)file_size + 1);
+
+        read_result := posix.fread(result_str.data, (:u64)file_size, 1, file);
+        assert(read_result == 1);
+
+        result_str.data[file_size] = '\0';
+
+        posix.fclose(file);
+
+        <result_ptr = true;
+        return result_str;
+    }
+
+    <result_ptr = false;
+}

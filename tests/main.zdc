@@ -1,0 +1,69 @@
+
+_c :: import c;
+using _c;
+
+add :: (a: int, b: int) -> int
+{
+    return a + b;
+}
+
+plusone :: (x: int) -> int
+{
+    x = x + 1;
+    return x;
+}
+
+newline :: () { printf("\n"); }
+
+main :: () -> int
+{
+    x : int = add(4, 5);
+    assert(x == 9);
+    y := sub(x, 2);
+    assert(y == 7);
+    z : int = 4;
+    z = 5;
+
+    result := 1 + 2 + add(4, 5) + plusone(z);
+    assert(result == 18);
+
+    putchar(50);
+    newline();
+    printf("%ld\n", 70);
+    // c1 := getchar();
+    // putchar(c1);
+    newline();
+
+    // return 1;
+    // return 2;
+    // return fib_recursive(25);
+    result = fib_recursive(20) / (fact_recursive(y - 2) - 20) + result;
+    assert(result == 85);
+    return 0;
+}
+
+sub :: (a: int, b: int)
+{
+    return a - b;
+}
+
+fib_recursive :: (x: int) -> int
+{
+    if (x < 2)
+    {
+        return x;
+    }
+
+    return fib_recursive(x - 1) + fib_recursive(x - 2);
+}
+
+fact_recursive :: (n: int) -> int
+{
+    if (n <= 1)
+    {
+        return 1;
+    }
+
+    return n * fact_recursive(n - 1);
+}
+

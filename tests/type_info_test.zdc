@@ -1,0 +1,258 @@
+
+std :: import std;
+using std;
+
+using Type_Info_Kind;
+
+Mode :: enum
+{
+    ON;
+    OFF;
+    SLEEP;
+    HIBERNATE;
+}
+
+Mode2 :: enum
+{
+    ON;
+    OFF;
+    SLEEP;
+    HIBERNATE;
+}
+
+Value :: struct
+{
+    name: *u8;
+    union
+    {
+        c: u8;
+        // i: int;
+        // f: float;
+        // d: double;
+    }
+}
+
+main :: () -> int
+{
+    // print("Type info test");
+
+    int_info : *Type_Info = get_type_info(int);
+    pint_info := get_type_info(*int);
+    float_info : *Type_Info = get_type_info(float);
+    u8_info := get_type_info(u8);
+    u64_info := get_type_info(u64);
+    pu64_info := get_type_info(*u64);
+
+    _c.printf("sizeof(Type_Info): %d\n", sizeof(Type_Info));
+    _c.printf("int_info: %p\n", int_info);
+    _c.printf("pint_info: %p\n", pint_info);
+    _c.printf("float_info: %p\n", float_info);
+    _c.printf("u8_info: %p\n", u8_info);
+    _c.printf("u64_info: %p\n", u64_info);
+    _c.printf("pu64_info: %p\n", pu64_info);
+    _c.printf("pu64_info.kind: %d\n", pu64_info.kind);
+    _c.printf("pu64_info.base: %p\n", pu64_info.base);
+
+    print_type_info("int", int_info);
+    print_type_info("pint", pint_info);
+    print_type_info("float", float_info);
+    print_type_info("u8", u8_info);
+    print_type_info("u64", u64_info);
+    print_type_info("pu64", pu64_info);
+
+    x : int;
+    print_type_info("typeof(x)", get_type_info(typeof(x)));
+    print_type_info("pint_info", pint_info);
+    print_type_info("typeof(*x)", get_type_info(typeof(*x)));
+    print_type_info("u64", get_type_info(u64));
+    print_type_info("*int", get_type_info(*int));
+    print_type_info("*u64", get_type_info(*u64));
+    print_type_info("u8", get_type_info(u8));
+
+    print_type_info("String", get_type_info(String));
+    print_type_info("Type_Info", get_type_info(Type_Info));
+    print_type_info("Value", get_type_info(Value));
+
+    mode_info := get_type_info(Mode);
+    assert(mode_info.kind == Type_Info_Kind.ENUM);
+    print_type_info("Mode", mode_info);
+    print_enum(mode_info);
+
+    on_str := enum_to_string(Mode.ON);
+    off_str := enum_to_string(Mode.OFF);
+    hib_str := enum_to_string(Mode.HIBERNATE);
+    hib2_str := enum_to_string(Mode2.HIBERNATE);
+
+    _c.printf("enum_to_string(Mode.ON): %.*s\n", on_str.length, on_str.data);
+    _c.printf("enum_to_string(Mode.OFF): %.*s\n", off_str.length, off_str.data);
+    _c.printf("enum_to_string(Mode.HIBERNATE): %.*s\n", hib_str.length, hib_str.data);
+    _c.printf("enum_to_string(Mode2.HIBERNATE): %.*s\n", hib2_str.length, hib2_str.data);
+
+    print(" ");
+
+    pti_func_info := get_type_info(typeof(print_type_info));
+    print_type_info("typeof(print_type_info)", pti_func_info);
+    print_type_info("typeof(*print_type_info)", get_type_info(typeof(*print_type_info)));
+    print_type_info("typeof(_print_type_info)", get_type_info(typeof(_print_type_info)));
+    print_type_info("typeof(_c.printf)", get_type_info(typeof(_c.printf)));
+
+    return 0;
+}
+
+print_type_info :: (name: *u8, info: *Type_Info)
+{
+    _c.printf("%s: ", name);
+    assert(info);
+    _print_type_info(info, true, 0);
+    _c.printf("\n");
+}
+
+_print_type_info :: (info: *Type_Info, recurse: bool, indent: u64)
+{
+    assert(info);
+
+    // _c.printf("_print_type_info with type kind: %d\n", info.kind);
+    // _c.printf("\t(info: %p)\n", info);
+
+    switch (info.kind)
+    {
+        case Type_Info_Kind.BASE:
+        {
+            _c.printf("%.*s", info.name.length, info.name.data);
+        }
+
+        case Type_Info_Kind.POINTER:
+        {
+            _c.printf("*(");
+            assert(info.base);
+            _print_type_info(info.base, false, indent);
+            _c.printf(")");
+        }
+
+        case STRUCT, UNION:
+        {
+            if (info.kind == Type_Info_Kind.STRUCT)
+            {
+                if (info.name.data)
+                    _c.printf("%.*s :: struct", info.name.length, info.name.data);
+                else
+                {
+                    recurse = true;
+                    _c.printf("anon_struct");
+                }
+            }
+            else
+            {
+                if (info.name.data)
+                {
+                    _c.printf("%.*s :: union", info.name.length, info.name.data);
+                }
+                else
+                {
+                    recurse = true;
+                    _c.printf("anon_union");
+                }
+            }
+
+            if (recurse)
+            {
+                _c.printf(" { ");
+                members := info.aggregate.first;
+
+                for (i : u64 = 0; i < info.aggregate.count; i++)
+                {
+                    member := members[i];
+                    _c.printf("\n");
+                    indent += 1;
+                    for (in : u64 = 0; in < indent; in++) _c.printf("\t");
+                    if (member.name.data)
+                    {
+                        _c.printf("%.*s: ", member.name.length, member.name.data);
+                    }
+
+                    _print_type_info(member.type, true, indent);
+
+                    if (i < info.aggregate.count - 1)
+                    {
+                        _c.printf(", ");
+                    }
+
+                    indent -= 1;
+
+                }
+
+                _c.printf("\n");
+                for (in : u64 = 0; in < indent; in++)
+                {
+                    _c.printf("\t");
+                }
+                _c.printf("}");
+            }
+        }
+
+        case ENUM:
+        {
+            _c.printf("%.*s :: enum(", info.name.length, info.name.data);
+            assert(info.base);
+            _print_type_info(info.base, false, indent);
+            _c.printf(")");
+        }
+
+        case FUNCTION:
+        {
+            _c.printf("function(");
+            args := info.function.first_arg;
+            for (i : u64 = 0; i < info.function.arg_count; i++)
+            {
+                if (i > 0)
+                {
+                    _c.printf(", ");
+                }
+                arg := args[i];
+                _print_type_info(arg.type, false, indent);
+            }
+
+            _c.printf(") -> ");
+            _print_type_info(info.function.return_type, false, indent);
+        }
+
+        case INVALID:
+        {
+            assert(false);
+        }
+
+        default:
+        {
+            _c.printf("Invalid type kind: %d\n", info.kind);
+            assert(false);
+        }
+    }
+}
+
+print_enum :: (enum_info: *Type_Info)
+{
+    assert(enum_info.kind == ENUM);
+
+    if (enum_info.name.data)
+    {
+        _c.printf("%.*s : ", enum_info.name.length, enum_info.name.data);
+    }
+
+    base_info := enum_info.enum_info.enum_base;
+    _print_type_info(base_info, false, 0);
+
+    _c.printf(" : enum {\n");
+
+    members := enum_info.enum_info.first;
+
+    for (i : u64 = 0; i < enum_info.enum_info.member_count; i++)
+    {
+        member := members[i];
+
+        // _c.printf("member.name.data: %p\n", member.name.data);
+        _c.printf("\t%.*s;\n", member.name.length, member.name.data);
+    }
+
+    _c.printf("}\n");
+
+}

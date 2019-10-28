@@ -1,0 +1,14 @@
+c :: import c;
+
+main :: ()
+{
+    c.open_std_handles();
+
+    c.printf("c_test()\n");
+
+    c.fprintf(c._stderr, "stderr test\n");
+    c.fprintf(c._stderr, "stderr %s test %lu\n",
+               "format", 41);
+
+    return 0;
+}

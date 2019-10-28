@@ -1,0 +1,73 @@
+
+static_assert(PLATFORM_LINUX);
+
+std :: import std;
+using std;
+
+posix :: import posix;
+
+is_directory :: (path: String) -> bool
+{
+    statbuf : posix.stat_struct;
+    stat_res := posix.stat(path.data, *statbuf);
+    if (stat_res != 0)
+    {
+        return false;
+    }
+
+    return posix.S_ISDIR(statbuf.st_mode);
+}
+
+is_regular_file :: (path: String) -> bool
+{
+    statbuf : posix.stat_struct;
+    stat_res := posix.stat(path.data, *statbuf);
+    if (stat_res != 0)
+    {
+        return false;
+    }
+
+    return posix.S_ISREG(statbuf.st_mode);
+}
+
+list_files_in_directory :: (path: String) -> Array(String)
+{
+    result : Array(String) = { null, 0, 0 };
+
+    d := posix.opendir(path.data);
+
+    if (d)
+    {
+        defer posix.closedir(d);
+
+        dir_ent := posix.readdir(d);
+        while (dir_ent)
+        {
+            is_file := false;
+
+            if (dir_ent.d_type == posix.DT_UNKNOWN)
+            {
+                assert(false);
+            }
+            else if (dir_ent.d_type == posix.DT_REG)
+            {
+                is_file = true;
+            }
+
+            if (is_file)
+            {
+                file_name := string_new(*dir_ent.d_name[0]);
+                array_add(*result, file_name);
+            }
+
+            dir_ent = posix.readdir(d);
+        }
+    }
+
+    return result;
+}
+
+get_full_path :: (name: String) -> String
+{
+    assert(false);
+}

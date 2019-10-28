@@ -1,0 +1,135 @@
+
+std :: import std;
+using std;
+using _c;
+
+_SC_PAGESIZE :: 30;
+
+dev_t :: typedef u64;
+ino_t :: typedef u64;
+mode_t :: typedef u64;
+nlink_t :: typedef u64;
+uid_t :: typedef u32;
+gid_t :: typedef u32;
+off_t :: typedef s64;
+blksize_t :: typedef s64;
+blkcnt_t :: typedef s64;
+time_t :: typedef s64;
+
+// @Fixme: This is probably wrongly sized/padded, since it's definition is dependend on the
+//          platform
+stat_struct :: struct
+{
+    st_dev : dev_t;
+    st_ino : ino_t;
+    st_nlink : nlink_t;
+    st_mode : mode_t;
+    st_uid : uid_t;
+    st_gid : gid_t;
+    st_rdev : dev_t;
+    st_size : off_t;
+    st_blksize : blksize_t;
+    st_blocks : blkcnt_t;
+    st_atime : time_t;
+    st_mtime : time_t;
+    st_ctime : time_t;
+
+    pad1 : u64;
+    pad2 : u64;
+    pad3 : u64;
+    pad4 : u64;
+}
+
+DIR :: typedef *void;
+
+dirent :: struct
+{
+    d_ino: ino_t;
+    d_off: off_t;
+    d_reclen : u16;
+    d_type : u8;
+    d_name: [256]u8;
+}
+
+S_IFMT  : u64 : 61440;
+S_IFREG : u64 : 32768;
+S_IFDIR : u64 : 16384;
+
+SYS_stat  :: 4;
+SYS_lstat :: 6;
+
+DT_UNKNOWN : u8 : 0;
+DT_DIR     : u8 : 4;
+DT_REG     : u8 : 8;
+
+SEEK_SET :: 0;
+SEEK_CUR :: 1;
+SEEK_END :: 2;
+
+EOF :: -1;
+
+S_ISDIR :: (mode: mode_t) -> bool
+{
+    return (mode & S_IFMT) == S_IFDIR;
+}
+
+S_ISREG :: (mode: mode_t) -> bool
+{
+    return (mode & S_IFMT) == S_IFREG;
+}
+
+WEXITSTATUS :: (status: int) -> int
+{
+    return status >> 8;
+}
+
+static_if (PLATFORM_LINUX)
+{
+    #foreign sysconf :: (name: int) -> s64;
+    #foreign posix_memalign :: (memptr: **void, alignment: s64, size: s64) -> int;
+    #foreign syscall :: (number: int, ...) -> int;
+
+    stat :: (path: *u8, statbuf: *stat_struct) -> int
+    {
+        return syscall(SYS_stat, path, statbuf);
+    }
+
+    lstat :: (path: *u8, statbuf: *stat_struct) -> int
+    {
+        return syscall(SYS_lstat, path, statbuf);
+    }
+
+    #foreign opendir :: (name: *u8) -> *DIR;
+    #foreign closedir :: (dirp: *DIR) -> int;
+    #foreign readdir :: (dirp: *DIR) -> *dirent;
+
+    #foreign popen :: (command: *u8, type: *u8) -> *FILE;
+    #foreign pclose :: (stream: *FILE) -> int;
+}
+else static_if(PLATFORM_WINDOWS)
+{
+    #foreign _stat :: (path: *u8, statbuf: *stat_struct) -> int;
+    stat :: (path: *u8, statbuf: *stat_struct) -> int
+    {
+        return _stat(path, statbuf);
+    }
+
+    #foreign _popen :: (command: *u8, type: *u8) -> *FILE;
+    popen :: (command: *u8, type: *u8) -> *FILE { return _popen(command, type); }
+
+    #foreign _pclose :: (stream: *FILE) -> int;
+    pclose :: (stream: *FILE) -> int { return _pclose(stream); }
+    
+}
+
+#foreign getenv :: (name: *u8) -> *u8;
+
+
+#foreign fopen :: (path: *u8, mode: *u8) -> *FILE;
+#foreign fclose :: (file: *FILE) -> int;
+#foreign fgets :: (s: *u8, size: int, stream: *FILE) -> *u8;
+#foreign fseek :: (stream: *FILE, offset: int, origin: int) -> int;
+#foreign ftell :: (stream: *FILE) -> int;
+#foreign fread :: (buffer: *void, size: u64, count: u64, stream: *FILE) -> u64;
+
+

@@ -1,0 +1,27 @@
+
+_c :: import c;
+using _c;
+
+Vec2f :: struct { x: float; y: float; }
+Vec3f :: struct { x: float; y: float; z: float; }
+Vec2d :: struct { x: double; y: double; }
+Vec3d :: struct { x: double; y: double; z: double; }
+
+main :: () -> int
+{
+    _c.open_std_handles();
+
+    printf("sizeof_test\n");
+
+    printf("sizeof(int): %d\n", sizeof(int));
+    printf("sizeof(u8): %d\n", sizeof(u8));
+    printf("sizeof(float): %d\n", sizeof(float));
+
+    printf("sizeof(Vec2f): %d\n", sizeof(Vec2f));
+    printf("sizeof(Vec3f): %d\n", sizeof(Vec3f));
+    printf("sizeof(Vec2d): %d\n", sizeof(Vec2d));
+    printf("sizeof(Vec3d): %d\n", sizeof(Vec3d));
+
+
+    return 0;
+}

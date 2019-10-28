@@ -1,0 +1,163 @@
+std :: import std;
+using std;
+using _c;
+
+posix :: import posix;
+
+Arena :: struct {
+    current_block: *Arena_Block;
+    first_block:   *Arena_Block;
+
+    default_block_size:  s64;
+    default_block_align: s64;
+}
+
+Arena_Block :: struct {
+    begin: *void;
+    end:   *void;
+    at:    *void;
+    next:  *Arena_Block;
+}
+
+// TODO: Block alignment
+arena_create :: (arena: *Arena, block_size: s64) {
+    assert(arena);
+
+    page_size := get_page_size();
+    assert(is_power_of_two(page_size));
+    assert(block_size >= page_size);
+
+    arena.current_block = null;
+    arena.first_block = null;
+    arena.default_block_size = block_size;
+    arena.default_block_align = page_size;
+
+    arena_add_block(arena, block_size, page_size);
+}
+
+arena_add_block :: (arena: *Arena, block_size: s64, alignment: s64) {
+    assert(arena);
+    // _c.printf("block_size: %d\n", block_size);
+    assert(block_size);
+    assert(is_power_of_two(alignment));
+    assert(block_size >= alignment);
+
+    size := block_size + sizeof(Arena_Block);
+    mem : *void = null;
+    // res := posix.posix_memalign(*mem, alignment, size);
+    res := posix.posix_memalign(*mem, alignment, size);
+    assert(mem);
+
+    block : *Arena_Block = (:*Arena_Block)(((:*u8)mem) + block_size);
+    block.begin = mem;
+    block.end = (:*void)block;
+    block.at = mem;
+    block.next = null;
+
+    if (!arena.first_block) {
+        arena.first_block = block;
+    }
+
+    if (arena.current_block) {
+        arena.current_block.next = block;
+    }
+
+    arena.current_block = block;
+}
+
+arena_block_fits_size :: (block: *Arena_Block, size: s64) -> bool {
+    size_remaining := ((:u64)block.end) - ((:u64)block.at);
+    return size <= (:s64)size_remaining;
+}
+
+// TODO: Alignment
+arena_allocate :: (arena: *Arena, size: s64) -> *void {
+    if (!arena_block_fits_size(arena.current_block, size))
+    {
+        new_size := arena.default_block_size;
+        if (size > new_size)
+        {
+            new_size = size;
+        }
+        arena_add_block(arena, new_size, arena.default_block_align);
+    }
+
+    result := arena.current_block.at;
+    arena.current_block.at = (:*void)(((:*u8)arena.current_block.at) + size);
+
+    return result;
+}
+
+arena_free :: (arena: *Arena) {
+    assert(arena);
+
+    free_count := 0;
+
+    block := arena.first_block;
+    while (block)
+    {
+        next_block := block.next;
+        free(block.begin);
+        block = next_block;
+
+        free_count++;
+    }
+
+    // printf("arena_free freed %d blocks\n", free_count);
+}
+
+get_page_size :: () -> s64 {
+    return posix.sysconf(posix._SC_PAGESIZE);
+}
+
+main :: () -> u64 {
+    print("Memory test");
+    printf("page size: %d\n", get_page_size());
+
+    a : Arena;
+    arena_create(*a, get_page_size());
+
+    printf("a.first_block:\t\t\t %p\n", a.first_block);
+    printf("a.current_block:\t\t %p\n", a.current_block);
+
+    printf("a.current_block.begin:\t %p\n", a.current_block.begin);
+    printf("a.current_block.at:\t\t %p\n", a.current_block.at);
+    printf("a.current_block.end:\t %p\n\n", a.current_block.end);
+
+    printf("allocating 4096 bytes\n");
+    alloc_1 := arena_allocate(*a, 4096);
+    printf("a.current_block:\t\t %p\n", a.current_block);
+    printf("a.current_block.begin:\t %p\n", a.current_block.begin);
+    printf("a.current_block.at:\t\t %p\n", a.current_block.at);
+    printf("a.current_block.end:\t %p\n\n", a.current_block.end);
+
+    printf("allocating 8 bytes\n");
+    alloc_2 := arena_allocate(*a, 8);
+    printf("a.current_block:\t\t %p\n", a.current_block);
+    printf("a.current_block.begin:\t %p\n", a.current_block.begin);
+    printf("a.current_block.at:\t\t %p\n", a.current_block.at);
+    printf("a.current_block.end:\t %p\n\n", a.current_block.end);
+
+    printf("allocating 512 bytes\n");
+    alloc_3 := arena_allocate(*a, 512);
+    printf("a.current_block:\t\t %p\n", a.current_block);
+    printf("a.current_block.begin:\t %p\n", a.current_block.begin);
+    printf("a.current_block.at:\t\t %p\n", a.current_block.at);
+    printf("a.current_block.end:\t %p\n\n", a.current_block.end);
+
+    ints := (:*int)alloc_1;
+    for (i := 0; i < 10; i++)
+    {
+        ints[i] = i + 1;
+        printf("*ints[%d] = %p\n", i, *ints[i]);
+    }
+
+    for (i := 0; i < 10; i++)
+    {
+        printf("ints[%d] = %d\n", i, ints[i]);
+    }
+
+    arena_free(*a);
+
+    return 0;
+}

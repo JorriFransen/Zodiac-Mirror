@@ -1,0 +1,136 @@
+
+_c :: import c;
+using _c;
+
+std :: import std;
+
+String_Builder :: struct
+{
+    first_block        : *_String_Builder_Block;
+    current_block      : *_String_Builder_Block;
+    initial_block_size : u64;
+}
+
+_String_Builder_Block :: struct
+{
+    data       : *u8;
+    size       : u64;
+    used_size  : u64;
+    next_block : *_String_Builder_Block;
+}
+
+init :: (sb: *String_Builder, initial_block_size: u64)
+{
+    sb.initial_block_size = initial_block_size;
+    sb.first_block = create_block(initial_block_size);
+    sb.current_block = sb.first_block;
+}
+
+create_block :: (block_size: u64) -> *_String_Builder_Block
+{
+    result := (:*_String_Builder_Block)malloc((:u64)sizeof(_String_Builder_Block));
+
+    result.data = (:*u8)malloc(block_size);
+    result.size = block_size;
+    result.used_size = 0;
+    result.next_block = null;
+
+    return result;
+}
+
+append :: (sb: *String_Builder, str: std.String)
+{
+    block := sb.current_block;
+
+    if (block.used_size + str.length < block.size)
+    {
+        append_to_block(block, str);
+    }
+    else
+    {
+        block_size := sb.initial_block_size;
+        if (str.length > block_size)
+        {
+            block_size = str.length + 1;
+        }
+        block.next_block = create_block(sb.initial_block_size);
+        sb.current_block = block.next_block;
+        append_to_block(block.next_block, str);
+    }
+}
+
+appendi :: (sb: *String_Builder, number: u64)
+{
+    _buf: [32]u8;
+    buf := *_buf[0];
+    length := sprintf(buf, "%lu", number);
+    append(sb, { buf, (:u64)length });
+}
+
+append_to_block :: (sb: *_String_Builder_Block, str: std.String) -> bool
+{
+    if (sb.used_size + str.length < sb.size)
+    {
+        sbi := sb.used_size;
+        for (i: u64 = 0; i < str.length; i +=  1)
+        {
+            sb.data[sbi] = str.data[i];
+            sbi += 1
+        }
+
+        sb.used_size += str.length;
+
+        return true;
+    }
+
+    return false;
+}
+
+copy_to_string :: (sb: *String_Builder) -> std.String
+{
+    total_size: u64 = 1;
+
+    block := sb.first_block;
+    while (block)
+    {
+        total_size = total_size + block.used_size;
+        block = block.next_block;
+    }
+
+    // printf("total_size: %d\n", total_size);
+
+    result : std.String;
+    result.data = (:*u8)malloc(total_size);
+    result.length = total_size - 1;
+    ri: u64 = 0;
+    block = sb.first_block;
+    while (block)
+    {
+        for (i: u64 = 0; i < block.used_size; i += 1)
+        {
+            result.data[ri] = block.data[i];
+            ri += 1;
+        }
+        block = block.next_block;
+    }
+
+    result.data[ri] = '\0';
+
+    return result;
+}
+
+free :: (sb: *String_Builder)
+{
+    block := sb.first_block;
+    while (block)
+    {
+        next := block.next_block;
+
+        _c.free(block.data);
+        _c.free(block);
+
+        block = next;
+    }
+
+    sb.first_block = null;
+}

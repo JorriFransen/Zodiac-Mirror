@@ -1,0 +1,39 @@
+
+_a : u64 : 1664525;
+_c : u64 : 1013904223;
+_m : u64 : 4294967296;
+
+RandomGenerator :: struct
+{
+    x : u64;
+}
+
+create :: (seed: u64)
+{
+    result : RandomGenerator;
+    result.x = seed;
+    return result;
+}
+
+next :: (gen: *RandomGenerator) -> u64
+{
+    gen.x = (_a * gen.x + _c) % _m;
+    return gen.x;
+}
+
+next_float_01 :: (gen: *RandomGenerator) -> float
+{
+    r := next(gen);
+    return (:float)r / (:float)_m;
+}
+
+next_float :: (gen: *RandomGenerator, min: float, max: float) -> float
+{
+    r := next_float_01(gen);
+    return min + r * (max - min);
+}
+
+next_bool :: (gen: *RandomGenerator) -> bool
+{
+    return next_float_01(gen) > 0.5;
+}
