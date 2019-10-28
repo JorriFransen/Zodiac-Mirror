@@ -108,10 +108,10 @@ arena_free :: (arena: *Arena) {
 
 main :: () -> u64 {
     print("Memory test");
-    printf("page size: %d\n", get_page_size());
+    printf("page size: %d\n", os.get_page_size());
 
     a : Arena;
-    arena_create(*a, get_page_size());
+    arena_create(*a, os.get_page_size());
 
     printf("a.first_block:\t\t\t %p\n", a.first_block);
     printf("a.current_block:\t\t %p\n", a.current_block);

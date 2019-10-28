@@ -15,6 +15,8 @@ SHORT :: typedef s16;
 TCHAR :: typedef u8;
 HANDLE :: typedef *void;
 BOOL :: typedef s64;
+LPVOID :: typedef *void;
+DWORD_PTR :: typedef u64;
 
 #foreign GetFullPathNameA :: (lpFileName: LPCSTR, nBufferLength: DWORD, lpBuffer: LPSTR, lpFilePart: *LPSTR) -> DWORD;
 #foreign GetFileAttributesA :: (lpFileName: LPCSTR) -> DWORD;
@@ -31,6 +33,8 @@ BOOL :: typedef s64;
 
 #foreign SetConsoleTextAttribute :: (hConsoleOutput: HANDLE, wAttributes: WORD) -> BOOL;
 #foreign _aligned_malloc :: (size: u64, alignment: u64) -> *void;
+#foreign _aligned_free :: (ptr: *void) -> void; 
+#foreign GetSystemInfo :: (lpSystemInfo: *SYSTEM_INFO) -> void;
 
 INVALID_HANDLE_VALUE :: -1;
 STD_OUTPUT_HANDLE : DWORD : -11;
@@ -89,6 +93,28 @@ CONSOLE_SCREEN_BUFFER_INFO :: struct
     wAttributes         : WORD;
     srWindow            : SMALL_RECT;
     dwMaximumWindowSize : COORD;
+}
+
+SYSTEM_INFO :: struct
+{
+    DUMMYUNIONNAME :: union
+    {
+        dwOemId : DWORD;
+        DUMMYSTRUCTNAME :: struct
+        {
+            wProcessorArchitecture : WORD;
+            wReserved : WORD;
+        }
+    }
+    dwPageSize : DWORD;
+    lpMinimumApplicationAddress : LPVOID;
+    lpMaximumApplicationAddress : LPVOID;
+    dwActiveProcessorMask : DWORD_PTR;
+    dwNumberOfProcessors : DWORD;
+    dwProcessorType : DWORD;
+    dwAllocationGranularity : DWORD;
+    wProcessorLevel : WORD;
+    wProcessorRevision : WORD;
 }
 
 get_full_path :: (name: String) -> String
@@ -247,7 +273,9 @@ set_terminal_color :: (new_color: Terminal_Color, bold: bool)
 
 get_page_size :: () -> s64
 {
-    assert(false);
+    info : SYSTEM_INFO;
+    GetSystemInfo(*info);
+    return info.dwPageSize;
 }
 
 alloc_aligned :: (alignment: s64, size: s64) -> *void
@@ -255,4 +283,9 @@ alloc_aligned :: (alignment: s64, size: s64) -> *void
     result := _aligned_malloc((:u64)size, (:u64)alignment);
     assert(result);
     return result;
+}
+
+free_aligned :: (ptr: *void) 
+{
+    _aligned_free(ptr);
 }
