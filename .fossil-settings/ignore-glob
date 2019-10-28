@@ -1,5 +1,9 @@
 lib/
 
+lib.zip
+lib.tar.xz
+lib.7z
+
 build/
 build_release/
 build_debug/
