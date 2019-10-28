@@ -100,3 +100,13 @@ set_terminal_color :: (new_color: Terminal_Color, bold: bool)
 {
     os_specific.set_terminal_color(new_color, bold);
 }
+
+get_page_size :: () -> s64
+{
+    return os_specific.get_page_size();
+}
+
+alloc_aligned :: (alignment: s64, size: s64) -> *void
+{
+    return os_specific.alloc_aligned(alignment, size);
+}

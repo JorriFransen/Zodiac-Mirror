@@ -2,6 +2,8 @@ std :: import std;
 using std;
 using _c;
 
+os :: import os;
+
 posix :: import posix;
 
 Arena :: struct {
@@ -23,7 +25,7 @@ Arena_Block :: struct {
 arena_create :: (arena: *Arena, block_size: s64) {
     assert(arena);
 
-    page_size := get_page_size();
+    page_size := os.get_page_size();
     assert(is_power_of_two(page_size));
     assert(block_size >= page_size);
 
@@ -43,10 +45,7 @@ arena_add_block :: (arena: *Arena, block_size: s64, alignment: s64) {
     assert(block_size >= alignment);
 
     size := block_size + sizeof(Arena_Block);
-    mem : *void = null;
-    // res := posix.posix_memalign(*mem, alignment, size);
-    res := posix.posix_memalign(*mem, alignment, size);
-    assert(mem);
+    mem := os.alloc_aligned(alignment, size);
 
     block : *Arena_Block = (:*Arena_Block)(((:*u8)mem) + block_size);
     block.begin = mem;
@@ -97,17 +96,14 @@ arena_free :: (arena: *Arena) {
     while (block)
     {
         next_block := block.next;
-        free(block.begin);
+        os.free_aligned(block.begin);
+        //free(block.begin);
         block = next_block;
 
         free_count++;
     }
 
     // printf("arena_free freed %d blocks\n", free_count);
-}
-
-get_page_size :: () -> s64 {
-    return posix.sysconf(posix._SC_PAGESIZE);
 }
 
 main :: () -> u64 {

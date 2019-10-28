@@ -30,6 +30,7 @@ BOOL :: typedef s64;
     ) -> BOOL;
 
 #foreign SetConsoleTextAttribute :: (hConsoleOutput: HANDLE, wAttributes: WORD) -> BOOL;
+#foreign _aligned_malloc :: (size: u64, alignment: u64) -> *void;
 
 INVALID_HANDLE_VALUE :: -1;
 STD_OUTPUT_HANDLE : DWORD : -11;
@@ -242,4 +243,16 @@ set_terminal_color :: (new_color: Terminal_Color, bold: bool)
     state.color = new_color;
     state.bold = bold;
     set_terminal_state(state);
+}
+
+get_page_size :: () -> s64
+{
+    assert(false);
+}
+
+alloc_aligned :: (alignment: s64, size: s64) -> *void
+{
+    result := _aligned_malloc((:u64)size, (:u64)alignment);
+    assert(result);
+    return result;
 }
