@@ -4,9 +4,14 @@ static_assert(PLATFORM_WINDOWS);
 std :: import std;
 using std;
 
+_og :: import os_generic;
+using _og;
+
 LPCSTR :: typedef *u8;
 LPSTR :: typedef *u8;
 DWORD :: typedef u32;
+WORD :: typedef u16;
+SHORT :: typedef s16;
 TCHAR :: typedef u8;
 HANDLE :: typedef *void;
 BOOL :: typedef s64;
@@ -17,8 +22,18 @@ BOOL :: typedef s64;
 #foreign FindNextFileA :: (hFindFile: HANDLE, lpFindFileData: *WIN32_FIND_DATA) -> BOOL;
 #foreign FindClose :: (hFindFile: HANDLE) -> BOOL;
 #foreign GetLastError :: () -> DWORD;
+#foreign GetStdHandle :: (nStdHandle: DWORD) -> HANDLE;
+
+#foreign GetConsoleScreenBufferInfo :: (
+            hConsoleOutput: HANDLE,
+            lpConsoleScreenBufferInfo: *CONSOLE_SCREEN_BUFFER_INFO
+    ) -> BOOL;
+
+#foreign SetConsoleTextAttribute :: (hConsoleOutput: HANDLE, wAttributes: WORD) -> BOOL;
 
 INVALID_HANDLE_VALUE :: -1;
+STD_OUTPUT_HANDLE : DWORD : -11;
+
 INVALID_FILE_ATTRIBUTES :: -1;
 FILE_ATTRIBUTE_DIRECTORY :: 16;
 
@@ -26,6 +41,11 @@ ERROR_FILE_NOT_FOUND :: 2;
 ERROR_NO_MORE_FILES :: 18;
 
 MAX_PATH :: 256;
+
+FOREGROUND_BLUE      : WORD : 1;
+FOREGROUND_GREEN     : WORD : 2;
+FOREGROUND_RED       : WORD : 4;
+FOREGROUND_INTENSITY : WORD : 8;
 
 FILETIME :: struct 
 {
@@ -35,16 +55,39 @@ FILETIME :: struct
 
 WIN32_FIND_DATA :: struct
 {
-    dwFileAttributes : DWORD;
-    ftCreationTime : FILETIME;
-    ftLastAccessTime : FILETIME;
-    ftLastWriteTime: FILETIME;
-    nFileSizeHigh: DWORD;
-    nFileSizeLow: DWORD;
-    dwReserved0: DWORD;
-    dwReserved1: DWORD;
-    cFileName: [MAX_PATH]TCHAR;
-    cAlternateFileName: [14]TCHAR;
+    dwFileAttributes   : DWORD;
+    ftCreationTime     : FILETIME;
+    ftLastAccessTime   : FILETIME;
+    ftLastWriteTime    : FILETIME;
+    nFileSizeHigh      : DWORD;
+    nFileSizeLow       : DWORD;
+    dwReserved0        : DWORD;
+    dwReserved1        : DWORD;
+    cFileName          : [MAX_PATH]TCHAR;
+    cAlternateFileName : [14]TCHAR;
+}
+
+COORD :: struct
+{
+    X: SHORT;
+    Y: SHORT;
+}
+
+SMALL_RECT :: struct
+{
+    Left   : SHORT;
+    Top    : SHORT;
+    Right  : SHORT;
+    Bottom : SHORT;
+}
+
+CONSOLE_SCREEN_BUFFER_INFO :: struct 
+{
+    dwSize              : COORD;
+    dwCursorPosition    : COORD;
+    wAttributes         : WORD;
+    srWindow            : SMALL_RECT;
+    dwMaximumWindowSize : COORD;
 }
 
 get_full_path :: (name: String) -> String
@@ -117,4 +160,86 @@ list_files_in_directory :: (path: String) -> Array(String)
     FindClose(handle);
 
     return result;
+}
+
+Terminal_State :: struct
+{
+    color: Terminal_Color;
+    bold : bool;
+}
+
+get_terminal_state :: () -> Terminal_State
+{
+    terminal_handle := GetStdHandle(STD_OUTPUT_HANDLE);
+    info : CONSOLE_SCREEN_BUFFER_INFO;
+
+    r := GetConsoleScreenBufferInfo(terminal_handle, *info);
+    assert(r);
+
+    red   := (:bool)(info.wAttributes & FOREGROUND_RED);
+    green := (:bool)(info.wAttributes & FOREGROUND_GREEN);
+    blue  := (:bool)(info.wAttributes & FOREGROUND_BLUE);
+    
+    result : Terminal_State;
+
+    if      (red && green && blue) result.color = Terminal_Color.WHITE;
+    else if (red && green)         result.color = Terminal_Color.YELLOW;
+    else if (red && blue)          result.color = Terminal_Color.PURPLE; 
+    else if (green && blue)        result.color = Terminal_Color.CYAN;
+    else if (red)                  result.color = Terminal_Color.RED;
+    else if (green)                result.color = Terminal_Color.GREEN;
+    else if (blue)                 result.color = Terminal_Color.BLUE;
+    else                           result.color = Terminal_Color.BLACK;
+
+    result.bold = (:bool)(info.wAttributes & FOREGROUND_INTENSITY);
+
+    return result;
+}
+
+set_terminal_state :: (new_state: Terminal_State)
+{
+    terminal_handle := GetStdHandle(STD_OUTPUT_HANDLE);
+    new_attribs : WORD = 0;
+    
+    red := false;
+    green := false;
+    blue := false;
+
+    using Terminal_Color;
+
+    switch (new_state.color)
+    {
+        case WHITE: { red = true; green = true; blue = true; }
+        case YELLOW: { red = true; green = true; }
+        case PURPLE: { red = true; blue = true; }
+        case CYAN: { green = true; blue = true; }
+        case RED: { red = true; }
+        case GREEN: { green = true; }
+        case BLUE: { blue = true; }
+        case BLACK: { }
+        default: assert(false);
+    }
+
+    if (red)   new_attribs = new_attribs | FOREGROUND_RED;     
+    if (green) new_attribs = new_attribs | FOREGROUND_GREEN;     
+    if (blue)  new_attribs = new_attribs | FOREGROUND_BLUE;     
+
+    if (new_state.bold) new_attribs = new_attribs | FOREGROUND_INTENSITY;
+
+    info : CONSOLE_SCREEN_BUFFER_INFO;
+    r := GetConsoleScreenBufferInfo(terminal_handle, *info);
+    assert(r);
+
+    old_attribs : WORD = info.wAttributes & ~(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE |
+                                              FOREGROUND_INTENSITY);
+    new_attribs = old_attribs | new_attribs;
+    SetConsoleTextAttribute(terminal_handle, new_attribs);  
+}
+
+set_terminal_color :: (new_color: Terminal_Color, bold: bool)
+{
+    state := get_terminal_state();
+    state.color = new_color;
+    state.bold = bold;
+    set_terminal_state(state);
 }

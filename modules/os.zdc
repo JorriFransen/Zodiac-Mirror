@@ -4,6 +4,9 @@ posix :: import posix;
 
 using std;
 
+_og :: import os_generic;
+using _og;
+
 static_if (PLATFORM_WINDOWS)
 {
     os_specific :: import os_windows;
@@ -81,4 +84,19 @@ read_file_string :: (path: String, result_ptr: *bool) -> String
     }
 
     <result_ptr = false;
+}
+
+get_terminal_state :: () -> os_specific.Terminal_State
+{
+    return os_specific.get_terminal_state();
+}
+
+set_terminal_state :: (new_state: os_specific.Terminal_State)
+{
+    os_specific.set_terminal_state(new_state);
+}
+
+set_terminal_color :: (new_color: Terminal_Color, bold: bool)
+{
+    os_specific.set_terminal_color(new_color, bold);
 }

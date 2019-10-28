@@ -1806,6 +1806,13 @@ namespace Zodiac
                         break;
                     }
 
+					case AST_UNOP_BIN_NOT:
+					{
+						expression->type = operand_type;
+						inherit_const = true;
+						break;
+					}
+
                     default: assert(false);
                 }
 

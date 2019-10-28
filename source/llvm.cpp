@@ -173,6 +173,7 @@ namespace Zodiac
 
             fprintf(stderr, "Running linker with command: %s\n", link_cmd);
 
+#ifdef __linux__
             char out_buf[1024];
             FILE* link_process_handle = popen(link_cmd, "r");
             assert(link_process_handle);
@@ -190,6 +191,7 @@ namespace Zodiac
             {
                fprintf(stderr, "Link command failed with exit code: %d\n", close_ret);
             }
+#endif
 
         }
         else
