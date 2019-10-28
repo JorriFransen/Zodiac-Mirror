@@ -69,5 +69,17 @@ list_files_in_directory :: (path: String) -> Array(String)
 
 get_full_path :: (name: String) -> String
 {
-    assert(false);
+    c_str := posix.realpath(name.data, null);
+
+    result := string_ref(c_str);
+
+    if (!string_ends_with(result, "/"))
+    {
+        to_free := result.data;
+        result = string_append(result, "/");
+        _c.free(to_free);
+    }
+
+    _c.printf("result: %s\n", result.data);
+    return result;
 }

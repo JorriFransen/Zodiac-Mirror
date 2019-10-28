@@ -132,4 +132,4 @@ else static_if(PLATFORM_WINDOWS)
 #foreign ftell :: (stream: *FILE) -> int;
 #foreign fread :: (buffer: *void, size: u64, count: u64, stream: *FILE) -> u64;
 
-
+#foreign realpath :: (path: *u8, resolved_path: *u8) -> *u8;

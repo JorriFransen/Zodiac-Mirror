@@ -107,7 +107,7 @@ namespace Zodiac
             error = nullptr;
 
             char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
-            printf("%s", llvm_module_string);
+            // printf("%s", llvm_module_string);
             LLVMDisposeMessage(llvm_module_string);
 
             LLVMInitializeNativeTarget();
@@ -170,26 +170,26 @@ namespace Zodiac
             const char* link_cmd = string_builder_to_string(&sb);
             string_builder_free(&sb);
             BUF_FREE(dynamic_lib_names);
-			
+
             fprintf(stderr, "Running linker with command: %s\n", link_cmd);
 
-            //char out_buf[1024];
-            //FILE* link_process_handle = popen(link_cmd, "r");
-            //assert(link_process_handle);
+            char out_buf[1024];
+            FILE* link_process_handle = popen(link_cmd, "r");
+            assert(link_process_handle);
 
-            //while (fgets(out_buf, sizeof(out_buf), link_process_handle) != nullptr)
-            //{
-            //    printf("%s", out_buf);
-            //}
-            //assert(feof(link_process_handle));
-            //int close_ret = pclose(link_process_handle);
-            //close_ret = WEXITSTATUS(close_ret);
-            //assert(close_ret >= 0);
+            while (fgets(out_buf, sizeof(out_buf), link_process_handle) != nullptr)
+            {
+               printf("%s", out_buf);
+            }
+            assert(feof(link_process_handle));
+            int close_ret = pclose(link_process_handle);
+            close_ret = WEXITSTATUS(close_ret);
+            assert(close_ret >= 0);
 
-            //if (close_ret != 0)
-            //{
-            //    fprintf(stderr, "Link command failed with exit code: %d\n", close_ret);
-            //}
+            if (close_ret != 0)
+            {
+               fprintf(stderr, "Link command failed with exit code: %d\n", close_ret);
+            }
 
         }
         else
