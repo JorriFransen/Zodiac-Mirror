@@ -88,6 +88,7 @@ get_full_path :: (name: String) -> String
 }
 
 save_original_terminal_state :: () -> void { } // Not really supported on linux
+
 reset_terminal_state :: () -> void
 {
     _c.printf("\033[0m");
@@ -95,9 +96,15 @@ reset_terminal_state :: () -> void
 
 set_terminal_color :: (color: Terminal_Color, bold: bool)
 {
-    fmt := "\033[0;00m";
+    fmt := string_new("\033[0;00m");
+    defer _c.free(fmt.data);
 
-    if (bold) fmt[2] = '1';
+    if (bold) fmt.data[2] = '1';
+
+    // for (i : u64 = 0; i < string_length(fmt); i++)
+    // {
+    //     _c.printf("fmt[%d]: '%c', %d\n", i, fmt[i], fmt[i]);
+    // }
 
     using Terminal_Color;
 
@@ -119,10 +126,10 @@ set_terminal_color :: (color: Terminal_Color, bold: bool)
 
     assert(string_length(cc) == 2);
 
-    fmt[4] = cc[0];
-    fmt[5] = cc[1];
+    fmt.data[4] = cc[0];
+    fmt.data[5] = cc[1];
 
-    _c.printf(fmt);
+    _c.printf(fmt.data);
 
 }
 
