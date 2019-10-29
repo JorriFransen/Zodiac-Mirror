@@ -86,14 +86,24 @@ read_file_string :: (path: String, result_ptr: *bool) -> String
     <result_ptr = false;
 }
 
-get_terminal_state :: () -> os_specific.Terminal_State
+// get_terminal_state :: () -> os_specific.Terminal_State
+// {
+//     return os_specific.get_terminal_state();
+// }
+
+// set_terminal_state :: (new_state: os_specific.Terminal_State)
+// {
+//     os_specific.set_terminal_state(new_state);
+// }
+
+save_terminal_state :: () -> void
 {
-    return os_specific.get_terminal_state();
+    os_specific.save_original_terminal_state();
 }
 
-set_terminal_state :: (new_state: os_specific.Terminal_State)
+reset_terminal_state :: () -> void
 {
-    os_specific.set_terminal_state(new_state);
+    os_specific.reset_terminal_state();
 }
 
 set_terminal_color :: (new_color: Terminal_Color, bold: bool)

@@ -329,8 +329,8 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     {
         exit_code = 0;
     }
-    
-    tns := os.get_terminal_state();
+
+    os.save_terminal_state();
 
     if (exit_code != 0)
     {
@@ -343,13 +343,13 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
             result = Test_Result_Status.FAIL_EXPECTED;
             os.set_terminal_color(Terminal_Color.GREEN, true);
             _c.printf(" FAIL_EXPECTED\n");
-            os.set_terminal_state(tns);
+            os.reset_terminal_state();
         }
         else
         {
             os.set_terminal_color(Terminal_Color.RED, true);
             _c.printf(" FAIL");
-            os.set_terminal_state(tns);
+            os.reset_terminal_state();
             _c.printf(" (exit_code: %d, close_ret: %d)\n", exit_code, close_ret);
             _c.printf("\n%s\n", output_str.data);
         }
@@ -366,14 +366,14 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
         {
             os.set_terminal_color(Terminal_Color.GREEN, true);
             _c.printf(" SKIPPED\n");
-            os.set_terminal_state(tns);
+            os.reset_terminal_state();
             return Test_Result_Status.SKIPPED;
         }
         else
         {
             os.set_terminal_color(Terminal_Color.GREEN, false);
-            _c.printf(" OK (exit_code: %d)\n", exit_code);
-            os.set_terminal_state(tns);
+            _c.printf(" OK\n");
+            os.reset_terminal_state();
             // _c.printf("\n%s\n", output_str.data);
             return Test_Result_Status.SUCCESS;
         }
@@ -517,7 +517,7 @@ report_test_results :: (test_results: Test_Results)
     }
 
 
-    tns := os.get_terminal_state();
+    tns := os.save_terminal_state();
 
     switch (test_results.mode)
     {
@@ -526,7 +526,7 @@ report_test_results :: (test_results: Test_Results)
             if (!only_expected_failures) os.set_terminal_color(Terminal_Color.RED, true);
             _c.printf("\t%d/%d failed to compile\n", test_results.fail_file_count,
                       test_results.total_file_count);
-            os.set_terminal_state(tns);
+            os.reset_terminal_state();
             _c.printf("\t%d/%d failures expected\n", test_results.expected_fail_count,
                       test_results.fail_file_count);
         }
@@ -535,14 +535,14 @@ report_test_results :: (test_results: Test_Results)
         {
             if (!only_expected_failures)
             {
-                if (!only_expected_failures) _c.printf("\033[1;31m");
+                _c.printf("\033[1;31m");
                 _c.printf("\t%d/%d failed to compile\n", test_results.fail_file_count,
                         test_results.total_file_count);
                 _c.printf("\t%d/%d failures expected\n", test_results.expected_fail_count,
                         test_results.fail_file_count);
+                _c.printf("\033[0m");
             }
 
-            _c.printf("\033[0m");
             _c.printf("\t%d tests skipped\n", test_results.dont_run_file_count);
         }
     }
