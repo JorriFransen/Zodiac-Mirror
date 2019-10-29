@@ -1,0 +1,12 @@
+
+Terminal_Color :: enum
+{
+    WHITE;
+    BLACK;
+    RED;
+    GREEN;
+    BLUE;
+    CYAN;
+    PURPLE;
+    YELLOW;
+}

@@ -510,8 +510,8 @@ const char* full_path_from_cwd(const char* rel_path)
 
     cwd[cwd_len + 1] = '\0';
     const char* full_path = string_append(cwd, rel_path);
-    fprintf(stderr, "rel_path: %s\n", rel_path);
-    fprintf(stderr, "full_path: %s\n", full_path);
+//     fprintf(stderr, "rel_path: %s\n", rel_path);
+//     fprintf(stderr, "full_path: %s\n", full_path);
 	assert(file_exists(full_path) || dir_exists(full_path));
 
     const char* result = normalize_path(full_path);

@@ -457,6 +457,10 @@ namespace Zodiac
         {
             dcArgInt(runner->dyn_vm, arg_value->value.u32);
         }
+		else if (arg_type == Builtin::type_u16)
+		{
+			dcArgShort(runner->dyn_vm, arg_value->value.u16);
+		}
         else if (arg_type == Builtin::type_u8)
         {
             dcArgChar(runner->dyn_vm, arg_value->value.u8);

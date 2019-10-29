@@ -7,6 +7,8 @@ main :: () -> u64
 {
     c.open_std_handles();
 
+    assert(false);
+
     i_am_i : int;
 
     for (i := 0; i < 20; i += 1)

@@ -178,6 +178,8 @@ namespace Zodiac
                     case AST_BINOP_EQ: return lhs == rhs;
                     case AST_BINOP_AND_AND: return lhs && rhs;
                     case AST_BINOP_OR_OR: return lhs || rhs;
+					case AST_BINOP_AND: return lhs & rhs;
+					case AST_BINOP_OR: return lhs | rhs;
 
                     default: assert(false);
                 }
@@ -247,14 +249,18 @@ namespace Zodiac
         {
             return (uint64_t)expression->integer_literal.u64;
         }
-        else if (type == Builtin::type_u32)
-        {
-            return (uint32_t)expression->integer_literal.u64;
-        }
         else if (type == Builtin::type_u64)
         {
             return (uint64_t)expression->integer_literal.u64;
         }
+        else if (type == Builtin::type_u32)
+        {
+            return (uint32_t)expression->integer_literal.u64;
+        }
+		else if (type == Builtin::type_u16)
+		{
+			return (uint16_t)expression->integer_literal.u64;
+		}
 
         assert(false);
 		return 0;
@@ -490,6 +496,11 @@ namespace Zodiac
             {
                 return !const_interpret_u64_expression(context, expression->unary.operand, scope);
             }
+
+			case AST_UNOP_BIN_NOT:
+			{
+				return ~const_interpret_u64_expression(context, expression->unary.operand, scope);
+			}
 
             default: assert(false);
         }

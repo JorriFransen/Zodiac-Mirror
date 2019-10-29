@@ -1165,6 +1165,7 @@ namespace Zodiac
         while (match_token(parser, TOK_AND))
         {
             AST_Expression* rhs = parse_cmp_expression(parser, scope);
+			if (!rhs) return nullptr;
             auto op = AST_BINOP_AND;
             lhs = ast_binary_expression_new(parser->context, lhs->file_pos, lhs, op, rhs);
         }
@@ -1856,7 +1857,7 @@ namespace Zodiac
         auto ct = current_token(parser);
 
         return ct.kind == TOK_MINUS || ct.kind == TOK_MUL || ct.kind == TOK_LT ||
-               ct.kind == TOK_BANG;
+               ct.kind == TOK_BANG || ct.kind == TOK_TILDE;
     }
 
     static bool is_bitshift_op(Parser* parser)
@@ -1985,6 +1986,10 @@ namespace Zodiac
             case TOK_BANG:
                 result = AST_UNOP_NOT;
                 break;
+
+			case TOK_TILDE:
+				result = AST_UNOP_BIN_NOT;
+				break;
 
             default:
                 assert(false);

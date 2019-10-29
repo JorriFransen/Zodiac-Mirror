@@ -3937,6 +3937,10 @@ namespace Zodiac
 
             return ir_aggregate_literal(ir_builder, type, member_values, true);
         }
+		else if (type->kind == AST_TYPE_ENUM)
+		{
+			return ir_builder_emit_zero_literal(ir_builder, type->aggregate_type.base_type);
+		}
         else assert(false);
 
         assert(false);

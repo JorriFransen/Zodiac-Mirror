@@ -115,6 +115,7 @@ namespace Zodiac
             _SINGLE_CHAR_TOKEN_CASE(']', TOK_RBRACK);
             _SINGLE_CHAR_TOKEN_CASE('#', TOK_POUND);
             _SINGLE_CHAR_TOKEN_CASE('$', TOK_DOLLAR);
+			_SINGLE_CHAR_TOKEN_CASE('~', TOK_TILDE);
 
             _DOUBLE_CHAR_TOKEN_CASE('=', TOK_EQ, '=', TOK_EQEQ);
             _DOUBLE_CHAR_TOKEN_CASE('-', TOK_MINUS, '>', TOK_RARROW);

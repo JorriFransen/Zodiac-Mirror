@@ -13,9 +13,10 @@ namespace Zodiac
         static AST_Type* type_u16;
         static AST_Type* type_u32;
         static AST_Type* type_u64;
-        static AST_Type* type_s64;
         static AST_Type* type_s8;
         static AST_Type* type_s32;
+        static AST_Type* type_s16;
+        static AST_Type* type_s64;
         static AST_Type* type_bool;
         static AST_Type* type_float;
         static AST_Type* type_double;

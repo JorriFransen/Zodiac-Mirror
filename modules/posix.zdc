@@ -105,6 +105,8 @@ static_if (PLATFORM_LINUX)
 
     #foreign popen :: (command: *u8, type: *u8) -> *FILE;
     #foreign pclose :: (stream: *FILE) -> int;
+
+    #foreign realpath :: (path: *u8, resolved_path: *u8) -> *u8;
 }
 else static_if(PLATFORM_WINDOWS)
 {
@@ -132,4 +134,3 @@ else static_if(PLATFORM_WINDOWS)
 #foreign ftell :: (stream: *FILE) -> int;
 #foreign fread :: (buffer: *void, size: u64, count: u64, stream: *FILE) -> u64;
 
-#foreign realpath :: (path: *u8, resolved_path: *u8) -> *u8;

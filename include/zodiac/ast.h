@@ -98,6 +98,7 @@ namespace Zodiac
         AST_UNOP_ADDROF,
         AST_UNOP_DEREF,
         AST_UNOP_NOT,
+		AST_UNOP_BIN_NOT,
     };
 
     typedef uint64_t _AST_EXPR_FLAGS_;
