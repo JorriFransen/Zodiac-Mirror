@@ -278,7 +278,7 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     // _c.printf("running command: %s\n", command.data);
 
     mode_name := enum_to_string(mode);
-    _c.printf("\t%s:", mode_name.data);
+    _c.printf("    %s:", mode_name.data);
 
     mode_padding := _mode_padding - mode_name.length;
     for (i : u64 = 0; i < mode_padding; i++) _c.printf(" ");

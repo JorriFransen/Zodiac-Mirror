@@ -15,6 +15,11 @@ SHORT :: typedef s16;
 TCHAR :: typedef u8;
 HANDLE :: typedef *void;
 BOOL :: typedef s64;
+LPVOID :: typedef *void;
+LPDWORD :: typedef *DWORD;
+DWORD_PTR :: typedef u64;
+
+THREAD_START_ROUTINE :: typedef (lpThreadParameter: LPVOID) -> DWORD;
 
 #foreign GetFullPathNameA :: (lpFileName: LPCSTR, nBufferLength: DWORD, lpBuffer: LPSTR, lpFilePart: *LPSTR) -> DWORD;
 #foreign GetFileAttributesA :: (lpFileName: LPCSTR) -> DWORD;
@@ -30,6 +35,17 @@ BOOL :: typedef s64;
     ) -> BOOL;
 
 #foreign SetConsoleTextAttribute :: (hConsoleOutput: HANDLE, wAttributes: WORD) -> BOOL;
+#foreign _aligned_malloc :: (size: u64, alignment: u64) -> *void;
+#foreign _aligned_free :: (ptr: *void) -> void; 
+#foreign GetSystemInfo :: (lpSystemInfo: *SYSTEM_INFO) -> void;
+#foreign CreateThread :: (
+        lpThreadAttributes: *SECURITY_ATTRIBUTES, dwStackSize: DWORD, lpStartAddress: *THREAD_START_ROUTINE,
+        lpParameter: LPVOID, dwCreationFlags: DWORD, lpThreadId: LPDWORD
+    ) -> HANDLE;
+
+#foreign WaitForSingleObject :: (hHandle: HANDLE, dwMilliseconds: DWORD) -> DWORD;
+#foreign GetExitCodeThread :: (hthread: HANDLE, lpExitCode: LPDWORD) -> BOOL;
+#foreign CloseHandle :: (hObject: HANDLE) -> BOOL;
 
 INVALID_HANDLE_VALUE :: -1;
 STD_OUTPUT_HANDLE : DWORD : -11;
@@ -46,6 +62,8 @@ FOREGROUND_BLUE      : WORD : 1;
 FOREGROUND_GREEN     : WORD : 2;
 FOREGROUND_RED       : WORD : 4;
 FOREGROUND_INTENSITY : WORD : 8;
+
+INFINITE :: -1;
 
 FILETIME :: struct 
 {
@@ -88,6 +106,35 @@ CONSOLE_SCREEN_BUFFER_INFO :: struct
     wAttributes         : WORD;
     srWindow            : SMALL_RECT;
     dwMaximumWindowSize : COORD;
+}
+
+SYSTEM_INFO :: struct
+{
+    DUMMYUNIONNAME :: union
+    {
+        dwOemId : DWORD;
+        DUMMYSTRUCTNAME :: struct
+        {
+            wProcessorArchitecture : WORD;
+            wReserved : WORD;
+        }
+    }
+    dwPageSize : DWORD;
+    lpMinimumApplicationAddress : LPVOID;
+    lpMaximumApplicationAddress : LPVOID;
+    dwActiveProcessorMask : DWORD_PTR;
+    dwNumberOfProcessors : DWORD;
+    dwProcessorType : DWORD;
+    dwAllocationGranularity : DWORD;
+    wProcessorLevel : WORD;
+    wProcessorRevision : WORD;
+}
+
+SECURITY_ATTRIBUTES :: struct
+{
+    nLength : DWORD;
+    lpSecurityDescriptor: LPVOID;
+    bInheritHandle: BOOL;
 }
 
 get_full_path :: (name: String) -> String
@@ -236,10 +283,79 @@ set_terminal_state :: (new_state: Terminal_State)
     SetConsoleTextAttribute(terminal_handle, new_attribs);  
 }
 
+_saved_terminal_state : Terminal_State;
+
+save_original_terminal_state :: () {
+    _saved_terminal_state = get_terminal_state();    
+}
+
+reset_terminal_state :: () {
+    set_terminal_state(_saved_terminal_state);
+}
+
 set_terminal_color :: (new_color: Terminal_Color, bold: bool)
 {
     state := get_terminal_state();
     state.color = new_color;
     state.bold = bold;
     set_terminal_state(state);
+}
+
+get_page_size :: () -> s64
+{
+    info : SYSTEM_INFO;
+    GetSystemInfo(*info);
+    return info.dwPageSize;
+}
+
+alloc_aligned :: (alignment: s64, size: s64) -> *void
+{
+    result := _aligned_malloc((:u64)size, (:u64)alignment);
+    assert(result);
+    return result;
+}
+
+free_aligned :: (ptr: *void) 
+{
+    _aligned_free(ptr);
+}
+
+__zodiac_start_thread :: (_thread_start_info: *void) -> DWORD 
+{
+    thread_start_info := (:*Thread_Start_Info)_thread_start_info;
+
+    _thread.atomic_cond_wait(*thread_start_info.signal_started, null);
+    thread_func := thread_start_info.thread_routine;
+    thread := thread_start_info.thread;
+    _thread.atomic_cond_signal(*thread_start_info.signal_thread_copied);
+
+    // return null;
+    ret_val := thread_func(*thread);
+    return (:DWORD)ret_val;
+}
+
+_create_thread :: (start_info: Thread_Start_Info) -> bool
+{
+    win_handle := CreateThread(null, 0,  *__zodiac_start_thread, *start_info, 0, null);
+    if (!win_handle) return false;
+
+    start_info.thread.handle = (:u64)win_handle;
+    return true;
+}
+
+_join_thread :: (thread: Thread) -> *void
+{
+    handle := (:HANDLE)thread.handle
+    WaitForSingleObject(handle, (:u32)INFINITE);
+
+    ret_val: u32;
+    if (!GetExitCodeThread(handle, *ret_val))
+    {
+        assert(false);
+    } 
+
+    close_ret := CloseHandle(handle);
+    assert(close_ret);
+
+    return (:*void) ret_val;
 }

@@ -87,6 +87,26 @@ get_full_path :: (name: String) -> String
     return result;
 }
 
+get_page_size :: () -> s64
+{
+    return posix.sysconf(posix._SC_PAGESIZE);
+}
+
+alloc_aligned :: (alignment: s64, size: s64) -> *void
+{
+    mem : *void = null;
+    res := posix.posix_memalign(*mem, alignment, size);
+    assert(res == 0);
+    assert(mem);
+
+    return mem;
+}
+
+free_aligned :: (ptr: *void) 
+{
+    _c.free(ptr);
+}
+
 save_original_terminal_state :: () -> void { } // Not really supported on linux
 
 reset_terminal_state :: () -> void
@@ -132,4 +152,3 @@ set_terminal_color :: (color: Terminal_Color, bold: bool)
     _c.printf(fmt.data);
 
 }
-
