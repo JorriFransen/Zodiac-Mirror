@@ -111,7 +111,7 @@ namespace Zodiac
 
         IR_Value* return_val = entry_stack_frame->return_value;
         uint64_t exit_code = return_val->value.u64;
-    // printf("Exit code: %lu\n", exit_code);
+        printf("Exit code: %lu\n", exit_code);
 
         ir_runner_cancel_all_threads(ir_runner);
         ir_runner_free_global_structs(ir_runner->ir_module);

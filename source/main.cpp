@@ -237,6 +237,8 @@ int main(int argc, char** argv)
             {
                 ir_return_value = 7;
             }
+
+			printf("return value: %d\n", ir_return_value);
 		}
     }
     else
