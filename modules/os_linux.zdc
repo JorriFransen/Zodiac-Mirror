@@ -6,6 +6,9 @@ using std;
 
 posix :: import posix;
 
+_og :: import os_generic;
+using _og;
+
 is_directory :: (path: String) -> bool
 {
     statbuf : posix.stat_struct;
@@ -104,3 +107,48 @@ free_aligned :: (ptr: *void)
     _c.free(ptr);
 }
 
+save_original_terminal_state :: () -> void { } // Not really supported on linux
+
+reset_terminal_state :: () -> void
+{
+    _c.printf("\033[0m");
+}
+
+set_terminal_color :: (color: Terminal_Color, bold: bool)
+{
+    fmt := string_new("\033[0;00m");
+    defer _c.free(fmt.data);
+
+    if (bold) fmt.data[2] = '1';
+
+    // for (i : u64 = 0; i < string_length(fmt); i++)
+    // {
+    //     _c.printf("fmt[%d]: '%c', %d\n", i, fmt[i], fmt[i]);
+    // }
+
+    using Terminal_Color;
+
+    cc : *u8;
+
+    switch (color)
+    {
+        case BLACK: cc = "30";
+        case RED:   cc = "31";
+        case GREEN: cc = "32";
+        case BLUE:  cc = "34";
+        case YELLOW: cc = "33";
+        case PURPLE: cc = "35";
+        case CYAN: cc = "36";
+        case WHITE: cc = "37";
+
+        default: assert(false);
+    }
+
+    assert(string_length(cc) == 2);
+
+    fmt.data[4] = cc[0];
+    fmt.data[5] = cc[1];
+
+    _c.printf(fmt.data);
+
+}

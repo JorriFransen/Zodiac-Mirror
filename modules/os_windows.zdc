@@ -283,6 +283,16 @@ set_terminal_state :: (new_state: Terminal_State)
     SetConsoleTextAttribute(terminal_handle, new_attribs);  
 }
 
+_saved_terminal_state : Terminal_State;
+
+save_original_terminal_state :: () {
+    _saved_terminal_state = get_terminal_state();    
+}
+
+reset_terminal_state :: () {
+    set_terminal_state(_saved_terminal_state);
+}
+
 set_terminal_color :: (new_color: Terminal_Color, bold: bool)
 {
     state := get_terminal_state();

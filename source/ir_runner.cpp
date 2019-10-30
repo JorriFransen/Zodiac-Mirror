@@ -67,7 +67,7 @@ namespace Zodiac
         ir_runner_load_foreigns(ir_runner, ir_module);
 
         ir_runner->ir_module = ir_module;
-        ir_runner_allocate_global_structs(ir_runner);
+        ir_runner_allocate_global_structs(ir_runner->ir_module);
         ir_runner_initialize_globals(ir_runner);
 
         IR_Value return_value = {};
@@ -114,37 +114,45 @@ namespace Zodiac
     // printf("Exit code: %lu\n", exit_code);
 
         ir_runner_cancel_all_threads(ir_runner);
-        ir_runner_free_global_structs(ir_runner);
+        ir_runner_free_global_structs(ir_runner->ir_module);
         arena_free(&ir_runner->arena);
 
         return exit_code;
     }
 
-    void ir_runner_allocate_global_structs(IR_Runner* ir_runner)
+    void ir_runner_allocate_global_structs(IR_Module* module)
     {
-        assert(ir_runner);
-        assert(ir_runner->ir_module);
-
-        for (uint64_t i = 0; i < BUF_LENGTH(ir_runner->ir_module->globals); i++)
+        for (uint64_t i = 0; i < BUF_LENGTH(module->globals); i++)
         {
-            IR_Value* global = ir_runner->ir_module->globals[i];
-            if (global->type->kind == AST_TYPE_STRUCT)
+            IR_Value* global = module->globals[i];
+            if (global->type->kind == AST_TYPE_STRUCT && global->value.pointer == nullptr)
             {
                 global->value.pointer = mem_alloc(global->type->bit_size / 8);
             }
         }
+
+		for (uint64_t i = 0; i < BUF_LENGTH(module->imported_modules); i++)
+		{
+			IR_Module* imported_module = module->imported_modules[i];
+			ir_runner_allocate_global_structs(imported_module);
+		}
     }
 
-    void ir_runner_free_global_structs(IR_Runner* ir_runner)
+    void ir_runner_free_global_structs(IR_Module* module)
     {
-        for (uint64_t i = 0; i < BUF_LENGTH(ir_runner->ir_module->globals); i++)
+        for (uint64_t i = 0; i < BUF_LENGTH(module->globals); i++)
         {
-            IR_Value* global = ir_runner->ir_module->globals[i];
+            IR_Value* global = module->globals[i];
             if (global->type->kind == AST_TYPE_STRUCT)
             {
                 mem_free(global->value.pointer);
             }
         }
+
+		for (uint64_t i = 0; i < BUF_LENGTH(module->imported_modules); i++)
+		{
+			ir_runner_free_global_structs(module->imported_modules[i]);
+		}
     }
 
     void ir_runner_initialize_globals(IR_Runner* ir_runner)
@@ -2206,18 +2214,19 @@ namespace Zodiac
         }
         else if (dest_value->type->kind == AST_TYPE_STRUCT)
         {
-            assert(false); // Not tested
-            // assert(iri->arg1->kind == IRV_ALLOCL);
-            // assert(iri->arg2->kind == IRV_TEMPORARY || iri->arg2->kind == IRV_ALLOCL);
+            //assert(false); // Not tested
+			assert(dest_value->kind == IRV_GLOBAL);
+			assert(source_value->kind == IRV_TEMPORARY || source_value->kind == IRV_ALLOCL);
 
-            // assert(dest_value->type->kind == AST_TYPE_STRUCT);
-            // assert(source_value->type->kind == AST_TYPE_STRUCT);
+			assert(dest_value->type->kind == AST_TYPE_STRUCT);
+			assert(source_value->type->kind == AST_TYPE_STRUCT);
 
-            // AST_Type* struct_type = dest_value->type;
-            // uint64_t struct_byte_size = struct_type->bit_size / 8;
-            // assert(struct_byte_size);
+			AST_Type* struct_type = dest_value->type;
+			uint64_t struct_byte_size = struct_type->bit_size / 8;
+			assert(struct_byte_size);
 
-            // memcpy(dest_value->value.pointer, source_value->value.pointer, struct_byte_size);
+			//dest_value = ir_runner_get_local_temporary(ir_runner, dest_value);
+			memcpy(dest_value->value.pointer, source_value->value.pointer, struct_byte_size);
         }
         else
         {

@@ -84,8 +84,8 @@ namespace Zodiac
     uint64_t ir_runner_execute_entry(
         IR_Runner* ir_runner, AST_Module* ast_module, IR_Module* ir_module);
 
-    void ir_runner_allocate_global_structs(IR_Runner* ir_runner);
-    void ir_runner_free_global_structs(IR_Runner* ir_runner);
+	void ir_runner_allocate_global_structs(IR_Module* ir_module);
+    void ir_runner_free_global_structs(IR_Module* ir_module);
     void ir_runner_initialize_globals(IR_Runner* ir_runner);
 
     void* ir_runner_thread_entry(void* user_data);
