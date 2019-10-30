@@ -8,11 +8,53 @@ using _c;
 _thread :: import thread;
 using _thread;
 
+os :: import os;
+using os.Thread;
+
 global_counter : u64 = 0;
 global_counter_2 : u64 = 0;
 
 // global_counter_2_mutex : Mutex = { 0 };
 global_counter_2_mutex : Mutex;
+
+_main :: ()
+{
+    printer_args := (:*void)6;
+
+    t0 : Thread;
+    t0.user_data = (:*void)5;
+    t0.handle = 12345;
+
+    printer(*t0);
+
+    t1 := os.create_thread(*printer, printer_args);
+    t2 := os.create_thread(*printer, t0.user_data);
+
+    _c.printf("t1.handle: %d\n", t1.handle);
+    _c.printf("t2.handle: %d\n", t2.handle);
+
+    os.join_thread(t1);
+    os.join_thread(t2);
+
+    t3 := os.create_thread(*printer, (:*void)3);
+    _c.printf("t3.handle: %d\n", t3.handle);
+
+    os.join_thread(t3);
+}
+
+printer :: (thread: *Thread) -> *void
+{
+    count := (:u64)thread.user_data;
+    _c.printf("starting printer, handle=%d, data=%ld\n", thread.handle, count);
+
+    // _c.getchar();
+
+    while (count > 0)
+    {
+        _c.printf("Printer %d: %d\n", thread.handle, count);
+        count--;
+    }
+}
 
 main :: ()
 {
@@ -32,11 +74,11 @@ main :: ()
         at : Thread;
         if (i % 2)
         {
-            at = create_thread(*add_func, amount_per_adder);
+            at = os.create_thread(*add_func, amount_per_adder);
         }
         else
         {
-            at = create_thread(*add_func2, amount_per_adder);
+            at = os.create_thread(*add_func2, amount_per_adder);
         }
 
         if (at.handle)
@@ -66,7 +108,7 @@ main :: ()
     for (i : s64 = 0; i < adders.count; i++)
     {
         at := adders[i];
-        all_returns += (:u64)join_thread(at);
+        all_returns += (:u64)os.join_thread(at);
     }
 
     printf("global_counter: %llu\n", global_counter);
@@ -81,11 +123,11 @@ main :: ()
         at : Thread;
         if (i % 2)
         {
-            at = create_thread(*add_func_mut, amount_per_adder);
+            at = os.create_thread(*add_func_mut, amount_per_adder);
         }
         else
         {
-            at = create_thread(*add_func_mut2, amount_per_adder);
+            at = os.create_thread(*add_func_mut2, amount_per_adder);
         }
 
         if (at.handle)
@@ -107,7 +149,7 @@ main :: ()
     for (i : s64 = 0; i < adders.count; i++)
     {
         at := adders[i];
-        all_returns_2 += (:u64)join_thread(at);
+        all_returns_2 += (:u64)os.join_thread(at);
     }
 
     printf("global_counter_2: %llu\n", global_counter_2);
@@ -174,7 +216,7 @@ semaphore_test :: ()
 
     for (i : s64 = 0; i < SEM_PRODUCER_COUNT; i++)
     {
-        pt := create_thread(*produce, *pc_data);
+        pt := os.create_thread(*produce, *pc_data);
         array_add(*producers, pt);
     }
 
@@ -185,7 +227,7 @@ semaphore_test :: ()
     defer array_free(*consumers);
     for (i : s64 = 0; i < SEM_CONSUMER_COUNT; i++)
     {
-        ct := create_thread(*consume, *pc_data);
+        ct := os.create_thread(*consume, *pc_data);
         array_add(*consumers, ct);
     }
 
@@ -195,11 +237,11 @@ semaphore_test :: ()
     while (!compare_and_swap(*pc_done, 0, 1)) {}
     for (i : s64 = 0; i < producers.count; i++)
     {
-        join_thread(producers[i]);
+        os.join_thread(producers[i]);
     }
     for (i : s64 = 0; i < consumers.count; i++)
     {
-        join_thread(consumers[i]);
+        os.join_thread(consumers[i]);
     }
 
     _c.printf("produced_count %d\n", produced_count);

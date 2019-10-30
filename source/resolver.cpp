@@ -1647,7 +1647,7 @@ namespace Zodiac
 
                 expression->type = resolver_get_declaration_type(decl);
 
-                if (suggested_type && suggested_type != expression->type &&
+                if (!points_to_import_decl && suggested_type && suggested_type != expression->type &&
                     resolver_check_assign_types(resolver, suggested_type, expression->type))
                 {
                     if (suggested_type == Builtin::type_String &&
@@ -3525,68 +3525,74 @@ namespace Zodiac
 
         bool result = false;
 
-        auto thread_struct_decl = find_declaration(resolver->context, scope,
-                                                   Builtin::identifier_Thread);
-        if (!thread_struct_decl) return false;
 
-        assert(thread_struct_decl->flags & AST_DECL_FLAG_RESOLVED);
-        assert(thread_struct_decl->kind == AST_DECL_AGGREGATE_TYPE);
-        assert(thread_struct_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
-        assert(thread_struct_decl->aggregate_type.type);
-        assert(thread_struct_decl->aggregate_type.type->kind == AST_TYPE_STRUCT);
+		if (ident_atom == Builtin::atom___create_thread__ ||
+			ident_atom == Builtin::atom___join_thread__)
+		{
 
-        auto thread_type = thread_struct_decl->aggregate_type.type;
+			auto thread_struct_decl = find_declaration(resolver->context, scope,
+													   Builtin::identifier_Thread);
+			if (!thread_struct_decl) return false;
 
-        if (ident_atom == Builtin::atom___create_thread__)
-        {
-            call_expr->call.builtin_function = AST_BUILTIN_FUNC_CREATE_THREAD;
+			assert(thread_struct_decl->flags & AST_DECL_FLAG_RESOLVED);
+			assert(thread_struct_decl->kind == AST_DECL_AGGREGATE_TYPE);
+			assert(thread_struct_decl->aggregate_type.kind == AST_AGG_DECL_STRUCT);
+			assert(thread_struct_decl->aggregate_type.type);
+			assert(thread_struct_decl->aggregate_type.type->kind == AST_TYPE_STRUCT);
 
-            if (thread_struct_decl)
-            {
-                if (!Builtin::type_Thread)
-                {
-                    Builtin::type_Thread = thread_type;
-                    Builtin::type_pointer_to_Thread =
-                        ast_find_or_create_pointer_type(resolver->context, thread_type);
-                }
+			auto thread_type = thread_struct_decl->aggregate_type.type;
 
-                assert(BUF_LENGTH(call_expr->call.arg_expressions) == 2);
-                auto arg_0 = call_expr->call.arg_expressions[0];
-                auto arg_1 = call_expr->call.arg_expressions[1];
+			if (ident_atom == Builtin::atom___create_thread__)
+			{
+				call_expr->call.builtin_function = AST_BUILTIN_FUNC_CREATE_THREAD;
 
-                bool arg_result = resolver_resolve_expression(resolver, arg_0, scope);
-                arg_result &= resolver_resolve_expression(resolver, arg_1, scope);
+				if (thread_struct_decl)
+				{
+					if (!Builtin::type_Thread)
+					{
+						Builtin::type_Thread = thread_type;
+						Builtin::type_pointer_to_Thread =
+							ast_find_or_create_pointer_type(resolver->context, thread_type);
+					}
 
-                if (arg_result)
-                {
-                    assert(arg_0->type->kind == AST_TYPE_FUNCTION ||
-                            (arg_0->type->kind == AST_TYPE_POINTER &&
-                            arg_0->type->pointer.base->kind == AST_TYPE_FUNCTION));
-                    assert(arg_1->type == Builtin::type_pointer_to_void);
+					assert(BUF_LENGTH(call_expr->call.arg_expressions) == 2);
+					auto arg_0 = call_expr->call.arg_expressions[0];
+					auto arg_1 = call_expr->call.arg_expressions[1];
 
-                    call_expr->type = thread_type;
-                    result = true;
-                }
-            }
-            else assert(false);
-        }
-        else if (ident_atom == Builtin::atom___join_thread__)
-        {
-            call_expr->call.builtin_function = AST_BUILTIN_FUNC_JOIN_THREAD;
+					bool arg_result = resolver_resolve_expression(resolver, arg_0, scope);
+					arg_result &= resolver_resolve_expression(resolver, arg_1, scope);
 
-            assert(BUF_LENGTH(call_expr->call.arg_expressions) == 1);
-            auto arg_0 = call_expr->call.arg_expressions[0];
+					if (arg_result)
+					{
+						assert(arg_0->type->kind == AST_TYPE_FUNCTION ||
+							(arg_0->type->kind == AST_TYPE_POINTER &&
+								arg_0->type->pointer.base->kind == AST_TYPE_FUNCTION));
+						assert(arg_1->type == Builtin::type_pointer_to_void);
 
-            bool arg_result = resolver_resolve_expression(resolver, arg_0, scope);
+						call_expr->type = thread_type;
+						result = true;
+					}
+				}
+				else assert(false);
+			}
+			else if (ident_atom == Builtin::atom___join_thread__)
+			{
+				call_expr->call.builtin_function = AST_BUILTIN_FUNC_JOIN_THREAD;
 
-            if (arg_result)
-            {
-                assert(arg_0->type == thread_type);
-                call_expr->type = Builtin::type_pointer_to_void;
-                result = true;
-            }
+				assert(BUF_LENGTH(call_expr->call.arg_expressions) == 1);
+				auto arg_0 = call_expr->call.arg_expressions[0];
 
-        }
+				bool arg_result = resolver_resolve_expression(resolver, arg_0, scope);
+
+				if (arg_result)
+				{
+					assert(arg_0->type == thread_type);
+					call_expr->type = Builtin::type_pointer_to_void;
+					result = true;
+				}
+
+			}
+		}
         else if (ident_atom == Builtin::atom___compare_and_swap__)
         {
             call_expr->call.builtin_function = AST_BUILTIN_FUNC_COMPARE_AND_SWAP;
@@ -3801,21 +3807,29 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(scope->using_declarations); i++)
         {
             AST_Declaration* ud = scope->using_declarations[i];
-            if (ud->kind == AST_DECL_AGGREGATE_TYPE &&
-                ud->aggregate_type.kind == AST_AGG_DECL_ENUM)
-            {
-                auto agg_decls = ud->aggregate_type.aggregate_decl->members;
-                for (uint64_t j = 0; j < BUF_LENGTH(agg_decls); j++)
-                {
-                    AST_Declaration* member_decl = agg_decls[j];
-                    assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
-                    assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
-                    if (member_decl->identifier->atom == identifier->atom)
-                    {
-                        return member_decl;
-                    }
-                }
-            }
+			if (ud->kind == AST_DECL_AGGREGATE_TYPE &&
+				ud->aggregate_type.kind == AST_AGG_DECL_ENUM)
+			{
+				auto agg_decls = ud->aggregate_type.aggregate_decl->members;
+				for (uint64_t j = 0; j < BUF_LENGTH(agg_decls); j++)
+				{
+					AST_Declaration* member_decl = agg_decls[j];
+					assert(member_decl->kind == AST_DECL_CONSTANT_VAR);
+					assert(member_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER);
+					if (member_decl->identifier->atom == identifier->atom)
+					{
+						return member_decl;
+					}
+				}
+			}
+			else if (ud->kind == AST_DECL_AGGREGATE_TYPE &&
+				     ud->aggregate_type.kind == AST_AGG_DECL_STRUCT)
+			{
+				if (ud->identifier && ud->identifier->atom == identifier->atom)
+				{
+					return ud;
+				}
+			}
             else
             {
                 assert(false);
