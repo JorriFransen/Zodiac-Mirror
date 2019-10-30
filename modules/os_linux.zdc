@@ -9,6 +9,8 @@ posix :: import posix;
 _og :: import os_generic;
 using _og;
 
+pthread :: import pthread;
+
 is_directory :: (path: String) -> bool
 {
     statbuf : posix.stat_struct;
@@ -151,4 +153,36 @@ set_terminal_color :: (color: Terminal_Color, bold: bool)
 
     _c.printf(fmt.data);
 
+}
+
+__zodiac_start_thread :: (_thread_start_info: *void) -> *void
+{
+    thread_start_info := (:*Thread_Start_Info)_thread_start_info;
+
+    _thread.atomic_cond_wait(*thread_start_info.signal_started, null);
+    thread_func := thread_start_info.thread_routine;
+    thread := thread_start_info.thread;
+    _thread.atomic_cond_signal(*thread_start_info.signal_thread_copied);
+
+    // return null;
+    ret_val := thread_func(*thread);
+    return ret_val;
+}
+
+_create_thread :: (start_info: Thread_Start_Info) -> bool
+{
+
+    thread_ptr := *start_info.thread;
+    handle_ptr := *thread_ptr.handle;
+    success := pthread.pthread_create((:*pthread.pthread_t)(handle_ptr), null,
+                                    *__zodiac_start_thread, *start_info);
+    return success == 0;
+}
+
+_join_thread :: (thread: Thread) -> *void
+{
+    ret_val : *void = null;
+    result := pthread.pthread_join((:pthread.pthread_t)thread.handle, *ret_val);
+    assert(result == 0);
+    return ret_val;
 }
