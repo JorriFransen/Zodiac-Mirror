@@ -988,9 +988,10 @@ namespace Zodiac
                 assert(member->aggregate_type.kind == AST_AGG_DECL_STRUCT ||
                        member->aggregate_type.kind == AST_AGG_DECL_UNION);
 
+				bool member_res = resolver_check_aggregate_for_redecl(resolver, member);
+
                 if (member->identifier)
                 {
-                    bool member_res = resolver_check_aggregate_for_redecl(resolver, member);
                     member_res &= resolver_check_aggregate_member_for_redecl(resolver,
                                                                              declared_members,
                                                                              member->identifier);
@@ -1006,24 +1007,26 @@ namespace Zodiac
                     for (uint64_t j = 0; j < BUF_LENGTH(member_aggregate->members); j++)
                     {
                         auto nested_member = member_aggregate->members[j];
-                        assert(nested_member->identifier);
-                        if (nested_member->kind == AST_DECL_MUTABLE)
-                        {
-                            auto member_ident = nested_member->identifier;
-                            bool member_res =
-                                resolver_check_aggregate_member_for_redecl(resolver,
-                                                                           declared_members,
-                                                                           member_ident);
-                            result &= member_res;
-                            if (member_res)
-                            {
-                                BUF_PUSH(declared_members, member_ident);
-                            }
-                        }
-                        else
-                        {
-                            assert(false);
-                        }
+						if (nested_member->identifier)
+						{
+							if (nested_member->kind == AST_DECL_MUTABLE)
+							{
+								auto member_ident = nested_member->identifier;
+								bool member_res =
+									resolver_check_aggregate_member_for_redecl(resolver,
+																			   declared_members,
+																			   member_ident);
+								result &= member_res;
+								if (member_res)
+								{
+									BUF_PUSH(declared_members, member_ident);
+								}
+							}
+							else
+							{
+								assert(false);
+							}
+						}
                     }
                 }
             }
