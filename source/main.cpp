@@ -38,6 +38,10 @@ int main(int argc, char** argv)
     // printf("SEEK_CUR: %d\n", SEEK_CUR);
     // printf("SEEK_END: %d\n", SEEK_END);
     // printf("EOF: %d\n", EOF);
+	//printf("sizeof(DWORD): %d\n", sizeof(DWORD));
+	//GetStdHandle(STD_OUTPUT_HANDLE);
+
+
 
     Options options;
 	if (!zodiac_parse_options(&options, argc, argv))

@@ -1303,6 +1303,7 @@ namespace Zodiac
                         llvm_arg_value = LLVMBuildFPCast(builder->llvm_builder, llvm_arg_value,
                                                          LLVMDoubleType(), "");
                     }
+					printf("llvm_arg: %s\n", LLVMPrintValueToString(llvm_arg_value));
                     BUF_PUSH(args, llvm_arg_value);
                 }
                 for (uint64_t i = 0; i < arg_count; i++)
@@ -1310,6 +1311,7 @@ namespace Zodiac
                     stack_pop(builder->arg_stack);
                 }
 
+				printf("llvm_func_value: %s\n", LLVMPrintValueToString(llvm_func_value));
                 LLVMValueRef llvm_result_value = LLVMBuildCall(builder->llvm_builder,
                                                                llvm_func_value, args, arg_count,
                                                                "");

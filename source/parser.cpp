@@ -237,7 +237,7 @@ namespace Zodiac
         AST_Scope* argument_scope = ast_scope_new(parser->context, ast_module->module_scope,
                                                   ast_module, false);
 
-        if (is_token(parser, TOK_LPAREN))
+        if (is_token(parser, TOK_LPAREN) && !(peek_token(parser, 1).kind == TOK_COLON))
         {
             assert(!type_spec);
 
@@ -1218,6 +1218,7 @@ namespace Zodiac
         assert(parser);
 
         AST_Expression* lhs = parse_mul_expression(parser, scope);
+		if (!lhs) return nullptr;
 
         while (is_add_op(parser))
         {
@@ -1229,6 +1230,7 @@ namespace Zodiac
             }
             auto op = parse_add_op(parser);
             AST_Expression* rhs = parse_mul_expression(parser, scope);
+			if (!rhs) return nullptr;
             lhs = ast_binary_expression_new(parser->context, op_tok.file_pos, lhs, op, rhs);
         }
 
@@ -1324,6 +1326,7 @@ namespace Zodiac
 						AST_Type_Spec* cast_ts = parse_type_spec(parser, scope);
 						expect_token(parser, TOK_RPAREN);
 						AST_Expression* cast_expr = parse_base_expression(parser, scope);
+						if (!cast_expr) return nullptr;
 						result = ast_cast_expression_new(parser->context, fp, cast_ts, cast_expr);
 					}
 					else
