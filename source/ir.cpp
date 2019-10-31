@@ -1168,6 +1168,7 @@ namespace Zodiac
             {
                 AST_Declaration* ident_decl = expression->identifier->declaration;
                 IR_Value* value = ir_builder_value_for_declaration(ir_builder, ident_decl);
+
                 assert(value);
                 if (value->kind == IRV_TEMPORARY ||
                     value->kind == IRV_INT_LITERAL ||
@@ -2145,6 +2146,8 @@ namespace Zodiac
         assert(ir_builder);
         assert(declaration);
 
+		IR_Value* result = nullptr;
+
         uint64_t hash = hash_pointer(declaration);
         uint64_t hash_index = hash & (ir_builder->value_decl_count - 1);
 
@@ -2157,7 +2160,8 @@ namespace Zodiac
             {
                 if (entry->decl == declaration)
                 {
-                    return entry->value;
+					result = entry->value;
+					break;
                 }
             }
             else
@@ -2173,21 +2177,30 @@ namespace Zodiac
             }
         }
 
-        for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->ast_module->import_modules); i++)
-        {
-            AST_Module* import_module = ir_builder->ast_module->import_modules[i];
-            assert(import_module->gen_data);
+		if (!result)
+		{
+			for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->ast_module->import_modules); i++)
+			{
+				AST_Module* import_module = ir_builder->ast_module->import_modules[i];
+				assert(import_module->gen_data);
 
-            IR_Builder* import_ir_builder = (IR_Builder*)import_module->gen_data;
+				IR_Builder* import_ir_builder = (IR_Builder*)import_module->gen_data;
 
-            auto result = ir_builder_value_for_declaration(import_ir_builder, declaration);
-            if (result)
-            {
-                return result;
-            }
-        }
+				result = ir_builder_value_for_declaration(import_ir_builder, declaration);
+				if (result)
+				{
+					break;
+				}
+			}
+		}
 
-        return nullptr;
+		if (result && declaration->kind == AST_DECL_CONSTANT_VAR && declaration->constant_var.type != result->type &&
+			(declaration->constant_var.type->flags & AST_TYPE_FLAG_INT))
+		{
+			result->type = declaration->constant_var.type;
+		}
+
+		return result;
     }
 
     IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, File_Pos file_pos,
