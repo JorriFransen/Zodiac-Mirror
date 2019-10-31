@@ -153,6 +153,7 @@ namespace Zodiac
         }
 
         char* result = (char*)mem_alloc(length + 1);
+		assert(result);
         uint64_t result_index = 0;
 
 
