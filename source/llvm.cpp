@@ -138,12 +138,15 @@ namespace Zodiac
                 LLVMRelocPIC,
                 LLVMCodeModelDefault);
 
+			const char* obj_file_name = string_append(module->name, ".o");
+
             bool obj_emit_failed = LLVMTargetMachineEmitToFile(
                 llvm_target_machine,
                 builder->llvm_module,
-                (char*)"object_file.o",
+				(char*)obj_file_name,
                 LLVMObjectFile,
                 &error);
+
 
             if (obj_emit_failed)
                 fprintf(stderr, "%s", error);
@@ -152,7 +155,9 @@ namespace Zodiac
             LLVMDisposeMessage(error);
             error = nullptr;
 
-			llvm_run_linker(builder, module);
+			llvm_run_linker(builder, module, obj_file_name);
+
+			mem_free(obj_file_name);
 
         }
         else
@@ -161,11 +166,11 @@ namespace Zodiac
         }
     }
 
-	void llvm_run_linker(LLVM_IR_Builder* builder, IR_Module* module)
+	void llvm_run_linker(LLVM_IR_Builder* builder, IR_Module* module, const char* obj_file_name)
 	{
 		BUF(Atom) dynamic_lib_names = nullptr;
 		llvm_collect_dynamic_lib_names(builder->context, module, &dynamic_lib_names);
-		// llvm_convert_lib_names_to_paths(builder->context, dynamic_lib_names);
+		llvm_convert_lib_names_to_paths(builder->context, dynamic_lib_names);
 
 
 
@@ -210,12 +215,13 @@ namespace Zodiac
 		string_builder_append(&sb, " msvcrtd.lib");
 		//string_builder_append(&sb, " ucrtd.lib");
 		//string_builder_append(&sb, " vcruntimed.lib");
-		//string_builder_append(&sb, " user32.lib");
-		//string_builder_append(&sb, " kernel32.lib");
+		string_builder_append(&sb, " user32.lib");
+		string_builder_append(&sb, " kernel32.lib");
 		string_builder_append(&sb, " legacy_stdio_definitions.lib");
 		//string_builder_append(&sb, " legacy_stdio_definitions.lib");
 
-		string_builder_append(&sb, " object_file.o");
+		string_builder_append(&sb, " ");
+		string_builder_append(&sb, obj_file_name);
 		
 
 				

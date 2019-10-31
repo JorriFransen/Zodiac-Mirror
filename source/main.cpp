@@ -56,6 +56,7 @@ int main(int argc, char** argv)
     auto context = &_context;
 
 	const char* file_name = normalize_path(context->options.main_file_name);
+	const char* module_name = extract_file_name_from_path(file_name);
 
     if (!path_exists(file_name))
     {
@@ -177,7 +178,7 @@ int main(int argc, char** argv)
     Parser parser;
     parser_init(&parser, context);
 
-    Parse_Result parse_result = parse_module(&parser, lex_result.tokens, "auto_main");
+    Parse_Result parse_result = parse_module(&parser, lex_result.tokens, module_name);
     if (BUF_LENGTH(parse_result.errors) != 0)
     {
         parser_report_errors(&parser);

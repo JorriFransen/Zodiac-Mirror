@@ -69,7 +69,7 @@ namespace Zodiac
     void llvm_builder_init(LLVM_IR_Builder* builder);
     void llvm_builder_free(LLVM_IR_Builder* builder);
     void llvm_emit_ir_module(LLVM_IR_Builder* builder, IR_Module* module, bool root = true);
-	void llvm_run_linker(LLVM_IR_Builder* builder, IR_Module* module);
+	void llvm_run_linker(LLVM_IR_Builder* builder, IR_Module* module, const char* obj_file_name);
     void llvm_collect_dynamic_lib_names(Context* context, IR_Module* module, BUF(Atom)* dest_arr);
     void llvm_convert_lib_names_to_paths(Context* context, BUF(Atom) lib_names);
     void llvm_emit_type_info(LLVM_IR_Builder* builder);
