@@ -3,11 +3,11 @@ int :: typedef s64;
 
 static_if (PLATFORM_WINDOWS)
 {
-    #dynamic_link "msvcrt.dll";
+    // #dynamic_link "msvcrt.dll";
     #foreign _fdopen :: (fd: int, mode: *u8) -> *FILE;
     fdopen :: (fd: int, mode: *u8) -> *FILE { return _fdopen(fd, mode); }
 
-    #dynamic_link "Kernel32.dll";
+    // #dynamic_link "Kernel32.dll";
     #foreign Sleep :: (msec: int) -> void;
     _msleep :: (msec: int) { Sleep(msec); }
 }

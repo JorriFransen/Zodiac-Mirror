@@ -165,7 +165,7 @@ namespace Zodiac
 	{
 		BUF(Atom) dynamic_lib_names = nullptr;
 		llvm_collect_dynamic_lib_names(builder->context, module, &dynamic_lib_names);
-		llvm_convert_lib_names_to_paths(builder->context, dynamic_lib_names);
+		// llvm_convert_lib_names_to_paths(builder->context, dynamic_lib_names);
 
 
 
@@ -204,9 +204,24 @@ namespace Zodiac
 		   fprintf(stderr, "Link command failed with exit code: %d\n", close_ret);
 		}
 #elif WIN32
-		string_builder_append(&sb, "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.22.27905\\bin\\Hostx64\\x64\\link.exe ");
+		string_builder_append(&sb, "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.23.28105\\bin\\Hostx64\\x64\\link.exe ");
 		string_builder_append(&sb, "/NOLOGO /WX /SUBSYSTEM:CONSOLE ");
-		string_builder_append(&sb, " object_file.o ");
+
+		string_builder_append(&sb, " msvcrtd.lib");
+		//string_builder_append(&sb, " ucrtd.lib");
+		//string_builder_append(&sb, " vcruntimed.lib");
+		//string_builder_append(&sb, " user32.lib");
+		//string_builder_append(&sb, " kernel32.lib");
+		string_builder_append(&sb, " legacy_stdio_definitions.lib");
+		//string_builder_append(&sb, " legacy_stdio_definitions.lib");
+
+		string_builder_append(&sb, " object_file.o");
+		
+
+				
+		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.18362.0\\ucrt\\x64\" ");
+		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.23.28105\\lib\\x64\" ");
+		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.18362.0\\um\\x64\" ");
 
 		for (uint64_t i = 0; i < BUF_LENGTH(dynamic_lib_names); i++)
 		{
@@ -214,6 +229,7 @@ namespace Zodiac
 			string_builder_append(&sb, lib_name);
 			string_builder_append(&sb, " ");
 		}
+		
 
 		PROCESS_INFORMATION process_info;
 		STARTUPINFO startup_info;
