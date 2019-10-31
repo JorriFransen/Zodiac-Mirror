@@ -537,12 +537,12 @@ report_test_results :: (test_results: Test_Results)
         {
             if (!only_expected_failures)
             {
-                _c.printf("\033[1;31m");
-                _c.printf("\t%d/%d failed to compile\n", test_results.fail_file_count,
+                os.set_terminal_color(Terminal_Color.RED, true);
+                _c.printf("\t%d/%d failed to compile/run\n", test_results.fail_file_count,
                         test_results.total_file_count);
                 _c.printf("\t%d/%d failures expected\n", test_results.expected_fail_count,
                         test_results.fail_file_count);
-                _c.printf("\033[0m");
+                os.reset_terminal_state();
             }
 
             _c.printf("\t%d tests skipped\n", test_results.dont_run_file_count);
