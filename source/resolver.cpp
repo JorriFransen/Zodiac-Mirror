@@ -1763,7 +1763,8 @@ namespace Zodiac
                     case AST_UNOP_MINUS:
                     {
                         expression->type = operand_type;
-                        if (expression->unary.operand->flags & AST_EXPR_FLAG_CONST)
+                        if (expression->unary.operand->flags & AST_EXPR_FLAG_CONST &&
+                                operand_type != suggested_type)
                         {
                             if (expression->unary.operand->flags & AST_EXPR_FLAG_LITERAL)
                             {
