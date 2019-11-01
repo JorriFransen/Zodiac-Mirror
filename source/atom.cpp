@@ -121,6 +121,7 @@ namespace Zodiac
 
         uint64_t new_length = lhs.length + rhs_length;
         char* temp_result = (char*)mem_alloc(new_length * sizeof(char) + 1);
+		assert(temp_result);
         memcpy(temp_result, lhs.data, lhs.length);
         memcpy(temp_result + lhs.length, rhs, rhs_length);
         temp_result[new_length] = '\0';

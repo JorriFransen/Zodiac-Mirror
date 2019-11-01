@@ -334,9 +334,9 @@ __zodiac_start_thread :: (_thread_start_info: *void) -> DWORD
     return (:DWORD)ret_val;
 }
 
-_create_thread :: (start_info: Thread_Start_Info) -> bool
+_create_thread :: (start_info: *Thread_Start_Info) -> bool
 {
-    win_handle := CreateThread(null, 0,  *__zodiac_start_thread, *start_info, 0, null);
+    win_handle := CreateThread(null, 0,  *__zodiac_start_thread, start_info, 0, null);
     if (!win_handle) return false;
 
     start_info.thread.handle = (:u64)win_handle;

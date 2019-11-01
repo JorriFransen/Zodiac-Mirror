@@ -26,6 +26,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return 0;
     }
 
     float const_interpret_float_unary_expression(Context* context, AST_Expression* expression,
@@ -44,6 +47,9 @@ namespace Zodiac
             }
             default: assert(false);
         }
+
+		assert(false);
+		return 0;
     }
 
     bool const_interpret_bool_expression(Context* context, AST_Expression* expression,
@@ -104,6 +110,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return false;
     }
 
     bool const_bool_decl_value(Context* context, AST_Declaration* declaration, AST_Scope* scope)
@@ -494,7 +503,7 @@ namespace Zodiac
             {
                 uint64_t value = const_interpret_u64_expression(context,
                                                                 expression->unary.operand, scope);
-                return -value;
+                return -(int64_t)value;
                 break;
             }
 
