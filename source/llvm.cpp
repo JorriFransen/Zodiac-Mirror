@@ -1465,6 +1465,7 @@ namespace Zodiac
                 {
                     case IRV_ALLOCL:
                     case IRV_GLOBAL:
+                    case IRV_ARGUMENT:
                     {
                         LLVMValueRef llvm_allocl = llvm_emit_ir_value(builder, a1);
                         llvm_assign_result(builder, r, llvm_allocl);
