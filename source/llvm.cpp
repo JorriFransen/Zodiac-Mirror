@@ -224,7 +224,9 @@ namespace Zodiac
 
 		auto msvc_tools_dir = find_msvc_tools_dir();
 
-		string_builder_append(&sb, "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.22.27905\\bin\\Hostx64\\x64\\link.exe ");
+		string_builder_append(&sb, msvc_tools_dir);
+		string_builder_append(&sb, "\\bin\\Hostx64\\x64\\link.exe ");
+
 		string_builder_append(&sb, "/NOLOGO /WX /SUBSYSTEM:CONSOLE ");
 
 		string_builder_append(&sb, " msvcrtd.lib");
@@ -243,7 +245,7 @@ namespace Zodiac
 		string_builder_append(&sb, "\\ucrt\\x64\" ");
 
 		string_builder_append(&sb, " /LIBPATH:\"");
-		string_builder_append(&sb, "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.22.27905");
+		string_builder_append(&sb, msvc_tools_dir);
 		string_builder_append(&sb, "\\lib\\x64\" ");
 
 		string_builder_append(&sb, " /LIBPATH:\"");
