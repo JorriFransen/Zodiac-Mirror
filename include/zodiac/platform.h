@@ -71,6 +71,7 @@ static const char* _get_environment_variable(const char* name)
 namespace Zodiac
 {
 	const char* find_msvc_tools_dir();
+	const char* find_windows_kit_lib_dir();
 }
 
 #elif __linux__

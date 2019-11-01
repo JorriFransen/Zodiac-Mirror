@@ -174,6 +174,13 @@ namespace Zodiac
 		return tools_dir;
 	}
 
+	const char* find_windows_kit_lib_dir()
+	{
+		auto base_dir = "C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.18362.0";
+		assert(dir_exists(base_dir));
+		return string_append(base_dir, "");
+	}
+
 #endif
 
 
