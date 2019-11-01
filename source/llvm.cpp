@@ -308,7 +308,15 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(lib_names); i++)
         {
             Atom lib_name = lib_names[i];
-            const char* lib_path = lib_name.data;
+			const char* lib_path = nullptr;
+			if (!string_ends_with(lib_name.data, ".dll") && !string_ends_with(lib_name.data, ".lib"))
+			{
+				lib_path = string_append(lib_name.data, ".lib");
+			}
+			else
+			{
+				lib_path = string_append(lib_name.data, "");
+			}
 
             bool found = false;
 
@@ -320,7 +328,7 @@ namespace Zodiac
             for (uint64_t j = 0; j < BUF_LENGTH(context->module_search_path); j++)
             {
                 Atom search_path = context->module_search_path[j];
-                auto import_atom = atom_append(context->atom_table, search_path, lib_name);
+                auto import_atom = atom_append(context->atom_table, search_path, lib_path);
                 if (file_exists(import_atom.data))
                 {
                     lib_names[i] = import_atom;
@@ -333,13 +341,21 @@ namespace Zodiac
             {
                  // fprintf(stderr, "Did not find dynamic library: %s\n", lib_name.data);
                  DLLib* loaded_lib = dlLoadLibrary(lib_path);
-                 assert(loaded_lib);
-                 char lib_path_buf[2048];
-                 auto ret = dlGetLibraryPath(loaded_lib, lib_path_buf, 2048);
-                 assert(ret > 0);
-                 lib_names[i] = atom_get(context->atom_table, lib_path_buf);
-                 dlFreeLibrary(loaded_lib);
+				 if (loaded_lib)
+				 {
+					 char lib_path_buf[2048];
+					 auto ret = dlGetLibraryPath(loaded_lib, lib_path_buf, 2048);
+					 assert(ret > 0);
+					 lib_names[i] = atom_get(context->atom_table, lib_path_buf);
+					 dlFreeLibrary(loaded_lib);
+				 }
+				 else
+				 {
+					 lib_names[i] = atom_get(context->atom_table, lib_path);
+				 }
             }
+
+			mem_free(lib_path);
         }
     }
 

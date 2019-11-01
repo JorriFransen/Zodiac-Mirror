@@ -295,6 +295,11 @@ namespace Zodiac
         {
             Atom search_path = context->module_search_path[i];
             auto import_atom = atom_append(context->atom_table, search_path, lib_name);
+			if (!string_ends_with(import_atom.data, ".lib") && !string_ends_with(import_atom.data, ".dll"))
+			{
+				import_atom = atom_append(context->atom_table, import_atom, ".dll");
+			}
+
             if (file_exists(import_atom.data))
             {
                 lib_path = import_atom.data;
