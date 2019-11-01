@@ -369,8 +369,12 @@ namespace Zodiac
     {
         assert(context);
         assert(expression);
-        assert(expression->type == Builtin::type_s64 ||
-               expression->type->kind == AST_TYPE_ENUM);
+        if (expression->type->kind != AST_TYPE_ENUM)
+        {
+            assert(expression->type->flags & AST_TYPE_FLAG_INT);
+            assert(expression->type->flags & AST_TYPE_FLAG_SIGNED);
+            assert(expression->type->bit_size <= 64);
+        }
         assert(scope);
 
         switch (expression->kind)
@@ -412,7 +416,9 @@ namespace Zodiac
     {
         assert(context);
         assert(expression);
-        assert(expression->type == Builtin::type_s64);
+        assert(expression->type->flags & AST_TYPE_FLAG_INT);
+        assert(expression->type->flags & AST_TYPE_FLAG_SIGNED);
+        assert(expression->type->bit_size <= 64);
         assert(expression->kind == AST_EXPR_UNARY);
         assert(scope);
 
