@@ -120,15 +120,15 @@ main :: (argc: int, argv: **u8) -> int
 
     _c.printf("\nCOMPILING:\n");
     compile_results := run_tests(Test_Mode.COMPILING, files);
-//    _c.printf("\nRUNNING_BYTECODE:\n");
-//    bytecode_results := run_tests(Test_Mode.RUNNING_BYTECODE, files);
+    _c.printf("\nRUNNING_BYTECODE:\n");
+    bytecode_results := run_tests(Test_Mode.RUNNING_BYTECODE, files);
 //    _c.printf("\nRUNNING_LLVM:\n");
 //    llvm_results := run_tests(Test_Mode.RUNNING_LLVM, files);
 
     _c.printf("\n");
     _c.printf("Done, ran %d tests\n", compile_results.total_file_count);
     report_test_results(compile_results);
-//    report_test_results(bytecode_results);
+    report_test_results(bytecode_results);
 //    report_test_results(llvm_results);
 
     for (i := 0; i < files.files.count; i++)
@@ -317,7 +317,7 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
         // _c.printf("close_ret: %d\n", close_ret);
         if (close_ret != -1)
         {
-            exit_code = posix.WEXITSTATUS(close_ret);
+            exit_code = posix.exit_status(close_ret);
             // _c.printf("close: %d, exit: %d", close_ret, exit_code);
         }
         else
@@ -360,6 +360,8 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     {
         output_str := copy_to_string(output_sb);
         defer _c.free(output_str.data);
+
+        // _c.printf("command output: %s\n", output_str.data);
 
         if ((mode == RUNNING_BYTECODE || mode == RUNNING_LLVM) &&
             (:bool)(tf.flags & Test_File_Flag.DONT_RUN))
@@ -517,7 +519,7 @@ report_test_results :: (test_results: Test_Results)
     }
 
 
-    tns := os.save_terminal_state();
+    os.save_terminal_state();
 
     switch (test_results.mode)
     {
@@ -535,12 +537,12 @@ report_test_results :: (test_results: Test_Results)
         {
             if (!only_expected_failures)
             {
-                _c.printf("\033[1;31m");
-                _c.printf("\t%d/%d failed to compile\n", test_results.fail_file_count,
+                os.set_terminal_color(Terminal_Color.RED, true);
+                _c.printf("\t%d/%d failed to compile/run\n", test_results.fail_file_count,
                         test_results.total_file_count);
                 _c.printf("\t%d/%d failures expected\n", test_results.expected_fail_count,
                         test_results.fail_file_count);
-                _c.printf("\033[0m");
+                os.reset_terminal_state();
             }
 
             _c.printf("\t%d tests skipped\n", test_results.dont_run_file_count);

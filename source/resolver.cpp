@@ -400,7 +400,6 @@ namespace Zodiac
                     result &= resolver_resolve_expression(resolver, init_expr, scope,
                                                           declaration->constant_var.type);
                     assert(init_expr->flags & AST_EXPR_FLAG_CONST);
-                    assert(init_expr->flags & AST_EXPR_FLAG_LITERAL);
                 }
                 else if (scope->flags & AST_SCOPE_FLAG_IS_ENUM_SCOPE)
                 {
@@ -1851,6 +1850,11 @@ namespace Zodiac
 
                 result &= resolver_resolve_expression(resolver, expression->cast_expr.expr,
                                                       scope);
+
+				if (result && (expression->cast_expr.expr->flags & AST_EXPR_FLAG_CONST))
+				{
+					expression->flags |= AST_EXPR_FLAG_CONST;	
+				}
                 break;
             }
 

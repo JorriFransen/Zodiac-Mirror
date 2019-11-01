@@ -78,10 +78,6 @@ S_ISREG :: (mode: mode_t) -> bool
     return (mode & S_IFMT) == S_IFREG;
 }
 
-WEXITSTATUS :: (status: int) -> int
-{
-    return status >> 8;
-}
 
 static_if (PLATFORM_LINUX)
 {
@@ -107,6 +103,13 @@ static_if (PLATFORM_LINUX)
     #foreign pclose :: (stream: *FILE) -> int;
 
     #foreign realpath :: (path: *u8, resolved_path: *u8) -> *u8;
+
+    WEXITSTATUS :: (status: int) -> int
+    {
+        return status >> 8;
+    }
+    
+    exit_status :: (status: int) -> int { return WEXITSTATUS(status); }
 }
 else static_if(PLATFORM_WINDOWS)
 {
@@ -121,6 +124,8 @@ else static_if(PLATFORM_WINDOWS)
 
     #foreign _pclose :: (stream: *FILE) -> int;
     pclose :: (stream: *FILE) -> int { return _pclose(stream); }
+
+    exit_status :: (status: int) -> int { return status; }
     
 }
 

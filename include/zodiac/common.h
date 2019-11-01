@@ -270,6 +270,7 @@ void fatal(const char* format, va_list args);
 // Strings
 const char* string_append(const char* str_a, const char* str_b);
 bool string_contains(const char* str, char c);
+bool string_ends_with(const char* str, const char* end);
 
 // Paths
 const char* extract_directory_from_path(const char* path);

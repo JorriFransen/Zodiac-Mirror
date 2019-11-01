@@ -111,7 +111,7 @@ namespace Zodiac
 
         IR_Value* return_val = entry_stack_frame->return_value;
         uint64_t exit_code = return_val->value.u64;
-    // printf("Exit code: %lu\n", exit_code);
+        //printf("Exit code: %lu\n", exit_code);
 
         ir_runner_cancel_all_threads(ir_runner);
         ir_runner_free_global_structs(ir_runner->ir_module);
@@ -232,10 +232,18 @@ namespace Zodiac
     }
 
     bool ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* ast_module,
-                                     IR_Module* ir_module)
+                                     IR_Module* ir_module, bool load_defaults /* = true*/)
     {
         assert(ir_runner);
         assert(ir_module);
+
+		if (load_defaults)
+		{
+#ifdef WIN32
+			ir_runner_load_dynamic_lib(ir_runner, "msvcrt.dll");
+			ir_runner_load_dynamic_lib(ir_runner, "kernel32.dll");
+#endif
+		}
 
         for (uint64_t i = 0; i < BUF_LENGTH(ir_module->dynamic_lib_names); i++)
         {
@@ -251,7 +259,7 @@ namespace Zodiac
             assert(import_ast_module->gen_data);
             IR_Builder* import_ir_builder = (IR_Builder*)import_ast_module->gen_data;
             IR_Module* import_ir_module = &import_ir_builder->result;
-            if (!ir_runner_load_dynamic_libs(ir_runner, import_ast_module, import_ir_module))
+            if (!ir_runner_load_dynamic_libs(ir_runner, import_ast_module, import_ir_module, false))
             {
                 return false;
             }
@@ -259,6 +267,14 @@ namespace Zodiac
 
         return true;
     }
+
+	bool ir_runner_load_dynamic_lib(IR_Runner* ir_runner, const char* lib_name)
+	{
+		Atom lib_name_atom = atom_get(ir_runner->context->atom_table, lib_name);
+		bool result = ir_runner_load_dynamic_lib(ir_runner, lib_name_atom);
+		assert(result);
+		return result;
+	}
 
     bool ir_runner_load_dynamic_lib(IR_Runner* ir_runner, Atom lib_name)
     {
@@ -281,6 +297,16 @@ namespace Zodiac
         {
             Atom search_path = context->module_search_path[i];
             auto import_atom = atom_append(context->atom_table, search_path, lib_name);
+
+
+#ifdef WIN32
+			if (!string_ends_with(import_atom.data, ".lib") &&
+                !string_ends_with(import_atom.data, ".dll"))
+			{
+				import_atom = atom_append(context->atom_table, import_atom, ".dll");
+			}
+#endif
+
             if (file_exists(import_atom.data))
             {
                 lib_path = import_atom.data;
@@ -300,6 +326,8 @@ namespace Zodiac
             IR_Loaded_Dynamic_Lib loaded_lib = { lib_name, lib };
             BUF_PUSH(ir_runner->loaded_dyn_libs, loaded_lib);
             // printf("Loaded dynamic library: %s\n", lib_name.data);
+
+			if (found) break;
         }
 
         if (!found)

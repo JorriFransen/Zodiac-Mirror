@@ -305,7 +305,7 @@ get_page_size :: () -> s64
 {
     info : SYSTEM_INFO;
     GetSystemInfo(*info);
-    return info.dwPageSize;
+    return (:s64)info.dwPageSize;
 }
 
 alloc_aligned :: (alignment: s64, size: s64) -> *void

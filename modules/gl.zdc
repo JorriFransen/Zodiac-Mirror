@@ -1,7 +1,7 @@
 
 static_if (PLATFORM_WINDOWS)
 {
-    #dynamic_link "Opengl32.dll";
+    #dynamic_link "Opengl32";
 }
 else static_if (PLATFORM_LINUX)
 {
