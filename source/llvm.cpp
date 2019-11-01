@@ -243,7 +243,6 @@ namespace Zodiac
 
 		string_builder_append(&sb, " /LIBPATH:\"");
 		string_builder_append(&sb, windows_kit_lib_dir);
-		//string_builder_append(&sb, "C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.18362.0");
 		string_builder_append(&sb, "\\ucrt\\x64\" ");
 
 		string_builder_append(&sb, " /LIBPATH:\"");
@@ -252,7 +251,6 @@ namespace Zodiac
 
 		string_builder_append(&sb, " /LIBPATH:\"");
 		string_builder_append(&sb, windows_kit_lib_dir);
-		//string_builder_append(&sb, "C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.18362.0");
 		string_builder_append(&sb, "\\um\\x64\" ");
 
 		for (uint64_t i = 0; i < BUF_LENGTH(dynamic_lib_names); i++)
