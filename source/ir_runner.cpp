@@ -239,8 +239,10 @@ namespace Zodiac
 
 		if (load_defaults)
 		{
+#ifdef WIN32
 			ir_runner_load_dynamic_lib(ir_runner, "msvcrt.dll");
 			ir_runner_load_dynamic_lib(ir_runner, "kernel32.dll");
+#endif
 		}
 
         for (uint64_t i = 0; i < BUF_LENGTH(ir_module->dynamic_lib_names); i++)
@@ -295,10 +297,15 @@ namespace Zodiac
         {
             Atom search_path = context->module_search_path[i];
             auto import_atom = atom_append(context->atom_table, search_path, lib_name);
-			if (!string_ends_with(import_atom.data, ".lib") && !string_ends_with(import_atom.data, ".dll"))
+
+
+#ifdef WIN32
+			if (!string_ends_with(import_atom.data, ".lib") &&
+                !string_ends_with(import_atom.data, ".dll"))
 			{
 				import_atom = atom_append(context->atom_table, import_atom, ".dll");
 			}
+#endif
 
             if (file_exists(import_atom.data))
             {

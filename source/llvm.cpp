@@ -177,7 +177,10 @@ namespace Zodiac
 		String_Builder sb;
 		string_builder_init(&sb, 2048);
 #ifdef __linux__
-		string_builder_append(&sb, "ld -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib64/Scrt1.o /usr/lib64/crti.o /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtbeginS.o object_file.o -lc ");
+		string_builder_append(&sb, "ld -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib64/Scrt1.o /usr/lib64/crti.o /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtbeginS.o ");
+        string_builder_append(&sb, obj_file_name);
+        string_builder_append(&sb, " -lc ");
+
 		for (uint64_t i = 0; i < BUF_LENGTH(dynamic_lib_names); i++)
 		{
 			string_builder_append(&sb, dynamic_lib_names[i]);
@@ -222,9 +225,7 @@ namespace Zodiac
 
 		string_builder_append(&sb, " ");
 		string_builder_append(&sb, obj_file_name);
-		
 
-				
 		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.18362.0\\ucrt\\x64\" ");
 		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.23.28105\\lib\\x64\" ");
 		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.18362.0\\um\\x64\" ");
@@ -235,7 +236,6 @@ namespace Zodiac
 			string_builder_append(&sb, lib_name);
 			string_builder_append(&sb, " ");
 		}
-		
 
 		PROCESS_INFORMATION process_info;
 		STARTUPINFO startup_info;
@@ -246,15 +246,16 @@ namespace Zodiac
 		auto cmd_str = string_builder_to_string(&sb);
 
 		printf("Running link command: %s\n", cmd_str);
-		auto result = CreateProcessA(nullptr, cmd_str, nullptr, nullptr, true, 0, nullptr, nullptr,
-									&startup_info, &process_info);
+		auto result = CreateProcessA(nullptr, cmd_str, nullptr, nullptr, true, 0, nullptr,
+                                     nullptr, &startup_info, &process_info);
 		mem_free(cmd_str);
 
 		if (!result)
 		{
 			auto err = GetLastError();
 			LPSTR message_buf = nullptr;
-			size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+			size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                                         FORMAT_MESSAGE_FROM_SYSTEM |
 				                         FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, err,
 				                         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 				                         (LPSTR)&message_buf, 0, nullptr);
@@ -263,7 +264,7 @@ namespace Zodiac
 			LocalFree(message_buf);
 			assert(false);
 		}
-		
+
 		WaitForSingleObject(process_info.hProcess, INFINITE);
 		CloseHandle(process_info.hProcess);
 		CloseHandle(process_info.hThread);
@@ -309,7 +310,10 @@ namespace Zodiac
         {
             Atom lib_name = lib_names[i];
 			const char* lib_path = nullptr;
-			if (!string_ends_with(lib_name.data, ".dll") && !string_ends_with(lib_name.data, ".lib"))
+
+#ifdef WIN32
+			if (!string_ends_with(lib_name.data, ".dll") &&
+                !string_ends_with(lib_name.data, ".lib"))
 			{
 				lib_path = string_append(lib_name.data, ".lib");
 			}
@@ -317,6 +321,9 @@ namespace Zodiac
 			{
 				lib_path = string_append(lib_name.data, "");
 			}
+#else
+            lib_path = string_append(lib_name.data, "");
+#endif
 
             bool found = false;
 
