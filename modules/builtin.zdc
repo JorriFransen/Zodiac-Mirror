@@ -57,9 +57,9 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
     else
     {
         print_stack_trace();
-        // exit(-1);
-        nptr : *int = null;
-        <nptr = 1;
+        exit((:s32) (-1));
+        // nptr : *int = null;
+        // <nptr = 1;
     }
 }
 

@@ -169,13 +169,13 @@ __zodiac_start_thread :: (_thread_start_info: *void) -> *void
     return ret_val;
 }
 
-_create_thread :: (start_info: Thread_Start_Info) -> bool
+_create_thread :: (start_info: *Thread_Start_Info) -> bool
 {
 
     thread_ptr := *start_info.thread;
     handle_ptr := *thread_ptr.handle;
     success := pthread.pthread_create((:*pthread.pthread_t)(handle_ptr), null,
-                                    *__zodiac_start_thread, *start_info);
+                                    *__zodiac_start_thread, start_info);
     return success == 0;
 }
 
