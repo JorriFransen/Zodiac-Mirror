@@ -172,10 +172,9 @@ namespace Zodiac
 		llvm_collect_dynamic_lib_names(builder->context, module, &dynamic_lib_names);
 		llvm_convert_lib_names_to_paths(builder->context, dynamic_lib_names);
 
-
-
 		String_Builder sb;
 		string_builder_init(&sb, 2048);
+
 #ifdef __linux__
 		string_builder_append(&sb, "ld -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib64/Scrt1.o /usr/lib64/crti.o /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtbeginS.o ");
         string_builder_append(&sb, obj_file_name);
