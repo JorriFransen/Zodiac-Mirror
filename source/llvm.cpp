@@ -2,6 +2,7 @@
 
 #include "builtin.h"
 #include "llvm_types.h"
+#include "platform.h"
 
 #include <llvm-c/Analysis.h>
 #include <llvm-c/TargetMachine.h>
@@ -220,6 +221,9 @@ namespace Zodiac
 		   fprintf(stderr, "Link command failed with exit code: %d\n", close_ret);
 		}
 #elif WIN32
+
+		auto msvc_tools_dir = find_msvc_tools_dir();
+
 		string_builder_append(&sb, "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.23.28105\\bin\\Hostx64\\x64\\link.exe ");
 		string_builder_append(&sb, "/NOLOGO /WX /SUBSYSTEM:CONSOLE ");
 
@@ -234,9 +238,12 @@ namespace Zodiac
 		string_builder_append(&sb, " ");
 		string_builder_append(&sb, obj_file_name);
 
-		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.18362.0\\ucrt\\x64\" ");
-		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.23.28105\\lib\\x64\" ");
-		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.18362.0\\um\\x64\" ");
+		//string_builder_append(&sb, " /LIBPATH:\"");
+		//string_builder_append(&sb, "C:\\Program Files(x86)\\Windows Kits\\10\\Lib\\10.0.18362.0");
+		//string_builder_append(&sb, "\\ucrt\\x64\" ");
+
+		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.22.27905\\lib\\x64\" ");
+		//string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.18362.0\\um\\x64\" ");
 
 		for (uint64_t i = 0; i < BUF_LENGTH(dynamic_lib_names); i++)
 		{

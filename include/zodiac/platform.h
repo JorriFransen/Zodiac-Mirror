@@ -68,6 +68,11 @@ static const char* _get_environment_variable(const char* name)
 	return result;
 }
 
+namespace Zodiac
+{
+	const char* find_msvc_tools_dir();
+}
+
 #elif __linux__
 
 #include <cstdlib>
