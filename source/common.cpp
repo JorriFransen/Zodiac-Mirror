@@ -384,6 +384,26 @@ bool string_contains(const char* str, char c)
     return false;
 }
 
+bool string_ends_with(const char* str, const char* end)
+{
+	auto str_len = strlen(str);
+	auto end_len = strlen(end);
+
+	assert(end_len <= str_len);
+
+	size_t offset = str_len - end_len;
+
+	for (size_t i = 0; i < end_len; i++)
+	{
+		if (end[i] != str[offset + i])
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 const char* extract_directory_from_path(const char* path)
 {
     assert(path);

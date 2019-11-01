@@ -8,6 +8,10 @@
 
 #include <dynload.h>
 
+#ifdef WIN32
+#include <Windows.h>
+#endif
+
 namespace Zodiac
 {
     uint64_t _get_atom_hash(const Atom& atom)
@@ -134,12 +138,15 @@ namespace Zodiac
                 LLVMRelocPIC,
                 LLVMCodeModelDefault);
 
+			const char* obj_file_name = string_append(module->name, ".o");
+
             bool obj_emit_failed = LLVMTargetMachineEmitToFile(
                 llvm_target_machine,
                 builder->llvm_module,
-                (char*)"object_file.o",
+				(char*)obj_file_name,
                 LLVMObjectFile,
                 &error);
+
 
             if (obj_emit_failed)
                 fprintf(stderr, "%s", error);
@@ -148,50 +155,9 @@ namespace Zodiac
             LLVMDisposeMessage(error);
             error = nullptr;
 
-            BUF(Atom) dynamic_lib_names = nullptr;
-            llvm_collect_dynamic_lib_names(builder->context, module, &dynamic_lib_names);
-            llvm_convert_lib_names_to_paths(builder->context, dynamic_lib_names);
-            // for (uint64_t i = 0; i < BUF_LENGTH(dynamic_lib_names); i++)
-            // {
-            //     fprintf(stderr, "Linking with dynamic lib: %s\n", dynamic_lib_names[i].data);
-            // }
+			llvm_run_linker(builder, module, obj_file_name);
 
-            String_Builder sb;
-            string_builder_init(&sb, 2048);
-            string_builder_append(&sb, "ld -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib64/Scrt1.o /usr/lib64/crti.o /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtbeginS.o object_file.o -lc ");
-            for (uint64_t i = 0; i < BUF_LENGTH(dynamic_lib_names); i++)
-            {
-                string_builder_append(&sb, dynamic_lib_names[i]);
-                string_builder_append(&sb, " ");
-            }
-            string_builder_append(&sb, " /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtendS.o /usr/lib64/crtn.o 2>&1");
-            // string_builder_append(&sb, " /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtendS.o /usr/lib64/crtn.o ");
-
-            const char* link_cmd = string_builder_to_string(&sb);
-            string_builder_free(&sb);
-            BUF_FREE(dynamic_lib_names);
-
-            fprintf(stderr, "Running linker with command: %s\n", link_cmd);
-
-#ifdef __linux__
-            char out_buf[1024];
-            FILE* link_process_handle = popen(link_cmd, "r");
-            assert(link_process_handle);
-
-            while (fgets(out_buf, sizeof(out_buf), link_process_handle) != nullptr)
-            {
-               printf("%s", out_buf);
-            }
-            assert(feof(link_process_handle));
-            int close_ret = pclose(link_process_handle);
-            close_ret = WEXITSTATUS(close_ret);
-            assert(close_ret >= 0);
-
-            if (close_ret != 0)
-            {
-               fprintf(stderr, "Link command failed with exit code: %d\n", close_ret);
-            }
-#endif
+			mem_free(obj_file_name);
 
         }
         else
@@ -199,6 +165,114 @@ namespace Zodiac
             BUF_PUSH(builder->emitted_modules, module);
         }
     }
+
+	void llvm_run_linker(LLVM_IR_Builder* builder, IR_Module* module, const char* obj_file_name)
+	{
+		BUF(Atom) dynamic_lib_names = nullptr;
+		llvm_collect_dynamic_lib_names(builder->context, module, &dynamic_lib_names);
+		llvm_convert_lib_names_to_paths(builder->context, dynamic_lib_names);
+
+
+
+		String_Builder sb;
+		string_builder_init(&sb, 2048);
+#ifdef __linux__
+		string_builder_append(&sb, "ld -dynamic-linker /lib64/ld-linux-x86-64.so.2 /usr/lib64/Scrt1.o /usr/lib64/crti.o /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtbeginS.o object_file.o -lc ");
+		for (uint64_t i = 0; i < BUF_LENGTH(dynamic_lib_names); i++)
+		{
+			string_builder_append(&sb, dynamic_lib_names[i]);
+			string_builder_append(&sb, " ");
+		}
+		string_builder_append(&sb, " /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtendS.o /usr/lib64/crtn.o 2>&1");
+		// string_builder_append(&sb, " /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtendS.o /usr/lib64/crtn.o ");
+
+		const char* link_cmd = string_builder_to_string(&sb);
+		string_builder_free(&sb);
+
+		fprintf(stderr, "Running linker with command: %s\n", link_cmd);
+
+		char out_buf[1024];
+		FILE* link_process_handle = popen(link_cmd, "r");
+		assert(link_process_handle);
+
+		while (fgets(out_buf, sizeof(out_buf), link_process_handle) != nullptr)
+		{
+		   printf("%s", out_buf);
+		}
+		assert(feof(link_process_handle));
+		int close_ret = pclose(link_process_handle);
+		close_ret = WEXITSTATUS(close_ret);
+		assert(close_ret >= 0);
+
+		if (close_ret != 0)
+		{
+		   fprintf(stderr, "Link command failed with exit code: %d\n", close_ret);
+		}
+#elif WIN32
+		string_builder_append(&sb, "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.23.28105\\bin\\Hostx64\\x64\\link.exe ");
+		string_builder_append(&sb, "/NOLOGO /WX /SUBSYSTEM:CONSOLE ");
+
+		string_builder_append(&sb, " msvcrtd.lib");
+		//string_builder_append(&sb, " ucrtd.lib");
+		//string_builder_append(&sb, " vcruntimed.lib");
+		string_builder_append(&sb, " user32.lib");
+		string_builder_append(&sb, " kernel32.lib");
+		string_builder_append(&sb, " legacy_stdio_definitions.lib");
+		//string_builder_append(&sb, " legacy_stdio_definitions.lib");
+
+		string_builder_append(&sb, " ");
+		string_builder_append(&sb, obj_file_name);
+		
+
+				
+		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.18362.0\\ucrt\\x64\" ");
+		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.23.28105\\lib\\x64\" ");
+		string_builder_append(&sb, " /LIBPATH:\"C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.18362.0\\um\\x64\" ");
+
+		for (uint64_t i = 0; i < BUF_LENGTH(dynamic_lib_names); i++)
+		{
+			Atom lib_name = dynamic_lib_names[i];
+			string_builder_append(&sb, lib_name);
+			string_builder_append(&sb, " ");
+		}
+		
+
+		PROCESS_INFORMATION process_info;
+		STARTUPINFO startup_info;
+		ZeroMemory(&startup_info, sizeof(startup_info));
+		ZeroMemory(&process_info, sizeof(process_info));
+		startup_info.cb = sizeof(startup_info);
+
+		auto cmd_str = string_builder_to_string(&sb);
+
+		printf("Running link command: %s\n", cmd_str);
+		auto result = CreateProcessA(nullptr, cmd_str, nullptr, nullptr, true, 0, nullptr, nullptr,
+									&startup_info, &process_info);
+		mem_free(cmd_str);
+
+		if (!result)
+		{
+			auto err = GetLastError();
+			LPSTR message_buf = nullptr;
+			size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+				                         FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, err,
+				                         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+				                         (LPSTR)&message_buf, 0, nullptr);
+
+			fprintf(stderr, "%.*s", size, message_buf);
+			LocalFree(message_buf);
+			assert(false);
+		}
+		
+		WaitForSingleObject(process_info.hProcess, INFINITE);
+		CloseHandle(process_info.hProcess);
+		CloseHandle(process_info.hThread);
+
+#endif
+
+
+		BUF_FREE(dynamic_lib_names);
+	}
 
     void llvm_collect_dynamic_lib_names(Context* context, IR_Module* module, BUF(Atom)* dest_arr)
     {
@@ -234,7 +308,15 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(lib_names); i++)
         {
             Atom lib_name = lib_names[i];
-            const char* lib_path = lib_name.data;
+			const char* lib_path = nullptr;
+			if (!string_ends_with(lib_name.data, ".dll") && !string_ends_with(lib_name.data, ".lib"))
+			{
+				lib_path = string_append(lib_name.data, ".lib");
+			}
+			else
+			{
+				lib_path = string_append(lib_name.data, "");
+			}
 
             bool found = false;
 
@@ -246,7 +328,7 @@ namespace Zodiac
             for (uint64_t j = 0; j < BUF_LENGTH(context->module_search_path); j++)
             {
                 Atom search_path = context->module_search_path[j];
-                auto import_atom = atom_append(context->atom_table, search_path, lib_name);
+                auto import_atom = atom_append(context->atom_table, search_path, lib_path);
                 if (file_exists(import_atom.data))
                 {
                     lib_names[i] = import_atom;
@@ -257,15 +339,23 @@ namespace Zodiac
 
             if (!found)
             {
-                fprintf(stderr, "Did not find dynamic library: %s\n", lib_name.data);
-                // DLLib* loaded_lib = dlLoadLibrary(lib_path);
-                // assert(loaded_lib);
-                // char lib_path_buf[2048];
-                // auto ret = dlGetLibraryPath(loaded_lib, lib_path_buf, 2048);
-                // assert(ret > 0);
-                // lib_names[i] = atom_get(context->atom_table, lib_path_buf);
-                // dlFreeLibrary(loaded_lib);
+                 // fprintf(stderr, "Did not find dynamic library: %s\n", lib_name.data);
+                 DLLib* loaded_lib = dlLoadLibrary(lib_path);
+				 if (loaded_lib)
+				 {
+					 char lib_path_buf[2048];
+					 auto ret = dlGetLibraryPath(loaded_lib, lib_path_buf, 2048);
+					 assert(ret > 0);
+					 lib_names[i] = atom_get(context->atom_table, lib_path_buf);
+					 dlFreeLibrary(loaded_lib);
+				 }
+				 else
+				 {
+					 lib_names[i] = atom_get(context->atom_table, lib_path);
+				 }
             }
+
+			mem_free(lib_path);
         }
     }
 
@@ -1229,6 +1319,7 @@ namespace Zodiac
                         llvm_arg_value = LLVMBuildFPCast(builder->llvm_builder, llvm_arg_value,
                                                          LLVMDoubleType(), "");
                     }
+
                     BUF_PUSH(args, llvm_arg_value);
                 }
                 for (uint64_t i = 0; i < arg_count; i++)
@@ -1465,7 +1556,7 @@ namespace Zodiac
                 {
                     case IRV_ALLOCL:
                     case IRV_GLOBAL:
-                    case IRV_ARGUMENT:
+					case IRV_ARGUMENT:
                     {
                         LLVMValueRef llvm_allocl = llvm_emit_ir_value(builder, a1);
                         llvm_assign_result(builder, r, llvm_allocl);

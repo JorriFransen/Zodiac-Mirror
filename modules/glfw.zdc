@@ -1,7 +1,14 @@
 
 static_if (PLATFORM_WINDOWS)
 {
-    #dynamic_link "glfw3.dll";
+    static_if (ZODIAC_RUNNING_BYTECODE)
+    {
+        #dynamic_link "glfw.dll";
+    }
+    else
+    {
+        #dynamic_link "glfw3dll";
+    }
 }
 else static_if (PLATFORM_LINUX)
 {
