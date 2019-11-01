@@ -187,7 +187,16 @@ namespace Zodiac
 			string_builder_append(&sb, " ");
 		}
 		string_builder_append(&sb, " /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtendS.o /usr/lib64/crtn.o 2>&1");
+		string_builder_append(&sb, " /usr/lib64/crtn.o ");
+        auto exe_file_name = extract_file_name_from_path(obj_file_name);
+        string_builder_append(&sb, "-o ");
+        string_builder_append(&sb, exe_file_name);
+        string_builder_append(&sb, " ");
+        mem_free(exe_file_name);
+		string_builder_append(&sb, " 2>&1");
 		// string_builder_append(&sb, " /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtendS.o /usr/lib64/crtn.o ");
+
+
 
 		const char* link_cmd = string_builder_to_string(&sb);
 		string_builder_free(&sb);
