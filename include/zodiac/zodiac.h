@@ -80,7 +80,7 @@ namespace Zodiac
     struct Context
     {
         Arena* arena = nullptr;
-        Atom_Table* atom_table;
+		Atom_Table* atom_table = nullptr;
         BUF(Atom) module_search_path = {};
 
 		AST_Scope* builtin_scope = nullptr;

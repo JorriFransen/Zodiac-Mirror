@@ -243,7 +243,7 @@ int main(int argc, char** argv)
                 ir_return_value = 7;
             }
 
-			printf("return value: %d\n", ir_return_value);
+			printf("return value: %" PRIu64 "\n", ir_return_value);
 		}
     }
     else
@@ -264,5 +264,5 @@ int main(int argc, char** argv)
         llvm_builder_free(&llvm_ir_builder);
     }
 
-    return ir_return_value;
+    return (int)ir_return_value;
 }

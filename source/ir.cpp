@@ -1484,6 +1484,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return nullptr;
     }
 
     IR_Value* ir_builder_emit_pointer_math(IR_Builder* ir_builder, IR_Value* pointer_value,
@@ -2900,6 +2903,9 @@ namespace Zodiac
 
             default: assert(false);
         }
+
+		assert(false);
+		return nullptr;
     }
 
     IR_Value* ir_builder_emit_and(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,

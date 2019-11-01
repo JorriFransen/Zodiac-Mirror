@@ -28,7 +28,9 @@ namespace Zodiac
         assert(table);
 
         table->keys = (K*)mem_alloc(sizeof(K) * capacity);
+		assert(table->keys);
         table->values = (V*)mem_alloc(sizeof(V) * capacity);
+		assert(table->values);
         table->empty_key = empty_key;
         table->get_hash = hash_function;
 
