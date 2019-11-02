@@ -309,8 +309,8 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     init(output_sb, 1024);
     defer free(output_sb);
 
-    if (!((mode == RUNNING_BYTECODE || mode == RUNNING_LLVM) &&
-          (:bool)(tf.flags & Test_File_Flag.DONT_RUN)))
+    if (!(mode == RUNNING_BYTECODE || mode == RUNNING_LLVM &&
+          (tf.flags & Test_File_Flag.DONT_RUN)))
     {
         //_c.printf("running command: '%s'\n", command.data);
         out_buf : [1024]u8;

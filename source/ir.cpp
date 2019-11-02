@@ -3204,6 +3204,7 @@ namespace Zodiac
             case AST_EXPR_IDENTIFIER:
             case AST_EXPR_BOOL_LITERAL:
             case AST_EXPR_CALL:
+            case AST_EXPR_SUBSCRIPT:
             {
                 IR_Value* cond_value = ir_builder_emit_expression(ir_builder, cond_expr);
                 ir_builder_emit_jmp_if(ir_builder, cond_value, then_block_val, origin);
