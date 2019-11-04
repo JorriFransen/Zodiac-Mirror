@@ -257,11 +257,11 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     using Test_Mode;
     if (mode == RUNNING_BYTECODE)
     {
-        append(sb, " -e ");
+        append(sb, " -r ");
     }
     else if (mode == RUNNING_LLVM)
     {
-        append(sb, " -l ");
+        append(sb, " -e ");
     }
 
     append(sb, tf.path);
