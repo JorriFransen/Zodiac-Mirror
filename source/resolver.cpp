@@ -1095,7 +1095,6 @@ namespace Zodiac
                 if (result)
                 {
                     suggested_type = statement->assign.lvalue_expression->type;
-
                     result &= resolver_resolve_expression(resolver, statement->assign.expression,
                                                           scope, suggested_type);
                 }
@@ -1107,22 +1106,25 @@ namespace Zodiac
                                                 statement->assign.lvalue_expression->type,
                                                 statement->assign.expression->type);
 
-				if (types_match && statement->assign.lvalue_expression->type !=
-					statement->assign.expression->type && statement->assign.lvalue_expression->type->flags & AST_TYPE_FLAG_INT)
+                auto lvalue_expr = statement->assign.lvalue_expression;
+                auto assign_type = statement->assign.expression->type;
+				if (types_match && lvalue_expr->type != assign_type &&
+                    lvalue_expr->type->flags & AST_TYPE_FLAG_INT)
 				{
-					resolver_transform_to_cast_expression(resolver, statement->assign.expression, statement->assign.lvalue_expression->type);
+					resolver_transform_to_cast_expression(resolver, statement->assign.expression,
+                                                          lvalue_expr->type);
 				}
 
                 if (!types_match)
                 {
                     auto lvalue = statement->assign.lvalue_expression;
                     auto expr = statement->assign.expression;
-                    types_match = true;
 
                     if ((lvalue->type->flags & AST_TYPE_FLAG_FLOAT) &&
                         (expr->type->flags & AST_TYPE_FLAG_INT))
                     {
                         resolver_transform_to_cast_expression(resolver, expr, lvalue->type);
+                        types_match = true;
                     }
                     else
                     {
@@ -1669,8 +1671,7 @@ namespace Zodiac
                 if (suggested_type)
                 {
                     if (suggested_type->flags & AST_TYPE_FLAG_INT ||
-                        suggested_type->kind == AST_TYPE_ENUM ||
-                        suggested_type->kind == AST_TYPE_STRUCT)
+                        suggested_type->kind == AST_TYPE_ENUM)
                     {
                     }
                     else if (suggested_type->flags & AST_TYPE_FLAG_FLOAT)
@@ -1680,7 +1681,8 @@ namespace Zodiac
                         expression->float_literal.r32 = (float)int_value;
                         expression->float_literal.r64 = (double)int_value;
                     }
-                    else if (suggested_type->kind == AST_TYPE_POINTER)
+                    else if (suggested_type->kind == AST_TYPE_POINTER ||
+                             suggested_type->kind == AST_TYPE_STRUCT)
                     {
                         suggested_type = Builtin::type_s64;
                     }
