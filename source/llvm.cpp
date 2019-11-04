@@ -170,7 +170,9 @@ namespace Zodiac
 	void llvm_run_linker(LLVM_IR_Builder* builder, IR_Module* module, const char* obj_file_name)
 	{
         auto x64_lib_path = find_linux_x64_lib_path();
-        printf("x64_lib_path: %s\n", x64_lib_path);
+        auto gcc_lib_path = find_linux_gcc_lib_path();
+        // printf("x64_lib_path: %s\n", x64_lib_path);
+        printf("gcc_lib_path: %s\n", gcc_lib_path);
 
 		BUF(Atom) dynamic_lib_names = nullptr;
 		llvm_collect_dynamic_lib_names(builder->context, module, &dynamic_lib_names);
@@ -180,8 +182,17 @@ namespace Zodiac
 		string_builder_init(&sb, 2048);
 
 #ifdef __linux__
-		string_builder_append(&sb, "ld -dynamic-linker /lib64/ld-linux-x86-64.so.2");
-        string_builder_append(&sb, "/usr/lib64/Scrt1.o /usr/lib64/crti.o /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtbeginS.o ");
+		string_builder_append(&sb, "ld -dynamic-linker /lib64/ld-linux-x86-64.so.2 ");
+
+        string_builder_append(&sb, x64_lib_path);
+        string_builder_append(&sb, "Scrt1.o ");
+
+        string_builder_append(&sb, x64_lib_path);
+        string_builder_append(&sb, "crti.o ");
+
+        string_builder_append(&sb, gcc_lib_path);
+        string_builder_append(&sb, "crtbeginS.o ");
+
         string_builder_append(&sb, obj_file_name);
         string_builder_append(&sb, " -lc ");
 
@@ -190,8 +201,10 @@ namespace Zodiac
 			string_builder_append(&sb, dynamic_lib_names[i]);
 			string_builder_append(&sb, " ");
 		}
-		string_builder_append(&sb, " /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtendS.o /usr/lib64/crtn.o 2>&1");
-		string_builder_append(&sb, " /usr/lib64/crtn.o ");
+        string_builder_append(&sb, gcc_lib_path);
+		string_builder_append(&sb, "crtendS.o ");
+        string_builder_append(&sb, x64_lib_path);
+        string_builder_append(&sb, "crtn.o ");
         auto exe_file_name = extract_file_name_from_path(obj_file_name);
         string_builder_append(&sb, "-o ");
         string_builder_append(&sb, exe_file_name);
