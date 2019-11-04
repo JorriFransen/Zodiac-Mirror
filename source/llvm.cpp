@@ -50,6 +50,8 @@ namespace Zodiac
     {
         assert(module->name);
 
+        auto context = builder->context;
+
         maybe_init_llvm_types(builder);
 
         if (root)
@@ -112,7 +114,10 @@ namespace Zodiac
             error = nullptr;
 
             char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
-            // printf("%s", llvm_module_string);
+            if (context->options.print_llvm)
+            {
+                printf("%s", llvm_module_string);
+            }
             LLVMDisposeMessage(llvm_module_string);
 
             LLVMInitializeNativeTarget();

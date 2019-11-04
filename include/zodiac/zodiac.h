@@ -46,6 +46,7 @@ namespace Zodiac
         bool print_ir = false;
 		bool execute_ir = false;
         bool emit_llvm = false;
+        bool print_llvm = false;
     };
 
     enum Option_Kind

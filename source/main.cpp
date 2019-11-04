@@ -50,6 +50,11 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
+    if (options.print_llvm && !options.emit_llvm)
+    {
+        fprintf(stderr, "Invalid option: 'print_llvm' requires 'emit_llvm'\n");
+    }
+
 
     Arena arena = arena_create(MB(2));
     Context _context;

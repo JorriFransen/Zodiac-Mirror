@@ -59,8 +59,9 @@ namespace Zodiac
         {
             BOOL_OPTION(verbose, 'v'),
             BOOL_OPTION(print_ir, 'p'),
-            BOOL_OPTION(execute_ir, 'e'),
-            BOOL_OPTION(emit_llvm, 'l'),
+            BOOL_OPTION(execute_ir, 'r'),
+            BOOL_OPTION(emit_llvm, 'e'),
+            BOOL_OPTION(print_llvm, 'l'),
             STRING_OPTION(run_argument, 'a'),
         };
 
