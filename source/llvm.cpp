@@ -171,8 +171,6 @@ namespace Zodiac
 	{
         auto x64_lib_path = find_linux_x64_lib_path();
         auto gcc_lib_path = find_linux_gcc_lib_path();
-        // printf("x64_lib_path: %s\n", x64_lib_path);
-        printf("gcc_lib_path: %s\n", gcc_lib_path);
 
 		BUF(Atom) dynamic_lib_names = nullptr;
 		llvm_collect_dynamic_lib_names(builder->context, module, &dynamic_lib_names);
