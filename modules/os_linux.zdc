@@ -11,6 +11,8 @@ using _og;
 
 pthread :: import pthread;
 
+#foreign unlink :: (pathname: *u8) -> int;
+
 is_directory :: (path: String) -> bool
 {
     statbuf : posix.stat_struct;
@@ -87,6 +89,16 @@ get_full_path :: (name: String) -> String
 
     _c.printf("result: %s\n", result.data);
     return result;
+}
+
+delete_file :: (path: String) -> bool
+{
+    assert(is_regular_file(path));
+
+    result := unlink(path.data);
+    assert(result == 0);
+
+    return true;
 }
 
 get_page_size :: () -> s64

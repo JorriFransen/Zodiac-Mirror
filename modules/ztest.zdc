@@ -279,6 +279,12 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
         append(sb, " && ./");
         append(sb, exe_file_name);
         append(sb, " 2>&1 ");
+
+        // @CLEANUP: Do we really wanna do this here?
+        if (os.is_regular_file(exe_file_name))
+        {
+            os.delete_file(exe_file_name);
+        }
     }
 
     command := copy_to_string(sb);

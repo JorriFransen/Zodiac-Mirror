@@ -89,15 +89,10 @@ read_file_string :: (path: String, result_ptr: *bool) -> String
     <result_ptr = false;
 }
 
-// get_terminal_state :: () -> os_specific.Terminal_State
-// {
-//     return os_specific.get_terminal_state();
-// }
-
-// set_terminal_state :: (new_state: os_specific.Terminal_State)
-// {
-//     os_specific.set_terminal_state(new_state);
-// }
+delete_file :: (path: String) -> bool
+{
+    return os_specific.delete_file(path);
+}
 
 save_terminal_state :: () -> void
 {
