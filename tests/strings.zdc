@@ -11,6 +11,8 @@ newline :: () { printf("\n"); }
 
 main :: ()
 {
+    _c.open_std_handles();
+
     pointer_test();
 
     return 0;

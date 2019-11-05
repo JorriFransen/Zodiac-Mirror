@@ -17,6 +17,8 @@ newline :: () { printf("\n"); }
 
 main :: () -> int
 {
+    _c.open_std_handles();
+
     x : int = add(4, 5);
     assert(x == 9);
     y := sub(x, 2);

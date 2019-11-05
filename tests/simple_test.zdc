@@ -10,6 +10,8 @@ Vec2i :: struct
 
 main :: () -> u64
 {
+    _c.open_std_handles();
+
     pos : Vec2i;
     pos.x = 1;
     pos.y = 2;

@@ -315,7 +315,7 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     init(output_sb, 1024);
     defer free(output_sb);
 
-    if (!(mode == RUNNING_BYTECODE || mode == RUNNING_LLVM &&
+    if (!((mode == RUNNING_BYTECODE || mode == RUNNING_LLVM) &&
           (tf.flags & Test_File_Flag.DONT_RUN)))
     {
         // _c.printf("running command: '%s'\n", command.data);
@@ -390,7 +390,7 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
         else
         {
             os.set_terminal_color(Terminal_Color.GREEN, false);
-            _c.printf(" OK\n");
+            _c.printf(" OK (ret: %d)\n", exit_code);
             os.reset_terminal_state();
             // _c.printf("\n%s\n", output_str.data);
             return Test_Result_Status.SUCCESS;

@@ -71,6 +71,8 @@ Top_Level :: struct
 
 main :: () -> u64
 {
+    _c.open_std_handles();
+
     print("union test");
 
     _c.printf("sizeof(Top_Level) = %lu\n", sizeof(Top_Level));

@@ -1804,7 +1804,9 @@ namespace Zodiac
             }
         }
 
-        return ir_builder_emit_lvalue(ir_builder, expression);
+        auto res = ir_builder_emit_lvalue(ir_builder, expression);
+        assert(res->type->kind == AST_TYPE_POINTER);
+        return res;
 
         assert(false);
         return nullptr;
@@ -3592,7 +3594,11 @@ namespace Zodiac
             IR_Value* target_alloc = ir_builder_value_for_declaration(ir_builder, lvalue_decl);
             assert(target_alloc);
 
-            if (force_pointer &&
+            if (target_alloc->kind == IRV_FUNCTION)
+            {
+                return ir_builder_emit_addrof_function(ir_builder, target_alloc, lvalue_decl->function.type, lvalue_expr->file_pos);
+            }
+            else if (force_pointer &&
                 (target_alloc->kind == IRV_ALLOCL || target_alloc->kind == IRV_GLOBAL))
             {
                 AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,
