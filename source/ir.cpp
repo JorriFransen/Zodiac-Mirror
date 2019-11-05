@@ -1798,139 +1798,13 @@ namespace Zodiac
                                                                           decl);
             assert(expression_value);
 
-            if (expression_value->kind == IRV_FUNCTION)
+            if (expression_value->kind != IRV_FUNCTION)
             {
-                if (expression_value->function->flags & IR_FUNC_FLAG_FOREIGN)
-                {
-                    return ir_builder_emit_addrof_foreign(ir_builder, expression_value,
-                                                          expression->type, expression->file_pos);
-                }
-                else
-                {
-                    return ir_builder_emit_addrof_function(ir_builder, expression_value,
-                                                           expression->type, origin);
-                }
-            }
-            else
-            {
-                AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,
-                                                                        expression->type);
-                IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
-
-                IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_ADDROF,
-                                                        expression_value, nullptr,
-                                                        result_value);
-                ir_builder_emit_instruction(ir_builder, iri);
-
-                return result_value;
+                return ir_builder_emit_lvalue(ir_builder, expression, true);
             }
         }
-        else if (expression->kind == AST_EXPR_SUBSCRIPT)
-        {
-            AST_Expression* base_expr = expression->subscript.base_expression;
-            AST_Expression* index_expr = expression->subscript.index_expression;
-            if (base_expr->type->kind == AST_TYPE_POINTER)
-            {
-                IR_Value* base_pointer = ir_builder_emit_expression(ir_builder,
-                                                                    base_expr);
-                IR_Value* index_value = ir_builder_emit_expression(ir_builder,
-                                                                   index_expr);
-                return ir_builder_emit_array_offset_pointer(ir_builder, base_pointer,
-                                                            index_value,
-                                                            index_expr->file_pos);
-            }
-            else
-            {
-                // assert(base_expr->kind == AST_EXPR_IDENTIFIER);
-                // AST_Declaration* ident_decl = base_expr->identifier->declaration;
-                // IR_Value* array_allocl = ir_builder_value_for_declaration(ir_builder,
-                //                                                           ident_decl);
-                // assert(base_expr->type->kind == AST_TYPE_STATIC_ARRAY);
-                IR_Value* array_value = ir_builder_emit_lvalue(ir_builder, base_expr);
-                IR_Value* index_value = ir_builder_emit_expression(ir_builder,
-                                                                   index_expr);
-                return ir_builder_emit_array_offset_pointer(ir_builder, array_value,
-                                                            index_value, index_expr->file_pos);
-            }
-        }
-        else if (expression->kind == AST_EXPR_DOT)
-        {
-            AST_Expression* base_expression = expression->dot.base_expression;
-            AST_Expression* member_expression = expression->dot.member_expression;
 
-            assert(base_expression->kind == AST_EXPR_IDENTIFIER);
-			if (base_expression->type)
-			{
-                return ir_builder_emit_lvalue(ir_builder, expression);
-                // bool is_pointer = false;
-                // AST_Type* struct_type = nullptr;
-                // if (base_expression->type->kind == AST_TYPE_STRUCT)
-                // {
-                //     struct_type = base_expression->type;
-                // }
-                // else if (base_expression->type->kind == AST_TYPE_POINTER)
-                // {
-                //     AST_Type* pointer_type = base_expression->type;
-                //     if (pointer_type->pointer.base->kind == AST_TYPE_STRUCT)
-                //     {
-                //         struct_type = pointer_type->pointer.base;
-                //         is_pointer = true;
-                //     }
-                //     else assert(false);
-                // }
-                // else assert(false);
-                // assert(struct_type);
-
-				// assert(member_expression->kind == AST_EXPR_IDENTIFIER);
-
-				// uint64_t member_index = 0;
-				// bool found = false;
-				// auto member_decls = struct_type->aggregate_type.member_declarations;
-				// for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
-				// {
-				// 	AST_Declaration* member_decl = member_decls[i];
-				// 	if (member_expression->identifier->atom == member_decl->identifier->atom)
-				// 	{
-				// 		member_index = i;
-				// 		found = true;
-				// 		break;
-				// 	}
-				// }
-
-				// assert(found);
-
-				// auto base_decl = base_expression->identifier->declaration;
-				// IR_Value* struct_allocl = ir_builder_value_for_declaration(ir_builder,
-				// 	base_decl);
-
-                // if (is_pointer)
-                // {
-                //     struct_allocl = ir_builder_emit_load(ir_builder, struct_allocl, origin);
-                //     struct_allocl = ir_builder_emit_loadp(ir_builder, struct_allocl, origin);
-                // }
-
-				// return ir_builder_emit_aggregate_offset_pointer(ir_builder, struct_allocl,
-                //                                                 member_index,
-                //                                                 origin);
-			}
-			else if (expression->type->kind == AST_TYPE_FUNCTION)
-			{
-				IR_Value* func_value = ir_builder_value_for_declaration(ir_builder,
-					member_expression->identifier->declaration);
-				assert(func_value);
-				assert(func_value->kind == IRV_FUNCTION);
-				assert(func_value->function->flags & IR_FUNC_FLAG_FOREIGN);
-
-				return ir_builder_emit_addrof_foreign(ir_builder, func_value, expression->type,
-                                                      origin);
-
-			}
-			else assert(false);
-        }
-        else
-        {
-            assert(false);
-        }
+        return ir_builder_emit_lvalue(ir_builder, expression);
 
         assert(false);
         return nullptr;
@@ -3702,7 +3576,12 @@ namespace Zodiac
         }
     }
 
-    IR_Value* ir_builder_emit_lvalue(IR_Builder* ir_builder, AST_Expression* lvalue_expr)
+    // @TODO: FIXME: @:CLEANUP: The result value should always be a pointer, so force pointer
+    //    should not be necessary. The problem is that only emit_addrof calls calls this function
+    //    expecting a pointer, so other call sites will take the address of this pointer instead
+    //    of using the pointer.
+    IR_Value* ir_builder_emit_lvalue(IR_Builder* ir_builder, AST_Expression* lvalue_expr,
+                                     bool force_pointer /*=false*/)
     {
         assert(ir_builder);
         assert(lvalue_expr);
@@ -3712,6 +3591,19 @@ namespace Zodiac
             AST_Declaration* lvalue_decl = lvalue_expr->identifier->declaration;
             IR_Value* target_alloc = ir_builder_value_for_declaration(ir_builder, lvalue_decl);
             assert(target_alloc);
+
+            if (force_pointer &&
+                (target_alloc->kind == IRV_ALLOCL || target_alloc->kind == IRV_GLOBAL))
+            {
+                AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,
+                                                                        lvalue_expr->type);
+                IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
+                IR_Instruction* iri = ir_instruction_new(ir_builder, lvalue_expr->file_pos,
+                                                        IR_OP_ADDROF, target_alloc, nullptr,
+                                                         result_value);
+                ir_builder_emit_instruction(ir_builder, iri);
+                target_alloc = result_value;
+            }
             return target_alloc;
         }
         else if (lvalue_expr->kind == AST_EXPR_DOT)
@@ -3720,15 +3612,19 @@ namespace Zodiac
 
             IR_Value* base_value = nullptr;
 
+            if (lvalue_expr->type->kind == AST_TYPE_FUNCTION)
+            {
+                IR_Value* func_value = ir_builder_value_for_declaration(
+                    ir_builder, member_expression->identifier->declaration);
+                assert(func_value);
+                assert(func_value->function->flags & IR_FUNC_FLAG_FOREIGN);
+                return ir_builder_emit_addrof_foreign(ir_builder, func_value, lvalue_expr->type,
+                                                      lvalue_expr->file_pos);
+            }
+
             base_value = ir_builder_emit_lvalue(ir_builder, lvalue_expr->dot.base_expression);
 
             bool need_load = true;
-
-            // if (base_value->kind == IRV_ARGUMENT)
-            // {
-            //     base_value= ir_builder_emit_loada(ir_builder, base_value, lvalue_expr->file_pos);
-            //     need_load = false;
-            // }
 
             if (base_value->kind == IRV_ALLOCL &&
                 (base_value->type->kind == AST_TYPE_STRUCT ||

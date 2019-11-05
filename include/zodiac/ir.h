@@ -448,7 +448,8 @@ namespace Zodiac
     void ir_builder_emit_store(IR_Builder* ir_builder, IR_Value* store, IR_Value* new_value,
                                File_Pos origin);
 
-    IR_Value* ir_builder_emit_lvalue(IR_Builder* ir_builder, AST_Expression* lvalue_expr);
+    IR_Value* ir_builder_emit_lvalue(IR_Builder* ir_builder, AST_Expression* lvalue_expr,
+                                     bool force_pointer = false);
 
     IR_Value* ir_builder_emit_cast(IR_Builder* ir_builder, IR_Value* value, AST_Type* type,
                                    File_Pos file_pos);

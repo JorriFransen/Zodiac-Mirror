@@ -1349,6 +1349,8 @@ namespace Zodiac
             {
                 // Don't do anything for now, these are handled when pushing a new
                 //  stack frame
+                IR_Value* allocl_val = ir_runner_get_local_temporary(runner, iri->result);
+                allocl_val->type = iri->result->type;
                 break;
             }
 
