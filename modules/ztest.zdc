@@ -122,14 +122,14 @@ main :: (argc: int, argv: **u8) -> int
     compile_results := run_tests(Test_Mode.COMPILING, files);
     _c.printf("\nRUNNING_BYTECODE:\n");
     bytecode_results := run_tests(Test_Mode.RUNNING_BYTECODE, files);
-//    _c.printf("\nRUNNING_LLVM:\n");
-//    llvm_results := run_tests(Test_Mode.RUNNING_LLVM, files);
+   _c.printf("\nRUNNING_LLVM:\n");
+   llvm_results := run_tests(Test_Mode.RUNNING_LLVM, files);
 
     _c.printf("\n");
     _c.printf("Done, ran %d tests\n", compile_results.total_file_count);
     report_test_results(compile_results);
     report_test_results(bytecode_results);
-//    report_test_results(llvm_results);
+   report_test_results(llvm_results);
 
     for (i := 0; i < files.files.count; i++)
     {
@@ -257,11 +257,11 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     using Test_Mode;
     if (mode == RUNNING_BYTECODE)
     {
-        append(sb, " -e ");
+        append(sb, " -r ");
     }
     else if (mode == RUNNING_LLVM)
     {
-        append(sb, " -l ");
+        append(sb, " -e ");
     }
 
     append(sb, tf.path);
@@ -269,7 +269,16 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
 
     if (mode == RUNNING_LLVM)
     {
-        append(sb, " && ./a.out 2>&1");
+        exe_file_name := string_new(tf.name);
+        defer _c.free(exe_file_name.data);
+
+        assert(exe_file_name.length > 4);
+        exe_file_name.length -= 4;
+        exe_file_name.data[exe_file_name.length] = '\0';
+
+        append(sb, " && ./");
+        append(sb, exe_file_name);
+        append(sb, " 2>&1 ");
     }
 
     command := copy_to_string(sb);
@@ -300,10 +309,10 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     init(output_sb, 1024);
     defer free(output_sb);
 
-    if (!((mode == RUNNING_BYTECODE || mode == RUNNING_LLVM) &&
-          (:bool)(tf.flags & Test_File_Flag.DONT_RUN)))
+    if (!(mode == RUNNING_BYTECODE || mode == RUNNING_LLVM &&
+          (tf.flags & Test_File_Flag.DONT_RUN)))
     {
-        //_c.printf("running command: '%s'\n", command.data);
+        // _c.printf("running command: '%s'\n", command.data);
         out_buf : [1024]u8;
         command_process := posix.popen(command.data, "r");
 
@@ -336,6 +345,7 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     {
         output_str := copy_to_string(output_sb);
         defer _c.free(output_str.data);
+
 
         result := Test_Result_Status.FAIL;
         if (tf.flags & Test_File_Flag.EXPECT_FAIL)
@@ -483,8 +493,7 @@ apply_config :: (tests: *Test_Files, config: *Test_Config)
 
             if (string_equal(ef_name, tf.name))
             {
-                // tf.flags |= Test_File_Flag.EXPECTED_FAIL;
-                tf.flags = tf.flags | Test_File_Flag.EXPECT_FAIL;
+                tf.flags |= Test_File_Flag.EXPECT_FAIL;
             }
         }
     }
@@ -498,7 +507,7 @@ apply_config :: (tests: *Test_Files, config: *Test_Config)
 
             if (string_equal(dr_name, tf.name))
             {
-                tf.flags = tf.flags | Test_File_Flag.DONT_RUN;
+                tf.flags |= Test_File_Flag.DONT_RUN;
             }
         }
     }

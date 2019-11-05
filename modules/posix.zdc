@@ -108,8 +108,8 @@ static_if (PLATFORM_LINUX)
     {
         return status >> 8;
     }
-    
-    exit_status :: (status: int) -> int { return WEXITSTATUS(status); }
+
+    exit_status :: (status: int) -> int { return status >> 8; }
 }
 else static_if(PLATFORM_WINDOWS)
 {
@@ -126,7 +126,6 @@ else static_if(PLATFORM_WINDOWS)
     pclose :: (stream: *FILE) -> int { return _pclose(stream); }
 
     exit_status :: (status: int) -> int { return status; }
-    
 }
 
 #foreign getenv :: (name: *u8) -> *u8;

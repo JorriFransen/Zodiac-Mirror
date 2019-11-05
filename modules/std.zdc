@@ -155,6 +155,11 @@ string_new :: (c_str: *u8) -> String
     return string_new(c_str, length);
 }
 
+string_new :: (str: String) -> String
+{
+    return string_new(str.data, str.length);
+}
+
 string_length :: (c_str: *u8) -> u64
 {
     length : u64 = 0;

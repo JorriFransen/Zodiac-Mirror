@@ -1,6 +1,6 @@
 static_assert(PLATFORM_LINUX);
 
-#dynamic_link "/usr/lib64/libpthread.so.0";
+#dynamic_link "libpthread.so.0";
 
 int :: typedef s64;
 

@@ -53,7 +53,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_expression_new(Context* context, File_Pos file_pos, AST_Expression_Kind kind)
+    AST_Expression* ast_expression_new(Context* context, File_Pos file_pos,
+                                       AST_Expression_Kind kind)
     {
         assert(context);
 
@@ -1649,8 +1650,23 @@ namespace Zodiac
             {
                 if (type->name)
                 {
-                    string_builder_append(string_builder, "(struct) ");
+                    string_builder_append(string_builder, "(struct ");
                     string_builder_append(string_builder, type->name);
+
+                    if (type->aggregate_type.poly_from)
+                    {
+                        string_builder_append(string_builder, "(");
+                        AST_Declaration* poly_decl = type->aggregate_type.poly_from;
+                        auto agg_decl = poly_decl->aggregate_type.aggregate_decl;
+                        for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->poly_args); i++)
+                        {
+                            if (i > 0) string_builder_append(string_builder, ", ");
+                            string_builder_append(string_builder, agg_decl->poly_args[i]->atom);
+                        }
+                        string_builder_append(string_builder, ")");
+                    }
+
+                    string_builder_append(string_builder, ")");
                 }
                 else
                 {

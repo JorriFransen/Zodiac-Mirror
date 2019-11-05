@@ -144,10 +144,9 @@ create_thread :: (thread_routine: Thread_Routine, user_data: *void) -> Thread
         start_info.thread_routine = thread_routine;
         thread_ptr := *start_info.thread;
 
-        success := os_specific._create_thread(start_info);
-//         success := pthread.pthread_create((:*pthread.pthread_t)(*thread_ptr.handle), null,
-//                                         *__zodiac_start_thread, *start_info);
-        assert(success == 0);
+        success := os_specific._create_thread(*start_info);
+        assert(success);
+
         atomic_cond_signal(*start_info.signal_started);
         atomic_cond_wait(*start_info.signal_thread_copied, null);
 

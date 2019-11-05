@@ -60,10 +60,12 @@ T* _buf_grow(T* buf, size_t elem_size)
     if (buf)
     {
         new_hdr = (BUF_Header*)realloc(_BUF_HDR(buf), new_size);
+		assert(new_hdr);
     }
     else
     {
         new_hdr = (BUF_Header*)mem_alloc(new_size);
+		assert(new_hdr);
         new_hdr->length = 0;
     }
 
@@ -174,6 +176,7 @@ void stack_grow(Stack<T>& stack, uint64_t new_capacity)
     assert(new_capacity > stack.capacity);
 
     T* new_data = (T*)mem_alloc(new_capacity * sizeof(T));
+	assert(new_data);
     memcpy(new_data, stack.data, stack.capacity * sizeof(T));
     mem_free(stack.data);
     stack.data = new_data;

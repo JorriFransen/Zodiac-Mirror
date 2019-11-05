@@ -13,8 +13,8 @@ static_if (PLATFORM_WINDOWS)
 }
 else static_if (PLATFORM_LINUX)
 {
-    #dynamic_link "/usr/lib64/libc.so.6";
-    #dynamic_link "/usr/lib64/libm.so.6";
+    #dynamic_link "libc.so.6";
+    #dynamic_link "libm.so.6";
     #foreign fdopen :: (fd: int, mode: *u8) -> *FILE;
 
     #foreign usleep :: (usec: int) -> int;

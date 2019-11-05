@@ -50,6 +50,11 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
+    if (options.print_llvm && !options.emit_llvm)
+    {
+        fprintf(stderr, "Invalid option: 'print_llvm' requires 'emit_llvm'\n");
+    }
+
 
     Arena arena = arena_create(MB(2));
     Context _context;
@@ -243,8 +248,7 @@ int main(int argc, char** argv)
                 ir_return_value = 7;
             }
 
-			printf("return value: %d\n", ir_return_value);
-		}
+        }
     }
     else
     {
@@ -264,5 +268,5 @@ int main(int argc, char** argv)
         llvm_builder_free(&llvm_ir_builder);
     }
 
-    return ir_return_value;
+    return (int)ir_return_value;
 }

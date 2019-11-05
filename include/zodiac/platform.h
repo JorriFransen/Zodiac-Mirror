@@ -68,6 +68,12 @@ static const char* _get_environment_variable(const char* name)
 	return result;
 }
 
+namespace Zodiac
+{
+	const char* find_msvc_tools_dir();
+	const char* find_windows_kit_lib_dir();
+}
+
 #elif __linux__
 
 #include <cstdlib>
@@ -108,6 +114,12 @@ static const char* _get_environment_variable(const char* name)
 	}
 
 	return result;
+}
+
+namespace Zodiac
+{
+    const char* find_linux_x64_lib_path();
+    const char* find_linux_gcc_lib_path();
 }
 
 #endif

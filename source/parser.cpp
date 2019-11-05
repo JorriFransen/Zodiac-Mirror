@@ -1148,7 +1148,9 @@ namespace Zodiac
 
         while (match_token(parser, TOK_OR))
         {
+            if (peek_token(parser, 0).kind == TOK_EQ) break;
             AST_Expression* rhs = parse_and_expression(parser, scope);
+            if (!rhs) return nullptr;
             auto op = AST_BINOP_OR;
             lhs = ast_binary_expression_new(parser->context, lhs->file_pos, lhs, op, rhs);
         }
@@ -1164,6 +1166,7 @@ namespace Zodiac
 
         while (match_token(parser, TOK_AND))
         {
+            if (peek_token(parser, 0).kind == TOK_EQ) break;
             AST_Expression* rhs = parse_cmp_expression(parser, scope);
 			if (!rhs) return nullptr;
             auto op = AST_BINOP_AND;
@@ -2042,6 +2045,8 @@ namespace Zodiac
             case TOK_MINUS:
             case TOK_MUL:
             case TOK_DIV:
+            case TOK_OR:
+            case TOK_AND:
                 return true;
 
             default:
@@ -2080,6 +2085,18 @@ namespace Zodiac
             case TOK_DIV:
             {
                 result = AST_BINOP_DIV;
+                break;
+            }
+
+            case TOK_OR:
+            {
+                result = AST_BINOP_OR;
+                break;
+            }
+
+            case TOK_AND:
+            {
+                result = AST_BINOP_AND;
                 break;
             }
 
