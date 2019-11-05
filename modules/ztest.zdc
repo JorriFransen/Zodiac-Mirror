@@ -493,8 +493,7 @@ apply_config :: (tests: *Test_Files, config: *Test_Config)
 
             if (string_equal(ef_name, tf.name))
             {
-                // tf.flags |= Test_File_Flag.EXPECTED_FAIL;
-                tf.flags = tf.flags | Test_File_Flag.EXPECT_FAIL;
+                tf.flags |= Test_File_Flag.EXPECT_FAIL;
             }
         }
     }
@@ -508,7 +507,7 @@ apply_config :: (tests: *Test_Files, config: *Test_Config)
 
             if (string_equal(dr_name, tf.name))
             {
-                tf.flags = tf.flags | Test_File_Flag.DONT_RUN;
+                tf.flags |= Test_File_Flag.DONT_RUN;
             }
         }
     }

@@ -53,7 +53,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_expression_new(Context* context, File_Pos file_pos, AST_Expression_Kind kind)
+    AST_Expression* ast_expression_new(Context* context, File_Pos file_pos,
+                                       AST_Expression_Kind kind)
     {
         assert(context);
 
