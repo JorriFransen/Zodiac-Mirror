@@ -34,6 +34,7 @@ Value :: struct
 
 main :: () -> int
 {
+    _c.open_std_handles();
     // print("Type info test");
 
     int_info : *Type_Info = get_type_info(int);

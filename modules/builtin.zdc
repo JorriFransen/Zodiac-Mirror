@@ -1,8 +1,13 @@
 
-_c :: import c;
-
 int :: typedef s64;
 
+FILE :: typedef *void;
+
+stdin  : *FILE = null;
+stdout : *FILE = null;
+stderr : *FILE = null;
+
+#foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
 #foreign exit :: (status: s32) -> void;
 
 static_if (PLATFORM_WINDOWS)
@@ -10,9 +15,13 @@ static_if (PLATFORM_WINDOWS)
     print_stack_trace :: ()
     {
     }
+
+    #foreign _fdopen :: (fd: int, mode: *u8) -> *FILE;
+    fdopen :: (fd: int, mode: *u8) -> *FILE { return _fdopen(fd, mode); }
 }
 else static_if(PLATFORM_LINUX)
 {
+    #foreign fdopen :: (fd: int, mode: *u8) -> *FILE;
     #foreign backtrace :: (buffer: **void, size: int) -> int;
     #foreign backtrace_symbols :: (buffer: **void, size: int) -> **u8;
 
@@ -25,13 +34,20 @@ else static_if(PLATFORM_LINUX)
         names := backtrace_symbols(*frames[0], trace_length);
         for (i := 0; i < trace_length; i++)
         {
-            _c.fprintf(_c._stderr, "%s:\n", names[i]);
+            fprintf(stderr, "%s:\n", names[i]);
         }
     }
 }
 else
 {
     static_assert(false);
+}
+
+open_std_handles :: () -> void
+{
+    stdin = fdopen(0, "r");
+    stdout = fdopen(1, "w");
+    stderr = fdopen(2, "w");
 }
 
 default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line: s64)
@@ -41,13 +57,13 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
         return;
     }
 
-    if (!_c._stderr)
+    if (stderr)
     {
-        _c.open_std_handles();
+        open_std_handles();
     }
 
     // _c.fprintf(_c._stderr, "\n\n");
-    _c.fprintf(_c._stderr, "Assertion failed in function %s : %s:%d\n", function_name,
+    fprintf(stderr, "Assertion failed in function %s : %s:%d\n", function_name,
                 file_name, line);
 
     static_if (ZODIAC_RUNNING_BYTECODE)

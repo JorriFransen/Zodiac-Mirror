@@ -1720,7 +1720,12 @@ namespace Zodiac
             }
             assert(false);
         }
-        else assert(false);
+        else
+        {
+			auto err_tok = current_token(parser);
+			parser_report_error(parser, err_tok.file_pos, "Unexpected token '%s' when parsing a type spec", err_tok.atom.data);
+			return nullptr;
+        }
 
 		assert(false);
 		return nullptr;

@@ -5,6 +5,9 @@ using std;
 // _c :: import c;
 using _c;
 
+builtin :: import builtin;
+using builtin;
+
 _thread :: import thread;
 using _thread;
 
@@ -58,6 +61,7 @@ printer :: (thread: *Thread) -> *void
 
 main :: ()
 {
+    _c.open_std_handles();
     std.print("thread _main");
     _main();
 

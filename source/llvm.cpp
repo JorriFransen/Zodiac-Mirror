@@ -174,12 +174,6 @@ namespace Zodiac
 
 	void llvm_run_linker(LLVM_IR_Builder* builder, IR_Module* module, const char* obj_file_name)
 	{
-        auto x64_lib_path = find_linux_x64_lib_path();
-        auto gcc_lib_path = find_linux_gcc_lib_path();
-
-	printf("x64_lib_path: %s\n", x64_lib_path);
-	printf("gcc_lib_path: %s\n", gcc_lib_path);
-
 		BUF(Atom) dynamic_lib_names = nullptr;
 		llvm_collect_dynamic_lib_names(builder->context, module, &dynamic_lib_names);
 		llvm_convert_lib_names_to_paths(builder->context, dynamic_lib_names);
@@ -188,6 +182,13 @@ namespace Zodiac
 		string_builder_init(&sb, 2048);
 
 #ifdef __linux__
+
+        auto x64_lib_path = find_linux_x64_lib_path();
+        auto gcc_lib_path = find_linux_gcc_lib_path();
+
+		printf("x64_lib_path: %s\n", x64_lib_path);
+		printf("gcc_lib_path: %s\n", gcc_lib_path);
+
 		string_builder_append(&sb, "ld -dynamic-linker /lib64/ld-linux-x86-64.so.2 ");
 
         string_builder_append(&sb, x64_lib_path);

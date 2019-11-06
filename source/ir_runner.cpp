@@ -440,6 +440,7 @@ namespace Zodiac
             case IRV_BOOL_LITERAL:
             case IRV_NULL_LITERAL:
             case IRV_AGGREGATE_LITERAL:
+            case IRV_FUNCTION:
             {
                 result = code_value;
                 break;

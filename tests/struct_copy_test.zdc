@@ -9,6 +9,8 @@ Vec2i :: struct
 
 main :: () -> u64
 {
+    _c.open_std_handles();
+
     _c.printf("struct copy test\n");
 
     a : Vec2i = { 48, 94 };

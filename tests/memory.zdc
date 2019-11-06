@@ -107,6 +107,9 @@ arena_free :: (arena: *Arena) {
 }
 
 main :: () -> u64 {
+
+    _c.open_std_handles();
+
     print("Memory test");
     printf("page size: %d\n", os.get_page_size());
 

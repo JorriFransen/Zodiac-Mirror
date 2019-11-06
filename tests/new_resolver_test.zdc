@@ -48,6 +48,8 @@ GLOBAL_CONSTANT : u64 : 43;
 
 main :: () -> int
 {
+    _c.open_std_handles();
+
     _c.printf("new_resolver_test\n");
     printf("using test\n");
 
