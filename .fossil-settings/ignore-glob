@@ -1,8 +1,7 @@
 lib/
 
-lib.zip
-lib.tar.xz
 lib.7z
+lib_linux.7z
 
 build/
 build_release/
