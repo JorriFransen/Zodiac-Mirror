@@ -57,7 +57,7 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
         return;
     }
 
-    if (stderr)
+    if (!stderr)
     {
         open_std_handles();
     }

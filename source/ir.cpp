@@ -613,7 +613,7 @@ namespace Zodiac
                                               statement->static_if_stmt.then_statement, scope,
                                               break_block);
                 }
-                else
+                else if (statement->static_if_stmt.else_statement)
                 {
                     ir_builder_emit_statement(ir_builder,
                                               statement->static_if_stmt.else_statement, scope,

@@ -120,17 +120,17 @@ main :: (argc: int, argv: **u8) -> int
 
     apply_config(*files, *test_config);
 
-    // _c.printf("\nCOMPILING:\n");
-    // compile_results := run_tests(Test_Mode.COMPILING, files);
-    // _c.printf("\nRUNNING_BYTECODE:\n");
-    // bytecode_results := run_tests(Test_Mode.RUNNING_BYTECODE, files);
+    _c.printf("\nCOMPILING:\n");
+    compile_results := run_tests(Test_Mode.COMPILING, files);
+    _c.printf("\nRUNNING_BYTECODE:\n");
+    bytecode_results := run_tests(Test_Mode.RUNNING_BYTECODE, files);
    _c.printf("\nRUNNING_LLVM:\n");
    llvm_results := run_tests(Test_Mode.RUNNING_LLVM, files);
 
     _c.printf("\n");
     _c.printf("Done, ran %d tests\n", files.files.count);
-    // report_test_results(compile_results);
-    // report_test_results(bytecode_results);
+    report_test_results(compile_results);
+    report_test_results(bytecode_results);
     report_test_results(llvm_results);
 
     for (i := 0; i < files.files.count; i++)
