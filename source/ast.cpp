@@ -7,7 +7,7 @@
 
 namespace Zodiac
 {
-    AST_Module* ast_module_new(Context* context, const char* module_name)
+    AST_Module* ast_module_new(Context* context, const char* module_name, const char* path)
     {
         assert(context);
         assert(module_name);
@@ -17,10 +17,15 @@ namespace Zodiac
 		result->declarations = (AST_Declaration**)mem_alloc(sizeof(AST_Declaration*) * 128);
 		result->declaration_count = 128;
 
+        const char* file_name = extract_file_name_from_path(path, false);
+        const char* file_dir = extract_directory_from_path(path);
+
         result->global_declarations = nullptr;
         result->module_scope = ast_scope_new(context, context->builtin_scope, result, true);
         result->entry_point = nullptr;
         result->module_name = module_name;
+        result->module_file_name = file_name;
+        result->module_file_dir = file_dir;
         result->import_decls = nullptr;
         result->import_modules = nullptr;
         result->resolved = false;

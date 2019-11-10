@@ -187,7 +187,7 @@ int main(int argc, char** argv)
     Parser parser;
     parser_init(&parser, context);
 
-    Parse_Result parse_result = parse_module(&parser, lex_result.tokens, module_name);
+    Parse_Result parse_result = parse_module(&parser, lex_result.tokens, module_name, file_name);
     if (BUF_LENGTH(parse_result.errors) != 0)
     {
         parser_report_errors(&parser);
@@ -265,6 +265,7 @@ int main(int argc, char** argv)
         llvm_builder_init(&llvm_ir_builder);
         llvm_ir_builder.context = context;
         llvm_emit_ir_module(&llvm_ir_builder, &ir_module);
+
         llvm_builder_free(&llvm_ir_builder);
     }
 

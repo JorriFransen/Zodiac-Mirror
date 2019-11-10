@@ -24,7 +24,10 @@ namespace Zodiac
         BUF(AST_Declaration*) global_declarations = nullptr;
         AST_Scope* module_scope = nullptr;
         AST_Declaration* entry_point = nullptr;
+
         const char* module_name = nullptr;
+        const char* module_file_name = nullptr;
+        const char* module_file_dir = nullptr;
 
         BUF(AST_Declaration*) import_decls = nullptr;
         BUF(AST_Module*) import_modules = nullptr;
@@ -711,7 +714,7 @@ namespace Zodiac
         File_Pos file_pos = {};
     };
 
-    AST_Module* ast_module_new(Context* context, const char* module_name);
+    AST_Module* ast_module_new(Context* context, const char* module_name, const char* path);
     AST_Identifier* ast_identifier_new(Context* context, Atom atom, File_Pos file_pos);
     AST_Directive* ast_directive_new(Context* context, AST_Directive_Kind kind,
                                      File_Pos file_pos);

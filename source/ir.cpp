@@ -90,7 +90,10 @@ namespace Zodiac
         }
 
         module->gen_data = ir_builder;
+
         ir_builder->result.name = module->module_name;
+        ir_builder->result.file_name = module->module_file_name;
+        ir_builder->result.file_dir = module->module_file_dir;
 
         return ir_builder->result;
     }

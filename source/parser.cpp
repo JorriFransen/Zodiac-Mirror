@@ -15,14 +15,15 @@ namespace Zodiac
         parser->context = context;
     }
 
-    Parse_Result parse_module(Parser* parser, BUF(Token) tokens, const char* module_name)
+    Parse_Result parse_module(Parser* parser, BUF(Token) tokens, const char* module_name,
+                              const char* path)
     {
         assert(parser);
         assert(tokens);
         assert(module_name);
 
         parser->result.module_name = module_name;
-        auto ast_module = ast_module_new(parser->context, module_name);
+        auto ast_module = ast_module_new(parser->context, module_name, path);
         parser->result.ast_module = ast_module;
         parser->tokens = tokens;
         parser->ti = 0;

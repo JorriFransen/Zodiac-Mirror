@@ -7,7 +7,7 @@ main :: () -> u64
 {
     c.open_std_handles();
 
-    // assert(false);
+    assert_in_here();
 
     i_am_i : int;
 
@@ -38,4 +38,10 @@ main :: () -> u64
     assert(j == 10);
 
     // return 6;
+}
+
+assert_in_here :: ()
+{
+    c.printf("Asserting after this...\n");
+    assert(false);
 }

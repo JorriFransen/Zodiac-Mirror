@@ -18,6 +18,7 @@ set (ZODIAC_COMPILER_SOURCE
     source/ir_runner.cpp
     source/lexer.cpp
     source/llvm.cpp
+    source/llvm_debug_info.cpp
     source/llvm_types.cpp
     source/parser.cpp
     source/platform.cpp
