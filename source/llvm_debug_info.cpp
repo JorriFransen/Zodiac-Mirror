@@ -1,17 +1,29 @@
 
+#include <iostream>
+
 #include "llvm_debug_info.h"
 
 #include <llvm/BinaryFormat/Dwarf.h>
 #include <llvm/IR/LLVMContext.h>
-
+#include <llvm-c/Comdat.h>
+#include <llvm/IR/Comdat.h>
+#include <llvm/IR/Module.h>
 
 namespace Zodiac
 {
-    void llvm_emit_debug_info(LLVM_IR_Builder* ir_builder, IR_Module* zir_module)
+    Debug_Info llvm_emit_debug_info(LLVM_IR_Builder* ir_builder, IR_Module* zir_module)
     {
+        auto _m = (llvm::Module*)ir_builder->llvm_module;
+
+        // _m->getOrInsertComdat("dbg_comdat");
+
+        _m->setPICLevel(llvm::PICLevel::BigPIC);
+        auto pic_level = _m->getPICLevel();
+        printf("pic level: %d\n", (int)pic_level);
+
         LLVMDIBuilderRef di_builder =
-            // LLVMCreateDIBuilderDisallowUnresolved(ir_builder->llvm_module);
-            LLVMCreateDIBuilder(ir_builder->llvm_module);
+            LLVMCreateDIBuilderDisallowUnresolved(ir_builder->llvm_module);
+            // LLVMCreateDIBuilder(ir_builder->llvm_module);
 
         LLVMMetadataRef di_file = LLVMDIBuilderCreateFile(di_builder, zir_module->file_name,
                                                           strlen(zir_module->file_name),
@@ -23,26 +35,33 @@ namespace Zodiac
         const char* flags = "";
         unsigned runtime_version = 0;
 
-        LLVMMetadataRef di_cu = LLVMDIBuilderCreateCompileUnit(di_builder, LLVMDWARFSourceLanguageC,
+        LLVMMetadataRef di_cu = LLVMDIBuilderCreateCompileUnit(di_builder,
+                                                               LLVMDWARFSourceLanguageC,
                                                                di_file, producer, strlen(producer),
                                                                is_optimized, flags, strlen(flags),
                                                                runtime_version, "", 0,
                                                                LLVMDWARFEmissionFull, 0, false,
                                                                false);
 
-        Debug_Info di = { di_builder, di_file, di_cu };
+        Debug_Info di = { di_builder, di_file, di_cu, nullptr, ir_builder->llvm_module,
+                          zir_module };
 
         llvm_emit_scope_debug_info(&di);
 
         for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->registered_functions); i++)
         {
             const LLVM_Registered_Function& rf = ir_builder->registered_functions[i];
-            // if (!(rf.zir_func->flags & IR_FUNC_FLAG_FOREIGN))
-            if (strcmp(rf.zir_func->name, "main") == 0)
+            if (!(rf.zir_func->flags & IR_FUNC_FLAG_FOREIGN))
+            // if (strcmp(rf.zir_func->name, "test_func") == 0)
                 llvm_emit_function_debug_info(&di, rf);
         }
 
-        LLVMDIBuilderFinalize(di_builder);
+        return di;
+    }
+
+    void llvm_finalize_debug_info(Debug_Info* di)
+    {
+        LLVMDIBuilderFinalize(di->builder);
     }
 
     void llvm_emit_function_debug_info(Debug_Info* di, const LLVM_Registered_Function& rf)
@@ -67,6 +86,12 @@ namespace Zodiac
         }
         bool is_optimized = false;
 
+        LLVMComdatRef comdat = LLVMGetComdat(rf.func);
+        if (comdat)
+        {
+            assert(false);
+        }
+
         LLVMMetadataRef sp =
             LLVMDIBuilderCreateFunction(di->builder,
                                         di->global_scope,
@@ -81,8 +106,28 @@ namespace Zodiac
                                         flags,
                                         is_optimized);
 
-        LLVMValueRef sp_val = LLVMMetadataAsValue(LLVMGetGlobalContext(), sp);
-        LLVMSetMetadata(rf.func, llvm::LLVMContext::MD_dbg, sp_val);
+        // LLVMValueRef sp_val = LLVMMetadataAsValue(LLVMGetModuleContext(di->llvm_module), sp);
+        // printf("Attaching dbg meta data: %s\n", LLVMPrintValueToString(sp_val));
+        // LLVMSetMetadata(rf.func, llvm::LLVMContext::MD_dbg, sp_val);
+
+        auto _func = (llvm::Function*)rf.func;
+        _func->setSubprogram((llvm::DISubprogram*)sp);
+
+        comdat = LLVMGetComdat(rf.func);
+        if (comdat)
+        {
+            // LLVMSetComdat(rf.func, nullptr);
+            // auto _cd = (llvm::Comdat*)comdat;
+            // std::string _str;
+            // llvm::raw_string_ostream rso(_str);
+            // _cd->print(rso, true);
+            // rso.flush();
+            // std::cerr << _str;
+            // // _cd->dump();
+            // assert(false);
+            // // LLVMSetComdat(rf.func, nullptr);
+            // // printf("removing comdat from function: %s\n", rf.zir_func->name);
+        }
     }
 
     void llvm_emit_scope_debug_info(Debug_Info* di)

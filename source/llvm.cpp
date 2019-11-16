@@ -8,6 +8,7 @@
 #include <llvm-c/Analysis.h>
 #include <llvm-c/TargetMachine.h>
 #include <llvm/IR/CallingConv.h>
+#include <llvm/IR/Module.h>
 
 #include <dynload.h>
 
@@ -104,13 +105,17 @@ namespace Zodiac
 
         if (root)
         {
+            Debug_Info debug_info;
             if (context->options.emit_debug)
             {
+                debug_info = llvm_emit_debug_info(builder, module);
                 // char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
                 // printf("%s", llvm_module_string);
                 // LLVMDisposeMessage(llvm_module_string);
-                llvm_emit_debug_info(builder, module);
             }
+
+            // auto _module = (llvm::Module*)module;
+            // _module->getComdatSymbolTable().clear();
 
             char* error = nullptr;
             bool verify_error = LLVMVerifyModule(
@@ -122,6 +127,9 @@ namespace Zodiac
             }
             LLVMDisposeMessage(error);
             error = nullptr;
+
+            if (context->options.emit_debug)
+                llvm_finalize_debug_info(&debug_info);
 
             if (context->options.print_llvm)
             {
@@ -816,6 +824,7 @@ namespace Zodiac
         if (zir_func->flags & IR_FUNC_FLAG_FOREIGN)
         {
             LLVMSetFunctionCallConv(llvm_func_value, llvm::CallingConv::C);
+            LLVMSetLinkage(llvm_func_value, LLVMExternalLinkage);
         }
 
         LLVM_Registered_Function rf = { llvm_func_value, zir_func };
@@ -2308,7 +2317,8 @@ namespace Zodiac
                 bool is_vararg = (zir_type->flags & AST_TYPE_FLAG_FUNC_VARARG);
 
                 LLVMTypeRef result = LLVMFunctionType(llvm_return_type, llvm_arg_types,
-                                                      (unsigned)BUF_LENGTH(llvm_arg_types), is_vararg);
+                                                      (unsigned)BUF_LENGTH(llvm_arg_types),
+                                                      is_vararg);
                 BUF_FREE(llvm_arg_types);
 
                 return result;
