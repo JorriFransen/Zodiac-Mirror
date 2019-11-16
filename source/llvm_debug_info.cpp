@@ -22,6 +22,8 @@ namespace Zodiac
         di->compile_unit = di->builder->createCompileUnit(dwarf::DW_LANG_C, di->file,
                                                           "Zodiac Compiler", 0, "", 0);
 
+        stack_init(&di->scope_stack, 16);
+
         assert(di->compile_unit);
     }
 
@@ -77,11 +79,42 @@ namespace Zodiac
         llvm_debug_set_location(zir_builder, file, 0, 0);
     }
 
+    void llvm_debug_update_location(LLVM_IR_Builder* zir_builder, IR_Instruction* iri)
+    {
+        Debug_Info* di = zir_builder->debug_info;
+
+        auto fp = iri->origin;
+        llvm_debug_set_location(zir_builder, stack_top(di->scope_stack), fp.line,
+                                fp.line_relative_char_pos);
+    }
+
     void llvm_debug_set_location(LLVM_IR_Builder* ir_builder, DIScope* scope, uint64_t line,
                                  uint64_t col)
     {
         auto llvm_ir_builder = llvm::unwrap(ir_builder->llvm_builder);
         llvm_ir_builder->SetCurrentDebugLocation(DebugLoc::get(line, col, scope));
+    }
+
+    void llvm_debug_enter_scope(LLVM_IR_Builder* zir_builder, IR_Function* zir_function)
+    {
+        Debug_Info* di = zir_builder->debug_info;
+        LLVMValueRef func_val = llvm_function_from_zir(zir_builder, zir_function);
+        Function* function = (Function*)func_val;
+
+        DIScope* scope = function->getSubprogram();
+        stack_push(di->scope_stack, scope);
+    }
+
+    void llvm_debug_exit_scope(LLVM_IR_Builder* zir_builder, IR_Function* zir_function)
+    {
+        Debug_Info* di = zir_builder->debug_info;
+        LLVMValueRef func_val = llvm_function_from_zir(zir_builder, zir_function);
+        Function* function = (Function*)func_val;
+
+        DIScope* scope = function->getSubprogram();
+
+        assert(stack_top(di->scope_stack) == scope);
+        stack_pop(di->scope_stack);
     }
 
     DIFile* llvm_debug_find_or_create_file(Debug_Info* di, const char* file_name,

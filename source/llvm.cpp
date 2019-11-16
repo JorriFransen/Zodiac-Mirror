@@ -865,6 +865,7 @@ namespace Zodiac
         if (builder->context->options.emit_debug)
         {
             llvm_debug_update_location(builder->debug_info, builder, zir_func);
+            llvm_debug_enter_scope(builder, zir_func);
         }
 
 
@@ -933,6 +934,7 @@ namespace Zodiac
         if (builder->context->options.emit_debug &&
             !(zir_func->flags & IR_FUNC_FLAG_FOREIGN))
         {
+            llvm_debug_exit_scope(builder, zir_func);
             llvm_debug_finalize_function(builder->debug_info, llvm_func_value);
         }
     }
@@ -956,6 +958,11 @@ namespace Zodiac
                                              LLVMBasicBlockRef llvm_block)
     {
         auto cf = builder->current_function;
+
+        if (builder->context->options.emit_debug)
+        {
+            llvm_debug_update_location(builder, zir_instruction);
+        }
 
         auto next = zir_instruction->next;
 
