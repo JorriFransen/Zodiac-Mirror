@@ -3,6 +3,7 @@
 #include "zodiac.h"
 #include "hash.h"
 #include "ir.h"
+#include "llvm_debug_info.h"
 
 #include <llvm-c/Core.h>
 
@@ -57,6 +58,8 @@ namespace Zodiac
         LLVMValueRef type_info_global = nullptr;
         LLVMValueRef aggregate_member_info_global = nullptr;
         LLVMValueRef enum_member_info_global = nullptr;
+
+        Debug_Info* debug_info = nullptr;
 
         Hash_Table<Atom, LLVMValueRef> const_c_string_table;
     };
