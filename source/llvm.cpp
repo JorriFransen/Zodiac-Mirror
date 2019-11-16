@@ -105,10 +105,9 @@ namespace Zodiac
 
         if (root)
         {
-            Debug_Info debug_info;
             if (context->options.emit_debug)
             {
-                debug_info = llvm_emit_debug_info(builder, module);
+                assert(false);
                 // char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
                 // printf("%s", llvm_module_string);
                 // LLVMDisposeMessage(llvm_module_string);
@@ -127,9 +126,6 @@ namespace Zodiac
             }
             LLVMDisposeMessage(error);
             error = nullptr;
-
-            if (context->options.emit_debug)
-                llvm_finalize_debug_info(&debug_info);
 
             if (context->options.print_llvm)
             {
