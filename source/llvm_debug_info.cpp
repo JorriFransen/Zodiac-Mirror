@@ -195,6 +195,10 @@ namespace Zodiac
                 {
                     return di->builder->createBasicType("void", 0, dwarf::DW_ATE_signed);
                 }
+                else if (ast_type == Builtin::type_u8)
+                {
+                    return di->builder->createBasicType("u8", 8, dwarf::DW_ATE_unsigned_char);
+                }
                 else if (ast_type->flags & AST_TYPE_FLAG_INT)
                 {
                     if (ast_type->flags & AST_TYPE_FLAG_SIGNED)
