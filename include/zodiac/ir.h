@@ -72,6 +72,7 @@ namespace Zodiac
             {
                 const char* name;
                 uint64_t index;
+                File_Pos file_pos;
             } argument;
 
             IR_Function* function;
@@ -370,7 +371,7 @@ namespace Zodiac
     void ir_builder_emit_instruction(IR_Builder* ir_builder, IR_Instruction* iri);
 
     IR_Value* ir_builder_emit_function_arg(IR_Builder* ir_builder, const char* name,
-                                           AST_Type* type);
+                                           AST_Type* type, File_Pos file_pos);
     IR_Value* ir_builder_emit_add(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
                                   File_Pos origin);
     IR_Value* ir_builder_emit_sub(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,

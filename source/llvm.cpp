@@ -124,11 +124,11 @@ namespace Zodiac
         {
             if (context->options.emit_debug)
             {
-                char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
-                printf("%s", llvm_module_string);
-                LLVMDisposeMessage(llvm_module_string);
+                // char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
+                // printf("%s", llvm_module_string);
+                // LLVMDisposeMessage(llvm_module_string);
 
-                // llvm_debug_info_finalize(&di);
+                llvm_debug_info_finalize(&di);
                 // assert(false);
             }
 
@@ -887,6 +887,7 @@ namespace Zodiac
 			assert(llvm_ir_function.blocks);
             LLVMPositionBuilderAtEnd(builder->llvm_builder, llvm_ir_function.blocks[0].block);
 
+            printf("Emitting function: %s\n", zir_func->name);
             for (uint64_t i = 0; i < BUF_LENGTH(zir_func->arguments); i++)
             {
                 IR_Value* zir_arg = zir_func->arguments[i];
@@ -897,6 +898,9 @@ namespace Zodiac
                                                         (unsigned)zir_arg->argument.index);
                 LLVMBuildStore(builder->llvm_builder, llvm_arg_value, llvm_arg_alloca);
                 llvm_assign_result(builder, zir_arg, llvm_arg_alloca);
+
+                printf("\tEmitting argument: %s\n", zir_arg->allocl.name);
+                llvm_debug_register_function_parameter(builder, llvm_arg_alloca, zir_arg, i + 1);
             }
 
             zir_block = zir_func->first_block;

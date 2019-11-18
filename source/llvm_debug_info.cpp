@@ -49,6 +49,15 @@ namespace Zodiac
                                                        DISubprogram::SPFlagDefinition);
         func->setSubprogram(sp);
 
+        di->current_subprogram = sp;
+    }
+
+    void llvm_debug_set_current_function(Debug_Info* di, LLVMValueRef llvm_func)
+    {
+        Function* func = (Function*)llvm_func;
+
+        DISubprogram* sp = func->getSubprogram();
+        di->current_subprogram = sp;
     }
 
     void llvm_debug_finalize_function(Debug_Info* di, LLVMValueRef llvm_func_value)
@@ -57,6 +66,35 @@ namespace Zodiac
 
         DISubprogram* sp = function->getSubprogram();
         di->builder->finalizeSubprogram(sp);
+
+        assert(di->current_subprogram == sp);
+        di->current_subprogram = nullptr;
+    }
+
+    void llvm_debug_register_function_parameter(LLVM_IR_Builder* zir_builder,
+                                                LLVMValueRef _llvm_alloca,
+                                                IR_Value* zir_arg, unsigned arg_no)
+    {
+        assert(zir_arg->kind == IRV_ARGUMENT);
+        Debug_Info* di = zir_builder->debug_info;
+
+        DIScope* scope = stack_top(di->scope_stack);
+        DIType* param_type = llvm_debug_get_type(di, zir_arg->type);
+        unsigned line = zir_arg->argument.file_pos.line;
+
+        DILocalVariable* di_var = di->builder->createParameterVariable(scope,
+                                                                       zir_arg->argument.name,
+                                                                       arg_no, di->current_file,
+                                                                       line, param_type, true);
+
+        unsigned col = zir_arg->argument.file_pos.line_relative_char_pos;
+        llvm::Value* llvm_alloca = unwrap(_llvm_alloca);
+        auto llvm_builder = unwrap(zir_builder->llvm_builder);
+
+        assert(di->current_subprogram);
+        di->builder->insertDeclare(llvm_alloca, di_var, di->builder->createExpression(),
+                                   DebugLoc::get(line, col, di->current_subprogram),
+                                   llvm_builder->GetInsertBlock());
     }
 
     void llvm_debug_update_location(Debug_Info* di, LLVM_IR_Builder* ir_builder,
@@ -68,6 +106,7 @@ namespace Zodiac
 
         llvm_debug_set_location(ir_builder, sp, zir_func->file_pos.line,
                                 zir_func->file_pos.line_relative_char_pos);
+        llvm_debug_set_current_function(di, llvm_func);
     }
 
     void llvm_debug_update_location(LLVM_IR_Builder* zir_builder, IR_Module* ir_module)

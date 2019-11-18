@@ -476,8 +476,8 @@ namespace Zodiac
                 AST_Identifier* arg_ident = arg_decl->identifier;
                 AST_Type* arg_type = arg_decl->mutable_decl.type;
                 IR_Value* arg_value = ir_builder_emit_function_arg(ir_builder,
-                                                                arg_ident->atom.data,
-                                                                arg_type);
+                                                                   arg_ident->atom.data,
+                                                                   arg_type, arg_ident->file_pos);
                 ir_builder_push_value_and_decl(ir_builder, arg_value, arg_decl);
             }
         }
@@ -2448,7 +2448,7 @@ namespace Zodiac
     }
 
     IR_Value* ir_builder_emit_function_arg(IR_Builder* ir_builder, const char* name,
-                                           AST_Type* type)
+                                           AST_Type* type, File_Pos file_pos)
     {
         assert(ir_builder);
         assert(name);
@@ -2460,6 +2460,7 @@ namespace Zodiac
         arg_value->argument.name = name;
         arg_value->argument.index = BUF_LENGTH(ir_builder->current_function->local_temps);
         arg_value->flags |= IRV_FLAG_ASSIGNED;
+        arg_value->argument.file_pos = file_pos;
 
         BUF_PUSH(ir_builder->current_function->local_temps, arg_value);
         BUF_PUSH(ir_builder->current_function->arguments, arg_value);

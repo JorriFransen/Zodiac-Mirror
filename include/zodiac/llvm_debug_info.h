@@ -19,6 +19,7 @@ namespace Zodiac
 
         BUF(DIType*) types = nullptr;
         DIFile* current_file = nullptr;
+        DISubprogram* current_subprogram = nullptr;
 
         Stack<DIScope*> scope_stack = {};
     };
@@ -29,7 +30,12 @@ namespace Zodiac
 
     void llvm_debug_register_function(Debug_Info* di, IR_Function* zir_func,
                                       LLVMValueRef llvm_func_value);
+    void llvm_debug_set_current_function(Debug_Info* di, LLVMValueRef llvm_func);
     void llvm_debug_finalize_function(Debug_Info* di, LLVMValueRef llvm_func_value);
+
+    void llvm_debug_register_function_parameter(LLVM_IR_Builder* zir_builder,
+                                                LLVMValueRef llvm_alloca, IR_Value* zir_arg,
+                                                unsigned arg_no);
 
     void llvm_debug_update_location(Debug_Info* di, LLVM_IR_Builder* ir_builder,
                                     IR_Function* zir_func);
