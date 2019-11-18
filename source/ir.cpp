@@ -3327,7 +3327,7 @@ namespace Zodiac
         // assert(type->kind == AST_TYPE_POINTER ||
         //        type->flags & AST_TYPE_FLAG_INT);
 
-        IR_Value* allocl_value = ir_value_allocl_new(ir_builder, type, name);
+        IR_Value* allocl_value = ir_value_allocl_new(ir_builder, type, name, origin);
         IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_ALLOCL, nullptr,
                                                  nullptr, allocl_value);
         ir_builder_emit_instruction(ir_builder, iri);
@@ -4098,7 +4098,8 @@ namespace Zodiac
         return result;
     }
 
-    IR_Value* ir_value_allocl_new(IR_Builder* ir_builder, AST_Type* type, const char* name)
+    IR_Value* ir_value_allocl_new(IR_Builder* ir_builder, AST_Type* type, const char* name,
+                                  File_Pos file_pos)
     {
         assert(ir_builder);
         assert(type);
@@ -4106,6 +4107,7 @@ namespace Zodiac
 
         IR_Value* result = ir_value_new(ir_builder, IRV_ALLOCL, type);
         result->allocl.name = name;
+        result->allocl.file_pos = file_pos;
 
         assert(ir_builder->current_function);
         result->allocl.index = BUF_LENGTH(ir_builder->current_function->local_temps);

@@ -36,6 +36,9 @@ namespace Zodiac
     void llvm_debug_register_function_parameter(LLVM_IR_Builder* zir_builder,
                                                 LLVMValueRef llvm_alloca, IR_Value* zir_arg,
                                                 unsigned arg_no);
+    void llvm_debug_register_function_local_variable(LLVM_IR_Builder* zir_builder,
+                                                     LLVMValueRef llvm_alloca,
+                                                     IR_Value* zir_allocl);
 
     void llvm_debug_update_location(Debug_Info* di, LLVM_IR_Builder* ir_builder,
                                     IR_Function* zir_func);

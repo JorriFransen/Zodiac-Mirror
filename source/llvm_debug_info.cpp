@@ -37,10 +37,14 @@ namespace Zodiac
     {
         Function* func = (Function*)llvm_func_value;
         unsigned line_number = zir_func->file_pos.line;
-        unsigned scope_line = zir_func->first_block->first_instruction->origin.line;
+        // unsigned scope_line = zir_func->first_block->first_instruction->origin.line;
+        unsigned scope_line = line_number;
 
         DISubroutineType* function_type =
             (DISubroutineType*)llvm_debug_get_type(di, zir_func->type);
+
+        // printf("scope_line: %d\n", scope_line);
+        // printf("line_number: %d\n", line_number);
 
         DISubprogram* sp = di->builder->createFunction(di->current_file, zir_func->name,
                                                        "", di->current_file, line_number,
@@ -92,6 +96,28 @@ namespace Zodiac
         auto llvm_builder = unwrap(zir_builder->llvm_builder);
 
         assert(di->current_subprogram);
+        di->builder->insertDeclare(llvm_alloca, di_var, di->builder->createExpression(),
+                                   DebugLoc::get(line, col, di->current_subprogram),
+                                   llvm_builder->GetInsertBlock());
+    }
+
+    void llvm_debug_register_function_local_variable(LLVM_IR_Builder* zir_builder,
+                                                     LLVMValueRef _llvm_alloca,
+                                                     IR_Value* zir_allocl)
+    {
+        Debug_Info* di = zir_builder->debug_info;
+
+        DIScope* scope = stack_top(di->scope_stack);
+        DIFile* file = di->current_file;
+        unsigned line = zir_allocl->allocl.file_pos.line;
+        unsigned col = zir_allocl->allocl.file_pos.line_relative_char_pos;
+        DIType* var_type = llvm_debug_get_type(di, zir_allocl->type);
+
+        auto llvm_alloca = (llvm::Value*)_llvm_alloca;
+        auto llvm_builder = unwrap(zir_builder->llvm_builder);
+
+        DILocalVariable* di_var = di->builder->createAutoVariable(scope, zir_allocl->allocl.name,
+                                                                  file, line, var_type);
         di->builder->insertDeclare(llvm_alloca, di_var, di->builder->createExpression(),
                                    DebugLoc::get(line, col, di->current_subprogram),
                                    llvm_builder->GetInsertBlock());
@@ -220,6 +246,15 @@ namespace Zodiac
                 DIType* base_type = llvm_debug_get_type(di, ast_type->pointer.base);
                 return di->builder->createPointerType(base_type, ast_type->bit_size,
                                                       ast_type->bit_size);
+                break;
+            }
+
+            case AST_TYPE_STATIC_ARRAY:
+            {
+                AST_Type* base_type = ast_type->static_array.base;
+                DIType* di_base_type = llvm_debug_get_type(di, base_type);
+                return di->builder->createArrayType(ast_type->static_array.count,
+                                                    base_type->bit_size, di_base_type, nullptr);
                 break;
             }
 

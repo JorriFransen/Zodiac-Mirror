@@ -82,6 +82,7 @@ namespace Zodiac
             {
                 const char* name;
                 uint64_t index;
+                File_Pos file_pos;
             } allocl;
 
             struct
@@ -481,7 +482,8 @@ namespace Zodiac
     IR_Value* ir_value_new(IR_Builder* ir_builder, IR_Value_Kind kind, AST_Type* type);
     IR_Value* ir_value_function_new(IR_Builder* ir_builder, IR_Function* function);
     IR_Value* ir_value_block_new(IR_Builder* ir_builder, IR_Block* block);
-    IR_Value* ir_value_allocl_new(IR_Builder* ir_builder, AST_Type* type, const char* name);
+    IR_Value* ir_value_allocl_new(IR_Builder* ir_builder, AST_Type* type, const char* name,
+                                  File_Pos file_pos);
     IR_Value* ir_value_global_new(IR_Builder* ir_builder, AST_Type* type, IR_Value* init_value,
                                   const char* name);
 
