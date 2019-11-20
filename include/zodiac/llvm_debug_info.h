@@ -46,6 +46,7 @@ namespace Zodiac
     void llvm_debug_update_location(LLVM_IR_Builder* zir_builder, IR_Instruction* iri);
     void llvm_debug_set_location(LLVM_IR_Builder* ir_builder, DIScope* scope, uint64_t line,
                                  uint64_t col);
+    void llvm_debug_unset_location(LLVM_IR_Builder* zir_builder);
 
     void llvm_debug_enter_scope(LLVM_IR_Builder* zir_builder, IR_Function* zir_function);
     void llvm_debug_exit_scope(LLVM_IR_Builder* zir_builder, IR_Function* zir_function);

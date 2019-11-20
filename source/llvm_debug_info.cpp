@@ -37,8 +37,9 @@ namespace Zodiac
     {
         Function* func = (Function*)llvm_func_value;
         unsigned line_number = zir_func->file_pos.line;
-        // unsigned scope_line = zir_func->first_block->first_instruction->origin.line;
-        unsigned scope_line = line_number;
+        unsigned scope_line = zir_func->first_block->first_instruction->origin.line;
+        // unsigned line_number = scope_line;
+        // unsigned scope_line = line_number;
 
         DISubroutineType* function_type =
             (DISubroutineType*)llvm_debug_get_type(di, zir_func->type);
@@ -158,6 +159,15 @@ namespace Zodiac
     {
         auto llvm_ir_builder = llvm::unwrap(ir_builder->llvm_builder);
         llvm_ir_builder->SetCurrentDebugLocation(DebugLoc::get(line, col, scope));
+    }
+
+    void llvm_debug_unset_location(LLVM_IR_Builder* zir_builder)
+    {
+        // Debug_Info* di = zir_builder->debug_info;
+        auto llvm_builder = llvm::unwrap(zir_builder->llvm_builder);
+
+        llvm_builder->SetCurrentDebugLocation(DebugLoc());
+
     }
 
     void llvm_debug_enter_scope(LLVM_IR_Builder* zir_builder, IR_Function* zir_function)

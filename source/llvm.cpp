@@ -868,7 +868,6 @@ namespace Zodiac
             llvm_debug_enter_scope(builder, zir_func);
         }
 
-
         bool is_foreign = zir_func->flags & IR_FUNC_FLAG_FOREIGN;
 
         if (!is_foreign)
@@ -886,6 +885,9 @@ namespace Zodiac
 
 			assert(llvm_ir_function.blocks);
             LLVMPositionBuilderAtEnd(builder->llvm_builder, llvm_ir_function.blocks[0].block);
+
+            if (builder->context->options.emit_debug)
+                llvm_debug_unset_location(builder);
 
             // printf("Emitting function: %s\n", zir_func->name);
             for (uint64_t i = 0; i < BUF_LENGTH(zir_func->arguments); i++)
@@ -906,6 +908,9 @@ namespace Zodiac
                     llvm_debug_register_function_parameter(builder, llvm_arg_alloca, zir_arg,
                                                            i + 1);
             }
+
+            if (builder->context->options.emit_debug)
+                llvm_debug_update_location(builder->debug_info, builder, zir_func);
 
             zir_block = zir_func->first_block;
             for (uint64_t i = 0; i < BUF_LENGTH(llvm_ir_function.blocks); i++)
@@ -1470,11 +1475,12 @@ namespace Zodiac
                 }
 
                 LLVMValueRef llvm_result_value = LLVMBuildCall(builder->llvm_builder,
-                                                               llvm_func_value, args, (unsigned)arg_count,
-                                                               "");
+                                                               llvm_func_value, args,
+                                                               (unsigned)arg_count, "");
 
                 llvm_assign_result(builder, zir_instruction->result, llvm_result_value);
                 BUF_FREE(args);
+
                 break;
             }
 
