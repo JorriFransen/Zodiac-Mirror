@@ -190,6 +190,7 @@ namespace Zodiac
         };
 
         File_Pos origin;
+        AST_Scope* scope = nullptr;
 
         IR_Instruction* next = nullptr;
     };
@@ -231,6 +232,8 @@ namespace Zodiac
 
         IR_Block* first_block = nullptr;
         IR_Block* last_block = nullptr;
+
+        AST_Scope* body_scope = nullptr;
 
         BUF(IR_Value*) arguments = nullptr; // These are duplicated in local temps
         BUF(IR_Value*) local_temps = nullptr;
@@ -289,6 +292,8 @@ namespace Zodiac
         IR_Function* current_function = nullptr;
 
         IR_Block* insert_block = nullptr;
+
+        Stack<AST_Scope*> scope_stack = {};
     };
 
     struct IR_Validation_Result
@@ -346,8 +351,8 @@ namespace Zodiac
                                                AST_Declaration* declaration);
 
     IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, File_Pos file_pos,
-                                        const char* name, AST_Type*
-                                        return_type);
+                                        const char* name, AST_Type* return_type,
+                                        AST_Scope* body_scope);
     void ir_builder_end_function(IR_Builder* ir_builder, IR_Value* func_value);
     void ir_builder_patch_empty_block_jumps(IR_Builder* ir_builder, IR_Function* function);
     void ir_builder_patch_block_jumps(IR_Builder* ir_builder, IR_Function* function,
@@ -476,7 +481,7 @@ namespace Zodiac
                                             File_Pos file_pos);
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, File_Pos file_pos, const char* name,
-                                 AST_Type* func_type);
+                                 AST_Type* func_type, AST_Scope* body_scope);
     void phi_node_add_incoming(IR_Value* phi_value, IR_Block* block, IR_Value* value);
 
     IR_Value* ir_value_new(IR_Builder* ir_builder, IR_Value_Kind kind, AST_Type* type);

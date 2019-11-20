@@ -66,7 +66,8 @@ namespace Zodiac
                                                       bool is_enum = false);
 
     AST_Statement* parse_statement(Parser* parser, AST_Scope* scope);
-    static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope);
+    static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope,
+                                                uint64_t opening_line);
     static AST_Statement* parse_return_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_if_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_while_statement(Parser* parser, AST_Scope* scope);

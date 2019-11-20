@@ -37,9 +37,9 @@ namespace Zodiac
     {
         Function* func = (Function*)llvm_func_value;
         unsigned line_number = zir_func->file_pos.line;
-        unsigned scope_line = zir_func->first_block->first_instruction->origin.line;
-        // unsigned line_number = scope_line;
-        // unsigned scope_line = line_number;
+        unsigned scope_line = zir_func->body_scope->line;
+        // unsigned scope_line = zir_func->first_block->first_instruction->origin.line;
+        // printf("zir_func->body_scope->line = %d\n", zir_func->body_scope->line);
 
         DISubroutineType* function_type =
             (DISubroutineType*)llvm_debug_get_type(di, zir_func->type);

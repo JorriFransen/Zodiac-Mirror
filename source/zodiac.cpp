@@ -24,7 +24,7 @@ namespace Zodiac
         context->compiled_modules = nullptr;
         context->foreign_table = nullptr;
 
-		context->builtin_scope = ast_scope_new(context, nullptr, nullptr, false);
+		context->builtin_scope = ast_scope_new(context, nullptr, nullptr, false, 0);
 
         context->type_hash = (AST_Type**)mem_alloc(sizeof(AST_Type*) * 256);
         context->type_count = 256;

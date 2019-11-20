@@ -231,7 +231,7 @@ namespace Zodiac
         assert(ident_count == ts_count);
 
         AST_Scope* poly_scope = ast_scope_new(resolver->context, scope->parent, scope->module,
-                                              false);
+                                              false, scope->line);
         poly_scope->flags |= AST_SCOPE_FLAG_IS_POLY_SCOPE;
         scope->parent = poly_scope;
 

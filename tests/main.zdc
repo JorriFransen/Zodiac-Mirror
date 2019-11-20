@@ -65,6 +65,7 @@ fact_recursive :: (n: int) -> int
         return 1;
     }
 
-    return n * fact_recursive(n - 1);
+    result := n * fact_recursive(n - 1);
+    return result;
 }
 

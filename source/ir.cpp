@@ -24,6 +24,8 @@ namespace Zodiac
         ir_builder->current_function = nullptr;
         ir_builder->insert_block = nullptr;
 
+        stack_init(&ir_builder->scope_stack, 64);
+
         // if (context->builtin_ast_module)
         // {
         //     ir_builder_emit_module(ir_builder, context->builtin_ast_module);
@@ -38,6 +40,8 @@ namespace Zodiac
 
         assert(ir_builder->ast_module == nullptr);
         ir_builder->ast_module = module;
+
+        stack_push(ir_builder->scope_stack, module->module_scope);
 
         for (uint64_t i = 0; i < BUF_LENGTH(module->import_modules); i++)
         {
@@ -94,6 +98,8 @@ namespace Zodiac
         ir_builder->result.name = module->module_name;
         ir_builder->result.file_name = module->module_file_name;
         ir_builder->result.file_dir = module->module_file_dir;
+
+        stack_pop(ir_builder->scope_stack);
 
         return ir_builder->result;
     }
@@ -235,6 +241,8 @@ namespace Zodiac
 
         if (decl->function.body_block)
         {
+            stack_push(ir_builder->scope_stack, decl->function.argument_scope);
+
             ir_builder->current_function = func;
             ir_builder_set_insert_block(ir_builder, entry_block);
 
@@ -260,6 +268,8 @@ namespace Zodiac
             ir_builder_patch_empty_block_jumps(ir_builder, func);
 
             decl->function.body_generated = true;
+
+            stack_pop(ir_builder->scope_stack); // Argument scope
         }
         else
         {
@@ -457,9 +467,17 @@ namespace Zodiac
 
         AST_Identifier* ident = decl->identifier;
         AST_Type* return_type = decl->function.return_type;
+
+        AST_Scope* body_scope = nullptr;
+        if (!(decl->flags & AST_DECL_FLAG_FOREIGN))
+        {
+            body_scope = decl->function.body_block->block.scope;
+        }
+
         IR_Value* func_value = ir_builder_begin_function(ir_builder, decl->file_pos,
-                                                            ident->atom.data,
-                                                            decl->function.type);
+                                                         ident->atom.data,
+                                                         decl->function.type,
+                                                         body_scope);
 
         if (decl->function.body_block)
         {
@@ -564,12 +582,14 @@ namespace Zodiac
             case AST_STMT_BLOCK:
             {
                 auto block_scope = statement->block.scope;
+                stack_push(ir_builder->scope_stack, block_scope);
                 for (uint64_t i = 0; i < BUF_LENGTH(statement->block.statements); i++)
                 {
                     AST_Statement* block_member_stmt = statement->block.statements[i];
                     ir_builder_emit_statement(ir_builder, block_member_stmt, block_scope,
                                               break_block);
                 }
+                stack_pop(ir_builder->scope_stack); // Block scope
 
                 auto last_iri = ir_builder->insert_block->last_instruction;
 
@@ -2086,8 +2106,8 @@ namespace Zodiac
     }
 
     IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, File_Pos file_pos,
-                                        const char* name,
-                                        AST_Type* func_type)
+                                        const char* name, AST_Type* func_type,
+                                        AST_Scope* body_scope)
     {
         assert(ir_builder);
         assert(name);
@@ -2096,7 +2116,8 @@ namespace Zodiac
         assert(ir_builder->current_function == nullptr);
 
         //TODO: Assert we don't have a function with the same name
-        IR_Function* function = ir_function_new(ir_builder, file_pos, name, func_type);
+        IR_Function* function = ir_function_new(ir_builder, file_pos, name, func_type,
+                                                body_scope);
         ir_builder->current_function = function;
         BUF_PUSH(ir_builder->result.functions, function);
 
@@ -4032,7 +4053,7 @@ namespace Zodiac
     }
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, File_Pos file_pos, const char* name,
-                                 AST_Type* func_type)
+                                 AST_Type* func_type, AST_Scope* body_scope)
     {
         assert(ir_builder);
         assert(name);
@@ -4049,6 +4070,7 @@ namespace Zodiac
         result->local_temps = nullptr;
         result->is_entry = false;
         result->dcb_data = {};
+        result->body_scope = body_scope;
 
         return result;
     }
@@ -4159,6 +4181,9 @@ namespace Zodiac
         result->arg1 = arg1;
         result->arg2 = arg2;
         result->result = result_value;
+
+        assert(stack_count(ir_builder->scope_stack));
+        result->scope = stack_top(ir_builder->scope_stack);
 
         result->next = nullptr;
 
