@@ -268,6 +268,46 @@ namespace Zodiac
                 break;
             }
 
+            case AST_TYPE_STRUCT:
+            {
+                BUF(Metadata*) member_types = nullptr;
+
+                auto member_decls = ast_type->aggregate_type.member_declarations;
+                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+                {
+                    AST_Declaration* member_decl = member_decls[i];
+                    assert(member_decl->kind == AST_DECL_MUTABLE);
+
+                    AST_Type* member_ast_type = member_decl->mutable_decl.type;
+                    assert(member_ast_type);
+
+                    BUF_PUSH(member_types, llvm_debug_get_type(di, member_ast_type));
+                }
+
+                ArrayRef<Metadata*> _elements(member_types, BUF_LENGTH(member_types));
+                DINodeArray elements = di->builder->getOrCreateArray(_elements);
+                DIScope* scope;
+                unsigned line;
+                DIFile* file;
+
+                auto result = di->builder->createStructType(scope,
+                                                            ast_type->name,
+                                                            di->current_file,
+                                                            line,
+                                                            ast_type->bit_size,
+                                                            0,
+                                                            DINode::FlagZero,
+                                                            nullptr,
+                                                            elements);
+
+                BUF_FREE(member_types);
+
+                assert(result);
+                assert(false);
+                return result;
+                break;
+            }
+
             default: assert(false);
         }
     }

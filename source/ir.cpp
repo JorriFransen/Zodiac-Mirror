@@ -1192,7 +1192,16 @@ namespace Zodiac
                 AST_Declaration* ident_decl = expression->identifier->declaration;
                 IR_Value* value = ir_builder_value_for_declaration(ir_builder, ident_decl);
 
-                assert(value);
+                if (!value)
+                {
+                    fprintf(stderr, "Expected to find ir value for identifier: %s\n",
+                            expression->identifier->atom.data);
+                    fprintf(stderr, "at: %s:%d:%d\n", expression->file_pos.file_name,
+                            (int)expression->file_pos.line,
+                            (int)expression->file_pos.line_relative_char_pos);
+                    assert(value);
+                }
+
                 if (value->kind == IRV_TEMPORARY ||
                     value->kind == IRV_INT_LITERAL ||
                     value->kind == IRV_BOOL_LITERAL)
