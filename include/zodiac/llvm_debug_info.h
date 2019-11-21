@@ -10,6 +10,12 @@ namespace Zodiac
 
     struct LLVM_IR_Builder;
 
+    struct Registered_Debug_Type
+    {
+        AST_Type* ast_type = nullptr;
+        DIType* di_type = nullptr;
+    };
+
     struct Debug_Info
     {
         LLVM_IR_Builder* zir_builder = nullptr;
@@ -22,7 +28,9 @@ namespace Zodiac
         DISubprogram* current_subprogram = nullptr;
 
         Stack<DIScope*> scope_stack = {};
+        BUF(Registered_Debug_Type) registered_types = nullptr;
     };
+
 
     void llvm_debug_info_init(Debug_Info* di, const char* file_name, const char* dir_name,
                               LLVMModuleRef llvm_c_module);
@@ -55,4 +63,6 @@ namespace Zodiac
                                            const char* dir_name);
 
     DIType* llvm_debug_get_type(Debug_Info* di, AST_Type* ast_type);
+    DIType* llvm_debug_get_registered_type(Debug_Info* di, AST_Type* ast_type);
+    void llvm_debug_register_type(Debug_Info* di, AST_Type* ast_type, DIType* di_type);
 }

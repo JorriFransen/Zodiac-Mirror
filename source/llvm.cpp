@@ -944,11 +944,13 @@ namespace Zodiac
         //     // printf("\n%s\n", LLVMPrintValueToString(llvm_func_value));
         // }
 
-        if (builder->context->options.emit_debug &&
-            !(zir_func->flags & IR_FUNC_FLAG_FOREIGN))
+        if (builder->context->options.emit_debug)
         {
             llvm_debug_exit_scope(builder, zir_func);
-            llvm_debug_finalize_function(builder->debug_info, llvm_func_value);
+            if (!(zir_func->flags & IR_FUNC_FLAG_FOREIGN))
+            {
+                llvm_debug_finalize_function(builder->debug_info, llvm_func_value);
+            }
         }
     }
 

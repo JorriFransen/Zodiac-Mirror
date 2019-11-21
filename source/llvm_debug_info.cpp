@@ -23,6 +23,9 @@ namespace Zodiac
                                                           "Zodiac Compiler", 0, "", 0);
 
         stack_init(&di->scope_stack, 16);
+        stack_push(di->scope_stack, (DIScope*)di->file);
+
+        di->registered_types = nullptr;
 
         assert(di->compile_unit);
     }
@@ -200,6 +203,12 @@ namespace Zodiac
 
     DIType* llvm_debug_get_type(Debug_Info* di, AST_Type* ast_type)
     {
+        auto registered_type = llvm_debug_get_registered_type(di, ast_type);
+        if (registered_type)
+            return registered_type;
+
+        DIType* result = nullptr;
+
         switch (ast_type->kind)
         {
             case AST_TYPE_FUNCTION:
@@ -217,11 +226,10 @@ namespace Zodiac
                 ArrayRef<Metadata*> param_arr_ref(_param_types, BUF_LENGTH(_param_types));
                 DITypeRefArray param_types = di->builder->getOrCreateTypeArray(param_arr_ref);
 
-                DISubroutineType* result = di->builder->createSubroutineType(param_types);
+                result = di->builder->createSubroutineType(param_types);
 
                 BUF_FREE(_param_types);
 
-                return result;
                 break;
             }
 
@@ -229,33 +237,33 @@ namespace Zodiac
             {
                 if (ast_type == Builtin::type_void)
                 {
-                    return di->builder->createBasicType("void", 0, dwarf::DW_ATE_signed);
+                    result = di->builder->createBasicType("void", 0, dwarf::DW_ATE_signed);
                 }
                 else if (ast_type == Builtin::type_u8)
                 {
-                    return di->builder->createBasicType("u8", 8, dwarf::DW_ATE_unsigned_char);
+                    result = di->builder->createBasicType("u8", 8, dwarf::DW_ATE_unsigned_char);
                 }
                 else if (ast_type->flags & AST_TYPE_FLAG_INT)
                 {
                     if (ast_type->flags & AST_TYPE_FLAG_SIGNED)
                     {
-                        return di->builder->createBasicType(ast_type->name, ast_type->bit_size,
+                        result = di->builder->createBasicType(ast_type->name, ast_type->bit_size,
                                                             dwarf::DW_ATE_signed);
                     }
                     else
                     {
-                        return di->builder->createBasicType(ast_type->name, ast_type->bit_size,
-                                                            dwarf::DW_ATE_unsigned);
+                        result = di->builder->createBasicType(ast_type->name, ast_type->bit_size,
+                                                              dwarf::DW_ATE_unsigned);
                     }
                 }
-                assert(false);
+                else assert(false);
             }
 
             case AST_TYPE_POINTER:
             {
                 DIType* base_type = llvm_debug_get_type(di, ast_type->pointer.base);
-                return di->builder->createPointerType(base_type, ast_type->bit_size,
-                                                      ast_type->bit_size);
+                result = di->builder->createPointerType(base_type, ast_type->bit_size,
+                                                        ast_type->bit_size);
                 break;
             }
 
@@ -263,12 +271,13 @@ namespace Zodiac
             {
                 AST_Type* base_type = ast_type->static_array.base;
                 DIType* di_base_type = llvm_debug_get_type(di, base_type);
-                return di->builder->createArrayType(ast_type->static_array.count,
-                                                    base_type->bit_size, di_base_type, nullptr);
+                result = di->builder->createArrayType(ast_type->static_array.count,
+                                                      base_type->bit_size, di_base_type, nullptr);
                 break;
             }
 
             case AST_TYPE_STRUCT:
+            case AST_TYPE_UNION:
             {
                 BUF(Metadata*) member_types = nullptr;
 
@@ -286,29 +295,81 @@ namespace Zodiac
 
                 ArrayRef<Metadata*> _elements(member_types, BUF_LENGTH(member_types));
                 DINodeArray elements = di->builder->getOrCreateArray(_elements);
-                DIScope* scope;
-                unsigned line;
-                DIFile* file;
+                DIScope* scope = stack_top(di->scope_stack);
+                unsigned line = ast_type->aggregate_type.scope->line;
+                // printf("struct name: %s\n", ast_type->name);
+                // printf("struct scope line: %d\n", line);
 
-                auto result = di->builder->createStructType(scope,
-                                                            ast_type->name,
-                                                            di->current_file,
-                                                            line,
-                                                            ast_type->bit_size,
-                                                            0,
-                                                            DINode::FlagZero,
-                                                            nullptr,
-                                                            elements);
+
+                DICompositeType* result = nullptr;
+                if (ast_type->kind == AST_TYPE_STRUCT)
+                {
+                    result = di->builder->createStructType(scope, ast_type->name, di->current_file,
+                                                           line, ast_type->bit_size, 0,
+                                                           DINode::FlagZero, nullptr, elements);
+                }
+                else
+                {
+                    result = di->builder->createUnionType(scope, ast_type->name, di->current_file,
+                                                          line, ast_type->bit_size, 0,
+                                                          DINode::FlagZero, elements);
+                }
+
 
                 BUF_FREE(member_types);
 
                 assert(result);
-                assert(false);
-                return result;
+                // assert(false);
+                break;
+            }
+
+            case AST_TYPE_ENUM:
+            {
+                auto scope = stack_top(di->scope_stack);
+                unsigned line = ast_type->aggregate_type.scope->line;
+
+                DINodeArray elements;
+
+                DIType* underlying_type = nullptr;
+
+                auto result = di->builder->createEnumerationType(scope,
+                                                                 ast_type->name,
+                                                                 di->current_file,
+                                                                 line,
+                                                                 ast_type->bit_size,
+                                                                 0,
+                                                                 elements,
+                                                                 underlying_type,
+                                                                 "",
+                                                                 true);
+                assert(result);
                 break;
             }
 
             default: assert(false);
         }
+
+        assert(result);
+        llvm_debug_register_type(di, ast_type, result);
+        return result;
+    }
+
+    DIType* llvm_debug_get_registered_type(Debug_Info* di, AST_Type* ast_type)
+    {
+        for (uint64_t i = 0; i < BUF_LENGTH(di->registered_types); i++)
+        {
+            if (di->registered_types[i].ast_type == ast_type)
+            {
+                return di->registered_types[i].di_type;
+            }
+        }
+
+        return nullptr;
+    }
+
+    void llvm_debug_register_type(Debug_Info* di, AST_Type* ast_type, DIType* di_type)
+    {
+        Registered_Debug_Type rdt = { ast_type, di_type };
+        BUF_PUSH(di->registered_types, rdt);
     }
 }
