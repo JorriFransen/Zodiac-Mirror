@@ -270,14 +270,12 @@ namespace Zodiac
             {
                 DIType* base_type = llvm_debug_get_type(di, ast_type->pointer.base);
 
-                // @TODO: @FIXME: I don't think this is the case anymore...
                 // Check for the pointer type again since the base type may contain
                 //  a circular reference to itself via a pointer.
                 result = llvm_debug_get_registered_type(di, ast_type);
                 if (result)
                 {
                     register_type = false;
-                    printf("Not registering pointer to: %s\n", ast_type->pointer.base->name);
                 }
                 else
                 {
@@ -347,12 +345,21 @@ namespace Zodiac
         BUF(Metadata*) members = nullptr;
 
         auto member_decls = ast_type->aggregate_type.member_declarations;
+        uint64_t offset = 0;
         for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
         {
             AST_Declaration* member_decl = member_decls[i];
             AST_Type* ast_member_type = member_decl->mutable_decl.type;
 
+            unsigned mem_line = member_decl->file_pos.line;
+            const char* name = nullptr;
+            if (member_decl->identifier) name = member_decl->identifier->atom.data;
+
             DIType* member_type = llvm_debug_get_type(di, ast_member_type);
+            member_type = di->builder->createMemberType(di->compile_unit, name, di->current_file, mem_line, ast_member_type->bit_size, 0, offset,
+                                                        DINode::FlagZero, member_type);
+
+            offset += ast_member_type->bit_size;
 
             assert(member_type);
             BUF_PUSH(members, member_type);
