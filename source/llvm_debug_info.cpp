@@ -270,12 +270,14 @@ namespace Zodiac
             {
                 DIType* base_type = llvm_debug_get_type(di, ast_type->pointer.base);
 
+                // @TODO: @FIXME: I don't think this is the case anymore...
                 // Check for the pointer type again since the base type may contain
                 //  a circular reference to itself via a pointer.
                 result = llvm_debug_get_registered_type(di, ast_type);
                 if (result)
                 {
                     register_type = false;
+                    printf("Not registering pointer to: %s\n", ast_type->pointer.base->name);
                 }
                 else
                 {
@@ -297,7 +299,6 @@ namespace Zodiac
             case AST_TYPE_STRUCT:
             case AST_TYPE_UNION:
             {
-                llvm_debug_create_fwd_decl(di, ast_type);
                 result = llvm_debug_get_aggregate_type(di, ast_type);
                 break;
             }
@@ -340,6 +341,8 @@ namespace Zodiac
     DIType* llvm_debug_get_aggregate_type(Debug_Info* di, AST_Type* ast_type)
     {
         assert(ast_type->kind == AST_TYPE_STRUCT || ast_type->kind == AST_TYPE_UNION);
+
+        llvm_debug_create_fwd_decl(di, ast_type);
 
         BUF(Metadata*) members = nullptr;
 
@@ -424,10 +427,12 @@ namespace Zodiac
             {
                 assert(rt.flags & RDT_FLAG_FWD_DECL);
 
-                auto fwd_com = (DICompositeType*)rt.di_type;
-                auto new_com = (DICompositeType*)di_type;
-                fwd_com->replaceElements(new_com->getElements());
+                // auto fwd_com = (DICompositeType*)rt.di_type;
+                // auto new_com = (DICompositeType*)di_type;
+                // fwd_com->replaceElements(new_com->getElements());
 
+                TempMDNode fwd_decl(rt.di_type);
+                di->builder->replaceTemporary(std::move(fwd_decl), di_type);
                 rt.di_type = di_type;
 
                 rt.flags &= ~RDT_FLAG_FWD_DECL;
