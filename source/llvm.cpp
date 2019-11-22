@@ -129,6 +129,13 @@ namespace Zodiac
                 // LLVMDisposeMessage(llvm_module_string);
 
                 llvm_debug_info_finalize(&di);
+
+                if (context->options.print_llvm)
+                {
+                    char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
+                    printf("%s", llvm_module_string);
+                    LLVMDisposeMessage(llvm_module_string);
+                }
                 // assert(false);
             }
 

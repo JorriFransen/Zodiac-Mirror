@@ -10,10 +10,17 @@ namespace Zodiac
 
     struct LLVM_IR_Builder;
 
+    enum Registered_Debug_Type_Flags : uint64_t
+    {
+        RDT_FLAG_NONE     = 0x00,
+        RDT_FLAG_FWD_DECL = 0x01,
+    };
+
     struct Registered_Debug_Type
     {
         AST_Type* ast_type = nullptr;
         DIType* di_type = nullptr;
+        uint64_t flags = RDT_FLAG_NONE;
     };
 
     struct Debug_Info
@@ -63,6 +70,12 @@ namespace Zodiac
                                            const char* dir_name);
 
     DIType* llvm_debug_get_type(Debug_Info* di, AST_Type* ast_type);
+    DIType* llvm_debug_get_aggregate_type(Debug_Info* di, AST_Type* ast_type);
+
+    void llvm_debug_create_fwd_decl(Debug_Info* di, AST_Type* ast_type);
+    void llvm_debug_type_has_fwd_decl(Debug_Info* di, AST_Type* ast_type);
+
     DIType* llvm_debug_get_registered_type(Debug_Info* di, AST_Type* ast_type);
-    void llvm_debug_register_type(Debug_Info* di, AST_Type* ast_type, DIType* di_type);
+    void llvm_debug_register_type(Debug_Info* di, AST_Type* ast_type, DIType* di_type,
+                                  uint64_t flasgs = RDT_FLAG_NONE);
 }

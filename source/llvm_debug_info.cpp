@@ -208,6 +208,7 @@ namespace Zodiac
             return registered_type;
 
         DIType* result = nullptr;
+        bool register_type = true;
 
         switch (ast_type->kind)
         {
@@ -239,6 +240,11 @@ namespace Zodiac
                 {
                     result = di->builder->createBasicType("void", 0, dwarf::DW_ATE_signed);
                 }
+                else if (ast_type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    result = di->builder->createBasicType(ast_type->name, ast_type->bit_size,
+                                                          dwarf::DW_ATE_float);
+                }
                 else if (ast_type == Builtin::type_u8)
                 {
                     result = di->builder->createBasicType("u8", 8, dwarf::DW_ATE_unsigned_char);
@@ -257,13 +263,25 @@ namespace Zodiac
                     }
                 }
                 else assert(false);
+                break;
             }
 
             case AST_TYPE_POINTER:
             {
                 DIType* base_type = llvm_debug_get_type(di, ast_type->pointer.base);
-                result = di->builder->createPointerType(base_type, ast_type->bit_size,
-                                                        ast_type->bit_size);
+
+                // Check for the pointer type again since the base type may contain
+                //  a circular reference to itself via a pointer.
+                result = llvm_debug_get_registered_type(di, ast_type);
+                if (result)
+                {
+                    register_type = false;
+                }
+                else
+                {
+                    result = di->builder->createPointerType(base_type, ast_type->bit_size,
+                                                            ast_type->bit_size);
+                }
                 break;
             }
 
@@ -279,47 +297,8 @@ namespace Zodiac
             case AST_TYPE_STRUCT:
             case AST_TYPE_UNION:
             {
-                BUF(Metadata*) member_types = nullptr;
-
-                auto member_decls = ast_type->aggregate_type.member_declarations;
-                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
-                {
-                    AST_Declaration* member_decl = member_decls[i];
-                    assert(member_decl->kind == AST_DECL_MUTABLE);
-
-                    AST_Type* member_ast_type = member_decl->mutable_decl.type;
-                    assert(member_ast_type);
-
-                    BUF_PUSH(member_types, llvm_debug_get_type(di, member_ast_type));
-                }
-
-                ArrayRef<Metadata*> _elements(member_types, BUF_LENGTH(member_types));
-                DINodeArray elements = di->builder->getOrCreateArray(_elements);
-                DIScope* scope = stack_top(di->scope_stack);
-                unsigned line = ast_type->aggregate_type.scope->line;
-                // printf("struct name: %s\n", ast_type->name);
-                // printf("struct scope line: %d\n", line);
-
-
-                DICompositeType* result = nullptr;
-                if (ast_type->kind == AST_TYPE_STRUCT)
-                {
-                    result = di->builder->createStructType(scope, ast_type->name, di->current_file,
-                                                           line, ast_type->bit_size, 0,
-                                                           DINode::FlagZero, nullptr, elements);
-                }
-                else
-                {
-                    result = di->builder->createUnionType(scope, ast_type->name, di->current_file,
-                                                          line, ast_type->bit_size, 0,
-                                                          DINode::FlagZero, elements);
-                }
-
-
-                BUF_FREE(member_types);
-
-                assert(result);
-                // assert(false);
+                llvm_debug_create_fwd_decl(di, ast_type);
+                result = llvm_debug_get_aggregate_type(di, ast_type);
                 break;
             }
 
@@ -332,16 +311,16 @@ namespace Zodiac
 
                 DIType* underlying_type = nullptr;
 
-                auto result = di->builder->createEnumerationType(scope,
-                                                                 ast_type->name,
-                                                                 di->current_file,
-                                                                 line,
-                                                                 ast_type->bit_size,
-                                                                 0,
-                                                                 elements,
-                                                                 underlying_type,
-                                                                 "",
-                                                                 true);
+                result = di->builder->createEnumerationType(scope,
+                                                            ast_type->name,
+                                                            di->current_file,
+                                                            line,
+                                                            ast_type->bit_size,
+                                                            0,
+                                                            elements,
+                                                            underlying_type,
+                                                            "",
+                                                            true);
                 assert(result);
                 break;
             }
@@ -350,8 +329,76 @@ namespace Zodiac
         }
 
         assert(result);
-        llvm_debug_register_type(di, ast_type, result);
+
+        if (register_type)
+        {
+            llvm_debug_register_type(di, ast_type, result);
+        }
         return result;
+    }
+
+    DIType* llvm_debug_get_aggregate_type(Debug_Info* di, AST_Type* ast_type)
+    {
+        assert(ast_type->kind == AST_TYPE_STRUCT || ast_type->kind == AST_TYPE_UNION);
+
+        BUF(Metadata*) members = nullptr;
+
+        auto member_decls = ast_type->aggregate_type.member_declarations;
+        for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+        {
+            AST_Declaration* member_decl = member_decls[i];
+            AST_Type* ast_member_type = member_decl->mutable_decl.type;
+
+            DIType* member_type = llvm_debug_get_type(di, ast_member_type);
+
+            assert(member_type);
+            BUF_PUSH(members, member_type);
+        }
+
+        DIType* result = nullptr;
+
+        unsigned line = ast_type->aggregate_type.scope->line;
+
+        ArrayRef<Metadata*> _elements(members, BUF_LENGTH(members));
+        DINodeArray elements = di->builder->getOrCreateArray(_elements);
+
+        if (ast_type->kind == AST_TYPE_STRUCT)
+        {
+            result = di->builder->createStructType(stack_top(di->scope_stack), ast_type->name,
+                                                   di->current_file, line, ast_type->bit_size, 0,
+                                                   DINode::FlagZero, nullptr, elements);
+        }
+        else
+        {
+            result = di->builder->createUnionType(stack_top(di->scope_stack), ast_type->name,
+                                                  di->current_file, line, ast_type->bit_size,
+                                                  0, DINode::FlagZero, elements);
+        }
+
+        BUF_FREE(members);
+
+        assert(result);
+        return result;
+    }
+
+    void llvm_debug_create_fwd_decl(Debug_Info* di, AST_Type* ast_type)
+    {
+        assert(ast_type->kind == AST_TYPE_STRUCT || ast_type->kind == AST_TYPE_UNION);
+
+        unsigned tag = dwarf::DW_TAG_structure_type;
+        if (ast_type->kind == AST_TYPE_UNION) tag = dwarf::DW_TAG_union_type;
+
+        unsigned line = ast_type->aggregate_type.scope->line;
+
+        DIType* di_type = di->builder->createReplaceableCompositeType(tag,
+                                                                      ast_type->name,
+                                                                      stack_top(di->scope_stack),
+                                                                      di->current_file,
+                                                                      line);
+
+
+        assert(di_type);
+        llvm_debug_register_type(di, ast_type, di_type, RDT_FLAG_FWD_DECL);
     }
 
     DIType* llvm_debug_get_registered_type(Debug_Info* di, AST_Type* ast_type)
@@ -367,9 +414,36 @@ namespace Zodiac
         return nullptr;
     }
 
-    void llvm_debug_register_type(Debug_Info* di, AST_Type* ast_type, DIType* di_type)
+    void llvm_debug_register_type(Debug_Info* di, AST_Type* ast_type, DIType* di_type,
+                                  uint64_t flags/*=RDT_FLAG_NONE*/)
     {
-        Registered_Debug_Type rdt = { ast_type, di_type };
+        for (uint64_t i = 0; i < BUF_LENGTH(di->registered_types); i++)
+        {
+            auto& rt = di->registered_types[i];
+            if (rt.ast_type == ast_type)
+            {
+                assert(rt.flags & RDT_FLAG_FWD_DECL);
+
+                auto fwd_com = (DICompositeType*)rt.di_type;
+                auto new_com = (DICompositeType*)di_type;
+                fwd_com->replaceElements(new_com->getElements());
+
+                rt.di_type = di_type;
+
+                rt.flags &= ~RDT_FLAG_FWD_DECL;
+
+                return;
+            }
+        }
+
+        for (uint64_t i = 0; i < BUF_LENGTH(di->registered_types); i++)
+        {
+            auto& rt = di->registered_types[i];
+            assert(rt.ast_type != ast_type);
+            assert(rt.di_type != di_type);
+        }
+
+        Registered_Debug_Type rdt = { ast_type, di_type, flags };
         BUF_PUSH(di->registered_types, rdt);
     }
 }

@@ -1,0 +1,23 @@
+
+int :: typedef s64;
+
+Vec2 :: struct
+{
+    x: int;
+    y: int;
+}
+
+Vec3 :: struct
+{
+    xy : Vec2;
+    z  : float;
+}
+
+main :: () -> int
+{
+
+    v : Vec2;
+    v2 : Vec2;
+    v3 : Vec3;
+    return 0;
+}

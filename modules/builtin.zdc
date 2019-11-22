@@ -79,7 +79,3 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
     }
 }
 
-Context :: struct
-{
-    
-}
