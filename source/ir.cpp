@@ -3594,6 +3594,25 @@ namespace Zodiac
             IR_Value* target_alloc = ir_builder_value_for_declaration(ir_builder, lvalue_decl);
             assert(target_alloc);
 
+            if (lvalue_expr->type->kind == AST_TYPE_FUNCTION)
+            {
+                IR_Value* func_value =
+                    ir_builder_value_for_declaration(ir_builder,
+                                                     lvalue_expr->identifier->declaration);
+                assert(func_value);
+                if (func_value->function->flags & IR_FUNC_FLAG_FOREIGN)
+                {
+                    return ir_builder_emit_addrof_foreign(ir_builder, func_value,
+                                                          lvalue_expr->type,
+                                                          lvalue_expr->file_pos);
+                }
+                else
+                {
+                    return ir_builder_emit_addrof_function(ir_builder, func_value, func_value->type,
+                                                           lvalue_expr->file_pos);
+                }
+            }
+
             if (target_alloc->kind == IRV_FUNCTION)
             {
                 return ir_builder_emit_addrof_function(ir_builder, target_alloc, lvalue_decl->function.type, lvalue_expr->file_pos);
@@ -4074,8 +4093,9 @@ namespace Zodiac
     {
         assert(ir_builder);
         assert(function);
+        assert(function->type);
 
-        IR_Value* result = ir_value_new(ir_builder, IRV_FUNCTION, nullptr);
+        IR_Value* result = ir_value_new(ir_builder, IRV_FUNCTION, function->type);
         result->function = function;
         result->flags |= (IRV_FLAG_ASSIGNED | IRV_FLAG_CONST);
 
