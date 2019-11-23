@@ -72,7 +72,8 @@ namespace Zodiac
 
             if (context->options.emit_debug)
             {
-                llvm_debug_info_init(&di, module->file_name, module->file_dir, llvm_module);
+                llvm_debug_info_init(&di, builder->context, module->file_name, module->file_dir,
+                                     llvm_module);
                 builder->debug_info = &di;
                 llvm_debug_update_location(builder, module);
             }

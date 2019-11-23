@@ -25,6 +25,7 @@ namespace Zodiac
 
     struct Debug_Info
     {
+        Context* context = nullptr;
         LLVM_IR_Builder* zir_builder = nullptr;
         DIBuilder* builder = nullptr;
         DIFile* file = nullptr;
@@ -39,8 +40,8 @@ namespace Zodiac
     };
 
 
-    void llvm_debug_info_init(Debug_Info* di, const char* file_name, const char* dir_name,
-                              LLVMModuleRef llvm_c_module);
+    void llvm_debug_info_init(Debug_Info* di, Context* context, const char* file_name,
+                              const char* dir_name, LLVMModuleRef llvm_c_module);
     void llvm_debug_info_finalize(Debug_Info* di);
 
     void llvm_debug_register_function(Debug_Info* di, IR_Function* zir_func,

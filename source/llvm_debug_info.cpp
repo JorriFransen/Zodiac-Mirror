@@ -2,15 +2,18 @@
 #include "llvm_debug_info.h"
 
 #include "builtin.h"
+#include "const_interpreter.h"
 #include "llvm.h"
 
 #include "llvm/IR/IRBuilder.h"
 
 namespace Zodiac
 {
-    void llvm_debug_info_init(Debug_Info* di, const char* file_name, const char* dir_name,
-                              LLVMModuleRef llvm_c_module)
+    void llvm_debug_info_init(Debug_Info* di, Context* context, const char* file_name,
+                              const char* dir_name, LLVMModuleRef llvm_c_module)
     {
+        di->context = context;
+
         Module* llvm_module = (llvm::Module*)llvm_c_module;
         di->builder = new DIBuilder(*llvm_module);
         assert(di->builder);
@@ -19,7 +22,7 @@ namespace Zodiac
         di->current_file = di->file;
         assert(di->file);
 
-        di->compile_unit = di->builder->createCompileUnit(dwarf::DW_LANG_C, di->file,
+        di->compile_unit = di->builder->createCompileUnit(dwarf::DW_LANG_C_plus_plus, di->file,
                                                           "Zodiac Compiler", 0, "", 0);
 
         stack_init(&di->scope_stack, 16);
@@ -50,7 +53,7 @@ namespace Zodiac
         // printf("scope_line: %d\n", scope_line);
         // printf("line_number: %d\n", line_number);
 
-        DISubprogram* sp = di->builder->createFunction(di->current_file, zir_func->name,
+        DISubprogram* sp = di->builder->createFunction(di->compile_unit, zir_func->name,
                                                        "", di->current_file, line_number,
                                                        function_type, scope_line,
                                                        DINode::FlagPrototyped,
@@ -303,14 +306,37 @@ namespace Zodiac
 
             case AST_TYPE_ENUM:
             {
-                auto scope = stack_top(di->scope_stack);
                 unsigned line = ast_type->aggregate_type.scope->line;
 
-                DINodeArray elements;
+                BUF(Metadata*) members = nullptr;
 
-                DIType* underlying_type = nullptr;
+                auto member_decls = ast_type->aggregate_type.member_declarations;
+                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+                {
+                    AST_Declaration* mem_decl = member_decls[i];
+                    assert(mem_decl->kind == AST_DECL_CONSTANT_VAR);
+                    assert(mem_decl->scope);
 
-                result = di->builder->createEnumerationType(scope,
+                    const char* name = mem_decl->identifier->atom.data;
+                    auto init_expr = mem_decl->constant_var.init_expression;
+                    int64_t value =
+                        const_interpret_int_expression(di->context,
+                                                       init_expr, init_expr->type,
+                                                       mem_decl->scope);
+
+                    bool is_unsigned = (init_expr->type->flags & AST_TYPE_FLAG_SIGNED) ?
+                                            false : true;
+
+                    BUF_PUSH(members, di->builder->createEnumerator(name, value, is_unsigned));
+                }
+
+                ArrayRef<Metadata*> _elements(members, BUF_LENGTH(members));
+                DINodeArray elements = di->builder->getOrCreateArray(_elements);
+
+                AST_Type* ast_base_type = ast_type->aggregate_type.base_type;
+                DIType* underlying_type = llvm_debug_get_type(di, ast_base_type);
+
+                result = di->builder->createEnumerationType(di->compile_unit,
                                                             ast_type->name,
                                                             di->current_file,
                                                             line,
@@ -320,6 +346,9 @@ namespace Zodiac
                                                             underlying_type,
                                                             "",
                                                             true);
+
+                BUF_FREE(members);
+
                 assert(result);
                 break;
             }
@@ -374,13 +403,13 @@ namespace Zodiac
 
         if (ast_type->kind == AST_TYPE_STRUCT)
         {
-            result = di->builder->createStructType(stack_top(di->scope_stack), ast_type->name,
+            result = di->builder->createStructType(di->compile_unit, ast_type->name,
                                                    di->current_file, line, ast_type->bit_size, 0,
                                                    DINode::FlagZero, nullptr, elements);
         }
         else
         {
-            result = di->builder->createUnionType(stack_top(di->scope_stack), ast_type->name,
+            result = di->builder->createUnionType(di->compile_unit, ast_type->name,
                                                   di->current_file, line, ast_type->bit_size,
                                                   0, DINode::FlagZero, elements);
         }
@@ -402,7 +431,7 @@ namespace Zodiac
 
         DIType* di_type = di->builder->createReplaceableCompositeType(tag,
                                                                       ast_type->name,
-                                                                      stack_top(di->scope_stack),
+                                                                      di->compile_unit,
                                                                       di->current_file,
                                                                       line);
 
