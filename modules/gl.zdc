@@ -8,7 +8,7 @@ static_if (PLATFORM_WINDOWS)
 }
 else static_if (PLATFORM_LINUX)
 {
-    #dynamic_link "/usr/lib/libGL.so";
+    #dynamic_link "libGL.so";
 }
 
 GLbitfield :: typedef u32;
