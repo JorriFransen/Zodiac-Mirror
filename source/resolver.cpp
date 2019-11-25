@@ -3918,7 +3918,7 @@ namespace Zodiac
         bool old_zrb_val = bool_lit_expr->bool_literal.boolean;
         zrb_decl->constant_var.init_expression->bool_literal.boolean = true;
 
-        IR_Module ir_module = ir_builder_emit_module(&ir_builder, resolver->module);
+        IR_Module ir_module = ir_builder_emit_module(&ir_builder, resolver->module, false);
         resolver_clean_module_after_emit(resolver, resolver->module);
 
         zrb_decl->constant_var.init_expression->bool_literal.boolean = old_zrb_val;

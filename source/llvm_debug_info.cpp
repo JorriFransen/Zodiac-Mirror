@@ -130,6 +130,25 @@ namespace Zodiac
                                    llvm_builder->GetInsertBlock());
     }
 
+    void llvm_debug_register_global(Debug_Info* di, LLVMValueRef _llvm_global,
+                                    IR_Value* zir_global)
+    {
+        unsigned line = zir_global->global.file_pos.line;
+        DIType* di_type = llvm_debug_get_type(di, zir_global->type);
+
+        DIGlobalVariableExpression* di_var_expr = di->builder->createGlobalVariableExpression(
+            di->compile_unit,
+            zir_global->global.name,
+            "",
+            di->current_file,
+            line,
+            di_type,
+            true);
+
+        GlobalVariable* llvm_global = (GlobalVariable*)unwrap(_llvm_global);
+        llvm_global->addDebugInfo(di_var_expr);
+    }
+
     void llvm_debug_update_location(Debug_Info* di, LLVM_IR_Builder* ir_builder,
                                     IR_Function* zir_func)
     {

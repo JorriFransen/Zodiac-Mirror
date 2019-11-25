@@ -107,6 +107,12 @@ namespace Zodiac
             llvm_emit_global(builder, zir_global);
         }
 
+        for (uint64_t i = 0; i < BUF_LENGTH(module->global_constants); i++)
+        {
+            auto gc = module->global_constants[i];
+            printf("Emitting global constant: %s\n", gc.name);
+        }
+
         // Register functions so we can call them before generating them
         for (uint64_t i = 0; i < BUF_LENGTH(module->functions); i++)
         {
@@ -2207,6 +2213,11 @@ namespace Zodiac
         LLVMSetInitializer(llvm_global, llvm_init_value);
 
         llvm_assign_result(builder, zir_global, llvm_global);
+
+        if (builder->context->options.emit_debug)
+        {
+            llvm_debug_register_global(builder->debug_info, llvm_global, zir_global);
+        }
     }
 
     void llvm_cast_to_bigger_int_type(LLVM_IR_Builder* builder, LLVMValueRef* lhs,

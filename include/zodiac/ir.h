@@ -90,6 +90,7 @@ namespace Zodiac
                 const char* name;
                 uint64_t index;
                 IR_Value* init_value;
+                File_Pos file_pos;
             } global;
         };
     };
@@ -303,7 +304,8 @@ namespace Zodiac
 
     void ir_builder_init(IR_Builder* ir_builder, Context* context);
 
-    IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module);
+    IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module,
+                                     bool emit_builtin_decls);
     void ir_builder_emit_missing_poly_functions(IR_Builder* ir_builder, AST_Module* module);
 
 	void ir_builder_emit_decl_body(IR_Builder* ir_builder, AST_Declaration* func_decl);
@@ -490,7 +492,7 @@ namespace Zodiac
     IR_Value* ir_value_allocl_new(IR_Builder* ir_builder, AST_Type* type, const char* name,
                                   File_Pos file_pos);
     IR_Value* ir_value_global_new(IR_Builder* ir_builder, AST_Type* type, IR_Value* init_value,
-                                  const char* name);
+                                  const char* name, File_Pos file_pos);
 
     IR_Instruction* ir_instruction_new(IR_Builder* ir_builder, File_Pos origin, IR_Operator op,
                                        IR_Value* arg1, IR_Value* arg2, IR_Value* result);
