@@ -84,9 +84,9 @@ int main(int argc, char** argv)
     bool builtin_found = zodiac_find_module_path(context, builtin_module_name,
                                                  &builtin_module_path);
     assert(builtin_found);
-    AST_Module* builtin_ast_module = zodiac_compile_or_get_module(context,
-                                                                    builtin_module_path,
-                                                                    builtin_module_name);
+    AST_Module* builtin_ast_module = zodiac_compile_or_get_module(context, builtin_module_path,
+                                                                  builtin_module_name, true);
+    if (!builtin_ast_module) return 42;
 
     assert(builtin_ast_module);
     context->builtin_ast_module = builtin_ast_module;
@@ -198,7 +198,7 @@ int main(int argc, char** argv)
 
 
     Resolver resolver;
-    resolver_init(&resolver, context);
+    resolver_init(&resolver, context, false);
     Resolve_Result rr = resolver_resolve_module(&resolver, parse_result.ast_module);
     if (resolve_result_has_errors(&rr))
     {
@@ -215,7 +215,7 @@ int main(int argc, char** argv)
     IR_Builder ir_builder;
     ir_builder_init(&ir_builder, context);
 
-    IR_Module ir_module = ir_builder_emit_module(&ir_builder, parse_result.ast_module, true);
+    IR_Module ir_module = ir_builder_emit_module(&ir_builder, parse_result.ast_module, false);
 
     if (ir_module.error_count)
     {

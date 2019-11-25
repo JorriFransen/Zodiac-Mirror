@@ -34,8 +34,6 @@ namespace Zodiac
 
         static uint64_t pointer_size;
 
-        static AST_Declaration* decl_PLATFORM_WINDOWS;
-        static AST_Declaration* decl_PLATFORM_LINUX;
         static AST_Declaration* decl_ZODIAC_RUNNING_BYTECODE;
         static AST_Declaration* decl_string_length;
         static AST_Declaration* decl_default_assert_handler;

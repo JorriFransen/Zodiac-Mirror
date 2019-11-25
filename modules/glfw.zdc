@@ -1,4 +1,7 @@
 
+_builtin :: import builtin;
+using _builtin;
+
 static_if (PLATFORM_WINDOWS)
 {
     static_if (ZODIAC_RUNNING_BYTECODE)
