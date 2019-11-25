@@ -22,6 +22,7 @@ is_directory :: (path: String) -> bool
     stat_res := posix.stat(path.data, *statbuf);
     if (stat_res != 0)
     {
+        _c.printf("stat res not zero\n");
         return false;
     }
 

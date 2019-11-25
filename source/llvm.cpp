@@ -107,11 +107,6 @@ namespace Zodiac
             llvm_emit_global(builder, zir_global);
         }
 
-        for (uint64_t i = 0; i < BUF_LENGTH(module->global_constants); i++)
-        {
-            auto gc = module->global_constants[i];
-            printf("Emitting global constant: %s\n", gc.name);
-        }
 
         // Register functions so we can call them before generating them
         for (uint64_t i = 0; i < BUF_LENGTH(module->functions); i++)
@@ -2062,9 +2057,22 @@ namespace Zodiac
             case IRV_ALLOCL:
             case IRV_ARGUMENT:
             case IRV_TEMPORARY:
-            case IRV_GLOBAL:
             {
                 return llvm_value_from_zir(builder, zir_value);
+                break;
+            }
+
+            case IRV_GLOBAL:
+            {
+                LLVMValueRef ptr_val = llvm_value_from_zir(builder, zir_value);
+                if (zir_value->flags & IRV_FLAG_CONST)
+                {
+                    return LLVMBuildLoad(builder->llvm_builder, ptr_val, "");
+                }
+                else
+                {
+                    return ptr_val;
+                }
                 break;
             }
 
@@ -2198,6 +2206,11 @@ namespace Zodiac
 
         LLVMValueRef llvm_global = LLVMAddGlobal(builder->llvm_module, llvm_type, name);
         LLVMSetExternallyInitialized(llvm_global, false);
+
+        if (zir_global->flags & IRV_FLAG_CONST)
+        {
+            LLVMSetGlobalConstant(llvm_global, true);
+        }
 
         LLVMValueRef llvm_init_value = nullptr;
         if (zir_global->global.init_value)

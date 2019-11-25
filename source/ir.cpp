@@ -318,11 +318,12 @@ namespace Zodiac
 
             case AST_DECL_CONSTANT_VAR:
             {
-                AST_Expression* init_expr = global_decl->constant_var.init_expression;
-                IR_Value* value = ir_builder_emit_expression(ir_builder, init_expr);
-                IR_Global_Constant gc = { global_decl->identifier->atom.data, value };
-                BUF_PUSH(ir_builder->result.global_constants, gc);
+                IR_Value* value = ir_builder_emit_global(ir_builder, global_decl);
+                value->flags |= IRV_FLAG_CONST;
                 ir_builder_push_value_and_decl(ir_builder, value, global_decl);
+                IR_Global_Constant gc = { global_decl->identifier->atom.data,
+                                          value->global.init_value };
+                BUF_PUSH(ir_builder->result.global_constants, gc);
                 break;
             }
 
@@ -384,9 +385,14 @@ namespace Zodiac
             case AST_DECL_STATIC_ASSERT:
             {
                 AST_Expression* assert_expr = global_decl->static_assert_expression;
-                IR_Value* cond_value = ir_builder_emit_expression(ir_builder, assert_expr);
-                assert(cond_value->type == Builtin::type_bool);
-                if (!cond_value->value.boolean)
+                // IR_Value* cond_value = ir_builder_emit_expression(ir_builder, assert_expr);
+                assert(assert_expr->type == Builtin::type_bool);
+
+                bool cond_value = const_interpret_bool_expression(ir_builder->context, assert_expr,
+                                                                  ir_builder->ast_module->module_scope);
+
+                if (!cond_value)
+                // if (!cond_value->value.boolean)
                 {
                     auto fp = global_decl->static_assert_expression->file_pos;
                     fprintf(stderr,
@@ -1216,7 +1222,14 @@ namespace Zodiac
                 }
                 else if (value->kind == IRV_GLOBAL)
                 {
-                    value = ir_builder_emit_loadg(ir_builder, value, expression->file_pos);
+                    if (value->flags & IRV_FLAG_CONST)
+                    {
+                        value = value->global.init_value;
+                    }
+                    else
+                    {
+                        value = ir_builder_emit_loadg(ir_builder, value, expression->file_pos);
+                    }
                 }
                 else if (value->kind == IRV_FUNCTION)
                 {
@@ -1495,27 +1508,6 @@ namespace Zodiac
             default: assert(false);
         }
 
-        return nullptr;
-    }
-
-    IR_Value* ir_builder_emit_global_init_expression(IR_Builder* ir_builder,
-                                                    AST_Expression* expression)
-    {
-        assert(expression->flags & AST_EXPR_FLAG_CONST);
-
-        switch (expression->kind)
-        {
-            case AST_EXPR_NULL_LITERAL:
-            case AST_EXPR_INTEGER_LITERAL:
-            case AST_EXPR_COMPOUND_LITERAL:
-            {
-                return ir_builder_emit_expression(ir_builder, expression);
-            }
-
-            default: assert(false);
-        }
-
-        assert(false);
         return nullptr;
     }
 
@@ -3491,18 +3483,32 @@ namespace Zodiac
     {
         assert(ir_builder);
         assert(global_decl);
-        assert(global_decl->kind == AST_DECL_MUTABLE);
+        assert(global_decl->kind == AST_DECL_MUTABLE ||
+               global_decl->kind == AST_DECL_CONSTANT_VAR);
+
+        AST_Type* type = nullptr;
+        AST_Expression* init_expr = nullptr;
+        if (global_decl->kind == AST_DECL_MUTABLE)
+        {
+            type = global_decl->mutable_decl.type;
+            init_expr = global_decl->mutable_decl.init_expression;
+        }
+        else
+        {
+            type = global_decl->constant_var.type;
+            init_expr = global_decl->constant_var.init_expression;
+            assert(init_expr);
+        }
 
         IR_Value* init_value = nullptr;
 
-        if (global_decl->mutable_decl.init_expression)
+        if (init_expr)
         {
-            auto init_expr = global_decl->mutable_decl.init_expression;
-            init_value = ir_builder_emit_global_init_expression(ir_builder, init_expr);
+            init_value = ir_builder_emit_expression(ir_builder, init_expr);
         }
 
         IR_Value* global_value = ir_value_global_new(ir_builder,
-                                                        global_decl->mutable_decl.type,
+                                                        type,
                                                         init_value,
                                                         global_decl->identifier->atom.data,
                                                         global_decl->file_pos);

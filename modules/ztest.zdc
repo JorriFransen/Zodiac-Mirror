@@ -86,7 +86,7 @@ main :: (argc: int, argv: **u8) -> int
 
     if (!os.is_directory(test_folder_path))
     {
-        _c.fprintf(_c._stderr, "Path is not a directory: %s\n", test_folder_str.data);
+        _c.fprintf(_c._stderr, "Path is not a directory: '%s'\n", test_folder_str.data);
         return -1;
     }
 

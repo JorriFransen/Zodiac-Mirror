@@ -318,8 +318,6 @@ namespace Zodiac
 	void ir_builder_emit_switch_statement(IR_Builder* ir_builder, AST_Statement* statement,
                                           AST_Scope* scope, IR_Value* break_block);
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
-    IR_Value* ir_builder_emit_global_init_expression(IR_Builder* ir_builder,
-                                                     AST_Expression* expression);
     IR_Value* ir_builder_emit_pointer_math(IR_Builder* ir_builder, IR_Value* pointer_value,
                                             IR_Value* int_value, AST_Binop_Kind binop,
                                             bool reversed, File_Pos origin);
