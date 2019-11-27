@@ -1,11 +1,14 @@
 
+_builtin :: import builtin;
+using _builtin;
+
 static_if (PLATFORM_WINDOWS)
 {
     #dynamic_link "Opengl32";
 }
 else static_if (PLATFORM_LINUX)
 {
-    #dynamic_link "/usr/lib/libGL.so";
+    #dynamic_link "libGL.so";
 }
 
 GLbitfield :: typedef u32;

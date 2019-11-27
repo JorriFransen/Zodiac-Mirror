@@ -35,6 +35,8 @@ namespace Zodiac
         AST_Declaration* current_func_decl = nullptr;
 
         Resolve_Result result = {};
+
+        bool is_builtin = false;
     };
 
     struct Aggregate_Member_To_Resolve
@@ -48,7 +50,7 @@ namespace Zodiac
         BUF(Aggregate_Member_To_Resolve) members = nullptr;
     };
 
-    void resolver_init(Resolver* resolver, Context* context);
+    void resolver_init(Resolver* resolver, Context* context, bool is_builtin);
     void resolver_do_initial_scope_population(Resolver* resolver, AST_Module* module,
                                               AST_Scope* scope);
     Resolve_Result resolver_resolve_module(Resolver* resolver, AST_Module* module);
@@ -118,7 +120,7 @@ namespace Zodiac
 
     void resolver_push_declaration_to_scope(Resolver* resolver, AST_Declaration* decl,
                                             AST_Scope* scope);
-    void resolver_push_static_declarations_to_scope(Resolver* resolver,
+    bool resolver_push_static_declarations_to_scope(Resolver* resolver,
                                                     AST_Declaration* decl_to_emit,
                                                     AST_Scope* scope);
 

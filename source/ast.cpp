@@ -21,7 +21,7 @@ namespace Zodiac
         const char* file_dir = extract_directory_from_path(path);
 
         result->global_declarations = nullptr;
-        result->module_scope = ast_scope_new(context, context->builtin_scope, result, true);
+        result->module_scope = ast_scope_new(context, context->builtin_scope, result, true, 0);
         result->entry_point = nullptr;
         result->module_name = module_name;
         result->module_file_name = file_name;
@@ -1226,7 +1226,7 @@ namespace Zodiac
     }
 
     AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
-		                     bool is_module_scope)
+		                     bool is_module_scope, uint64_t line)
 
     {
         assert(context);
@@ -1242,6 +1242,7 @@ namespace Zodiac
         result->module = module;
         result->using_modules = nullptr;
         result->using_declarations = nullptr;
+        result->line = line;
 
         return result;
     }

@@ -7,7 +7,7 @@ main :: () -> u64
 {
     c.open_std_handles();
 
-    assert_in_here();
+    // assert_in_here();
 
     i_am_i : int;
 

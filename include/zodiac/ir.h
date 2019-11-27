@@ -72,6 +72,7 @@ namespace Zodiac
             {
                 const char* name;
                 uint64_t index;
+                File_Pos file_pos;
             } argument;
 
             IR_Function* function;
@@ -81,6 +82,7 @@ namespace Zodiac
             {
                 const char* name;
                 uint64_t index;
+                File_Pos file_pos;
             } allocl;
 
             struct
@@ -88,6 +90,7 @@ namespace Zodiac
                 const char* name;
                 uint64_t index;
                 IR_Value* init_value;
+                File_Pos file_pos;
             } global;
         };
     };
@@ -188,6 +191,7 @@ namespace Zodiac
         };
 
         File_Pos origin;
+        AST_Scope* scope = nullptr;
 
         IR_Instruction* next = nullptr;
     };
@@ -229,6 +233,8 @@ namespace Zodiac
 
         IR_Block* first_block = nullptr;
         IR_Block* last_block = nullptr;
+
+        AST_Scope* body_scope = nullptr;
 
         BUF(IR_Value*) arguments = nullptr; // These are duplicated in local temps
         BUF(IR_Value*) local_temps = nullptr;
@@ -287,6 +293,8 @@ namespace Zodiac
         IR_Function* current_function = nullptr;
 
         IR_Block* insert_block = nullptr;
+
+        Stack<AST_Scope*> scope_stack = {};
     };
 
     struct IR_Validation_Result
@@ -296,7 +304,8 @@ namespace Zodiac
 
     void ir_builder_init(IR_Builder* ir_builder, Context* context);
 
-    IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module);
+    IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module,
+                                     bool emit_builtin_decls);
     void ir_builder_emit_missing_poly_functions(IR_Builder* ir_builder, AST_Module* module);
 
 	void ir_builder_emit_decl_body(IR_Builder* ir_builder, AST_Declaration* func_decl);
@@ -309,8 +318,6 @@ namespace Zodiac
 	void ir_builder_emit_switch_statement(IR_Builder* ir_builder, AST_Statement* statement,
                                           AST_Scope* scope, IR_Value* break_block);
     IR_Value* ir_builder_emit_expression(IR_Builder* ir_builder, AST_Expression* expression);
-    IR_Value* ir_builder_emit_global_init_expression(IR_Builder* ir_builder,
-                                                     AST_Expression* expression);
     IR_Value* ir_builder_emit_pointer_math(IR_Builder* ir_builder, IR_Value* pointer_value,
                                             IR_Value* int_value, AST_Binop_Kind binop,
                                             bool reversed, File_Pos origin);
@@ -344,8 +351,8 @@ namespace Zodiac
                                                AST_Declaration* declaration);
 
     IR_Value* ir_builder_begin_function(IR_Builder* ir_builder, File_Pos file_pos,
-                                        const char* name, AST_Type*
-                                        return_type);
+                                        const char* name, AST_Type* return_type,
+                                        AST_Scope* body_scope);
     void ir_builder_end_function(IR_Builder* ir_builder, IR_Value* func_value);
     void ir_builder_patch_empty_block_jumps(IR_Builder* ir_builder, IR_Function* function);
     void ir_builder_patch_block_jumps(IR_Builder* ir_builder, IR_Function* function,
@@ -370,7 +377,7 @@ namespace Zodiac
     void ir_builder_emit_instruction(IR_Builder* ir_builder, IR_Instruction* iri);
 
     IR_Value* ir_builder_emit_function_arg(IR_Builder* ir_builder, const char* name,
-                                           AST_Type* type);
+                                           AST_Type* type, File_Pos file_pos);
     IR_Value* ir_builder_emit_add(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
                                   File_Pos origin);
     IR_Value* ir_builder_emit_sub(IR_Builder* ir_builder, IR_Value* lhs, IR_Value* rhs,
@@ -474,15 +481,16 @@ namespace Zodiac
                                             File_Pos file_pos);
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, File_Pos file_pos, const char* name,
-                                 AST_Type* func_type);
+                                 AST_Type* func_type, AST_Scope* body_scope);
     void phi_node_add_incoming(IR_Value* phi_value, IR_Block* block, IR_Value* value);
 
     IR_Value* ir_value_new(IR_Builder* ir_builder, IR_Value_Kind kind, AST_Type* type);
     IR_Value* ir_value_function_new(IR_Builder* ir_builder, IR_Function* function);
     IR_Value* ir_value_block_new(IR_Builder* ir_builder, IR_Block* block);
-    IR_Value* ir_value_allocl_new(IR_Builder* ir_builder, AST_Type* type, const char* name);
+    IR_Value* ir_value_allocl_new(IR_Builder* ir_builder, AST_Type* type, const char* name,
+                                  File_Pos file_pos);
     IR_Value* ir_value_global_new(IR_Builder* ir_builder, AST_Type* type, IR_Value* init_value,
-                                  const char* name);
+                                  const char* name, File_Pos file_pos);
 
     IR_Instruction* ir_instruction_new(IR_Builder* ir_builder, File_Pos origin, IR_Operator op,
                                        IR_Value* arg1, IR_Value* arg2, IR_Value* result);

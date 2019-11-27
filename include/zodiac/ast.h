@@ -693,10 +693,13 @@ namespace Zodiac
         AST_Scope* parent = nullptr;
         AST_Module* module = nullptr;
 
+        uint64_t line = 0;
+
         BUF(AST_Statement*) defer_statements = nullptr;
 
         BUF(AST_Module*) using_modules = nullptr;
         BUF(AST_Declaration*) using_declarations = nullptr;
+
     };
 
     enum AST_Directive_Kind
@@ -916,7 +919,7 @@ namespace Zodiac
                                                    AST_Identifier* identifier);
 
 	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
-		                     bool is_module_scope);
+		                     bool is_module_scope, uint64_t line);
 
     AST_Identifier* find_overload(AST_Type* type, AST_Overload_Operator_Kind op);
     AST_Overload_Operator_Kind binary_op_to_overload_op(AST_Binop_Kind binop);

@@ -76,14 +76,14 @@ namespace Zodiac
 
         const Options& options = ir_runner->context->options;
 
-        IR_Value argc_value;
+        IR_Value argc_value = {};
         argc_value.kind = IRV_TEMPORARY;
         argc_value.type = Builtin::type_s64;
         argc_value.value.s64 = (int64_t)BUF_LENGTH(options.run_args);
         IR_Pushed_Arg argc_pa = { argc_value, false };
         stack_push(ir_runner->arg_stack, argc_pa);
 
-        IR_Value argv_value;
+        IR_Value argv_value = {};
         argv_value.kind = IRV_TEMPORARY;
         argv_value.type = ast_find_or_create_pointer_type(ir_runner->context,
                                                          Builtin::type_pointer_to_u8);
@@ -179,7 +179,7 @@ namespace Zodiac
         ir_runner_init(ir_thread->parent_ir_runner->context, &thread_ir_runner,
                        ir_thread->parent_ir_runner);
 
-        IR_Value arg;
+        IR_Value arg = {};
         arg.kind = IRV_TEMPORARY;
         arg.type = Builtin::type_pointer_to_Thread;
         arg.value.pointer = &ir_thread->builtin_thread;

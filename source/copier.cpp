@@ -621,7 +621,8 @@ namespace Zodiac
         assert(context);
         assert(scope);
 
-        AST_Scope* result = ast_scope_new(context, scope->parent, scope->module, false);
+        AST_Scope* result = ast_scope_new(context, scope->parent, scope->module, false,
+                                          scope->line);
         result->flags = scope->flags;
 
         return result;

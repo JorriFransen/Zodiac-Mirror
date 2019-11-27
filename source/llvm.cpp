@@ -72,7 +72,8 @@ namespace Zodiac
 
             if (context->options.emit_debug)
             {
-                llvm_debug_info_init(&di, module->file_name, module->file_dir, llvm_module);
+                llvm_debug_info_init(&di, builder->context, module->file_name, module->file_dir,
+                                     llvm_module);
                 builder->debug_info = &di;
                 llvm_debug_update_location(builder, module);
             }
@@ -106,6 +107,7 @@ namespace Zodiac
             llvm_emit_global(builder, zir_global);
         }
 
+
         // Register functions so we can call them before generating them
         for (uint64_t i = 0; i < BUF_LENGTH(module->functions); i++)
         {
@@ -124,11 +126,18 @@ namespace Zodiac
         {
             if (context->options.emit_debug)
             {
-                char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
-                printf("%s", llvm_module_string);
-                LLVMDisposeMessage(llvm_module_string);
+                // char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
+                // printf("%s", llvm_module_string);
+                // LLVMDisposeMessage(llvm_module_string);
 
-                // llvm_debug_info_finalize(&di);
+                llvm_debug_info_finalize(&di);
+
+                if (context->options.print_llvm)
+                {
+                    char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
+                    printf("%s", llvm_module_string);
+                    LLVMDisposeMessage(llvm_module_string);
+                }
                 // assert(false);
             }
 
@@ -868,7 +877,6 @@ namespace Zodiac
             llvm_debug_enter_scope(builder, zir_func);
         }
 
-
         bool is_foreign = zir_func->flags & IR_FUNC_FLAG_FOREIGN;
 
         if (!is_foreign)
@@ -887,6 +895,10 @@ namespace Zodiac
 			assert(llvm_ir_function.blocks);
             LLVMPositionBuilderAtEnd(builder->llvm_builder, llvm_ir_function.blocks[0].block);
 
+            if (builder->context->options.emit_debug)
+                llvm_debug_unset_location(builder);
+
+            // printf("Emitting function: %s\n", zir_func->name);
             for (uint64_t i = 0; i < BUF_LENGTH(zir_func->arguments); i++)
             {
                 IR_Value* zir_arg = zir_func->arguments[i];
@@ -897,7 +909,17 @@ namespace Zodiac
                                                         (unsigned)zir_arg->argument.index);
                 LLVMBuildStore(builder->llvm_builder, llvm_arg_value, llvm_arg_alloca);
                 llvm_assign_result(builder, zir_arg, llvm_arg_alloca);
+
+                // printf("\tEmitting argument: %s\n", zir_arg->allocl.name);
+
+
+                if (builder->context->options.emit_debug)
+                    llvm_debug_register_function_parameter(builder, llvm_arg_alloca, zir_arg,
+                                                           i + 1);
             }
+
+            if (builder->context->options.emit_debug)
+                llvm_debug_update_location(builder->debug_info, builder, zir_func);
 
             zir_block = zir_func->first_block;
             for (uint64_t i = 0; i < BUF_LENGTH(llvm_ir_function.blocks); i++)
@@ -931,11 +953,13 @@ namespace Zodiac
         //     // printf("\n%s\n", LLVMPrintValueToString(llvm_func_value));
         // }
 
-        if (builder->context->options.emit_debug &&
-            !(zir_func->flags & IR_FUNC_FLAG_FOREIGN))
+        if (builder->context->options.emit_debug)
         {
             llvm_debug_exit_scope(builder, zir_func);
-            llvm_debug_finalize_function(builder->debug_info, llvm_func_value);
+            if (!(zir_func->flags & IR_FUNC_FLAG_FOREIGN))
+            {
+                llvm_debug_finalize_function(builder->debug_info, llvm_func_value);
+            }
         }
     }
 
@@ -1462,11 +1486,12 @@ namespace Zodiac
                 }
 
                 LLVMValueRef llvm_result_value = LLVMBuildCall(builder->llvm_builder,
-                                                               llvm_func_value, args, (unsigned)arg_count,
-                                                               "");
+                                                               llvm_func_value, args,
+                                                               (unsigned)arg_count, "");
 
                 llvm_assign_result(builder, zir_instruction->result, llvm_result_value);
                 BUF_FREE(args);
+
                 break;
             }
 
@@ -1601,6 +1626,11 @@ namespace Zodiac
                                                            name);
 
                 llvm_assign_result(builder, zir_allocl, llvm_alloca);
+
+                if (builder->context->options.emit_debug)
+                {
+                    llvm_debug_register_function_local_variable(builder, llvm_alloca, zir_allocl);
+                }
                 break;
             }
 
@@ -2027,9 +2057,22 @@ namespace Zodiac
             case IRV_ALLOCL:
             case IRV_ARGUMENT:
             case IRV_TEMPORARY:
-            case IRV_GLOBAL:
             {
                 return llvm_value_from_zir(builder, zir_value);
+                break;
+            }
+
+            case IRV_GLOBAL:
+            {
+                LLVMValueRef ptr_val = llvm_value_from_zir(builder, zir_value);
+                if (zir_value->flags & IRV_FLAG_CONST)
+                {
+                    return LLVMBuildLoad(builder->llvm_builder, ptr_val, "");
+                }
+                else
+                {
+                    return ptr_val;
+                }
                 break;
             }
 
@@ -2164,6 +2207,11 @@ namespace Zodiac
         LLVMValueRef llvm_global = LLVMAddGlobal(builder->llvm_module, llvm_type, name);
         LLVMSetExternallyInitialized(llvm_global, false);
 
+        if (zir_global->flags & IRV_FLAG_CONST)
+        {
+            LLVMSetGlobalConstant(llvm_global, true);
+        }
+
         LLVMValueRef llvm_init_value = nullptr;
         if (zir_global->global.init_value)
         {
@@ -2178,6 +2226,11 @@ namespace Zodiac
         LLVMSetInitializer(llvm_global, llvm_init_value);
 
         llvm_assign_result(builder, zir_global, llvm_global);
+
+        if (builder->context->options.emit_debug)
+        {
+            llvm_debug_register_global(builder->debug_info, llvm_global, zir_global);
+        }
     }
 
     void llvm_cast_to_bigger_int_type(LLVM_IR_Builder* builder, LLVMValueRef* lhs,

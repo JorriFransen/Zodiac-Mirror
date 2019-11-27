@@ -7,6 +7,9 @@ stdin  : *FILE = null;
 stdout : *FILE = null;
 stderr : *FILE = null;
 
+PLATFORM_WINDOWS :: false;
+PLATFORM_LINUX   :: false;
+
 #foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
 #foreign exit :: (status: s32) -> void;
 
@@ -79,7 +82,3 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
     }
 }
 
-Context :: struct
-{
-    
-}
