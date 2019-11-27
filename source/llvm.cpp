@@ -301,6 +301,11 @@ namespace Zodiac
 
 		string_builder_append(&sb, "/NOLOGO /WX /SUBSYSTEM:CONSOLE ");
 
+		if (builder->context->options.emit_debug)
+		{
+			string_builder_append(&sb, " /DEBUG ");
+		}
+
 		string_builder_append(&sb, " msvcrtd.lib");
 		//string_builder_append(&sb, " ucrtd.lib");
 		//string_builder_append(&sb, " vcruntimed.lib");
