@@ -13,8 +13,8 @@
 #define MB(n) (KB((n)) * (uint64_t)1024)
 #define GB(n) (MB((n)) * (uint64_t)1024)
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define _MAX(a, b) ((a) > (b) ? (a) : (b))
+#define _MIN(a, b) ((a) < (b) ? (a) : (b))
 
 // Use these memory management macros for now, so we can add support for custom
 //   allocators later.

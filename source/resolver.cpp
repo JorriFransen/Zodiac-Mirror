@@ -847,7 +847,7 @@ namespace Zodiac
                 if (member_ts->kind == AST_TYPE_SPEC_POINTER)
                 {
                     total_bit_size += Builtin::pointer_size;
-                    biggest_bit_size = MAX(biggest_bit_size, Builtin::pointer_size);
+                    biggest_bit_size = _MAX(biggest_bit_size, Builtin::pointer_size);
 
                     Aggregate_Member_To_Resolve m = { member_decl, agg_scope };
                     if (is_nested)
@@ -868,7 +868,7 @@ namespace Zodiac
                     {
                         AST_Type* member_type = member_decl->mutable_decl.type;
                         total_bit_size += member_type->bit_size;
-                        biggest_bit_size = MAX(biggest_bit_size, member_type->bit_size);
+                        biggest_bit_size = _MAX(biggest_bit_size, member_type->bit_size);
                     }
                     else
                     {
@@ -897,7 +897,7 @@ namespace Zodiac
                     AST_Type* member_type = member_decl->aggregate_type.type;
                     assert(member_type);
                     total_bit_size += member_type->bit_size;
-                    biggest_bit_size = MAX(biggest_bit_size, member_type->bit_size);
+                    biggest_bit_size = _MAX(biggest_bit_size, member_type->bit_size);
                 }
             }
         }

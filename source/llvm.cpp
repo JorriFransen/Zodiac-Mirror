@@ -8,6 +8,7 @@
 #include <llvm-c/Analysis.h>
 #include <llvm-c/TargetMachine.h>
 #include <llvm/IR/CallingConv.h>
+#include <llvm/IR/Module.h>
 
 #include <dynload.h>
 
@@ -56,11 +57,25 @@ namespace Zodiac
 
         maybe_init_llvm_types(builder);
 
+        Debug_Info di = {};
+
+        if (context->options.emit_debug && builder->debug_info)
+        {
+            llvm_debug_update_location(builder, module);
+        }
+
         if (root)
         {
             LLVMModuleRef llvm_module = LLVMModuleCreateWithName(module->name);
             builder->llvm_module = llvm_module;
             builder->llvm_builder = LLVMCreateBuilder();
+
+            if (context->options.emit_debug)
+            {
+                llvm_debug_info_init(&di, module->file_name, module->file_dir, llvm_module);
+                builder->debug_info = &di;
+                llvm_debug_update_location(builder, module);
+            }
 
             llvm_emit_type_info(builder);
 
@@ -80,6 +95,9 @@ namespace Zodiac
             IR_Module* import_module = module->imported_modules[i];
             llvm_emit_ir_module(builder, import_module, false);
         }
+
+        if (context->options.emit_debug && builder->debug_info)
+            llvm_debug_update_location(builder, module);
 
         // Emit global variables
         for (uint64_t i = 0; i < BUF_LENGTH(module->globals); i++)
@@ -106,11 +124,16 @@ namespace Zodiac
         {
             if (context->options.emit_debug)
             {
-                // char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
-                // printf("%s", llvm_module_string);
-                // LLVMDisposeMessage(llvm_module_string);
-                llvm_emit_debug_info(builder, module);
+                char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
+                printf("%s", llvm_module_string);
+                LLVMDisposeMessage(llvm_module_string);
+
+                // llvm_debug_info_finalize(&di);
+                // assert(false);
             }
+
+            // auto _module = (llvm::Module*)module;
+            // _module->getComdatSymbolTable().clear();
 
             char* error = nullptr;
             bool verify_error = LLVMVerifyModule(
@@ -816,6 +839,13 @@ namespace Zodiac
         if (zir_func->flags & IR_FUNC_FLAG_FOREIGN)
         {
             LLVMSetFunctionCallConv(llvm_func_value, llvm::CallingConv::C);
+            LLVMSetLinkage(llvm_func_value, LLVMExternalLinkage);
+        }
+
+        if (builder->context->options.emit_debug &&
+            !(zir_func->flags & IR_FUNC_FLAG_FOREIGN))
+        {
+            llvm_debug_register_function(builder->debug_info, zir_func, llvm_func_value);
         }
 
         LLVM_Registered_Function rf = { llvm_func_value, zir_func };
@@ -831,6 +861,12 @@ namespace Zodiac
         assert(!builder->current_function);
         LLVM_IR_Function llvm_ir_function = {};
         builder->current_function = &llvm_ir_function;
+
+        if (builder->context->options.emit_debug)
+        {
+            llvm_debug_update_location(builder->debug_info, builder, zir_func);
+            llvm_debug_enter_scope(builder, zir_func);
+        }
 
 
         bool is_foreign = zir_func->flags & IR_FUNC_FLAG_FOREIGN;
@@ -885,14 +921,21 @@ namespace Zodiac
         builder->current_function = nullptr;
         assert(stack_count(builder->arg_stack) == 0);
 
-        if (LLVMVerifyFunction(llvm_func_value, LLVMPrintMessageAction) == 1)
+        // if (LLVMVerifyFunction(llvm_func_value, LLVMPrintMessageAction) == 1)
+        // {
+        //     printf("\n%s", LLVMPrintValueToString(llvm_func_value));
+        //     exit(-1);
+        // }
+        // else
+        // {
+        //     // printf("\n%s\n", LLVMPrintValueToString(llvm_func_value));
+        // }
+
+        if (builder->context->options.emit_debug &&
+            !(zir_func->flags & IR_FUNC_FLAG_FOREIGN))
         {
-            printf("\n%s", LLVMPrintValueToString(llvm_func_value));
-            exit(-1);
-        }
-        else
-        {
-            // printf("\n%s\n", LLVMPrintValueToString(llvm_func_value));
+            llvm_debug_exit_scope(builder, zir_func);
+            llvm_debug_finalize_function(builder->debug_info, llvm_func_value);
         }
     }
 
@@ -915,6 +958,11 @@ namespace Zodiac
                                              LLVMBasicBlockRef llvm_block)
     {
         auto cf = builder->current_function;
+
+        if (builder->context->options.emit_debug)
+        {
+            llvm_debug_update_location(builder, zir_instruction);
+        }
 
         auto next = zir_instruction->next;
 
@@ -2308,7 +2356,8 @@ namespace Zodiac
                 bool is_vararg = (zir_type->flags & AST_TYPE_FLAG_FUNC_VARARG);
 
                 LLVMTypeRef result = LLVMFunctionType(llvm_return_type, llvm_arg_types,
-                                                      (unsigned)BUF_LENGTH(llvm_arg_types), is_vararg);
+                                                      (unsigned)BUF_LENGTH(llvm_arg_types),
+                                                      is_vararg);
                 BUF_FREE(llvm_arg_types);
 
                 return result;

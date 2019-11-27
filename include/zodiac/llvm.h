@@ -3,8 +3,7 @@
 #include "zodiac.h"
 #include "hash.h"
 #include "ir.h"
-
-#define LLVM_ENABLE_ABI_BREAKING_CHECKS 1
+#include "llvm_debug_info.h"
 
 #include <llvm-c/Core.h>
 
@@ -59,6 +58,8 @@ namespace Zodiac
         LLVMValueRef type_info_global = nullptr;
         LLVMValueRef aggregate_member_info_global = nullptr;
         LLVMValueRef enum_member_info_global = nullptr;
+
+        Debug_Info* debug_info = nullptr;
 
         Hash_Table<Atom, LLVMValueRef> const_c_string_table;
     };

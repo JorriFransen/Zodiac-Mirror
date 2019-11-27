@@ -40,6 +40,8 @@ main :: () -> u64
     // return 6;
 }
 
+test_func :: () { }
+
 assert_in_here :: ()
 {
     c.printf("Asserting after this...\n");

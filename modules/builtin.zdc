@@ -43,7 +43,7 @@ else
     static_assert(false);
 }
 
-open_std_handles :: () -> void
+_builtin_open_std_handles :: () -> void
 {
     stdin = fdopen(0, "r");
     stdout = fdopen(1, "w");
@@ -59,7 +59,7 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
 
     if (!stderr)
     {
-        open_std_handles();
+        _builtin_open_std_handles();
     }
 
     // _c.fprintf(_c._stderr, "\n\n");

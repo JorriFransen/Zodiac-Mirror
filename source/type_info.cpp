@@ -377,7 +377,7 @@ namespace Zodiac
 
         if (tid->agg_count + free_required > tid->agg_cap)
         {
-            uint64_t new_cap = MAX(tid->agg_cap + free_required, tid->agg_cap * 2);
+            uint64_t new_cap = _MAX(tid->agg_cap + free_required, tid->agg_cap * 2);
             auto new_agg_members =
                 (Type_Info_Aggregate_Member*)mem_alloc(sizeof(Type_Info_Aggregate_Member) *
                                                        new_cap);
@@ -398,7 +398,7 @@ namespace Zodiac
 
         if (tid->enum_count + free_required > tid->enum_cap)
         {
-            uint64_t new_cap = MAX(tid->enum_cap + free_required, tid->enum_cap * 2);
+            uint64_t new_cap = _MAX(tid->enum_cap + free_required, tid->enum_cap * 2);
             auto new_enum_members =
                 (Type_Info_Enum_Member*)mem_alloc(sizeof(Type_Info_Enum_Member) *
                                                        new_cap);
