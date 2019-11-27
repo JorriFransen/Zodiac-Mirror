@@ -10,6 +10,9 @@ using _og;
 _thread :: import thread;
 using _thread;
 
+_builtin :: import builtin;
+using _builtin;
+
 static_if (PLATFORM_WINDOWS)
 {
     os_specific :: import os_windows;

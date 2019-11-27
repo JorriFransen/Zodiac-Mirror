@@ -64,7 +64,7 @@ open_std_handles :: () -> void
 {
     if (!stdin || !stdout || !stderr)
     {
-        builtin.open_std_handles();
+        builtin._builtin_open_std_handles();
     }
     _stdin = stdin;
     _stdout = stdout;

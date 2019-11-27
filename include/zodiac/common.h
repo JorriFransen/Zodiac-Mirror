@@ -277,7 +277,7 @@ bool string_ends_with(const char* str, const char* end);
 
 // Paths
 const char* extract_directory_from_path(const char* path);
-const char* extract_file_name_from_path(const char* path);
+const char* extract_file_name_from_path(const char* path, bool strip_ext = true);
 const char* full_path_from_cwd(const char* rel_path);
 const char* normalize_path(const char* path);
 

@@ -29,8 +29,6 @@ namespace Zodiac
 
     uint64_t Builtin::pointer_size = 0;
 
-    AST_Declaration* Builtin::decl_PLATFORM_WINDOWS = nullptr;
-    AST_Declaration* Builtin::decl_PLATFORM_LINUX = nullptr;
     AST_Declaration* Builtin::decl_ZODIAC_RUNNING_BYTECODE = nullptr;
     AST_Declaration* Builtin::decl_string_length = nullptr;
     AST_Declaration* Builtin::decl_default_assert_handler = nullptr;
@@ -132,36 +130,9 @@ namespace Zodiac
     {
         assert(context);
 
-        bool platform_windows = false;
-        bool platform_linux = false;
-
-#ifdef WIN32 
-        platform_windows = true;
-#elif defined __linux__
-        platform_linux = true;
-#elif
-        assert(false);
-#endif
-
-        if (context->options.verbose)
-        {
-            if (platform_windows)
-            {
-                printf("Windows mode\n");
-            }
-            else if (platform_linux)
-            {
-                printf("Linux mode\n");
-            }
-        }
-
-        Builtin::decl_PLATFORM_WINDOWS = register_builtin_constant_bool(context,
-            "PLATFORM_WINDOWS", platform_windows);
-        Builtin::decl_PLATFORM_LINUX = register_builtin_constant_bool(context,
-            "PLATFORM_LINUX", platform_linux);
-
         Builtin::decl_ZODIAC_RUNNING_BYTECODE = register_builtin_constant_bool(
-            context, "ZODIAC_RUNNING_BYTECODE", context->options.execute_ir);}
+            context, "ZODIAC_RUNNING_BYTECODE", context->options.execute_ir);
+    }
 
     AST_Declaration* register_builtin_constant_bool(Context* context, const char* name, bool value)
     {
