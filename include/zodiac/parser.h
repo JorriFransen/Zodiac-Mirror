@@ -29,7 +29,8 @@ namespace Zodiac
 
     void parser_init(Parser* parser, Context* context);
 
-    Parse_Result parse_module(Parser* parser, BUF(Token) tokens, const char* module_name);
+    Parse_Result parse_module(Parser* parser, BUF(Token) tokens, const char* module_name,
+                              const char* path);
 
     static AST_Identifier* parse_identifier(Parser* parser);
     static AST_Directive* parse_directive(Parser* parser);

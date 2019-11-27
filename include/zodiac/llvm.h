@@ -4,6 +4,8 @@
 #include "hash.h"
 #include "ir.h"
 
+#define LLVM_ENABLE_ABI_BREAKING_CHECKS 1
+
 #include <llvm-c/Core.h>
 
 namespace Zodiac

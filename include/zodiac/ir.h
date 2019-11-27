@@ -262,6 +262,8 @@ namespace Zodiac
         BUF(Atom) dynamic_lib_names = nullptr;
 
         const char* name = nullptr;
+        const char* file_name = nullptr;
+        const char* file_dir = nullptr;
 
         uint64_t error_count = 0;
     };

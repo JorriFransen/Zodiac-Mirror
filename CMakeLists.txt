@@ -18,6 +18,7 @@ set (ZODIAC_COMPILER_SOURCE
     source/ir_runner.cpp
     source/lexer.cpp
     source/llvm.cpp
+    source/llvm_debug_info.cpp
     source/llvm_types.cpp
     source/parser.cpp
     source/platform.cpp
@@ -34,7 +35,7 @@ target_include_directories(zodiac PRIVATE lib/include)
 
 if(MSVC)
     if(CMAKE_BUILD_TYPE STREQUAL Debug)
-        target_link_directories(zodiac PRIVATE lib/windows/lib/debug)
+        target_link_directories(zodiac PRIVATE lib/windows/lib/Debug)
     else()
         target_link_directories(zodiac PRIVATE lib/windows/lib)
     endif()

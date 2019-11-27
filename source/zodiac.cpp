@@ -62,7 +62,10 @@ namespace Zodiac
             BOOL_OPTION(execute_ir, 'r'),
             BOOL_OPTION(emit_llvm, 'e'),
             BOOL_OPTION(print_llvm, 'l'),
+            BOOL_OPTION(emit_debug, 'd'),
+
             STRING_OPTION(run_argument, 'a'),
+
         };
 
 		const char* exe_name = argv[0];
@@ -322,7 +325,8 @@ namespace Zodiac
         Parser parser;
         parser_init(&parser, context);
 
-        Parse_Result parse_result = parse_module(&parser, lex_result.tokens, module_name.data);
+        Parse_Result parse_result = parse_module(&parser, lex_result.tokens, module_name.data,
+                                                 module_path.data);
         if (BUF_LENGTH(parse_result.errors) != 0)
         {
             parser_report_errors(&parser);

@@ -3,9 +3,11 @@
 #include "builtin.h"
 #include "llvm_types.h"
 #include "platform.h"
+#include "llvm_debug_info.h"
 
 #include <llvm-c/Analysis.h>
 #include <llvm-c/TargetMachine.h>
+#include <llvm/IR/CallingConv.h>
 
 #include <dynload.h>
 
@@ -102,6 +104,14 @@ namespace Zodiac
 
         if (root)
         {
+            if (context->options.emit_debug)
+            {
+                // char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
+                // printf("%s", llvm_module_string);
+                // LLVMDisposeMessage(llvm_module_string);
+                llvm_emit_debug_info(builder, module);
+            }
+
             char* error = nullptr;
             bool verify_error = LLVMVerifyModule(
                 builder->llvm_module, LLVMAbortProcessAction, &error);
@@ -113,12 +123,12 @@ namespace Zodiac
             LLVMDisposeMessage(error);
             error = nullptr;
 
-            char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
             if (context->options.print_llvm)
             {
+                char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
                 printf("%s", llvm_module_string);
+                LLVMDisposeMessage(llvm_module_string);
             }
-            LLVMDisposeMessage(llvm_module_string);
 
             LLVMInitializeNativeTarget();
             LLVMInitializeNativeAsmPrinter();
@@ -190,6 +200,11 @@ namespace Zodiac
 		printf("gcc_lib_path: %s\n", gcc_lib_path);
 
 		string_builder_append(&sb, "ld -dynamic-linker /lib64/ld-linux-x86-64.so.2 ");
+
+        if (builder->context->options.emit_debug)
+        {
+            // string_builder_append(&sb, "--emit-relocs ");
+        }
 
         string_builder_append(&sb, x64_lib_path);
         string_builder_append(&sb, "Scrt1.o ");
@@ -798,6 +813,10 @@ namespace Zodiac
         const char* func_name = zir_func->name;
         LLVMValueRef llvm_func_value = LLVMAddFunction(builder->llvm_module, func_name,
                                                        llvm_func_type);
+        if (zir_func->flags & IR_FUNC_FLAG_FOREIGN)
+        {
+            LLVMSetFunctionCallConv(llvm_func_value, llvm::CallingConv::C);
+        }
 
         LLVM_Registered_Function rf = { llvm_func_value, zir_func };
         BUF_PUSH(builder->registered_functions, rf);
