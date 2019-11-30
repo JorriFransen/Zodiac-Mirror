@@ -1275,11 +1275,20 @@ namespace Zodiac
 
                     if (temp->type->kind == AST_TYPE_STRUCT)
                     {
-                        uint64_t struct_byte_size = temp->type->bit_size / 8;
-                        assert(struct_byte_size);
-                        memcpy(current_stack_frame->return_value->value.pointer,
-                               temp->value.pointer, struct_byte_size);
-                        int dummy = 0;
+                        if (temp->kind != IRV_AGGREGATE_LITERAL)
+                        {
+                            uint64_t struct_byte_size = temp->type->bit_size / 8;
+                            assert(struct_byte_size);
+                            memcpy(current_stack_frame->return_value->value.pointer,
+                                   temp->value.pointer, struct_byte_size);
+                        }
+                        else
+                        {
+                            auto ret_val = current_stack_frame->return_value;
+                            uint8_t* dest_ptr = (uint8_t*)ret_val->value.pointer;
+                            ir_runner_store_aggregate_literal(runner, ret_val->type, dest_ptr,
+                                                              temp);
+                        }
                     }
                     else
                     {
