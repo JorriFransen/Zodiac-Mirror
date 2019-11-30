@@ -50,9 +50,7 @@ atom_new :: (c_str: *u8, length: s64) -> Atom
     _c.memcpy(data, c_str, (:u64)length);
     data[length] = '\0';
 
-    // return { data, length };
-    result : Atom = { data, length };
-    return result;
+    return { data, length };
 }
 
 atom_new :: (c_str: *u8) -> Atom
