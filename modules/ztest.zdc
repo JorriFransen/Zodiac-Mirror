@@ -13,9 +13,6 @@ _sb :: import string_builder;
 using std;
 using _sb;
 
-_builtin :: import builtin;
-using _builtin;
-
 int :: typedef s64;
 
 Test_File_Flag : u64 : enum

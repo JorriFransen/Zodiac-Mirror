@@ -719,6 +719,7 @@ namespace Zodiac
 
     AST_Module* ast_module_new(Context* context, const char* module_name, const char* path);
     AST_Identifier* ast_identifier_new(Context* context, Atom atom, File_Pos file_pos);
+    AST_Identifier* ast_identifier_new(Context* context, const char* name, File_Pos file_pos);
     AST_Directive* ast_directive_new(Context* context, AST_Directive_Kind kind,
                                      File_Pos file_pos);
 
@@ -805,6 +806,9 @@ namespace Zodiac
                                                    AST_Declaration* else_declaration);
     AST_Declaration* ast_using_declaration_new(Context* context, File_Pos file_pos,
                                                AST_Expression* ident_expr,
+                                               AST_Declaration_Location location);
+    AST_Declaration* ast_using_declaration_new(Context* context, File_Pos file_pos,
+                                               AST_Identifier* ident,
                                                AST_Declaration_Location location);
     AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos,
                                                BUF(AST_Declaration*) block_decls);

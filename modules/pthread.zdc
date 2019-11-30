@@ -1,7 +1,4 @@
 
-_builtin :: import builtin;
-using _builtin;
-
 static_assert(PLATFORM_LINUX);
 static_assert(!PLATFORM_WINDOWS);
 

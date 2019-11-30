@@ -199,7 +199,7 @@ int main(int argc, char** argv)
 
     Resolver resolver;
     resolver_init(&resolver, context, false);
-    Resolve_Result rr = resolver_resolve_module(&resolver, parse_result.ast_module);
+    Resolve_Result rr = resolver_resolve_module(&resolver, parse_result.ast_module, false);
     if (resolve_result_has_errors(&rr))
     {
         resolve_result_report_errors(&rr);

@@ -53,7 +53,8 @@ namespace Zodiac
     void resolver_init(Resolver* resolver, Context* context, bool is_builtin);
     void resolver_do_initial_scope_population(Resolver* resolver, AST_Module* module,
                                               AST_Scope* scope);
-    Resolve_Result resolver_resolve_module(Resolver* resolver, AST_Module* module);
+    Resolve_Result resolver_resolve_module(Resolver* resolver, AST_Module* module,
+                                           bool is_builtin);
     bool resolver_resolve_declaration(Resolver* resolver, AST_Declaration* declaration,
                                       AST_Scope* scope);
     bool resolver_resolve_struct_or_union_decl(Resolver* resolver, AST_Declaration* decl,

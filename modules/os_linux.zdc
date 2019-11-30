@@ -1,7 +1,4 @@
 
-_builtin :: import builtin;
-using _builtin;
-
 static_assert(PLATFORM_LINUX);
 
 std :: import std;

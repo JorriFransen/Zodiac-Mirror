@@ -43,7 +43,8 @@ namespace Zodiac
 
     }
 
-    Resolve_Result resolver_resolve_module(Resolver* resolver, AST_Module* module)
+    Resolve_Result resolver_resolve_module(Resolver* resolver, AST_Module* module,
+                                           bool is_builtin)
     {
         assert(resolver);
         assert(module);
@@ -51,6 +52,31 @@ namespace Zodiac
         auto old_module = resolver->module;
 
         resolver->module = module;
+
+        if (!is_builtin)
+        {
+            File_Pos gen_fp = { "<auto_generated>" };
+            AST_Identifier* builtin_import_decl_ident = ast_identifier_new(resolver->context,
+                                                                           "__builtin__",
+                                                                           gen_fp);
+            AST_Identifier* builtin_module_name_ident = ast_identifier_new(resolver->context,
+                                                                           "builtin", gen_fp);
+            AST_Declaration* builtin_import_decl =
+                ast_import_declaration_new(resolver->context,
+                                           gen_fp,
+                                           builtin_import_decl_ident,
+                                           builtin_module_name_ident);
+
+            AST_Declaration* builtin_using_decl =
+                ast_using_declaration_new(resolver->context,
+                                          gen_fp,
+                                          builtin_import_decl_ident,
+                                          AST_DECL_LOC_GLOBAL);
+
+
+            BUF_PUSH(module->global_declarations, builtin_import_decl);
+            BUF_PUSH(module->global_declarations, builtin_using_decl);
+        }
 
         resolver_do_initial_scope_population(resolver, module, module->module_scope);
 
@@ -76,7 +102,7 @@ namespace Zodiac
                 bool platform_linux = false;
                 bool platform_windows = false;
 
-#ifdef WIN32 
+#ifdef WIN32
                 platform_windows = true;
 #elif defined __linux__
                 platform_linux = true;

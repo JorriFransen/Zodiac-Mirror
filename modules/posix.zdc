@@ -3,9 +3,6 @@ std :: import std;
 using std;
 using _c;
 
-_builtin :: import builtin;
-using _builtin;
-
 _SC_PAGESIZE :: 30;
 
 dev_t :: typedef u64;

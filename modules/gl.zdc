@@ -1,7 +1,4 @@
 
-_builtin :: import builtin;
-using _builtin;
-
 static_if (PLATFORM_WINDOWS)
 {
     #dynamic_link "Opengl32";

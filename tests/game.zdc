@@ -9,6 +9,8 @@ using gl;
 
 main :: () -> int
 {
+    c.open_std_handles();
+
     c.printf("GLFW_KEY_ESCAPE: %lu\n", glfw_keys.GLFWkey.GLFW_KEY_ESCAPE);
     if (!glfwInit())
     {

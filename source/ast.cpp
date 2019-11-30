@@ -46,6 +46,11 @@ namespace Zodiac
         return result;
     }
 
+    AST_Identifier* ast_identifier_new(Context* context, const char* name, File_Pos file_pos)
+    {
+        return ast_identifier_new(context, atom_get(context->atom_table, name), file_pos);
+    }
+
     AST_Directive* ast_directive_new(Context* context, AST_Directive_Kind kind, File_Pos file_pos)
     {
         assert(context);
@@ -498,6 +503,14 @@ namespace Zodiac
         result->using_decl.scope_decl = nullptr;
 
         return result;
+    }
+
+    AST_Declaration* ast_using_declaration_new(Context* context, File_Pos file_pos,
+                                               AST_Identifier* ident,
+                                               AST_Declaration_Location location)
+    {
+        AST_Expression* ident_expr = ast_ident_expression_new(context, file_pos, ident);
+        return ast_using_declaration_new(context, file_pos, ident_expr, location);
     }
 
     AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos,
