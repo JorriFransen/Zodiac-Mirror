@@ -1880,11 +1880,28 @@ namespace Zodiac
     {
         assert(ir_builder);
         assert(expression);
-        assert(expression->kind == AST_EXPR_IDENTIFIER);
 
-        AST_Declaration* ident_decl = expression->identifier->declaration;
-        IR_Value* expression_value = ir_builder_value_for_declaration(ir_builder,
-                                                                    ident_decl);
+        IR_Value* expression_value = nullptr;
+
+        switch (expression->kind)
+        {
+            case AST_EXPR_IDENTIFIER:
+            {
+                AST_Declaration* ident_decl = expression->identifier->declaration;
+                expression_value = ir_builder_value_for_declaration(ir_builder, ident_decl);
+                break;
+            }
+
+            case AST_EXPR_CALL:
+            {
+                expression_value = ir_builder_emit_expression(ir_builder, expression);
+                break;
+            }
+
+            default: assert(false);
+        }
+
+
         assert(expression_value);
 
         AST_Type* operand_type = expression->type;
@@ -1894,8 +1911,8 @@ namespace Zodiac
 
         IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, result_type);
 
-        IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_DEREF, expression_value,
-                                                nullptr, result_value);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_DEREF,
+                                                 expression_value, nullptr, result_value);
         ir_builder_emit_instruction(ir_builder, iri);
 
         return result_value;

@@ -64,7 +64,7 @@ atom_new :: (c_str: *u8) -> Atom
 
 atom_index_overload :: (atom: Atom, index: s64) -> u8
 {
-    return atom.data[index];
+    return <atom_index_overload_lvalue(atom, index);
 }
 
 atom_index_overload_lvalue :: (atom: Atom, index: s64) -> *u8
