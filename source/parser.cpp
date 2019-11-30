@@ -1801,7 +1801,14 @@ namespace Zodiac
             case TOK_LBRACK:
             {
                 expect_token(parser, TOK_RBRACK);
-                result = AST_OVERLOAD_OP_INDEX;
+                if (match_token(parser, TOK_MUL))
+                {
+                    result = AST_OVERLOAD_OP_INDEX_LVALUE;
+                }
+                else
+                {
+                    result = AST_OVERLOAD_OP_INDEX;
+                }
 				break;
             }
 

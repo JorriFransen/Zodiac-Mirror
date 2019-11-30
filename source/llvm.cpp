@@ -1318,6 +1318,10 @@ namespace Zodiac
                 {
                     result = LLVMBuildFCmp(builder->llvm_builder, LLVMRealOEQ, lhs, rhs, "");
                 }
+                else if (both_pointer)
+                {
+                    result = LLVMBuildICmp(builder->llvm_builder, LLVMIntEQ, lhs, rhs, "");
+                }
                 else assert(false);
 
                 auto bool_type = llvm_type_from_ast(builder, Builtin::type_bool);

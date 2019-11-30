@@ -1279,6 +1279,7 @@ namespace Zodiac
                         assert(struct_byte_size);
                         memcpy(current_stack_frame->return_value->value.pointer,
                                temp->value.pointer, struct_byte_size);
+                        int dummy = 0;
                     }
                     else
                     {

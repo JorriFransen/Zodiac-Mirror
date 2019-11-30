@@ -114,6 +114,7 @@ namespace Zodiac
         AST_EXPR_FLAG_POINTER_MATH    = (1 << 3),
         AST_EXPR_FLAG_RESOLVED        = (1 << 4),
         AST_EXPR_FLAG_INTEGER_LITERAL = (1 << 5),
+        AST_EXPR_FLAG_LVALUE          = (1 << 6),
     };
 
     enum AST_Builtin_Function
@@ -379,6 +380,7 @@ namespace Zodiac
     {
         AST_OVERLOAD_OP_INVALID,
         AST_OVERLOAD_OP_INDEX,
+        AST_OVERLOAD_OP_INDEX_LVALUE,
         AST_OVERLOAD_OP_PLUS,
         AST_OVERLOAD_OP_MINUS,
         AST_OVERLOAD_OP_MUL,

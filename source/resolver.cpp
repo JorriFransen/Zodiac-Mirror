@@ -1141,8 +1141,10 @@ namespace Zodiac
 
             case AST_STMT_ASSIGN:
             {
-                result &= resolver_resolve_expression(resolver,
-                                                      statement->assign.lvalue_expression, scope);
+                AST_Expression* lvalue_expr = statement->assign.lvalue_expression;
+                lvalue_expr->flags |= AST_EXPR_FLAG_LVALUE;
+
+                result &= resolver_resolve_expression(resolver, lvalue_expr, scope);
                 AST_Type* suggested_type = nullptr;
                 if (result)
                 {
@@ -1154,11 +1156,9 @@ namespace Zodiac
                 if (!result) break;
 
                 bool types_match =
-                    resolver_check_assign_types(resolver,
-                                                statement->assign.lvalue_expression->type,
+                    resolver_check_assign_types(resolver, lvalue_expr->type,
                                                 statement->assign.expression->type);
 
-                auto lvalue_expr = statement->assign.lvalue_expression;
                 auto assign_type = statement->assign.expression->type;
 				if (types_match && lvalue_expr->type != assign_type &&
                     lvalue_expr->type->flags & AST_TYPE_FLAG_INT)
@@ -1804,6 +1804,12 @@ namespace Zodiac
 
             case AST_EXPR_UNARY:
             {
+                if (expression->unary.op == AST_UNOP_ADDROF &&
+                        expression->unary.operand->kind == AST_EXPR_SUBSCRIPT)
+                {
+                    expression->unary.operand->flags |= AST_EXPR_FLAG_LVALUE;
+                }
+
                 result &= resolver_resolve_expression(resolver, expression->unary.operand,
                                                       scope, suggested_type);
                 if (!result) break;
@@ -1915,9 +1921,9 @@ namespace Zodiac
 
             case AST_EXPR_SUBSCRIPT:
             {
+                AST_Expression* base_expr = expression->subscript.base_expression;
                 result &=
-                    resolver_resolve_expression(resolver, expression->subscript.base_expression,
-                                                scope);
+                    resolver_resolve_expression(resolver, base_expr, scope);
                 if (!result) break;
 
                 result &= resolver_resolve_expression(resolver,
@@ -1926,11 +1932,13 @@ namespace Zodiac
 
                 if (!result) break;
 
-                AST_Type* base_type = expression->subscript.base_expression->type;
+                AST_Type* base_type = base_expr->type;
                 AST_Type* index_type = expression->subscript.index_expression->type;
 
                 AST_Identifier* index_overload_ident = find_overload(base_type,
                                                                      AST_OVERLOAD_OP_INDEX);
+                AST_Identifier* index_lvalue_overload_ident =
+                    find_overload(base_type, AST_OVERLOAD_OP_INDEX_LVALUE);
 
                 if (!(base_type->kind == AST_TYPE_STATIC_ARRAY ||
                        base_type->kind == AST_TYPE_POINTER ||
@@ -1941,20 +1949,27 @@ namespace Zodiac
                     return false;
                 }
 
-                if (index_overload_ident && (base_type->kind == AST_TYPE_STRUCT ||
-                                             base_type->kind == AST_TYPE_UNION))
+                if ((index_overload_ident || index_lvalue_overload_ident) &&
+                    (base_type->kind == AST_TYPE_STRUCT || base_type->kind == AST_TYPE_UNION))
                 {
-                    auto lvalue_expr = expression->subscript.base_expression;
+                    bool is_lvalue = false;
+
+                    if (expression->flags & AST_EXPR_FLAG_LVALUE)
+                    {
+                        assert(index_lvalue_overload_ident);
+                        index_overload_ident = index_lvalue_overload_ident;
+                        is_lvalue = true;
+                    }
 
                     result &= resolver_resolve_identifier(resolver, index_overload_ident, scope);
                     if (!result) break;
 
                     auto index_expr = expression->subscript.index_expression;
                     auto overload_ident_expr = ast_ident_expression_new(resolver->context,
-                                                                        lvalue_expr->file_pos,
+                                                                        base_expr->file_pos,
                                                                         index_overload_ident);
                     BUF(AST_Expression*) args = nullptr;
-                    BUF_PUSH(args, lvalue_expr);
+                    BUF_PUSH(args, base_expr);
                     BUF_PUSH(args, index_expr);
                     auto call_expression = ast_call_expression_new(resolver->context,
                                                                    expression->file_pos,
@@ -1995,6 +2010,7 @@ namespace Zodiac
                     assert(callee_decl->flags & AST_DECL_FLAG_RESOLVED);
 
                     expression->type = callee_decl->function.return_type;
+                    if (is_lvalue) expression->type = expression->type->pointer.base;
                     expression->subscript.call_expression = call_expression;
 
                 }
@@ -3166,6 +3182,7 @@ namespace Zodiac
         {
             resolver_report_error(resolver, call_expression->file_pos,
                                   "No suitable (polymorphic) overload was found");
+            return nullptr;
         }
         else assert(match_count == 1);
 

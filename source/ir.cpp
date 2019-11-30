@@ -3799,6 +3799,12 @@ namespace Zodiac
         }
         else if (lvalue_expr->kind == AST_EXPR_SUBSCRIPT)
         {
+            if (lvalue_expr->subscript.call_expression)
+            {
+                return ir_builder_emit_expression(ir_builder,
+                                                  lvalue_expr->subscript.call_expression);
+            }
+
             IR_Value* base_value = ir_builder_emit_lvalue(ir_builder,
                                                         lvalue_expr->subscript.base_expression);
             if (!(base_value->kind == IRV_ALLOCL &&

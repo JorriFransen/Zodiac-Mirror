@@ -13,10 +13,7 @@ global_variable : int = 4;
 main :: () -> int
 {
     _c.open_std_handles();
-    // _c.fprintf(_c.stdout, "llvm_test\n");
     _c.printf("llvm_test\n");
-    // putchar(getchar() - 32);
-    // putchar('\n');
 
     assert(global_variable == 4);
     printf("global_variable: %d\n", global_variable);
