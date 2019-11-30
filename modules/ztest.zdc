@@ -283,8 +283,8 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
         exe_file_name.length -= 4;
         exe_file_name.data[exe_file_name.length] = '\0';
 
-        // append(sb, " && ./");
-        // append(sb, exe_file_name);
+        append(sb, " && ./");
+        append(sb, exe_file_name);
         // append(sb, " 2>&1 ");
 
         // @CLEANUP: Do we really wanna do this here?
@@ -392,6 +392,7 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
             os.set_terminal_color(Terminal_Color.GREEN, true);
             _c.printf(" SKIPPED\n");
             os.reset_terminal_state();
+            // _c.printf("\n%s\n", output_str.data);
             return Test_Result_Status.SKIPPED;
         }
         else

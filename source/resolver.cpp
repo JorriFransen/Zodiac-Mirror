@@ -1937,7 +1937,7 @@ namespace Zodiac
                       index_overload_ident))
                 {
                     resolver_report_error(resolver, expression->file_pos,
-                                         "Base type of subscript expression is not of pointer or array type\n\tand no suitable overloads where found");
+                                         "Base type of subscript expression is not of pointer or array type, and no suitable overloads where found");
                     return false;
                 }
 
