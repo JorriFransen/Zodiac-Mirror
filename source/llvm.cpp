@@ -1817,7 +1817,8 @@ namespace Zodiac
                 }
                 else
                 {
-                    assert(zir_source->kind == IRV_ALLOCL || zir_source->kind == IRV_ARGUMENT);
+                    assert(zir_source->kind == IRV_ALLOCL || zir_source->kind == IRV_ARGUMENT ||
+                        zir_source->kind == IRV_TEMPORARY);
                     assert(zir_source->type->kind == AST_TYPE_STRUCT ||
                            zir_source->type->kind == AST_TYPE_UNION);
 
@@ -1918,7 +1919,9 @@ namespace Zodiac
                 {
                     if (zir_value->type->flags & AST_TYPE_FLAG_INT)
                     {
-                        LLVMOpcode op = target_sign ? LLVMSIToFP : LLVMUIToFP;
+                        LLVMOpcode op = zir_value->type->flags & AST_TYPE_FLAG_SIGNED ?
+                            LLVMSIToFP : LLVMUIToFP;
+
                         result = LLVMBuildCast(builder->llvm_builder, op, llvm_value,
                                                llvm_dest_type, "");
                     }
@@ -2418,6 +2421,13 @@ namespace Zodiac
                 BUF_FREE(llvm_arg_types);
 
                 return result;
+                break;
+            }
+
+            case AST_TYPE_MRV:
+            {
+                assert(zir_type->mrv.struct_type);
+                return llvm_type_from_ast(builder, zir_type->mrv.struct_type);
                 break;
             }
 

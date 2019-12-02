@@ -865,14 +865,19 @@ namespace Zodiac
                 BUF_PUSH(lvalues, lvalue);
             }
 
+            IR_Value* ret_allocl = ir_builder_emit_allocl(ir_builder,
+                                                          expr->type->mrv.struct_type,
+                                                          "mrv_alloc",
+                                                          expr->file_pos);
             IR_Value* ret_value = ir_builder_emit_expression(ir_builder, expr);
+            ir_builder_emit_store(ir_builder, ret_allocl, ret_value, expr->file_pos);
 
             auto fp = statement->file_pos;
             for (uint64_t i = 0; i < BUF_LENGTH(lvalues); i++)
             {
                 IR_Value* lvalue = lvalues[i];
                 IR_Value* new_value = ir_builder_emit_aggregate_offset_pointer(ir_builder,
-                                                                               ret_value, i, fp);
+                                                                               ret_allocl, i, fp);
                 new_value = ir_builder_emit_load(ir_builder, new_value, fp);
                 ir_builder_emit_store(ir_builder, lvalue, new_value, fp);
             }

@@ -26,6 +26,8 @@ main :: ()
     zin := 14;
     win := -42;
 
+    assert(win == -42.0);
+
     zoutf : float;
     zoutd : double;
     woutf : float;
@@ -48,19 +50,15 @@ main :: ()
 
 return_both :: (x: int, y: int) -> int, int
 {
-    printf("return_both(%d, %d)\n", x, y);
     return x, y;
 }
 
 to_reals :: (integer: int) -> float, double
 {
-    as_double := (:double)integer;
-    as_float := (:float)integer;
+    printf("Returning float: %f\n", (:float)integer);
+    printf("Returning double: %f\n", (:double)integer);
 
-    printf("as double: %f\n", as_double);
-    printf("as float: %f\n", as_float);
-
-    return as_float, as_double;
+    return (:float)integer, (:double)integer;
 }
 
 // return_implicit :: () -> int, int
