@@ -17,6 +17,7 @@ Vec3 :: struct
 
 main :: () -> int
 {
+    _c.open_std_handles();
 
     v : Vec2 = {1, 2};
     v2 : Vec2 = { 3, 4 };
