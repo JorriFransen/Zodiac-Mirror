@@ -480,6 +480,8 @@ namespace Zodiac
     IR_Value* ir_builder_emit_get_type_info(IR_Builder* ir_builder, uint64_t index,
                                             File_Pos file_pos);
 
+    IR_Value* ir_builder_emit_mrv(IR_Builder* ir_builder, AST_Expression* list_expr);
+
     IR_Function* ir_function_new(IR_Builder* ir_builder, File_Pos file_pos, const char* name,
                                  AST_Type* func_type, AST_Scope* body_scope);
     void phi_node_add_incoming(IR_Value* phi_value, IR_Block* block, IR_Value* value);

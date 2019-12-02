@@ -66,6 +66,7 @@ namespace Zodiac
         AST_EXPR_GET_TYPE_INFO,
         AST_EXPR_POST_INCREMENT,
         AST_EXPR_POST_DECREMENT,
+        AST_EXPR_EXPRESSION_LIST,
     };
 
     enum AST_Binop_Kind
@@ -227,6 +228,11 @@ namespace Zodiac
                 AST_Type_Spec* type_spec;
                 AST_Type* type;
             } get_type_info_expr;
+
+            struct
+            {
+                BUF(AST_Expression*) expressions;
+            } list;
         };
     };
 
@@ -606,6 +612,7 @@ namespace Zodiac
             struct
             {
                 BUF(AST_Type*) types;
+                AST_Type* struct_type;
             } mrv;
         };
     };
@@ -781,6 +788,8 @@ namespace Zodiac
                                                       AST_Expression* base_expression);
     AST_Expression* ast_post_decrement_expression_new(Context* context, File_Pos file_pos,
                                                       AST_Expression* base_expression);
+    AST_Expression* ast_expression_list_expression_new(Context* context, File_Pos file_pos,
+                                                       BUF(AST_Expression*) expressions);
 
     AST_Aggregate_Declaration*
         ast_aggregate_declaration_new(Context* context, File_Pos file_pos,
@@ -911,7 +920,7 @@ namespace Zodiac
                                 const char* name, AST_Type* base_type, AST_Scope* scope);
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type);
-    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types);
+    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types, AST_Scope* scope);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos,
                                      AST_Type_Spec_Kind kind);
@@ -959,7 +968,8 @@ namespace Zodiac
 	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
                                                BUF(AST_Type*) arg_types,
 		                                       AST_Type* return_type);
-    AST_Type* ast_find_or_create_mrv_type(Context* context, BUF(AST_Type*) mrv_types);
+    AST_Type* ast_find_or_create_mrv_type(Context* context, BUF(AST_Type*) mrv_types,
+                                          AST_Scope* scope);
 
     uint64_t get_function_type_hash(bool is_varag, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type);

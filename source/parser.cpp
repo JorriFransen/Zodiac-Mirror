@@ -897,7 +897,7 @@ namespace Zodiac
 
         if (!is_token(parser, TOK_SEMICOLON))
         {
-            return_expr = parse_expression(parser, scope);
+            return_expr = parse_list_expression(parser, scope);
         }
 
         if (!expect_token(parser, TOK_SEMICOLON))
@@ -1098,12 +1098,37 @@ namespace Zodiac
         return ast_switch_statement_new(parser->context, ft.file_pos, switch_expr, cases);
     }
 
-    static AST_Expression* parse_expression(Parser* parser, AST_Scope* scope)
+    static AST_Expression* parse_list_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
 
 
-        return parse_ternary_expression(parser, scope);
+        AST_Expression* result = parse_expression(parser, scope);
+
+        if (is_token(parser, TOK_COMMA))
+        {
+            BUF(AST_Expression*) expressions = nullptr;
+            BUF_PUSH(expressions, result);
+
+            while (match_token(parser, TOK_COMMA))
+            {
+                auto expr = parse_expression(parser, scope);
+                BUF_PUSH(expressions, result);
+            }
+
+            result = ast_expression_list_expression_new(parser->context, result->file_pos,
+                                                        expressions);
+        }
+
+        return result;
+    }
+
+    static AST_Expression* parse_expression(Parser* parser, AST_Scope* scope)
+    {
+        assert(parser);
+
+        AST_Expression* result = parse_ternary_expression(parser, scope);
+        return result;
     }
 
     static AST_Expression* parse_ternary_expression(Parser* parser, AST_Scope* scope)
@@ -1742,6 +1767,9 @@ namespace Zodiac
 
         auto rts = parse_type_spec(parser, scope);
         auto ffp = rts->file_pos;
+
+        if (!is_token(parser, TOK_COMMA)) return rts;
+
         BUF_PUSH(specs, rts);
 
         while (match_token(parser, TOK_COMMA))

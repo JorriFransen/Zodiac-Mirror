@@ -570,15 +570,24 @@ namespace Zodiac
 
             case AST_STMT_RETURN:
             {
+                auto return_file_pos = statement->file_pos;
+                ir_builder_emit_defer_statements_before_return(ir_builder, scope,
+                                                               return_file_pos);
+
                 IR_Value* return_value = nullptr;
                 if (statement->return_expression)
                 {
-                    return_value = ir_builder_emit_expression(ir_builder,
-                                                            statement->return_expression);
+                    if (statement->return_expression->kind == AST_EXPR_EXPRESSION_LIST)
+                    {
+                        return_value = ir_builder_emit_mrv(ir_builder,
+                                                           statement->return_expression);
+                    }
+                    else
+                    {
+                        return_value = ir_builder_emit_expression(ir_builder,
+                                                                  statement->return_expression);
+                    }
                 }
-                auto return_file_pos = statement->file_pos;
-                ir_builder_emit_defer_statements_before_return(ir_builder, scope,
-                                                            return_file_pos);
                 ir_builder_emit_return(ir_builder, return_value, return_file_pos);
                 break;
             }
@@ -4107,6 +4116,26 @@ namespace Zodiac
         assert(iri->op == IR_OP_PHI);
 
         BUF_PUSH(iri->phi_pairs, pair);
+    }
+
+    IR_Value* ir_builder_emit_mrv(IR_Builder* ir_builder, AST_Expression* list_expr)
+    {
+        AST_Type* mrv_type = ir_builder->current_function->type->function.return_type;
+        assert(mrv_type->kind == AST_TYPE_MRV);
+
+        BUF(IR_Value*) member_values = nullptr;
+        bool is_const = true;
+        for (uint64_t i = 0; i < BUF_LENGTH(list_expr->list.expressions); i++)
+        {
+            auto expr = list_expr->list.expressions[i];
+            is_const &= expr->flags & AST_EXPR_FLAG_CONST;
+
+            IR_Value* mem_value = ir_builder_emit_expression(ir_builder, expr);
+            BUF_PUSH(member_values, mem_value);
+        }
+
+        return ir_aggregate_literal(ir_builder, mrv_type->mrv.struct_type, member_values,
+                                    is_const);
     }
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, File_Pos file_pos, const char* name,

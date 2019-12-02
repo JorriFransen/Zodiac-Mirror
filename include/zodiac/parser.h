@@ -74,6 +74,7 @@ namespace Zodiac
     static AST_Statement* parse_for_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_switch_statement(Parser* parser, AST_Scope* scope);
 
+    static AST_Expression* parse_list_expression(Parser* parser, AST_Scope* scope);
     static AST_Expression* parse_expression(Parser* parser, AST_Scope* scope);
     static AST_Expression* parse_ternary_expression(Parser* parser, AST_Scope* scope);
     static AST_Expression* parse_or_or_expression(Parser* parser, AST_Scope* scope);

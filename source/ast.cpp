@@ -323,6 +323,15 @@ namespace Zodiac
         return result;
     }
 
+    AST_Expression* ast_expression_list_expression_new(Context* context, File_Pos file_pos,
+                                                       BUF(AST_Expression*) expressions)
+    {
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_EXPRESSION_LIST);
+        result->list.expressions = expressions;
+
+        return result;
+    }
+
     AST_Aggregate_Declaration* ast_aggregate_declaration_new(Context* context, File_Pos file_pos,
                                                              BUF(AST_Declaration*) members,
                                                              BUF(AST_Identifier*) poly_args,
@@ -1063,13 +1072,29 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types)
+    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types, AST_Scope* scope)
     {
         uint64_t bit_size = 0;
 
         for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++) bit_size += mrv_types[i]->bit_size;
         AST_Type* result = ast_type_new(context, AST_TYPE_MRV, AST_TYPE_FLAG_NONE, {}, bit_size);
         result->mrv.types = mrv_types;
+
+        File_Pos gen_fp = {};
+        gen_fp.file_name = "<generated>";
+
+        BUF(AST_Declaration*) member_decls = nullptr;
+        for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
+        {
+            AST_Type_Spec* type_spec = ast_type_spec_from_type_new(context, gen_fp, mrv_types[i]);
+            AST_Declaration* mem_decl =
+                ast_mutable_declaration_new(context, gen_fp, nullptr, type_spec, nullptr,
+                                            AST_DECL_LOC_AGGREGATE_MEMBER);
+            BUF_PUSH(member_decls, mem_decl);
+        }
+
+        result->mrv.struct_type = ast_type_struct_new(context, member_decls, "mrv", bit_size,
+                                                      scope, nullptr);
 
         return result;
     }
@@ -1582,7 +1607,8 @@ namespace Zodiac
 
 	}
 
-    AST_Type* ast_find_or_create_mrv_type(Context* context, BUF(AST_Type*) mrv_types)
+    AST_Type* ast_find_or_create_mrv_type(Context* context, BUF(AST_Type*) mrv_types,
+                                          AST_Scope* scope)
     {
         uint64_t hash = get_mrv_type_hash(mrv_types);
         uint64_t hash_index = hash & (context->type_count - 1);
@@ -1636,14 +1662,14 @@ namespace Zodiac
             for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
                 BUF_PUSH(mrv_types_copy, mrv_types[i]);
 
-            AST_Type* result = ast_type_mrv_new(context, mrv_types_copy);
+            AST_Type* result = ast_type_mrv_new(context, mrv_types_copy, scope);
             context->type_hash[hash_index] = result;
             return result;
         }
         else
         {
             ast_grow_type_hash(context);
-            return ast_find_or_create_mrv_type(context, mrv_types);
+            return ast_find_or_create_mrv_type(context, mrv_types, scope);
         }
     }
 

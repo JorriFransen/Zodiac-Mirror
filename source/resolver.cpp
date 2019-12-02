@@ -2232,6 +2232,24 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_EXPRESSION_LIST:
+            {
+                assert(suggested_type);
+                assert(suggested_type->kind == AST_TYPE_MRV);
+                assert(BUF_LENGTH(suggested_type->mrv.types) ==
+                        BUF_LENGTH(expression->list.expressions));
+
+                for (uint64_t i = 0; i < BUF_LENGTH(expression->list.expressions); i++)
+                {
+                    result &= resolver_resolve_expression(resolver,
+                                                          expression->list.expressions[i],
+                                                          scope, suggested_type->mrv.types[i]);
+                }
+
+                if (result) expression->type = suggested_type;
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -2880,7 +2898,8 @@ namespace Zodiac
                     }
                     else
                     {
-                        *type_dest = ast_find_or_create_mrv_type(resolver->context, mrv_types);
+                        *type_dest = ast_find_or_create_mrv_type(resolver->context, mrv_types,
+                                                                 scope);
                     }
                 }
                 else assert(false);
