@@ -26,8 +26,6 @@ main :: ()
     zin := 14;
     win := -42;
 
-    assert(win == -42.0);
-
     zoutf : float;
     zoutd : double;
     woutf : float;
@@ -44,9 +42,18 @@ main :: ()
     assert(woutf == ((:float)win));
     assert(woutd == ((:double)win));
 
+    implicit_x : int;
+    implicit_y : int;
+
+    implicit_x, implicit_y = return_implicit();
+    printf("implicit_x: %d\n", implicit_x);
+    printf("implicit_y: %d\n", implicit_y);
+
+    assert(implicit_x == 0);
+    assert(implicit_y == 0);
+
     return 0;
 }
-
 
 return_both :: (x: int, y: int) -> int, int
 {
@@ -61,7 +68,6 @@ to_reals :: (integer: int) -> float, double
     return (:float)integer, (:double)integer;
 }
 
-// return_implicit :: () -> int, int
-// {
-    
-// }
+return_implicit :: () -> int, int
+{
+}

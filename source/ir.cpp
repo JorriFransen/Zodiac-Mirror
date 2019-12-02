@@ -3993,6 +3993,10 @@ namespace Zodiac
         {
             return ir_builder_emit_zero_literal(ir_builder, type->aggregate_type.base_type);
         }
+        else if (type->kind == AST_TYPE_MRV)
+        {
+            return ir_builder_emit_zero_literal(ir_builder, type->mrv.struct_type);
+        }
         else assert(false);
 
         assert(false);
