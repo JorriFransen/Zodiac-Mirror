@@ -1,0 +1,35 @@
+
+_c :: import c;
+using _c;
+
+main :: ()
+{
+    open_std_handles();
+
+    printf("Multiple return value test\n");
+
+
+    xin: int = 4;
+    yin: int = 5;
+
+    // xout : int;
+    // yout : int;
+
+    // xout, yout = return_both(x, y);
+
+    // printf("xin: %d\txout: %d\n", xin, xout);
+    // printf("yin: %d\nyout: %d\n", yin, yout);
+
+    return 0;
+}
+
+
+return_both :: (x: int, y: int) -> int, int
+{
+    return x, y;
+}
+
+// return_implicit :: () -> int, int
+// {
+    
+// }
