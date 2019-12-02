@@ -2913,6 +2913,13 @@ namespace Zodiac
                         *type_dest = ast_find_or_create_mrv_type(resolver->context, mrv_types,
                                                                  scope);
                         assert(*type_dest);
+                        AST_Type* struct_type = (*type_dest)->mrv.struct_type;
+                        auto member_decls = struct_type->aggregate_type.member_declarations;
+                        for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+                        {
+                            result &= resolver_resolve_declaration(resolver, member_decls[i],
+                                                                   scope);
+                        }
                     }
                 }
                 else assert(false);

@@ -1102,7 +1102,6 @@ namespace Zodiac
     {
         assert(parser);
 
-
         AST_Expression* result = parse_expression(parser, scope);
 
         if (is_token(parser, TOK_COMMA))
@@ -1113,7 +1112,7 @@ namespace Zodiac
             while (match_token(parser, TOK_COMMA))
             {
                 auto expr = parse_expression(parser, scope);
-                BUF_PUSH(expressions, result);
+                BUF_PUSH(expressions, expr);
             }
 
             result = ast_expression_list_expression_new(parser->context, result->file_pos,

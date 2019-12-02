@@ -873,6 +873,7 @@ namespace Zodiac
                 IR_Value* lvalue = lvalues[i];
                 IR_Value* new_value = ir_builder_emit_aggregate_offset_pointer(ir_builder,
                                                                                ret_value, i, fp);
+                new_value = ir_builder_emit_load(ir_builder, new_value, fp);
                 ir_builder_emit_store(ir_builder, lvalue, new_value, fp);
             }
 

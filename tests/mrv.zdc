@@ -9,8 +9,8 @@ main :: ()
     printf("Multiple return value test\n");
 
 
-    xin: int = 4;
-    yin: int = 5;
+    xin: int = 44;
+    yin: int = -99;
 
     xout : int;
     yout : int;
@@ -18,7 +18,29 @@ main :: ()
     xout, yout = return_both(xin, yin);
 
     printf("xin: %d\txout: %d\n", xin, xout);
-    printf("yin: %d\nyout: %d\n", yin, yout);
+    printf("yin: %d\tyout: %d\n", yin, yout);
+
+    assert(xout == xin);
+    assert(yout == yin);
+
+    zin := 14;
+    win := -42;
+
+    zoutf : float;
+    zoutd : double;
+    woutf : float;
+    woutd : double;
+
+    zoutf, zoutd = to_reals(zin);
+    woutf, woutd = to_reals(win);
+
+    printf("zin: %d, zoutf: %f, zoutd: %f\n", zin, zoutf, zoutd);
+    printf("win: %d, woutf: %f, woutd: %f\n", win, woutf, woutd);
+
+    assert(zoutf == ((:float)zin));
+    assert(zoutd == ((:double)zin));
+    assert(woutf == ((:float)win));
+    assert(woutd == ((:double)win));
 
     return 0;
 }
@@ -26,7 +48,19 @@ main :: ()
 
 return_both :: (x: int, y: int) -> int, int
 {
+    printf("return_both(%d, %d)\n", x, y);
     return x, y;
+}
+
+to_reals :: (integer: int) -> float, double
+{
+    as_double := (:double)integer;
+    as_float := (:float)integer;
+
+    printf("as double: %f\n", as_double);
+    printf("as float: %f\n", as_float);
+
+    return as_float, as_double;
 }
 
 // return_implicit :: () -> int, int

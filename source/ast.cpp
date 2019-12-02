@@ -1548,9 +1548,8 @@ namespace Zodiac
         while (iterations < context->type_count)
         {
             AST_Type* ex_type = context->type_hash[hash_index];
-            if (ex_type)
+            if (ex_type && ex_type->kind == AST_TYPE_FUNCTION)
             {
-                assert(ex_type->kind == AST_TYPE_FUNCTION);
                 bool ret_match = ex_type->function.return_type == return_type;
                 bool var_match = (bool)((ex_type->flags & AST_TYPE_FLAG_FUNC_VARARG)) ==
                                     is_vararg;
@@ -1618,9 +1617,8 @@ namespace Zodiac
         while (iterations < context->type_count)
         {
             AST_Type* ex_type = context->type_hash[hash_index];
-            if (ex_type)
+            if (ex_type && ex_type->kind == AST_TYPE_MRV)
             {
-                assert(ex_type->kind == AST_TYPE_MRV);
                 bool len_match = BUF_LENGTH(mrv_types) == BUF_LENGTH(ex_type->mrv.types);
 
                 if (len_match)
