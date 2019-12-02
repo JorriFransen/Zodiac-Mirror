@@ -2854,6 +2854,41 @@ namespace Zodiac
                 break;
             }
 
+            case AST_TYPE_SPEC_MRV:
+            {
+                BUF(AST_Type*) mrv_types = nullptr;
+                for (uint64_t i = 0; i < BUF_LENGTH(type_spec->mrv.specs); i++)
+                {
+                    AST_Type* mrv_type = nullptr;
+                    bool mrv_res = resolver_resolve_type_spec(resolver, type_spec->file_pos,
+                                                              type_spec->mrv.specs[i],
+                                                              &mrv_type, scope, poly_scope);
+                    if (mrv_res)
+                    {
+                        assert(mrv_type);
+                        BUF_PUSH(mrv_types, mrv_type);
+                    }
+
+                    result &= mrv_res;
+                }
+
+                if (result)
+                {
+                    if (BUF_LENGTH(mrv_types) == 1)
+                    {
+                        *type_dest = mrv_types[0];
+                    }
+                    else
+                    {
+                        *type_dest = ast_find_or_create_mrv_type(resolver->context, mrv_types);
+                    }
+                }
+                else assert(false);
+
+                BUF_FREE(mrv_types);
+                break;
+            }
+
             default: assert(false);
         }
 

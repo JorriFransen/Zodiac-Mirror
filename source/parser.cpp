@@ -283,7 +283,7 @@ namespace Zodiac
             AST_Type_Spec* return_type_spec = nullptr;
             if (match_token(parser, TOK_RARROW))
             {
-                return_type_spec = parse_type_spec(parser, scope);
+                return_type_spec = parse_return_type_spec(parser, scope);
             }
 
             AST_Statement* body_block = nullptr;
@@ -1734,6 +1734,23 @@ namespace Zodiac
 
 		assert(false);
 		return nullptr;
+    }
+
+    static AST_Type_Spec* parse_return_type_spec(Parser* parser, AST_Scope* scope)
+    {
+        BUF(AST_Type_Spec*) specs = nullptr;
+
+        auto rts = parse_type_spec(parser, scope);
+        auto ffp = rts->file_pos;
+        BUF_PUSH(specs, rts);
+
+        while (match_token(parser, TOK_COMMA))
+        {
+            rts = parse_type_spec(parser, scope);
+            BUF_PUSH(specs, rts);
+        }
+
+        return ast_type_spec_mrv_new(parser->context, ffp, specs);
     }
 
 	static AST_Type_Spec* parse_function_type_spec(Parser* parser, AST_Scope* scope)
