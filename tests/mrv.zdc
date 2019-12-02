@@ -52,6 +52,16 @@ main :: ()
     assert(implicit_x == 0);
     assert(implicit_y == 0);
 
+
+    // @TODO: @FIXME mismating types in mrv's should give similar errors
+    // float_a : float = 1.1;
+    // double_a : double;
+    // double_a = float_a;
+
+    // double_b : double = 2.2;
+    // float_b : float;
+    // float_b = double_b;
+
     return 0;
 }
 
