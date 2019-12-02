@@ -12,13 +12,13 @@ main :: ()
     xin: int = 4;
     yin: int = 5;
 
-    // xout : int;
-    // yout : int;
+    xout : int;
+    yout : int;
 
-    // xout, yout = return_both(x, y);
+    xout, yout = return_both(xin, yin);
 
-    // printf("xin: %d\txout: %d\n", xin, xout);
-    // printf("yin: %d\nyout: %d\n", yin, yout);
+    printf("xin: %d\txout: %d\n", xin, xout);
+    printf("yin: %d\nyout: %d\n", yin, yout);
 
     return 0;
 }

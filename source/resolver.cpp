@@ -1141,37 +1141,49 @@ namespace Zodiac
 
             case AST_STMT_ASSIGN:
             {
-                AST_Expression* lvalue_expr = statement->assign.lvalue_expression;
-                lvalue_expr->flags |= AST_EXPR_FLAG_LVALUE;
+                auto lvalue = statement->assign.lvalue_expression;
+                lvalue->flags |= AST_EXPR_FLAG_LVALUE;
+                auto expr = statement->assign.expression;
 
-                result &= resolver_resolve_expression(resolver, lvalue_expr, scope);
-                AST_Type* suggested_type = nullptr;
-                if (result)
+                if (lvalue->kind == AST_EXPR_EXPRESSION_LIST)
                 {
-                    suggested_type = statement->assign.lvalue_expression->type;
-                    result &= resolver_resolve_expression(resolver, statement->assign.expression,
-                                                          scope, suggested_type);
+                    assert(expr->kind == AST_EXPR_CALL);
+                    result &= resolver_resolve_expression(resolver, expr, scope);
+                    if (!result) return false;
+                    assert(expr->type->kind == AST_TYPE_MRV);
+
+                    result &= resolver_resolve_expression(resolver, lvalue, scope, expr->type);
                 }
+                else
+                {
+                    result &= resolver_resolve_expression(resolver, lvalue, scope);
+                    AST_Type* suggested_type = nullptr;
+                    if (result)
+                    {
+                        suggested_type = statement->assign.lvalue_expression->type;
+                        result &= resolver_resolve_expression(resolver,
+                                                              statement->assign.expression,
+                                                              scope, suggested_type);
+                    }
+                }
+
 
                 if (!result) break;
 
                 bool types_match =
-                    resolver_check_assign_types(resolver, lvalue_expr->type,
+                    resolver_check_assign_types(resolver, lvalue->type,
                                                 statement->assign.expression->type);
 
                 auto assign_type = statement->assign.expression->type;
-				if (types_match && lvalue_expr->type != assign_type &&
-                    lvalue_expr->type->flags & AST_TYPE_FLAG_INT)
+				if (types_match && lvalue->type != assign_type &&
+                    lvalue->type->flags & AST_TYPE_FLAG_INT)
 				{
 					resolver_transform_to_cast_expression(resolver, statement->assign.expression,
-                                                          lvalue_expr->type);
+                                                          lvalue->type);
 				}
 
                 if (!types_match)
                 {
-                    auto lvalue = statement->assign.lvalue_expression;
-                    auto expr = statement->assign.expression;
-
                     if ((lvalue->type->flags & AST_TYPE_FLAG_FLOAT) &&
                         (expr->type->flags & AST_TYPE_FLAG_INT))
                     {
@@ -2900,6 +2912,7 @@ namespace Zodiac
                     {
                         *type_dest = ast_find_or_create_mrv_type(resolver->context, mrv_types,
                                                                  scope);
+                        assert(*type_dest);
                     }
                 }
                 else assert(false);

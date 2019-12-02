@@ -850,12 +850,42 @@ namespace Zodiac
         assert(statement->kind == AST_STMT_ASSIGN);
 
         AST_Expression* lvalue_expr = statement->assign.lvalue_expression;
+        AST_Expression* expr = statement->assign.expression;
 
-        IR_Value* lvalue = ir_builder_emit_lvalue(ir_builder, lvalue_expr);
-        IR_Value* new_value = ir_builder_emit_expression(ir_builder,
-                                                        statement->assign.expression);
-        ir_builder_emit_store(ir_builder, lvalue, new_value, statement->file_pos);
+        if (lvalue_expr->kind == AST_EXPR_EXPRESSION_LIST)
+        {
+            assert(expr->kind == AST_EXPR_CALL);
+            assert(expr->type->kind == AST_TYPE_MRV);
 
+            BUF(IR_Value*) lvalues = nullptr;
+            for (uint64_t i = 0; i < BUF_LENGTH(lvalue_expr->list.expressions); i++)
+            {
+                auto list_expr = lvalue_expr->list.expressions[i];
+                IR_Value* lvalue = ir_builder_emit_lvalue(ir_builder, list_expr);
+                BUF_PUSH(lvalues, lvalue);
+            }
+
+            IR_Value* ret_value = ir_builder_emit_expression(ir_builder, expr);
+
+            auto fp = statement->file_pos;
+            for (uint64_t i = 0; i < BUF_LENGTH(lvalues); i++)
+            {
+                IR_Value* lvalue = lvalues[i];
+                IR_Value* new_value = ir_builder_emit_aggregate_offset_pointer(ir_builder,
+                                                                               ret_value, i, fp);
+                ir_builder_emit_store(ir_builder, lvalue, new_value, fp);
+            }
+
+            BUF_FREE(lvalues);
+
+        }
+        else
+        {
+            IR_Value* lvalue = ir_builder_emit_lvalue(ir_builder, lvalue_expr);
+            IR_Value* new_value = ir_builder_emit_expression(ir_builder,
+                                                             statement->assign.expression);
+            ir_builder_emit_store(ir_builder, lvalue, new_value, statement->file_pos);
+        }
     }
 
     struct _IR_Case
@@ -2421,6 +2451,7 @@ namespace Zodiac
         assert(struct_value->kind == IRV_ALLOCL ||
             struct_value->kind == IRV_ARGUMENT ||
             struct_value->kind == IRV_GLOBAL ||
+               struct_value->kind == IRV_TEMPORARY ||
             struct_value->type->kind == AST_TYPE_POINTER);
         assert(struct_value->type->kind == AST_TYPE_STRUCT ||
             struct_value->type->kind == AST_TYPE_UNION ||
@@ -3180,8 +3211,10 @@ namespace Zodiac
             IR_Function* function = func_value->function;
             assert(function->type);
 
-            IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY,
-                                                function->type->function.return_type);
+            auto ret_type = function->type->function.return_type;
+            if (ret_type->kind == AST_TYPE_MRV) ret_type = ret_type->mrv.struct_type;
+
+            IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, ret_type);
             auto op = IR_OP_CALL;
             IR_Value* arg_1 = func_value;
             if (func_value->function->flags & IR_FUNC_FLAG_FOREIGN)

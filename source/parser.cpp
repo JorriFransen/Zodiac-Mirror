@@ -788,7 +788,7 @@ namespace Zodiac
             default: break;
         }
 
-        AST_Expression* lvalue_expr = parse_expression(parser, scope);
+        AST_Expression* lvalue_expr = parse_list_expression(parser, scope);
 
         if (!lvalue_expr)
         {
