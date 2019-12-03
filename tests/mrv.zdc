@@ -52,15 +52,22 @@ main :: ()
     assert(implicit_x == 0);
     assert(implicit_y == 0);
 
+    // w_float: float;
+    // w_vec: Vec2;
+    // w_float, w_vec = wrong_order();
+    // printf("w_float: %f\n", w_float);
+    // printf("w_vec: { %d, %d }\n", w_vec.x, w_vec.y);
 
-    // @TODO: @FIXME mismating types in mrv's should give similar errors
-    // float_a : float = 1.1;
-    // double_a : double;
-    // double_a = float_a;
+    r_float: float;
+    r_vec: Vec2;
+    r_float, r_vec = right_order();
+    printf("r_float: %f\n", r_float);
+    printf("r_vec: { %d, %d }\n", r_vec.x, r_vec.y);
+    assert(r_float == 4.4);
+    assert(r_vec.x == 5);
+    assert(r_vec.y == 6);
 
-    // double_b : double = 2.2;
-    // float_b : float;
-    // float_b = double_b;
+    // r_vec, r_float = right_order();
 
     return 0;
 }
@@ -76,6 +83,22 @@ to_reals :: (integer: int) -> float, double
     printf("Returning double: %f\n", (:double)integer);
 
     return (:float)integer, (:double)integer;
+}
+
+Vec2 :: struct
+{
+    x: int;
+    y: int;
+}
+
+// wrong_order :: () -> float, Vec2
+// {
+//     return { 5, 6 }, 7.7;
+// }
+
+right_order :: () -> float, Vec2
+{
+    return 4.4, { 5, 6 };
 }
 
 return_implicit :: () -> int, int

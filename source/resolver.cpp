@@ -290,6 +290,7 @@ namespace Zodiac
                     break;
                 }
 
+                // @TODO: @CLEANUP: remove .locals
                 assert(declaration->function.locals == nullptr);
                 bool arg_result = true;
                 for (uint64_t i = 0; i < BUF_LENGTH(declaration->function.args); i++)
@@ -1227,7 +1228,8 @@ namespace Zodiac
                     result &= resolver_resolve_expression(resolver, statement->return_expression,
                                                           scope, suggested_type);
 
-                    if (result && suggested_type)
+                    if (!result) return false;
+                    else if (result && suggested_type)
                     {
                         auto ret_match = resolver_check_assign_types(resolver,
                                                     suggested_type,
@@ -2169,7 +2171,8 @@ namespace Zodiac
                         AST_Type* suggested_member_type = nullptr;
                         if (suggested_type && suggested_type->kind == AST_TYPE_STRUCT)
                         {
-                            auto member_decls = suggested_type->aggregate_type.member_declarations;
+                            auto member_decls =
+                                suggested_type->aggregate_type.member_declarations;
                             assert(i < BUF_LENGTH(member_decls));
                             AST_Declaration* member_decl = member_decls[i];
 
@@ -2253,9 +2256,47 @@ namespace Zodiac
 
                 for (uint64_t i = 0; i < BUF_LENGTH(expression->list.expressions); i++)
                 {
-                    result &= resolver_resolve_expression(resolver,
-                                                          expression->list.expressions[i],
-                                                          scope, suggested_type->mrv.types[i]);
+                    auto expr = expression->list.expressions[i];
+
+                    if (expr->kind == AST_EXPR_COMPOUND_LITERAL &&
+                        !(suggested_type->kind == AST_TYPE_STRUCT ||
+                          suggested_type->kind == AST_TYPE_UNION ||
+                          suggested_type->kind == AST_TYPE_MRV))
+                    {
+                        auto exp_type_str = ast_type_to_string(suggested_type->mrv.types[i]);
+
+                        resolver_report_error(resolver, expr->file_pos,
+                                              "Cannot use an aggregate type when expecting '%s'",
+                                              exp_type_str);
+
+                        mem_free(exp_type_str);
+
+                        result = false;
+                        break;
+                    }
+
+                    if (!result) break;
+
+                    result &= resolver_resolve_expression(resolver, expr, scope,
+                                                          suggested_type->mrv.types[i]);
+
+                    if (!result) break;
+
+                    bool types_match = resolver_check_assign_types(resolver, suggested_type->mrv.types[i],
+                                                                   expr->type);
+                    if (!types_match)
+                    {
+                        auto got_str = ast_type_to_string(expr->type);
+                        auto exp_str = ast_type_to_string(suggested_type->mrv.types[i]);
+
+                        resolver_report_error(resolver, expr->file_pos,
+                                              "Mismatching types in assignnment:\n\tgot: %s\n\texpected: %s\n",
+                                              got_str, exp_str);
+
+                        mem_free(got_str);
+                        mem_free(exp_str);
+                        result = false;
+                    }
                 }
 
                 if (result) expression->type = suggested_type;

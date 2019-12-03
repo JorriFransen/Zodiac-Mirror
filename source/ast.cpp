@@ -1889,7 +1889,7 @@ namespace Zodiac
                     if (i > 0) string_builder_append(string_builder, ", ");
                     ast_type_to_string(type->mrv.types[i], string_builder);
                 }
-                string_builder_append(string_builder, "}");
+                string_builder_append(string_builder, " }");
                 break;
             }
 
