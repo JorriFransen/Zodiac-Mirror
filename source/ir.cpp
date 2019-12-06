@@ -924,8 +924,15 @@ namespace Zodiac
             for (uint64_t i = 0; i < BUF_LENGTH(lvalue_expr->list.expressions); i++)
             {
                 auto list_expr = lvalue_expr->list.expressions[i];
-                IR_Value* lvalue = ir_builder_emit_lvalue(ir_builder, list_expr);
-                BUF_PUSH(lvalues, lvalue);
+                if (list_expr->kind != AST_EXPR_IGNORED_VALUE)
+                {
+                    IR_Value* lvalue = ir_builder_emit_lvalue(ir_builder, list_expr);
+                    BUF_PUSH(lvalues, lvalue);
+                }
+                else
+                {
+                    BUF_PUSH(lvalues, nullptr);
+                }
             }
 
             IR_Value* ret_allocl = ir_builder_emit_allocl(ir_builder,
@@ -939,10 +946,13 @@ namespace Zodiac
             for (uint64_t i = 0; i < BUF_LENGTH(lvalues); i++)
             {
                 IR_Value* lvalue = lvalues[i];
-                IR_Value* new_value = ir_builder_emit_aggregate_offset_pointer(ir_builder,
-                                                                               ret_allocl, i, fp);
-                new_value = ir_builder_emit_load(ir_builder, new_value, fp);
-                ir_builder_emit_store(ir_builder, lvalue, new_value, fp);
+                if (lvalue)
+                {
+                    IR_Value* new_value = ir_builder_emit_aggregate_offset_pointer(ir_builder,
+                                                                                   ret_allocl, i, fp);
+                    new_value = ir_builder_emit_load(ir_builder, new_value, fp);
+                    ir_builder_emit_store(ir_builder, lvalue, new_value, fp);
+                }
             }
 
             BUF_FREE(lvalues);

@@ -2357,6 +2357,13 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_IGNORED_VALUE:
+            {
+                assert(suggested_type);
+                expression->type = suggested_type;
+                break;
+            }
+
             default: assert(false);
         }
 

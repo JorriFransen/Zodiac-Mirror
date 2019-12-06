@@ -29,6 +29,13 @@ selective_returns :: ()
     _, y := return_both(5, 6);
     printf("y: %d\n", y);
     assert(y == 6);
+
+    x, _ = return_both(7, 8);
+    _, y = return_both(9, 10);
+    printf("x: %d\n", x);
+    printf("y: %d\n", y);
+    assert(x == 7);
+    assert(y == 10);
 }
 
 multiple_returns_and_decl_lists :: ()
