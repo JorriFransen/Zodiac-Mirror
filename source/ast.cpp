@@ -1118,6 +1118,7 @@ namespace Zodiac
             BUF_PUSH(member_decls, mem_decl);
         }
 
+        assert(directives);
         result->mrv.directives = directives;
         result->mrv.struct_type = ast_type_struct_new(context, member_decls, "mrv", bit_size,
                                                       scope, nullptr);
@@ -1307,6 +1308,7 @@ namespace Zodiac
     {
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_MRV);
         result->mrv.specs = specs;
+        assert(directives);
         result->mrv.directives = directives;
 
         return result;

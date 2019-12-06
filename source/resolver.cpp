@@ -880,7 +880,14 @@ namespace Zodiac
                         {
                             result &= resolver_resolve_expression(resolver, lvalue_expr, scope);
                         }
-                     }
+                    }
+                    else if (mrv_type->mrv.directives[i])
+                    {
+                        resolver_report_error(resolver, lvalue_expr->file_pos,
+                                              "This returned value has the '#required' directive, so it is not allowed to be ignored");
+                        result = false;
+                        break;
+                    }
                 }
 
                 break;
@@ -2358,7 +2365,7 @@ namespace Zodiac
                          (suggested_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED)))
                     {
                         resolver_report_error(resolver, expr->file_pos,
-                                              "This return value has the '#required' directive, so it is not allowed to be ignored");
+                                              "This returned value has the '#required' directive, so it is not allowed to be ignored");
                         result = false;
                         break;
                     }

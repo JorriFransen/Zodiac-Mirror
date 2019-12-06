@@ -1826,6 +1826,7 @@ namespace Zodiac
             assert(directive->kind == AST_DIREC_REQUIRED);
             BUF_PUSH(directives, directive);
         }
+        else BUF_PUSH(directives, nullptr);
 
         if (!is_token(parser, TOK_COMMA)) return rts;
 
@@ -1840,6 +1841,7 @@ namespace Zodiac
                 assert(directive->kind == AST_DIREC_REQUIRED);
                 BUF_PUSH(directives, directive);
             }
+            else BUF_PUSH(directives, nullptr);
             BUF_PUSH(specs, rts);
         }
 
