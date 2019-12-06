@@ -45,6 +45,8 @@ namespace Zodiac
     AST_Declaration* parse_declaration(Parser* parser, AST_Identifier* identifier,
                                        AST_Scope* scope, bool global, AST_Directive* directive,
                                        AST_Declaration_Location location = AST_DECL_LOC_INVALID);
+    AST_Declaration* parse_list_declaration(Parser* parser, AST_Expression* list_expr,
+                                            AST_Scope* scope);
 
     static AST_Declaration* parse_constant_declaration(Parser* parser, AST_Identifier* identifier,
                                                        AST_Type_Spec* type_spec, AST_Scope* scope,
@@ -74,6 +76,7 @@ namespace Zodiac
     static AST_Statement* parse_for_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_switch_statement(Parser* parser, AST_Scope* scope);
 
+    static AST_Expression* parse_list_expression(Parser* parser, AST_Scope* scope);
     static AST_Expression* parse_expression(Parser* parser, AST_Scope* scope);
     static AST_Expression* parse_ternary_expression(Parser* parser, AST_Scope* scope);
     static AST_Expression* parse_or_or_expression(Parser* parser, AST_Scope* scope);
@@ -98,6 +101,7 @@ namespace Zodiac
 		AST_Scope* scope);
 
     static AST_Type_Spec* parse_type_spec(Parser* parser, AST_Scope* scope);
+    static AST_Type_Spec* parse_return_type_spec(Parser* parser, AST_Scope* scope);
 	static AST_Type_Spec* parse_function_type_spec(Parser* parser, AST_Scope* scope);
 
     static AST_Overload_Operator_Kind parse_overload_operator(Parser* parser);

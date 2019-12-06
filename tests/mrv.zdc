@@ -1,0 +1,159 @@
+
+_c :: import c;
+using _c;
+
+main :: ()
+{
+    open_std_handles();
+
+    printf("Multiple return value test\n");
+
+    multiple_returns_and_lvalue_lists();
+    printf("\n");
+    multiple_returns_and_decl_lists();
+
+
+    return 0;
+}
+
+multiple_returns_and_decl_lists :: ()
+{
+    printf("multiple_returns_and_decl_lists()\n");
+
+    xin: int = 44;
+    yin: int = -99;
+
+    xout, yout := return_both(xin, yin);
+
+    printf("xin: %d,\txout: %d\n", xin, xout);
+    printf("yin: %d,\tyout: %d\n", yin, yout);
+
+    assert(xout == xin);
+    assert(yout == yin);
+
+    zin := 14;
+    win := -42;
+
+    zoutf, zoutd := to_reals(zin);
+    woutf, woutd := to_reals(win);
+
+    printf("zin: %d, zoutf: %f, zoutd: %f\n", zin, zoutf, zoutd);
+    printf("win: %d, woutf: %f, woutd: %f\n", win, woutf, woutd);
+
+    assert(zoutf == ((:float)zin));
+    assert(zoutd == ((:double)zin));
+    assert(woutf == ((:float)win));
+    assert(woutd == ((:double)win));
+
+    implicit_x, implicit_y := return_implicit();
+    printf("implicit_x: %d\n", implicit_x);
+    printf("implicit_y: %d\n", implicit_y);
+
+    assert(implicit_x == 0);
+    assert(implicit_y == 0);
+
+
+    r_float, r_vec := right_order();
+    printf("r_float: %f\n", r_float);
+    printf("r_vec: { %d, %d }\n", r_vec.x, r_vec.y);
+    assert(r_float == 4.4);
+    assert(r_vec.x == 5);
+    assert(r_vec.y == 6);
+}
+
+multiple_returns_and_lvalue_lists :: ()
+{
+    printf("multiple_returns_and_lvalue_lists()\n");
+    xin: int = 44;
+    yin: int = -99;
+
+    xout : int;
+    yout : int;
+
+    xout, yout = return_both(xin, yin);
+
+    printf("xin: %d,\txout: %d\n", xin, xout);
+    printf("yin: %d,\tyout: %d\n", yin, yout);
+
+    assert(xout == xin);
+    assert(yout == yin);
+
+    zin := 14;
+    win := -42;
+
+    zoutf : float;
+    zoutd : double;
+    woutf : float;
+    woutd : double;
+
+    zoutf, zoutd = to_reals(zin);
+    woutf, woutd = to_reals(win);
+
+    printf("zin: %d, zoutf: %f, zoutd: %f\n", zin, zoutf, zoutd);
+    printf("win: %d, woutf: %f, woutd: %f\n", win, woutf, woutd);
+
+    assert(zoutf == ((:float)zin));
+    assert(zoutd == ((:double)zin));
+    assert(woutf == ((:float)win));
+    assert(woutd == ((:double)win));
+
+    implicit_x : int;
+    implicit_y : int;
+
+    implicit_x, implicit_y = return_implicit();
+    printf("implicit_x: %d\n", implicit_x);
+    printf("implicit_y: %d\n", implicit_y);
+
+    assert(implicit_x == 0);
+    assert(implicit_y == 0);
+
+    // w_float: float;
+    // w_vec: Vec2;
+    // w_float, w_vec = wrong_order();
+    // printf("w_float: %f\n", w_float);
+    // printf("w_vec: { %d, %d }\n", w_vec.x, w_vec.y);
+
+    r_float: float;
+    r_vec: Vec2;
+    r_float, r_vec = right_order();
+    printf("r_float: %f\n", r_float);
+    printf("r_vec: { %d, %d }\n", r_vec.x, r_vec.y);
+    assert(r_float == 4.4);
+    assert(r_vec.x == 5);
+    assert(r_vec.y == 6);
+
+    // r_vec, r_float = right_order();
+}
+
+return_both :: (x: int, y: int) -> int, int
+{
+    return x, y;
+}
+
+to_reals :: (integer: int) -> float, double
+{
+    printf("Returning float: %f\n", (:float)integer);
+    printf("Returning double: %f\n", (:double)integer);
+
+    return (:float)integer, (:double)integer;
+}
+
+Vec2 :: struct
+{
+    x: int;
+    y: int;
+}
+
+// wrong_order :: () -> float, Vec2
+// {
+//     return { 5, 6 }, 7.7;
+// }
+
+right_order :: () -> float, Vec2
+{
+    return 4.4, { 5, 6 };
+}
+
+return_implicit :: () -> int, int
+{
+}

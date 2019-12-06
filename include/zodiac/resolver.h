@@ -7,7 +7,6 @@ namespace Zodiac
     enum Resolve_Error_Flag : uint64_t
     {
         RE_FLAG_NONE       = 0,
-        RE_FLAG_UNDECLARED = 1 << 0,
     };
 
     struct Resolve_Error

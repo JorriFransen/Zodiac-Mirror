@@ -223,6 +223,24 @@ namespace Zodiac
         return result;
     }
 
+    AST_Declaration* parse_list_declaration(Parser* parser, AST_Expression* list_expr,
+                                            AST_Scope* scope)
+    {
+        assert(list_expr->kind == AST_EXPR_EXPRESSION_LIST);
+
+        bool success = expect_token(parser, TOK_COLON);
+        assert(success);
+        success = expect_token(parser, TOK_EQ);
+        assert(success);
+
+        AST_Expression* init_expr = parse_expression(parser, scope);
+        assert(init_expr);
+        assert(init_expr->kind == AST_EXPR_CALL);
+
+        return ast_list_declaration_new(parser->context, list_expr->file_pos, list_expr,
+                                             init_expr);
+    }
+
     static AST_Declaration* parse_constant_declaration(Parser* parser, AST_Identifier* identifier,
                                                        AST_Type_Spec* type_spec, AST_Scope* scope,
                                                        AST_Declaration_Location location)
@@ -283,7 +301,7 @@ namespace Zodiac
             AST_Type_Spec* return_type_spec = nullptr;
             if (match_token(parser, TOK_RARROW))
             {
-                return_type_spec = parse_type_spec(parser, scope);
+                return_type_spec = parse_return_type_spec(parser, scope);
             }
 
             AST_Statement* body_block = nullptr;
@@ -788,7 +806,7 @@ namespace Zodiac
             default: break;
         }
 
-        AST_Expression* lvalue_expr = parse_expression(parser, scope);
+        AST_Expression* lvalue_expr = parse_list_expression(parser, scope);
 
         if (!lvalue_expr)
         {
@@ -812,8 +830,17 @@ namespace Zodiac
 
         if (is_token(parser, TOK_COLON))
         {
-            AST_Declaration* decl = parse_declaration(parser, lvalue_expr->identifier,
-                                                      scope, false, nullptr);
+            AST_Declaration* decl = nullptr;
+            if (lvalue_expr->kind == AST_EXPR_EXPRESSION_LIST)
+            {
+                decl = parse_list_declaration(parser, lvalue_expr, scope);
+            }
+            else
+            {
+                decl = parse_declaration(parser, lvalue_expr->identifier, scope, false,
+                                         nullptr);
+            }
+
             if (!decl)
             {
                 return  nullptr;
@@ -897,7 +924,7 @@ namespace Zodiac
 
         if (!is_token(parser, TOK_SEMICOLON))
         {
-            return_expr = parse_expression(parser, scope);
+            return_expr = parse_list_expression(parser, scope);
         }
 
         if (!expect_token(parser, TOK_SEMICOLON))
@@ -1098,12 +1125,36 @@ namespace Zodiac
         return ast_switch_statement_new(parser->context, ft.file_pos, switch_expr, cases);
     }
 
+    static AST_Expression* parse_list_expression(Parser* parser, AST_Scope* scope)
+    {
+        assert(parser);
+
+        AST_Expression* result = parse_expression(parser, scope);
+
+        if (is_token(parser, TOK_COMMA))
+        {
+            BUF(AST_Expression*) expressions = nullptr;
+            BUF_PUSH(expressions, result);
+
+            while (match_token(parser, TOK_COMMA))
+            {
+                auto expr = parse_expression(parser, scope);
+                BUF_PUSH(expressions, expr);
+            }
+
+            result = ast_expression_list_expression_new(parser->context, result->file_pos,
+                                                        expressions);
+        }
+
+        return result;
+    }
+
     static AST_Expression* parse_expression(Parser* parser, AST_Scope* scope)
     {
         assert(parser);
 
-
-        return parse_ternary_expression(parser, scope);
+        AST_Expression* result = parse_ternary_expression(parser, scope);
+        return result;
     }
 
     static AST_Expression* parse_ternary_expression(Parser* parser, AST_Scope* scope)
@@ -1734,6 +1785,26 @@ namespace Zodiac
 
 		assert(false);
 		return nullptr;
+    }
+
+    static AST_Type_Spec* parse_return_type_spec(Parser* parser, AST_Scope* scope)
+    {
+        BUF(AST_Type_Spec*) specs = nullptr;
+
+        auto rts = parse_type_spec(parser, scope);
+        auto ffp = rts->file_pos;
+
+        if (!is_token(parser, TOK_COMMA)) return rts;
+
+        BUF_PUSH(specs, rts);
+
+        while (match_token(parser, TOK_COMMA))
+        {
+            rts = parse_type_spec(parser, scope);
+            BUF_PUSH(specs, rts);
+        }
+
+        return ast_type_spec_mrv_new(parser->context, ffp, specs);
     }
 
 	static AST_Type_Spec* parse_function_type_spec(Parser* parser, AST_Scope* scope)

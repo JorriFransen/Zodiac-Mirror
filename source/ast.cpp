@@ -323,6 +323,15 @@ namespace Zodiac
         return result;
     }
 
+    AST_Expression* ast_expression_list_expression_new(Context* context, File_Pos file_pos,
+                                                       BUF(AST_Expression*) expressions)
+    {
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_EXPRESSION_LIST);
+        result->list.expressions = expressions;
+
+        return result;
+    }
+
     AST_Aggregate_Declaration* ast_aggregate_declaration_new(Context* context, File_Pos file_pos,
                                                              BUF(AST_Declaration*) members,
                                                              BUF(AST_Identifier*) poly_args,
@@ -354,6 +363,23 @@ namespace Zodiac
         result->location = location;
         result->identifier = identifier;
         result->directive = directive;
+
+        return result;
+    }
+
+    AST_Declaration* ast_list_declaration_new(Context* context, File_Pos file_pos,
+                                              AST_Expression* list_expr,
+                                              AST_Expression* init_expr)
+    {
+        assert(list_expr->kind == AST_EXPR_EXPRESSION_LIST);
+        assert(init_expr->kind == AST_EXPR_CALL);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_LIST,
+                                                      AST_DECL_LOC_LOCAL, nullptr, nullptr);
+
+        result->list.list_expression = list_expr;
+        result->list.init_expression = init_expr;
+        result->list.declarations = nullptr;
 
         return result;
     }
@@ -1063,6 +1089,33 @@ namespace Zodiac
         return result;
     }
 
+    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types, AST_Scope* scope)
+    {
+        uint64_t bit_size = 0;
+
+        for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++) bit_size += mrv_types[i]->bit_size;
+        AST_Type* result = ast_type_new(context, AST_TYPE_MRV, AST_TYPE_FLAG_NONE, {}, bit_size);
+        result->mrv.types = mrv_types;
+
+        File_Pos gen_fp = {};
+        gen_fp.file_name = "<generated>";
+
+        BUF(AST_Declaration*) member_decls = nullptr;
+        for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
+        {
+            AST_Type_Spec* type_spec = ast_type_spec_from_type_new(context, gen_fp, mrv_types[i]);
+            AST_Declaration* mem_decl =
+                ast_mutable_declaration_new(context, gen_fp, nullptr, type_spec, nullptr,
+                                            AST_DECL_LOC_AGGREGATE_MEMBER);
+            BUF_PUSH(member_decls, mem_decl);
+        }
+
+        result->mrv.struct_type = ast_type_struct_new(context, member_decls, "mrv", bit_size,
+                                                      scope, nullptr);
+
+        return result;
+    }
+
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind)
     {
         assert(context);
@@ -1234,6 +1287,15 @@ namespace Zodiac
 
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_POLY_FUNC_ARG);
         result->poly_func_arg.identifier = identifier;
+
+        return result;
+    }
+
+    AST_Type_Spec* ast_type_spec_mrv_new(Context* context, File_Pos file_pos,
+                                         BUF(AST_Type_Spec*) specs)
+    {
+        AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_MRV);
+        result->mrv.specs = specs;
 
         return result;
     }
@@ -1503,9 +1565,8 @@ namespace Zodiac
         while (iterations < context->type_count)
         {
             AST_Type* ex_type = context->type_hash[hash_index];
-            if (ex_type)
+            if (ex_type && ex_type->kind == AST_TYPE_FUNCTION)
             {
-                assert(ex_type->kind == AST_TYPE_FUNCTION);
                 bool ret_match = ex_type->function.return_type == return_type;
                 bool var_match = (bool)((ex_type->flags & AST_TYPE_FLAG_FUNC_VARARG)) ==
                                     is_vararg;
@@ -1562,6 +1623,71 @@ namespace Zodiac
 
 	}
 
+    AST_Type* ast_find_or_create_mrv_type(Context* context, BUF(AST_Type*) mrv_types,
+                                          AST_Scope* scope)
+    {
+        uint64_t hash = get_mrv_type_hash(mrv_types);
+        uint64_t hash_index = hash & (context->type_count - 1);
+
+        uint64_t iterations = 0;
+        bool found_slot = false;
+        while (iterations < context->type_count)
+        {
+            AST_Type* ex_type = context->type_hash[hash_index];
+            if (ex_type && ex_type->kind == AST_TYPE_MRV)
+            {
+                bool len_match = BUF_LENGTH(mrv_types) == BUF_LENGTH(ex_type->mrv.types);
+
+                if (len_match)
+                {
+                    bool match = true;
+                    for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
+                    {
+                        if (mrv_types[i] != ex_type->mrv.types[i])
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+
+                    if (match)
+                    {
+                        return ex_type;
+                    }
+                }
+            }
+            else
+            {
+                found_slot = true;
+                break;
+            }
+
+            iterations++;
+            hash_index++;
+            if (context->type_count <= hash_index)
+            {
+                hash_index = 0;
+            }
+        }
+
+        if (found_slot)
+        {
+            BUF(AST_Type*) mrv_types_copy = nullptr;
+
+            for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
+                BUF_PUSH(mrv_types_copy, mrv_types[i]);
+
+            AST_Type* result = ast_type_mrv_new(context, mrv_types_copy, scope);
+            context->type_hash[hash_index] = result;
+            return result;
+        }
+        else
+        {
+            ast_grow_type_hash(context);
+            return ast_find_or_create_mrv_type(context, mrv_types, scope);
+        }
+    }
+
     uint64_t get_function_type_hash(bool is_vararg, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type)
     {
@@ -1571,6 +1697,19 @@ namespace Zodiac
             hash = hash_mix(hash, hash_pointer(arg_types[i]));
         }
         hash = hash_mix(hash, is_vararg);
+
+        return hash;
+    }
+
+    uint64_t get_mrv_type_hash(BUF(AST_Type*) mrv_types)
+    {
+        assert(BUF_LENGTH(mrv_types));
+
+        uint64_t hash = hash_string("mrv");
+        for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
+        {
+            hash = hash_mix(hash, hash_pointer(mrv_types[i]));
+        }
 
         return hash;
     }
@@ -1756,6 +1895,18 @@ namespace Zodiac
 
                 string_builder_append(string_builder, ") -> ");
                 ast_type_to_string(type->function.return_type, string_builder);
+                break;
+            }
+
+            case AST_TYPE_MRV:
+            {
+                string_builder_append(string_builder, "mrv { ");
+                for (uint64_t i = 0; i < BUF_LENGTH(type->mrv.types); i++)
+                {
+                    if (i > 0) string_builder_append(string_builder, ", ");
+                    ast_type_to_string(type->mrv.types[i], string_builder);
+                }
+                string_builder_append(string_builder, " }");
                 break;
             }
 

@@ -66,6 +66,7 @@ namespace Zodiac
         AST_EXPR_GET_TYPE_INFO,
         AST_EXPR_POST_INCREMENT,
         AST_EXPR_POST_DECREMENT,
+        AST_EXPR_EXPRESSION_LIST,
     };
 
     enum AST_Binop_Kind
@@ -227,6 +228,11 @@ namespace Zodiac
                 AST_Type_Spec* type_spec;
                 AST_Type* type;
             } get_type_info_expr;
+
+            struct
+            {
+                BUF(AST_Expression*) expressions;
+            } list;
         };
     };
 
@@ -350,6 +356,7 @@ namespace Zodiac
         AST_DECL_USING,
         AST_DECL_INSERT,
         AST_DECL_POLY_TYPE_SPEC,
+        AST_DECL_LIST,
     };
 
     struct AST_Function_Declaration
@@ -530,6 +537,13 @@ namespace Zodiac
             {
                 AST_Type_Spec* type_spec;
             } poly_type_spec;
+
+            struct
+            {
+                AST_Expression* list_expression;
+                AST_Expression* init_expression;
+                BUF(AST_Declaration*) declarations;
+            } list;
         };
     };
 
@@ -542,6 +556,7 @@ namespace Zodiac
         AST_TYPE_UNION,
         AST_TYPE_ENUM,
         AST_TYPE_FUNCTION,
+        AST_TYPE_MRV,
     };
 
     typedef uint64_t AST_Type_Flags;
@@ -601,6 +616,12 @@ namespace Zodiac
                 BUF(AST_Type*) arg_types;
                 AST_Type* return_type;
             } function;
+
+            struct
+            {
+                BUF(AST_Type*) types;
+                AST_Type* struct_type;
+            } mrv;
         };
     };
 
@@ -614,6 +635,7 @@ namespace Zodiac
         AST_TYPE_SPEC_TYPEOF,
         AST_TYPE_SPEC_FROM_TYPE,
         AST_TYPE_SPEC_POLY_FUNC_ARG,
+        AST_TYPE_SPEC_MRV,
     };
 
     typedef uint64_t _AST_Type_Spec_Flags_;
@@ -676,6 +698,11 @@ namespace Zodiac
             {
                 AST_Identifier* identifier;
             } poly_func_arg;
+
+            struct
+            {
+                BUF(AST_Type_Spec*) specs;
+            } mrv;
         };
     };
 
@@ -769,6 +796,8 @@ namespace Zodiac
                                                       AST_Expression* base_expression);
     AST_Expression* ast_post_decrement_expression_new(Context* context, File_Pos file_pos,
                                                       AST_Expression* base_expression);
+    AST_Expression* ast_expression_list_expression_new(Context* context, File_Pos file_pos,
+                                                       BUF(AST_Expression*) expressions);
 
     AST_Aggregate_Declaration*
         ast_aggregate_declaration_new(Context* context, File_Pos file_pos,
@@ -780,6 +809,10 @@ namespace Zodiac
                                          AST_Declaration_Kind kind,
                                          AST_Declaration_Location location,
                                          AST_Identifier* identifier, AST_Directive* directive);
+    AST_Declaration* ast_list_declaration_new(Context* context, File_Pos file_pos,
+                                              AST_Expression* list_expr,
+                                              AST_Expression* init_expr);
+
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
@@ -899,6 +932,7 @@ namespace Zodiac
                                 const char* name, AST_Type* base_type, AST_Scope* scope);
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type);
+    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types, AST_Scope* scope);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos,
                                      AST_Type_Spec_Kind kind);
@@ -923,6 +957,8 @@ namespace Zodiac
                                                AST_Type* type);
     AST_Type_Spec* ast_type_spec_poly_func_arg_new(Context* context, File_Pos file_pos,
                                                    AST_Identifier* identifier);
+    AST_Type_Spec* ast_type_spec_mrv_new(Context* context, File_Pos file_pos,
+                                         BUF(AST_Type_Spec*) specs);
 
 	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
 		                     bool is_module_scope, uint64_t line);
@@ -944,9 +980,13 @@ namespace Zodiac
 	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
                                                BUF(AST_Type*) arg_types,
 		                                       AST_Type* return_type);
+    AST_Type* ast_find_or_create_mrv_type(Context* context, BUF(AST_Type*) mrv_types,
+                                          AST_Scope* scope);
 
     uint64_t get_function_type_hash(bool is_varag, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type);
+    uint64_t get_mrv_type_hash(BUF(AST_Type*) mrv_types);
+
     void ast_grow_type_hash(Context* context);
     const char* ast_type_to_string(AST_Type* type);
     void ast_type_to_string(AST_Type* type, String_Builder* string_builder);
