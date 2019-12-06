@@ -420,6 +420,11 @@ namespace Zodiac
 
                             }
                         }
+                        else if (init_expr->type->kind == AST_TYPE_MRV)
+                        {
+                            assert(BUF_LENGTH(init_expr->type->mrv.types));
+                            declaration->mutable_decl.type = init_expr->type->mrv.types[0];
+                        }
                         else
                         {
                             declaration->mutable_decl.type = init_expr->type;
@@ -852,29 +857,37 @@ namespace Zodiac
                 for (uint64_t i = 0; i < BUF_LENGTH(mrv_type->mrv.types); i++)
                 {
                     AST_Expression* lvalue_expr = lvalue_list->list.expressions[i];
-                    AST_Identifier* lvalue_ident = lvalue_expr->identifier;
-                    AST_Type* type = mrv_type->mrv.types[i];
-                    AST_Type_Spec* type_spec = ast_type_spec_from_type_new(resolver->context,
-                                                                           lvalue_expr->file_pos,
-                                                                           type);
-                    AST_Declaration* decl = ast_mutable_declaration_new(resolver->context,
-                                                                        lvalue_expr->file_pos,
-                                                                        lvalue_ident,
-                                                                        type_spec,
-                                                                        nullptr,
-                                                                        declaration->location);
-                    assert(decl);
-
-                    BUF_PUSH(declaration->list.declarations, decl);
-
-                    bool decl_res = resolver_resolve_declaration(resolver, decl, scope);
-                    result &= decl_res;
-                    if (decl_res)
+                    if (lvalue_expr->kind != AST_EXPR_IGNORED_VALUE)
                     {
-                        result &= resolver_resolve_expression(resolver, lvalue_expr, scope);
+                        AST_Identifier* lvalue_ident = lvalue_expr->identifier;
+                        AST_Type* type = mrv_type->mrv.types[i];
+                        AST_Type_Spec* type_spec = ast_type_spec_from_type_new(resolver->context,
+                                                                               lvalue_expr->file_pos,
+                                                                               type);
+                        AST_Declaration* decl = ast_mutable_declaration_new(resolver->context,
+                                                                            lvalue_expr->file_pos,
+                                                                            lvalue_ident,
+                                                                            type_spec,
+                                                                            nullptr,
+                                                                            declaration->location);
+                        assert(decl);
+
+                        BUF_PUSH(declaration->list.declarations, decl);
+
+                        bool decl_res = resolver_resolve_declaration(resolver, decl, scope);
+                        result &= decl_res;
+                        if (decl_res)
+                        {
+                            result &= resolver_resolve_expression(resolver, lvalue_expr, scope);
+                        }
                     }
-
-
+                    else if (mrv_type->mrv.directives[i])
+                    {
+                        resolver_report_error(resolver, lvalue_expr->file_pos,
+                                              "This returned value has the '#required' directive, so it is not allowed to be ignored");
+                        result = false;
+                        break;
+                    }
                 }
 
                 break;
@@ -1185,6 +1198,23 @@ namespace Zodiac
             {
                 result &= resolver_resolve_expression(resolver, statement->call_expression,
                                                       scope);
+                AST_Type* ret_type = statement->call_expression->type;
+
+                if (ret_type && ret_type->kind == AST_TYPE_MRV)
+                {
+                    for (uint64_t i = 0; i < BUF_LENGTH(ret_type->mrv.directives); i++)
+                    {
+                        AST_Directive* directive = ret_type->mrv.directives[i];
+                        if (directive)
+                        {
+                            assert(directive->kind == AST_DIREC_REQUIRED);
+                            resolver_report_error(resolver, statement->file_pos,
+                                                  "Returned value at index %d has the '#required' directive, but it's value is not assigned", i);
+                            result = false;
+                            break;
+                        }
+                    }
+                }
                 break;
             }
 
@@ -2345,9 +2375,27 @@ namespace Zodiac
                         mem_free(exp_str);
                         result = false;
                     }
+
+                    if (expr->kind == AST_EXPR_IGNORED_VALUE &&
+                        (suggested_type->mrv.directives &&
+                         suggested_type->mrv.directives[i] &&
+                         (suggested_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED)))
+                    {
+                        resolver_report_error(resolver, expr->file_pos,
+                                              "This returned value has the '#required' directive, so it is not allowed to be ignored");
+                        result = false;
+                        break;
+                    }
                 }
 
                 if (result) expression->type = suggested_type;
+                break;
+            }
+
+            case AST_EXPR_IGNORED_VALUE:
+            {
+                assert(suggested_type);
+                expression->type = suggested_type;
                 break;
             }
 
@@ -3000,6 +3048,7 @@ namespace Zodiac
                     else
                     {
                         *type_dest = ast_find_or_create_mrv_type(resolver->context, mrv_types,
+                                                                 type_spec->mrv.directives,
                                                                  scope);
                         assert(*type_dest);
                         AST_Type* struct_type = (*type_dest)->mrv.struct_type;
