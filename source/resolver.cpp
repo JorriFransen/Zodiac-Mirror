@@ -420,6 +420,11 @@ namespace Zodiac
 
                             }
                         }
+                        else if (init_expr->type->kind == AST_TYPE_MRV)
+                        {
+                            assert(BUF_LENGTH(init_expr->type->mrv.types));
+                            declaration->mutable_decl.type = init_expr->type->mrv.types[0];
+                        }
                         else
                         {
                             declaration->mutable_decl.type = init_expr->type;

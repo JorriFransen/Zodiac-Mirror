@@ -1112,6 +1112,7 @@ namespace Zodiac
 
         result->mrv.struct_type = ast_type_struct_new(context, member_decls, "mrv", bit_size,
                                                       scope, nullptr);
+        result->mrv.struct_type->flags |= AST_TYPE_FLAG_FROM_MRV;
 
         return result;
     }

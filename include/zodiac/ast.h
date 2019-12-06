@@ -570,6 +570,7 @@ namespace Zodiac
         AST_TYPE_FLAG_FUNC_VARARG            = (1 << 4),
         AST_TYPE_FLAG_REGISTERING_TYPE_INFO  = (1 << 5),
         AST_TYPE_FLAG_REGISTERED_TYPE_INFO   = (1 << 6),
+        AST_TYPE_FLAG_FROM_MRV               = (1 << 7),
     };
 
     struct AST_Type

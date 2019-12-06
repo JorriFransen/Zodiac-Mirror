@@ -11,9 +11,20 @@ main :: ()
     multiple_returns_and_lvalue_lists();
     printf("\n");
     multiple_returns_and_decl_lists();
-
+    printf("\n");
+    selective_returns();
 
     return 0;
+}
+
+selective_returns :: ()
+{
+    printf("selective_returns()\n");
+
+    return_both(1, 2);
+    x := return_both(3, 4);
+    printf("x: %d\n", x);
+    // assert(x == 3);
 }
 
 multiple_returns_and_decl_lists :: ()

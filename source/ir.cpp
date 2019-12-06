@@ -545,6 +545,30 @@ namespace Zodiac
                     if (init_expr)
                     {
                         IR_Value* init_value = ir_builder_emit_expression(ir_builder, init_expr);
+                        AST_Type* init_type = init_value->type;
+
+                        if (init_type->kind == AST_TYPE_STRUCT &&
+                            (init_type->flags & AST_TYPE_FLAG_FROM_MRV))
+                        {
+                            IR_Value* mrv_value = init_value;
+                            assert(BUF_LENGTH(init_type->aggregate_type.member_declarations));
+                            auto member_decls = init_type->aggregate_type.member_declarations;
+                            assert(member_decls[0]->mutable_decl.type == allocl->type);
+                            auto init_fp = init_expr->file_pos;
+
+                            IR_Value* mrv_allocl = ir_builder_emit_allocl(ir_builder,
+                                                                          init_value->type,
+                                                                          "mrv",
+                                                                          init_fp);
+                            ir_builder_emit_storel(ir_builder, mrv_allocl, mrv_value, init_fp);
+
+                            init_value = ir_builder_emit_aggregate_offset_pointer(ir_builder,
+                                                                                  mrv_allocl,
+                                                                                  0,
+                                                                                  init_fp);
+                            init_value = ir_builder_emit_load(ir_builder, init_value, init_fp);
+                        }
+
                         ir_builder_emit_storel(ir_builder, allocl, init_value, decl->file_pos);
                     }
                 }
@@ -3449,6 +3473,7 @@ namespace Zodiac
         IR_Value* allocl_value = ir_value_allocl_new(ir_builder, type, name, origin);
         IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_ALLOCL, nullptr,
                                                 nullptr, allocl_value);
+        allocl_value->flags |= IRV_FLAG_ASSIGNED;
         ir_builder_emit_instruction(ir_builder, iri);
 
         assert(ir_builder->current_function);
@@ -3463,6 +3488,8 @@ namespace Zodiac
         assert(ir_builder);
         assert(allocl_value);
         assert(new_value);
+
+        assert(allocl_value->type == new_value->type);
 
         assert(allocl_value->kind == IRV_ALLOCL);
         assert(new_value->kind == IRV_TEMPORARY ||
