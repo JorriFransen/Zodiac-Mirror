@@ -542,6 +542,7 @@ namespace Zodiac
             {
                 AST_Expression* list_expression;
                 AST_Expression* init_expression;
+                BUF(AST_Declaration*) declarations;
             } list;
         };
     };

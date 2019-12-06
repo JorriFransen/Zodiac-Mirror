@@ -375,10 +375,11 @@ namespace Zodiac
         assert(init_expr->kind == AST_EXPR_CALL);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_LIST,
-                                                      AST_DECL_LOC_GLOBAL, nullptr, nullptr);
+                                                      AST_DECL_LOC_LOCAL, nullptr, nullptr);
 
         result->list.list_expression = list_expr;
         result->list.init_expression = init_expr;
+        result->list.declarations = nullptr;
 
         return result;
     }

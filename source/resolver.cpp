@@ -832,6 +832,54 @@ namespace Zodiac
                 break;
             }
 
+            case AST_DECL_LIST:
+            {
+                AST_Expression* lvalue_list = declaration->list.list_expression;
+                AST_Expression* init_expr = declaration->list.init_expression;
+
+                assert(lvalue_list->kind == AST_EXPR_EXPRESSION_LIST);
+                assert(init_expr->kind == AST_EXPR_CALL);
+
+                result &= resolver_resolve_expression(resolver, init_expr, scope);
+                if (!result) break;
+
+                AST_Type* mrv_type = init_expr->type;
+                assert(mrv_type->kind == AST_TYPE_MRV);
+
+                assert(BUF_LENGTH(lvalue_list->list.expressions) ==
+                       BUF_LENGTH(mrv_type->mrv.types));
+
+                for (uint64_t i = 0; i < BUF_LENGTH(mrv_type->mrv.types); i++)
+                {
+                    AST_Expression* lvalue_expr = lvalue_list->list.expressions[i];
+                    AST_Identifier* lvalue_ident = lvalue_expr->identifier;
+                    AST_Type* type = mrv_type->mrv.types[i];
+                    AST_Type_Spec* type_spec = ast_type_spec_from_type_new(resolver->context,
+                                                                           lvalue_expr->file_pos,
+                                                                           type);
+                    AST_Declaration* decl = ast_mutable_declaration_new(resolver->context,
+                                                                        lvalue_expr->file_pos,
+                                                                        lvalue_ident,
+                                                                        type_spec,
+                                                                        nullptr,
+                                                                        declaration->location);
+                    assert(decl);
+
+                    BUF_PUSH(declaration->list.declarations, decl);
+
+                    bool decl_res = resolver_resolve_declaration(resolver, decl, scope);
+                    result &= decl_res;
+                    if (decl_res)
+                    {
+                        result &= resolver_resolve_expression(resolver, lvalue_expr, scope);
+                    }
+
+
+                }
+
+                break;
+            }
+
             default: assert(false);
         }
 
