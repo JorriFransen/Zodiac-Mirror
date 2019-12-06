@@ -56,8 +56,8 @@ required_assign :: ()
 
     // This is not allowed
     // _, result = do_stuff(1);
-    do_stuff(2);
-    _, result2 := do_stuff(3);
+    // do_stuff(2);
+    // _, result2 := do_stuff(3);
 }
 
 do_stuff :: (x: int) -> *u8 #required, int

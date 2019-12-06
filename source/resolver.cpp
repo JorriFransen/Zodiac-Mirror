@@ -1198,6 +1198,23 @@ namespace Zodiac
             {
                 result &= resolver_resolve_expression(resolver, statement->call_expression,
                                                       scope);
+                AST_Type* ret_type = statement->call_expression->type;
+
+                if (ret_type && ret_type->kind == AST_TYPE_MRV)
+                {
+                    for (uint64_t i = 0; i < BUF_LENGTH(ret_type->mrv.directives); i++)
+                    {
+                        AST_Directive* directive = ret_type->mrv.directives[i];
+                        if (directive)
+                        {
+                            assert(directive->kind == AST_DIREC_REQUIRED);
+                            resolver_report_error(resolver, statement->file_pos,
+                                                  "Returned value at index %d has the '#required' directive, but it's value is not assigned", i);
+                            result = false;
+                            break;
+                        }
+                    }
+                }
                 break;
             }
 
