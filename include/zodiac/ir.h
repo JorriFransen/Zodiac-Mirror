@@ -145,6 +145,7 @@ namespace Zodiac
         IR_OP_DEREF,
         IR_OP_ARRAY_OFFSET_POINTER,
         IR_OP_AGGREGATE_OFFSET_POINTER,
+        IR_OP_EXTRACT_VALUE,
 
 		IR_OP_CAST,
         IR_OP_ASSERT_FAIL,
@@ -373,6 +374,8 @@ namespace Zodiac
     IR_Value* ir_builder_emit_aggregate_offset_pointer(IR_Builder* ir_builder,
                                                        IR_Value* struct_value,
                                                        uint64_t offset, File_Pos origin);
+    IR_Value* ir_builder_emit_extract_value(IR_Builder* ir_builder, IR_Value* aggregate_val,
+                                            uint64_t member_index, File_Pos file_pos);
 
     void ir_builder_emit_instruction(IR_Builder* ir_builder, IR_Instruction* iri);
 
