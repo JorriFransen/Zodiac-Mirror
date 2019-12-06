@@ -9,7 +9,7 @@ main :: ()
     printf("Multiple return value test\n");
 
     multiple_returns_and_lvalue_lists();
-
+    printf("\n");
     multiple_returns_and_decl_lists();
 
 
@@ -18,20 +18,52 @@ main :: ()
 
 multiple_returns_and_decl_lists :: ()
 {
+    printf("multiple_returns_and_decl_lists()\n");
+
     xin: int = 44;
     yin: int = -99;
 
     xout, yout := return_both(xin, yin);
 
-    printf("xin: %d\txout: %d\n", xin, xout);
-    printf("yin: %d\tyout: %d\n", yin, yout);
+    printf("xin: %d,\txout: %d\n", xin, xout);
+    printf("yin: %d,\tyout: %d\n", yin, yout);
 
     assert(xout == xin);
     assert(yout == yin);
+
+    zin := 14;
+    win := -42;
+
+    zoutf, zoutd := to_reals(zin);
+    woutf, woutd := to_reals(win);
+
+    printf("zin: %d, zoutf: %f, zoutd: %f\n", zin, zoutf, zoutd);
+    printf("win: %d, woutf: %f, woutd: %f\n", win, woutf, woutd);
+
+    assert(zoutf == ((:float)zin));
+    assert(zoutd == ((:double)zin));
+    assert(woutf == ((:float)win));
+    assert(woutd == ((:double)win));
+
+    implicit_x, implicit_y := return_implicit();
+    printf("implicit_x: %d\n", implicit_x);
+    printf("implicit_y: %d\n", implicit_y);
+
+    assert(implicit_x == 0);
+    assert(implicit_y == 0);
+
+
+    r_float, r_vec := right_order();
+    printf("r_float: %f\n", r_float);
+    printf("r_vec: { %d, %d }\n", r_vec.x, r_vec.y);
+    assert(r_float == 4.4);
+    assert(r_vec.x == 5);
+    assert(r_vec.y == 6);
 }
 
 multiple_returns_and_lvalue_lists :: ()
 {
+    printf("multiple_returns_and_lvalue_lists()\n");
     xin: int = 44;
     yin: int = -99;
 
@@ -40,8 +72,8 @@ multiple_returns_and_lvalue_lists :: ()
 
     xout, yout = return_both(xin, yin);
 
-    printf("xin: %d\txout: %d\n", xin, xout);
-    printf("yin: %d\tyout: %d\n", yin, yout);
+    printf("xin: %d,\txout: %d\n", xin, xout);
+    printf("yin: %d,\tyout: %d\n", yin, yout);
 
     assert(xout == xin);
     assert(yout == yin);
