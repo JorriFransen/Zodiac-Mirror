@@ -223,6 +223,24 @@ namespace Zodiac
         return result;
     }
 
+    AST_Declaration* parse_list_declaration(Parser* parser, AST_Expression* list_expr,
+                                            AST_Scope* scope)
+    {
+        assert(list_expr->kind == AST_EXPR_EXPRESSION_LIST);
+
+        bool success = expect_token(parser, TOK_COLON);
+        assert(success);
+        success = expect_token(parser, TOK_EQ);
+        assert(success);
+
+        AST_Expression* init_expr = parse_expression(parser, scope);
+        assert(init_expr);
+        assert(init_expr->kind == AST_EXPR_CALL);
+
+        return ast_list_declaration_new(parser->context, list_expr->file_pos, list_expr,
+                                             init_expr);
+    }
+
     static AST_Declaration* parse_constant_declaration(Parser* parser, AST_Identifier* identifier,
                                                        AST_Type_Spec* type_spec, AST_Scope* scope,
                                                        AST_Declaration_Location location)
@@ -812,8 +830,17 @@ namespace Zodiac
 
         if (is_token(parser, TOK_COLON))
         {
-            AST_Declaration* decl = parse_declaration(parser, lvalue_expr->identifier,
-                                                      scope, false, nullptr);
+            AST_Declaration* decl = nullptr;
+            if (lvalue_expr->kind == AST_EXPR_EXPRESSION_LIST)
+            {
+                decl = parse_list_declaration(parser, lvalue_expr, scope);
+            }
+            else
+            {
+                decl = parse_declaration(parser, lvalue_expr->identifier, scope, false,
+                                         nullptr);
+            }
+
             if (!decl)
             {
                 return  nullptr;

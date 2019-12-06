@@ -367,6 +367,22 @@ namespace Zodiac
         return result;
     }
 
+    AST_Declaration* ast_list_declaration_new(Context* context, File_Pos file_pos,
+                                              AST_Expression* list_expr,
+                                              AST_Expression* init_expr)
+    {
+        assert(list_expr->kind == AST_EXPR_EXPRESSION_LIST);
+        assert(init_expr->kind == AST_EXPR_CALL);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_LIST,
+                                                      AST_DECL_LOC_GLOBAL, nullptr, nullptr);
+
+        result->list.list_expression = list_expr;
+        result->list.init_expression = init_expr;
+
+        return result;
+    }
+
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,

@@ -356,6 +356,7 @@ namespace Zodiac
         AST_DECL_USING,
         AST_DECL_INSERT,
         AST_DECL_POLY_TYPE_SPEC,
+        AST_DECL_LIST,
     };
 
     struct AST_Function_Declaration
@@ -536,6 +537,12 @@ namespace Zodiac
             {
                 AST_Type_Spec* type_spec;
             } poly_type_spec;
+
+            struct
+            {
+                AST_Expression* list_expression;
+                AST_Expression* init_expression;
+            } list;
         };
     };
 
@@ -801,6 +808,10 @@ namespace Zodiac
                                          AST_Declaration_Kind kind,
                                          AST_Declaration_Location location,
                                          AST_Identifier* identifier, AST_Directive* directive);
+    AST_Declaration* ast_list_declaration_new(Context* context, File_Pos file_pos,
+                                              AST_Expression* list_expr,
+                                              AST_Expression* init_expr);
+
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,

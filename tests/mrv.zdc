@@ -8,7 +8,30 @@ main :: ()
 
     printf("Multiple return value test\n");
 
+    multiple_returns_and_lvalue_lists();
 
+    multiple_returns_and_decl_lists();
+
+
+    return 0;
+}
+
+multiple_returns_and_decl_lists :: ()
+{
+    xin: int = 44;
+    yin: int = -99;
+
+    xout, yout := return_both(xin, yin);
+
+    printf("xin: %d\txout: %d\n", xin, xout);
+    printf("yin: %d\tyout: %d\n", yin, yout);
+
+    assert(xout == xin);
+    assert(yout == yin);
+}
+
+multiple_returns_and_lvalue_lists :: ()
+{
     xin: int = 44;
     yin: int = -99;
 
@@ -68,8 +91,6 @@ main :: ()
     assert(r_vec.y == 6);
 
     // r_vec, r_float = right_order();
-
-    return 0;
 }
 
 return_both :: (x: int, y: int) -> int, int
