@@ -3,6 +3,22 @@ _c :: import c;
 
 int :: typedef s64;
 
+Thread :: struct
+{
+    handle: u64;
+    user_data: *void;
+}
+
+Thread_Routine :: typedef *(thread: *Thread) -> *void;
+
+Thread_Start_Info :: struct
+{
+    thread: Thread;
+    thread_routine: Thread_Routine;
+    signal_started: Atomic_Cond;
+    signal_thread_copied: Atomic_Cond;
+}
+
 compare_and_swap :: (pointer: *u64, old_value: u64, new_value: u64) -> bool
 {
     return __compare_and_swap__(pointer, old_value, new_value);

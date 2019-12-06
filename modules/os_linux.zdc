@@ -9,6 +9,9 @@ posix :: import posix;
 _og :: import os_generic;
 using _og;
 
+_thread :: import thread;
+using _thread;
+
 pthread :: import pthread;
 
 #foreign unlink :: (pathname: *u8) -> int;
