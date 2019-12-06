@@ -92,6 +92,11 @@ namespace Zodiac
                     consume_token(parser);
                     kind = AST_DIREC_INSERT;
                 }
+                else if (t.atom == Builtin::atom_required)
+                {
+                    consume_token(parser);
+                    kind = AST_DIREC_REQUIRED;
+                }
                 else assert(false);
             }
             else assert(false);
@@ -1808,9 +1813,19 @@ namespace Zodiac
     static AST_Type_Spec* parse_return_type_spec(Parser* parser, AST_Scope* scope)
     {
         BUF(AST_Type_Spec*) specs = nullptr;
+        BUF(AST_Directive*) directives = nullptr;
 
         auto rts = parse_type_spec(parser, scope);
         auto ffp = rts->file_pos;
+
+        AST_Directive* directive = nullptr;
+
+        if (match_token(parser, TOK_POUND))
+        {
+            auto directive = parse_directive(parser);
+            assert(directive->kind == AST_DIREC_REQUIRED);
+            BUF_PUSH(directives, directive);
+        }
 
         if (!is_token(parser, TOK_COMMA)) return rts;
 
@@ -1819,10 +1834,16 @@ namespace Zodiac
         while (match_token(parser, TOK_COMMA))
         {
             rts = parse_type_spec(parser, scope);
+            if (match_token(parser, TOK_POUND))
+            {
+                auto directive = parse_directive(parser);
+                assert(directive->kind == AST_DIREC_REQUIRED);
+                BUF_PUSH(directives, directive);
+            }
             BUF_PUSH(specs, rts);
         }
 
-        return ast_type_spec_mrv_new(parser->context, ffp, specs);
+        return ast_type_spec_mrv_new(parser->context, ffp, specs, directives);
     }
 
 	static AST_Type_Spec* parse_function_type_spec(Parser* parser, AST_Scope* scope)

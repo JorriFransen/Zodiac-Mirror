@@ -622,6 +622,7 @@ namespace Zodiac
             struct
             {
                 BUF(AST_Type*) types;
+                BUF(AST_Directive*) directives;
                 AST_Type* struct_type;
             } mrv;
         };
@@ -704,6 +705,7 @@ namespace Zodiac
             struct
             {
                 BUF(AST_Type_Spec*) specs;
+                BUF(AST_Directive*) directives;
             } mrv;
         };
     };
@@ -739,6 +741,7 @@ namespace Zodiac
         AST_DIREC_FOREIGN,
         AST_DIREC_DYN_LINK,
         AST_DIREC_INSERT,
+        AST_DIREC_REQUIRED,
     };
 
     struct AST_Directive
@@ -935,7 +938,8 @@ namespace Zodiac
                                 const char* name, AST_Type* base_type, AST_Scope* scope);
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type);
-    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types, AST_Scope* scope);
+    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types,
+                               BUF(AST_Directive*) directives, AST_Scope* scope);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos,
                                      AST_Type_Spec_Kind kind);
@@ -961,7 +965,8 @@ namespace Zodiac
     AST_Type_Spec* ast_type_spec_poly_func_arg_new(Context* context, File_Pos file_pos,
                                                    AST_Identifier* identifier);
     AST_Type_Spec* ast_type_spec_mrv_new(Context* context, File_Pos file_pos,
-                                         BUF(AST_Type_Spec*) specs);
+                                         BUF(AST_Type_Spec*) specs,
+                                         BUF(AST_Directive*) directives);
 
 	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
 		                     bool is_module_scope, uint64_t line);
@@ -984,7 +989,7 @@ namespace Zodiac
                                                BUF(AST_Type*) arg_types,
 		                                       AST_Type* return_type);
     AST_Type* ast_find_or_create_mrv_type(Context* context, BUF(AST_Type*) mrv_types,
-                                          AST_Scope* scope);
+                                          BUF(AST_Directive*) directives, AST_Scope* scope);
 
     uint64_t get_function_type_hash(bool is_varag, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type);

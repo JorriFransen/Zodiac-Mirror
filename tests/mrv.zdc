@@ -13,48 +13,65 @@ main :: ()
     multiple_returns_and_decl_lists();
     printf("\n");
     selective_returns();
-    printf("");
-    must_assign();
+    printf("\n");
+    required_assign();
 
     return 0;
 }
 
-must_assign :: ()
+required_assign :: ()
 {
-    printf("must_assign()\n");
+    printf("required_assign()\n");
 
+    printf("Should succeed\n");
     err, result := do_stuff(4);
     printf("err: %s\n", err);
-    printf("result: %d\n\n", result);
+    printf("result: %d\n", result);
     assert(err == null);
     assert(result == 8);
+    printf("\n");
 
+    printf("Should not succeed\n");
     err, result = do_stuff(10);
     printf("err: %s\n", err);
-    printf("result: %d\n\n", result);
+    printf("result: %d\n", result);
     assert(err != null);
+    printf("\n");
 
     // This is allowed
-    err, _ := do_stuff(4);
+    printf("Should succeed\n");
+    err, _ = do_stuff(6);
     printf("err: %s\n", err);
-    printf("result: %d\n\n", result);
+    printf("result: %d\n", result);
     assert(err == null);
+    printf("\n");
 
     // This is allowed
-    err, _ := do_stuff(10);
+    printf("Should not succeed\n");
+    err, _ = do_stuff(11);
     printf("err: %s\n", err);
-    printf("result: %d\n\n", result);
+    printf("result: %d\n", result);
     assert(err != null);
+    printf("\n");
+
+    // This is not allowed
+    // _, result = do_stuff(1);
+    do_stuff(2);
 }
 
-do_stuff :: (x: int) -> *u8, int
+do_stuff :: (x: int) -> *u8 #required, int
 {
+    printf("\tdo_stuff(%d)\n", x);
+
     if (x >= 0 && x < 10)
     {
-        return null, x * 2;
+        result := x * 2;
+        printf("\t\tresult: %d\n", result);
+        return null, result;
     }
     else
     {
+        printf("\t\treturning with error\n");
         return "Argument out of bounds", x;
     }
 }

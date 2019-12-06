@@ -1096,7 +1096,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types, AST_Scope* scope)
+    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types,
+                               BUF(AST_Directive*) directives, AST_Scope* scope)
     {
         uint64_t bit_size = 0;
 
@@ -1117,6 +1118,7 @@ namespace Zodiac
             BUF_PUSH(member_decls, mem_decl);
         }
 
+        result->mrv.directives = directives;
         result->mrv.struct_type = ast_type_struct_new(context, member_decls, "mrv", bit_size,
                                                       scope, nullptr);
         result->mrv.struct_type->flags |= AST_TYPE_FLAG_FROM_MRV;
@@ -1300,10 +1302,12 @@ namespace Zodiac
     }
 
     AST_Type_Spec* ast_type_spec_mrv_new(Context* context, File_Pos file_pos,
-                                         BUF(AST_Type_Spec*) specs)
+                                         BUF(AST_Type_Spec*) specs,
+                                         BUF(AST_Directive*) directives)
     {
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_MRV);
         result->mrv.specs = specs;
+        result->mrv.directives = directives;
 
         return result;
     }
@@ -1632,7 +1636,7 @@ namespace Zodiac
 	}
 
     AST_Type* ast_find_or_create_mrv_type(Context* context, BUF(AST_Type*) mrv_types,
-                                          AST_Scope* scope)
+                                          BUF(AST_Directive*) directives, AST_Scope* scope)
     {
         uint64_t hash = get_mrv_type_hash(mrv_types);
         uint64_t hash_index = hash & (context->type_count - 1);
@@ -1645,13 +1649,23 @@ namespace Zodiac
             if (ex_type && ex_type->kind == AST_TYPE_MRV)
             {
                 bool len_match = BUF_LENGTH(mrv_types) == BUF_LENGTH(ex_type->mrv.types);
+                bool direc_match = BUF_LENGTH(directives) == BUF_LENGTH(ex_type->mrv.directives);
 
-                if (len_match)
+                if (len_match && direc_match)
                 {
                     bool match = true;
                     for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
                     {
                         if (mrv_types[i] != ex_type->mrv.types[i])
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(directives); i++)
+                    {
+                        if (directives[i] != ex_type->mrv.directives[i])
                         {
                             match = false;
                             break;
@@ -1685,14 +1699,19 @@ namespace Zodiac
             for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
                 BUF_PUSH(mrv_types_copy, mrv_types[i]);
 
-            AST_Type* result = ast_type_mrv_new(context, mrv_types_copy, scope);
+            BUF(AST_Directive*) directives_copy = nullptr;
+
+            for (uint64_t i = 0; i < BUF_LENGTH(directives); i++)
+                BUF_PUSH(directives_copy, directives[i]);
+
+            AST_Type* result = ast_type_mrv_new(context, mrv_types_copy, directives_copy, scope);
             context->type_hash[hash_index] = result;
             return result;
         }
         else
         {
             ast_grow_type_hash(context);
-            return ast_find_or_create_mrv_type(context, mrv_types, scope);
+            return ast_find_or_create_mrv_type(context, mrv_types, directives, scope);
         }
     }
 

@@ -35,6 +35,7 @@ namespace Zodiac
 
 	Atom Builtin::atom_main;
     Atom Builtin::atom_insert;
+    Atom Builtin::atom_required;
     Atom Builtin::atom_String;
     Atom Builtin::atom_string_length;
     Atom Builtin::atom_overload;
@@ -83,6 +84,7 @@ namespace Zodiac
 
 		Builtin::atom_main = atom_get(context->atom_table, "main");
         Builtin::atom_insert = atom_get(context->atom_table, "insert");
+        Builtin::atom_required = atom_get(context->atom_table, "required");
         Builtin::atom_String = atom_get(context->atom_table, "String");
         Builtin::atom_string_length = atom_get(context->atom_table, "string_length");
         Builtin::atom_overload = atom_get(context->atom_table, "overload");

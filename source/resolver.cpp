@@ -2351,6 +2351,17 @@ namespace Zodiac
                         mem_free(exp_str);
                         result = false;
                     }
+
+                    if (expr->kind == AST_EXPR_IGNORED_VALUE &&
+                        (suggested_type->mrv.directives &&
+                         suggested_type->mrv.directives[i] &&
+                         (suggested_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED)))
+                    {
+                        resolver_report_error(resolver, expr->file_pos,
+                                              "This return value has the '#required' directive, so it is not allowed to be ignored");
+                        result = false;
+                        break;
+                    }
                 }
 
                 if (result) expression->type = suggested_type;
@@ -3013,6 +3024,7 @@ namespace Zodiac
                     else
                     {
                         *type_dest = ast_find_or_create_mrv_type(resolver->context, mrv_types,
+                                                                 type_spec->mrv.directives,
                                                                  scope);
                         assert(*type_dest);
                         AST_Type* struct_type = (*type_dest)->mrv.struct_type;
