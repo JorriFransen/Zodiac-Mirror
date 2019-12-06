@@ -13,8 +13,50 @@ main :: ()
     multiple_returns_and_decl_lists();
     printf("\n");
     selective_returns();
+    printf("");
+    must_assign();
 
     return 0;
+}
+
+must_assign :: ()
+{
+    printf("must_assign()\n");
+
+    err, result := do_stuff(4);
+    printf("err: %s\n", err);
+    printf("result: %d\n\n", result);
+    assert(err == null);
+    assert(result == 8);
+
+    err, result = do_stuff(10);
+    printf("err: %s\n", err);
+    printf("result: %d\n\n", result);
+    assert(err != null);
+
+    // This is allowed
+    err, _ := do_stuff(4);
+    printf("err: %s\n", err);
+    printf("result: %d\n\n", result);
+    assert(err == null);
+
+    // This is allowed
+    err, _ := do_stuff(10);
+    printf("err: %s\n", err);
+    printf("result: %d\n\n", result);
+    assert(err != null);
+}
+
+do_stuff :: (x: int) -> *u8, int
+{
+    if (x >= 0 && x < 10)
+    {
+        return null, x * 2;
+    }
+    else
+    {
+        return "Argument out of bounds", x;
+    }
 }
 
 selective_returns :: ()
