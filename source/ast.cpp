@@ -332,6 +332,13 @@ namespace Zodiac
         return result;
     }
 
+    AST_Expression* ast_expression_ignored_value_new(Context* context, File_Pos file_pos)
+    {
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_IGNORED_VALUE);
+
+        return result;
+    }
+
     AST_Aggregate_Declaration* ast_aggregate_declaration_new(Context* context, File_Pos file_pos,
                                                              BUF(AST_Declaration*) members,
                                                              BUF(AST_Identifier*) poly_args,

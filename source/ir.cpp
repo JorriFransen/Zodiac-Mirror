@@ -600,26 +600,31 @@ namespace Zodiac
                                                                       decl->list.init_expression);
                     ir_builder_emit_storel(ir_builder, mrv_allocl, mrv_struct, init_fp);
 
-                    for (uint64_t i = 0; i < BUF_LENGTH(decl->list.declarations); i++)
+                    AST_Expression* list_expr = decl->list.list_expression;
+                    uint64_t decl_idx = 0;
+                    for (uint64_t i = 0; i < BUF_LENGTH(list_expr->list.expressions); i++)
                     {
-                        AST_Declaration* list_decl = decl->list.declarations[i];
-                        assert(list_decl->location == AST_DECL_LOC_LOCAL);
+                        AST_Expression* expr = list_expr->list.expressions[i];
+                        if (expr->kind != AST_EXPR_IGNORED_VALUE)
+                        {
+                            AST_Declaration* list_decl = decl->list.declarations[decl_idx++];
+                            assert(list_decl->location == AST_DECL_LOC_LOCAL);
 
-                        auto name = list_decl->identifier->atom.data;
+                            auto name = list_decl->identifier->atom.data;
 
-                        IR_Value* allocl = ir_builder_emit_allocl(ir_builder,
-                                                                  list_decl->mutable_decl.type,
-                                                                  name,
-                                                                  list_decl->file_pos);
-                        ir_builder_push_value_and_decl(ir_builder, allocl, list_decl);
+                            IR_Value* allocl = ir_builder_emit_allocl(ir_builder,
+                                                                    list_decl->mutable_decl.type,
+                                                                    name,
+                                                                    list_decl->file_pos);
+                            ir_builder_push_value_and_decl(ir_builder, allocl, list_decl);
 
-                        IR_Value* init_value =
-                            ir_builder_emit_aggregate_offset_pointer(ir_builder, mrv_allocl,
-                                                                     i, list_decl->file_pos);
-                        init_value = ir_builder_emit_load(ir_builder, init_value, init_fp);
-                        ir_builder_emit_storel(ir_builder, allocl, init_value,
-                                               list_decl->file_pos);
-
+                            IR_Value* init_value =
+                                ir_builder_emit_aggregate_offset_pointer(ir_builder, mrv_allocl,
+                                                                        i, list_decl->file_pos);
+                            init_value = ir_builder_emit_load(ir_builder, init_value, init_fp);
+                            ir_builder_emit_storel(ir_builder, allocl, init_value,
+                                                list_decl->file_pos);
+                        }
                     }
                 }
                 else assert(false);

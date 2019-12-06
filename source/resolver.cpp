@@ -857,29 +857,30 @@ namespace Zodiac
                 for (uint64_t i = 0; i < BUF_LENGTH(mrv_type->mrv.types); i++)
                 {
                     AST_Expression* lvalue_expr = lvalue_list->list.expressions[i];
-                    AST_Identifier* lvalue_ident = lvalue_expr->identifier;
-                    AST_Type* type = mrv_type->mrv.types[i];
-                    AST_Type_Spec* type_spec = ast_type_spec_from_type_new(resolver->context,
-                                                                           lvalue_expr->file_pos,
-                                                                           type);
-                    AST_Declaration* decl = ast_mutable_declaration_new(resolver->context,
-                                                                        lvalue_expr->file_pos,
-                                                                        lvalue_ident,
-                                                                        type_spec,
-                                                                        nullptr,
-                                                                        declaration->location);
-                    assert(decl);
-
-                    BUF_PUSH(declaration->list.declarations, decl);
-
-                    bool decl_res = resolver_resolve_declaration(resolver, decl, scope);
-                    result &= decl_res;
-                    if (decl_res)
+                    if (lvalue_expr->kind != AST_EXPR_IGNORED_VALUE)
                     {
-                        result &= resolver_resolve_expression(resolver, lvalue_expr, scope);
-                    }
+                        AST_Identifier* lvalue_ident = lvalue_expr->identifier;
+                        AST_Type* type = mrv_type->mrv.types[i];
+                        AST_Type_Spec* type_spec = ast_type_spec_from_type_new(resolver->context,
+                                                                               lvalue_expr->file_pos,
+                                                                               type);
+                        AST_Declaration* decl = ast_mutable_declaration_new(resolver->context,
+                                                                            lvalue_expr->file_pos,
+                                                                            lvalue_ident,
+                                                                            type_spec,
+                                                                            nullptr,
+                                                                            declaration->location);
+                        assert(decl);
 
+                        BUF_PUSH(declaration->list.declarations, decl);
 
+                        bool decl_res = resolver_resolve_declaration(resolver, decl, scope);
+                        result &= decl_res;
+                        if (decl_res)
+                        {
+                            result &= resolver_resolve_expression(resolver, lvalue_expr, scope);
+                        }
+                     }
                 }
 
                 break;

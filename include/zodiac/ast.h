@@ -67,6 +67,7 @@ namespace Zodiac
         AST_EXPR_POST_INCREMENT,
         AST_EXPR_POST_DECREMENT,
         AST_EXPR_EXPRESSION_LIST,
+        AST_EXPR_IGNORED_VALUE,
     };
 
     enum AST_Binop_Kind
@@ -799,6 +800,7 @@ namespace Zodiac
                                                       AST_Expression* base_expression);
     AST_Expression* ast_expression_list_expression_new(Context* context, File_Pos file_pos,
                                                        BUF(AST_Expression*) expressions);
+    AST_Expression* ast_expression_ignored_value_new(Context* context, File_Pos file_pos);
 
     AST_Aggregate_Declaration*
         ast_aggregate_declaration_new(Context* context, File_Pos file_pos,

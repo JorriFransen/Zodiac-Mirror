@@ -619,12 +619,6 @@ namespace Zodiac
                                                scope);
                 BUF_PUSH(members, member_decl);
 
-                // for (uint64_t i = 0; i < BUF_LENGTH(nested_aggregate->members); i++)
-                // {
-                //     BUF_PUSH(members, nested_aggregate->members[i]);
-                // }
-                // assert(!nested_aggregate->overload_directives);
-
                 // // LEAK: FIXME: We can free the buffers, but we will still leak the
                 // //   aggregate declaration itself.
                 // BUF_FREE(nested_aggregate->members);
@@ -1129,22 +1123,46 @@ namespace Zodiac
     {
         assert(parser);
 
-        AST_Expression* result = parse_expression(parser, scope);
+        auto ft = current_token(parser);
 
-        if (is_token(parser, TOK_COMMA))
+        BUF(AST_Expression*) exprs = nullptr;
+
+        bool done = false;
+
+        while (!done)
         {
-            BUF(AST_Expression*) expressions = nullptr;
-            BUF_PUSH(expressions, result);
-
-            while (match_token(parser, TOK_COMMA))
+            AST_Expression* expr = nullptr;
+            auto ct = current_token(parser);
+            if (match_token(parser, TOK_UNDERSCORE))
             {
-                auto expr = parse_expression(parser, scope);
-                BUF_PUSH(expressions, expr);
+                expr = ast_expression_ignored_value_new(parser->context, ct.file_pos);
+            }
+            else
+            {
+                expr = parse_expression(parser, scope);
             }
 
-            result = ast_expression_list_expression_new(parser->context, result->file_pos,
-                                                        expressions);
+            assert(expr);
+            BUF_PUSH(exprs, expr);
+
+            if (!match_token(parser, TOK_COMMA))
+            {
+                done = true;
+            }
         }
+
+        AST_Expression* result = nullptr;
+
+        if (BUF_LENGTH(exprs) > 1)
+        {
+            result = ast_expression_list_expression_new(parser->context, ft.file_pos, exprs);
+        }
+        else
+        {
+            result = exprs[0];
+            BUF_FREE(exprs);
+        }
+        assert(result);
 
         return result;
     }
