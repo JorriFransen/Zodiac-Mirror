@@ -386,6 +386,7 @@ namespace Zodiac
         assert(BUF_LENGTH(stack_frame->temps) > temp_index);
 
         IR_Value* result = &stack_frame->temps[temp_index];
+        assert(result->type);
 
         if (result->type->flags & AST_TYPE_FLAG_INT && result->type->bit_size != 64)
         {
@@ -401,6 +402,7 @@ namespace Zodiac
     {
         assert(ir_runner);
         assert(code_value);
+        assert(code_value->type);
 
         IR_Value* result = nullptr;
 
@@ -450,6 +452,7 @@ namespace Zodiac
         }
 
         assert(result);
+        assert(result->type);
         return result;
     }
 
@@ -2101,6 +2104,60 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_EXTRACT_VALUE:
+            {
+                IR_Value* aggregate_value = ir_runner_get_local_temporary(runner, iri->arg1);
+                IR_Value* idx_value = ir_runner_get_local_temporary(runner, iri->arg2);
+                IR_Value* dest_value = ir_runner_get_local_temporary(runner, iri->result);
+
+                AST_Type* result_type = dest_value->type;
+
+                assert(idx_value->type == Builtin::type_u64);
+
+                AST_Type* aggregate_type = iri->arg1->type;
+
+                uint64_t member_offset = 0;
+                uint64_t member_index = idx_value->value.u64;
+
+                auto member_decls = aggregate_type->aggregate_type.member_declarations;
+                bool found = false;
+                for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+                {
+                    AST_Declaration* member_decl = member_decls[i];
+                    AST_Type* member_type = member_decl->mutable_decl.type;
+                    if (i == member_index)
+                    {
+                        assert(member_type == result_type);
+                        found = true;
+                        break;
+                    }
+
+                    member_offset += member_type->bit_size;
+                }
+
+                assert(found);
+
+                void* member_ptr = ((uint8_t*)aggregate_value->value.pointer +
+                                    (member_offset / 8));
+
+                if (result_type->kind == AST_TYPE_STRUCT ||
+                    result_type->kind == AST_TYPE_UNION)
+                {
+                    memcpy(dest_value->value.pointer, member_ptr, result_type->bit_size / 8);
+                }
+                else if (result_type->kind == AST_TYPE_BASE ||
+                         result_type->kind == AST_TYPE_POINTER)
+                {
+                    memcpy(&dest_value->value, member_ptr, result_type->bit_size / 8);
+                }
+                else
+                {
+                    assert(false);
+                }
+
+                break;
+            }
+
             default: assert(false);
         }
     }
@@ -2255,7 +2312,6 @@ namespace Zodiac
         }
         else if (dest_value->type->kind == AST_TYPE_STRUCT)
         {
-            //assert(false); // Not tested
 			assert(dest_value->kind == IRV_GLOBAL);
 			assert(source_value->kind == IRV_TEMPORARY || source_value->kind == IRV_ALLOCL);
 

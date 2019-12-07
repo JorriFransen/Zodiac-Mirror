@@ -556,17 +556,8 @@ namespace Zodiac
                             assert(member_decls[0]->mutable_decl.type == allocl->type);
                             auto init_fp = init_expr->file_pos;
 
-                            IR_Value* mrv_allocl = ir_builder_emit_allocl(ir_builder,
-                                                                          init_value->type,
-                                                                          "mrv",
-                                                                          init_fp);
-                            ir_builder_emit_storel(ir_builder, mrv_allocl, mrv_value, init_fp);
-
-                            init_value = ir_builder_emit_aggregate_offset_pointer(ir_builder,
-                                                                                  mrv_allocl,
-                                                                                  0,
-                                                                                  init_fp);
-                            init_value = ir_builder_emit_load(ir_builder, init_value, init_fp);
+                            init_value = ir_builder_emit_extract_value(ir_builder, mrv_value,
+                                                                       0, init_fp);
                         }
 
                         ir_builder_emit_storel(ir_builder, allocl, init_value, decl->file_pos);
@@ -592,13 +583,8 @@ namespace Zodiac
                 {
                     AST_Type* mrv_struct_type = decl->list.init_expression->type->mrv.struct_type;
                     File_Pos init_fp = decl->list.init_expression->file_pos;
-                    IR_Value* mrv_allocl = ir_builder_emit_allocl(ir_builder,
-                                                                  mrv_struct_type,
-                                                                  "mrv",
-                                                                  init_fp);
                     IR_Value* mrv_struct = ir_builder_emit_expression(ir_builder,
                                                                       decl->list.init_expression);
-                    ir_builder_emit_storel(ir_builder, mrv_allocl, mrv_struct, init_fp);
 
                     AST_Expression* list_expr = decl->list.list_expression;
                     uint64_t decl_idx = 0;
@@ -619,9 +605,8 @@ namespace Zodiac
                             ir_builder_push_value_and_decl(ir_builder, allocl, list_decl);
 
                             IR_Value* init_value =
-                                ir_builder_emit_aggregate_offset_pointer(ir_builder, mrv_allocl,
-                                                                        i, list_decl->file_pos);
-                            init_value = ir_builder_emit_load(ir_builder, init_value, init_fp);
+                                ir_builder_emit_extract_value(ir_builder, mrv_struct, i,
+                                                              list_decl->file_pos);
                             ir_builder_emit_storel(ir_builder, allocl, init_value,
                                                 list_decl->file_pos);
                         }
@@ -935,12 +920,7 @@ namespace Zodiac
                 }
             }
 
-            IR_Value* ret_allocl = ir_builder_emit_allocl(ir_builder,
-                                                          expr->type->mrv.struct_type,
-                                                          "mrv_alloc",
-                                                          expr->file_pos);
             IR_Value* ret_value = ir_builder_emit_expression(ir_builder, expr);
-            ir_builder_emit_store(ir_builder, ret_allocl, ret_value, expr->file_pos);
 
             auto fp = statement->file_pos;
             for (uint64_t i = 0; i < BUF_LENGTH(lvalues); i++)
@@ -948,9 +928,8 @@ namespace Zodiac
                 IR_Value* lvalue = lvalues[i];
                 if (lvalue)
                 {
-                    IR_Value* new_value = ir_builder_emit_aggregate_offset_pointer(ir_builder,
-                                                                                   ret_allocl, i, fp);
-                    new_value = ir_builder_emit_load(ir_builder, new_value, fp);
+                    IR_Value* new_value = ir_builder_emit_extract_value(ir_builder, ret_value,
+                                                                        i, fp);
                     ir_builder_emit_store(ir_builder, lvalue, new_value, fp);
                 }
             }
@@ -2575,6 +2554,31 @@ namespace Zodiac
                                                 offset_value_literal, result_value);
         ir_builder_emit_instruction(ir_builder, iri);
         return result_value;
+    }
+
+    IR_Value* ir_builder_emit_extract_value(IR_Builder* ir_builder, IR_Value* aggregate_val,
+                                            uint64_t member_idx, File_Pos origin)
+    {
+        assert(aggregate_val->kind == IRV_TEMPORARY);
+        assert(aggregate_val->type->kind == AST_TYPE_STRUCT ||
+               aggregate_val->type->kind == AST_TYPE_UNION);
+
+        AST_Type* agg_type = aggregate_val->type;
+        assert(agg_type->kind == AST_TYPE_STRUCT ||
+               agg_type->kind == AST_TYPE_UNION);
+
+        assert(member_idx < BUF_LENGTH(agg_type->aggregate_type.member_declarations));
+
+        AST_Declaration* member_decl = agg_type->aggregate_type.member_declarations[member_idx];
+        assert(member_decl->kind == AST_DECL_MUTABLE);
+        AST_Type* member_type = member_decl->mutable_decl.type;
+
+        IR_Value* index_val = ir_integer_literal(ir_builder, Builtin::type_u64, member_idx);
+        IR_Value* result_val = ir_value_new(ir_builder, IRV_TEMPORARY, member_type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_EXTRACT_VALUE,
+                                                 aggregate_val, index_val, result_val);
+        ir_builder_emit_instruction(ir_builder, iri);
+        return result_val;
     }
 
     void ir_builder_emit_instruction(IR_Builder* ir_builder, IR_Instruction* iri)
