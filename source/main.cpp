@@ -109,7 +109,7 @@ int main(int argc, char** argv)
         return -1;
     }
     AST_Declaration* string_type_decl = ast_scope_find_declaration(context,
-                                                                std_ast_module->module_scope,
+                                                                builtin_ast_module->module_scope,
                                                                 Builtin::atom_String);
     assert(string_type_decl);
     assert(string_type_decl->kind == AST_DECL_AGGREGATE_TYPE);
@@ -127,7 +127,7 @@ int main(int argc, char** argv)
     Builtin::decl_string_length->identifier->declaration = Builtin::decl_string_length;
 
     AST_Declaration* type_info_type_decl =
-        ast_scope_find_declaration(context, std_ast_module->module_scope,
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
                                     Builtin::atom_Type_Info);
     assert(type_info_type_decl);
     assert(type_info_type_decl->kind == AST_DECL_AGGREGATE_TYPE);
@@ -140,13 +140,13 @@ int main(int argc, char** argv)
     Builtin::type_pointer_to_Type_Info = pointer_to_type_info;
 
     AST_Declaration* type_info_kind_decl =
-        ast_scope_find_declaration(context, std_ast_module->module_scope,
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
                                     Builtin::atom_Type_Info_Kind);
     assert(type_info_kind_decl);
     Builtin::type_Type_Info_Kind = type_info_kind_decl->aggregate_type.type;
 
     AST_Declaration* type_info_aggregate_member_type_decl =
-        ast_scope_find_declaration(context, std_ast_module->module_scope,
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
                                     Builtin::atom_Type_Info_Aggregate_Member);
     assert(type_info_aggregate_member_type_decl);
     AST_Type* type_info_aggregate_member_type =
@@ -154,7 +154,7 @@ int main(int argc, char** argv)
     Builtin::type_Type_Info_Aggregate_Member = type_info_aggregate_member_type;
 
     AST_Declaration* type_info_enum_member_type_decl =
-        ast_scope_find_declaration(context, std_ast_module->module_scope,
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
                                     Builtin::atom_Type_Info_Enum_Member);
     assert(type_info_enum_member_type_decl);
     AST_Type* type_info_enum_member_type =

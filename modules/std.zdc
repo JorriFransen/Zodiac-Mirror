@@ -3,68 +3,6 @@ _c :: import c;
 
 int :: typedef s64;
 
-Type_Info_Kind : u64 : enum
-{
-    INVALID;
-    BASE;
-    POINTER;
-    STRUCT;
-    UNION;
-    ENUM;
-    FUNCTION;
-}
-
-Type_Info :: struct
-{
-    kind      : Type_Info_Kind;
-    name      : String;
-    byte_size : u64;
-
-    union
-    {
-        base  : *Type_Info;
-
-        aggregate :: struct
-        {
-            count : u64;
-            first : *Type_Info_Aggregate_Member;
-        }
-
-        enum_info :: struct
-        {
-            enum_base    : *Type_Info;
-            member_count : u64;
-            first        : *Type_Info_Enum_Member;
-        }
-
-        function :: struct
-        {
-            return_type : *Type_Info;
-            arg_count   : u64;
-            first_arg   : *Type_Info_Aggregate_Member;
-        }
-    }
-}
-
-Type_Info_Aggregate_Member :: struct
-{
-    name : String;
-    type : *Type_Info;
-}
-
-Type_Info_Enum_Member :: struct
-{
-    name  : String;
-    value : u64;
-    type  : *Type_Info;
-}
-
-// Type_Info_Data :: struct
-// {
-//     type_infos      : *Type_Info;
-//     type_info_count : u64;
-// }
-
 enum_to_string :: (value: u64, ti: *Type_Info) -> String
 {
     assert(ti.kind == Type_Info_Kind.ENUM);
@@ -126,13 +64,6 @@ align_forward_b :: (ptr: *u8, align: u64) -> *u8
     return (:*u8)addr;
 }
 
-String :: struct
-{
-    data   : *u8;
-    length : u64;
-
-    #overload[] string_index;
-}
 
 string_ref :: (c_str: *u8) -> String
 {
@@ -194,11 +125,6 @@ string_index :: (str: String, index: u64) -> u8
 
     return str.data[index];
 }
-
-// string_index :: (str: *String, index: u64) -> u8
-// {
-//     return string_index(<str, index);
-// }
 
 string_append :: (a: String, b: String) -> String
 {
@@ -298,11 +224,6 @@ array_index :: (array: Array($T), index: s64) -> T
 
     return array.data[index];
 }
-
-// array_index :: (array: *Array($T), index: s64) -> T
-// {
-//     return array_index(<array, index);
-// }
 
 array_grow :: (array: *Array($T), new_cap: s64)
 {

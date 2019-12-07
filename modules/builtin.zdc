@@ -10,6 +10,70 @@ stderr : *FILE = null;
 PLATFORM_WINDOWS :: false;
 PLATFORM_LINUX   :: false;
 
+Type_Info_Kind : u64 : enum
+{
+    INVALID;
+    BASE;
+    POINTER;
+    STRUCT;
+    UNION;
+    ENUM;
+    FUNCTION;
+}
+
+Type_Info :: struct
+{
+    kind      : Type_Info_Kind;
+    name      : String;
+    byte_size : u64;
+
+    union
+    {
+        base  : *Type_Info;
+
+        aggregate :: struct
+        {
+            count : u64;
+            first : *Type_Info_Aggregate_Member;
+        }
+
+        enum_info :: struct
+        {
+            enum_base    : *Type_Info;
+            member_count : u64;
+            first        : *Type_Info_Enum_Member;
+        }
+
+        function :: struct
+        {
+            return_type : *Type_Info;
+            arg_count   : u64;
+            first_arg   : *Type_Info_Aggregate_Member;
+        }
+    }
+}
+
+Type_Info_Aggregate_Member :: struct
+{
+    name : String;
+    type : *Type_Info;
+}
+
+Type_Info_Enum_Member :: struct
+{
+    name  : String;
+    value : u64;
+    type  : *Type_Info;
+}
+
+String :: struct
+{
+    data   : *u8;
+    length : u64;
+
+    #overload[] string_index;
+}
+
 #foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
 #foreign exit :: (status: s32) -> void;
 

@@ -2,7 +2,8 @@
 std :: import std;
 using std;
 
-using Type_Info_Kind;
+_builtin :: import builtin;
+using _builtin.Type_Info_Kind;
 
 Mode :: enum
 {
