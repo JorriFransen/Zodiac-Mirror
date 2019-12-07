@@ -438,7 +438,14 @@ namespace Zodiac
 
             case AST_EXPR_COMPOUND_LITERAL:
             {
-                assert(false);
+                BUF(AST_Expression*) exprs_copy = nullptr;
+                auto exprs = expression->compound_literal.expressions;
+                for (uint64_t i = 0; i < BUF_LENGTH(exprs); i++)
+                {
+                    BUF_PUSH(exprs_copy, copy_expression(context, exprs[i], flags));
+                }
+                return ast_compound_literal_expression_new(context, expression->file_pos,
+                                                           exprs_copy);
                 break;
             }
 

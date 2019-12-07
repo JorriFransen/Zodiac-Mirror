@@ -1367,7 +1367,9 @@ namespace Zodiac
                 if (!result) return false;
                 assert(if_expr->type == Builtin::type_bool ||
                        if_expr->type->kind == AST_TYPE_POINTER ||
-                       (if_expr->type->flags & AST_TYPE_FLAG_INT));
+                       (if_expr->type->flags & AST_TYPE_FLAG_INT) ||
+                       if_expr->type->kind == AST_TYPE_ENUM);
+
                 result &= resolver_resolve_statement(resolver, statement->if_stmt.then_statement,
                                                      scope);
                 if (!result) return false;

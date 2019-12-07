@@ -3471,8 +3471,9 @@ namespace Zodiac
         assert(block_value->kind == IRV_BLOCK);
 
         assert(cond_value->type == Builtin::type_bool ||
-            cond_value->type->kind == AST_TYPE_POINTER ||
-            (cond_value->type->flags & AST_TYPE_FLAG_INT));
+               cond_value->type->kind == AST_TYPE_POINTER ||
+               cond_value->type->kind == AST_TYPE_ENUM ||
+               (cond_value->type->flags & AST_TYPE_FLAG_INT));
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_JMP_IF, cond_value,
                                                 block_value, nullptr);

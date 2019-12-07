@@ -16,6 +16,14 @@ namespace Zodiac
         FUNCTION,
     };
 
+    typedef uint64_t Type_Info_Flag_T;
+    enum Type_Info_Flag : Type_Info_Flag_T
+    {
+        INT    = 1,
+        FLOAT  = 2,
+        SIGNED = 4,
+    };
+
     struct Type_Info;
     struct Type_Info_Aggregate_Member;
     struct Type_Info_Enum_Member;
@@ -30,6 +38,7 @@ namespace Zodiac
     struct Type_Info
     {
         Type_Info_Kind kind = INVALID;
+        Type_Info_Flag_T flags = 0;
 
         struct
         {
