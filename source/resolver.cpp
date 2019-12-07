@@ -1794,13 +1794,18 @@ namespace Zodiac
 
                 expression->type = resolver_get_declaration_type(decl);
 
-                if (!points_to_import_decl && suggested_type && suggested_type != expression->type &&
+                if (!points_to_import_decl && suggested_type &&
+                    suggested_type != expression->type &&
                     resolver_check_assign_types(resolver, suggested_type, expression->type))
                 {
                     if (suggested_type == Builtin::type_String &&
                         expression->type == Builtin::type_pointer_to_u8)
                     {
                         resolver_convert_to_builtin_string(resolver, expression);
+                    }
+                    else if (suggested_type == Builtin::type_Any)
+                    {
+                        result &= resolver_transform_to_any(resolver, expression, scope);
                     }
                     else
                     {
@@ -2536,12 +2541,17 @@ namespace Zodiac
 				}
 				else assert(false);
             }
+            else if (lhs->type == Builtin::type_pointer_to_void &&
+                     rhs->type->kind == AST_TYPE_POINTER)
+            {
+                resolver_transform_to_cast_expression(resolver, rhs, lhs->type);
+            }
             else
             {
                 auto lhs_str = ast_type_to_string(lhs->type);
                 auto rhs_str = ast_type_to_string(rhs->type);
                 resolver_report_error(resolver, expression->file_pos,
-                                      "Mismatching types in binary expression:\n\tLeft size: %s\n\tRight size: %s",
+                                      "Mismatching types in binary expression:\n\tLeft side: %s\n\tRight side: %s",
                                       lhs_str, rhs_str);
                 mem_free(lhs_str);
                 mem_free(rhs_str);
@@ -3149,6 +3159,7 @@ namespace Zodiac
         assert(lhs);
         assert(rhs);
 
+        if (lhs == Builtin::type_Any) return true;
         if (lhs == rhs) return true;
 
         bool lhs_integer = lhs->flags & AST_TYPE_FLAG_INT;
@@ -3276,6 +3287,42 @@ namespace Zodiac
             expr->float_literal.r64 = double_lit;
         }
 
+    }
+
+    bool resolver_transform_to_any(Resolver* resolver, AST_Expression* expression,
+                                   AST_Scope* scope)
+    {
+        if (expression->type == Builtin::type_Any) return true;
+
+        AST_Expression* old_expr = ast_expression_new(resolver->context, expression->file_pos,
+                                                      expression->kind);
+        *old_expr = *expression;
+
+        expression->kind = AST_EXPR_COMPOUND_LITERAL;
+        expression->type = Builtin::type_Any;
+        expression->compound_literal.expressions = nullptr;
+
+        AST_Type_Spec* type_spec = ast_type_spec_from_type_new(resolver->context,
+                                                               expression->file_pos,
+                                                               old_expr->type);
+        AST_Expression* type_info_expr = ast_get_type_info_expression_new(resolver->context,
+                                                                          expression->file_pos,
+                                                                          type_spec);
+
+        BUF_PUSH(expression->compound_literal.expressions, type_info_expr);
+
+        AST_Type_Spec* void_ptr_type_spec =
+            ast_type_spec_from_type_new(resolver->context, expression->file_pos,
+                                        Builtin::type_pointer_to_void);
+        AST_Expression* value_pointer_expr = ast_unary_expression_new(resolver->context,
+                                                                      expression->file_pos,
+                                                                      AST_UNOP_ADDROF, old_expr);
+        value_pointer_expr = ast_cast_expression_new(resolver->context, expression->file_pos,
+                                                     void_ptr_type_spec, value_pointer_expr);
+        BUF_PUSH(expression->compound_literal.expressions, value_pointer_expr);
+
+        bool res = resolver_resolve_expression(resolver, expression, scope, Builtin::type_Any);
+        return res;
     }
 
     void resolver_add_overload(Resolver* resolver, AST_Declaration* overload_decl,

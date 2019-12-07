@@ -87,6 +87,8 @@ namespace Zodiac
                                                                   AST_Declaration* declaration);
     void resolver_transform_const_expr_to_literal(Resolver* resolver, AST_Expression* expr,
                                                   AST_Scope* scope);
+    bool resolver_transform_to_any(Resolver* resolver, AST_Expression* expression,
+                                   AST_Scope* scope);
 
 
     void resolver_add_overload(Resolver* resolver, AST_Declaration* overload_decl,

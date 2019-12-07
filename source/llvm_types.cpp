@@ -100,6 +100,8 @@ namespace Zodiac
         auto zir_ti_type = Builtin::type_Type_Info;
         AST_Declaration* enum_info_type_decl = zir_ti_type->aggregate_type.member_declarations[4];
         auto zir_enum_info_type = enum_info_type_decl->mutable_decl.type;
+        assert(zir_enum_info_type);
+        assert(zir_enum_info_type->aggregate_type.member_declarations);
         enum_info_type_decl = zir_enum_info_type->aggregate_type.member_declarations[2];
         LLVMTypeRef llvm_enum_info_type =
             llvm_type_from_ast(builder, enum_info_type_decl->mutable_decl.type);

@@ -6,15 +6,24 @@ std :: import std;
 
 main :: ()
 {
+    open_std_handles();
+
     printf("Any test\n");
 
-    int_val := 4;
-    any_int := make_any(*int_val);
+    // print_any(1);
 
+    x := 42;
+    print_any(x);
 
-    print_any(any_int);
-    float_val := 5.6;
-    print_any(make_any(*float_val));
+    x_any : Any = x;
+    print_any(x_any);
+
+    y := 4.5;
+    y_any : Any = y;
+    print_any(y_any);
+
+    assert(x_any.value == *x);
+    assert(x_any.type_info == get_type_info(x));
 
     return 0;
 
@@ -22,9 +31,44 @@ main :: ()
 
 print_any :: (any: Any)
 {
+    using Type_Info_Kind;
+    using Type_Info_Flags;
+
+    // printf("Any { %p, %p }\n", any.type_info, any.value);
+
+    type_info := any.type_info;
+
+    if (type_info.kind == BASE)
+    {
+        if (type_info.flags & INT)
+        {
+            if (type_info.flags & SIGNED)
+            {
+                ptr := (:*s64)any.value;
+                printf("signed int: %d\n", <ptr);
+            }
+            else
+            {
+                ptr := (:*u64)any.value;
+                printf("unsigned int: %u\n", <ptr);
+            }
+        }
+        else if (type_info.flags & FLOAT)
+        {
+            if (type_info.byte_size == 4)
+            {
+                ptr := (:*float)any.value;
+                printf("float: %f\n", <ptr);
+            }
+            else if (type_info.byte_size == 8)
+            {
+                ptr := (:*double)any.value;
+                printf("doule: %f\n", <ptr);
+            }
+            else assert(false);
+        }
+        else assert(false);
+    }
+    else assert(false);
 }
 
-make_any :: (value: *$T) -> Any
-{
-    return { get_type_info(T), value };
-}

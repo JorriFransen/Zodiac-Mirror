@@ -469,8 +469,6 @@ namespace Zodiac
             return;
         }
 
-        printf("%s\n", LLVMPrintTypeToString(LLVM_Type::Type_Info));
-
         assert(builder->type_info_global == nullptr);
 
         LLVMTypeRef llvm_tiam_type = LLVM_Type::Type_Info_Aggregate_Member;
@@ -484,7 +482,6 @@ namespace Zodiac
                                                                 (unsigned int)tid->type_info_count - 1),
                                                   "type_infos");
         LLVMSetGlobalConstant(builder->type_info_global, true);
-        printf("type_info_global_type: %s\n", LLVMPrintTypeToString(LLVMTypeOf(builder->type_info_global)));
 
         builder->aggregate_member_info_global = LLVMAddGlobal(builder->llvm_module,
                                                               LLVMArrayType(llvm_tiam_type,
@@ -1367,10 +1364,11 @@ namespace Zodiac
 				assert(a2);
 
                 ASSERT_INT(a1);
+                ASSERT_INT(a2);
 
-                assert((a2->type->flags & AST_TYPE_FLAG_INT) ||
-                       a2->type->kind == AST_TYPE_ENUM &&
-                       a1->type == a2->type->aggregate_type.base_type);
+//                assert((a2->type->flags & AST_TYPE_FLAG_INT) ||
+//                       a2->type->kind == AST_TYPE_ENUM &&
+//                       a1->type == a2->type->aggregate_type.base_type);
 
                 LLVMValueRef lhs = llvm_emit_ir_value(builder, zir_instruction->arg1);
                 LLVMValueRef rhs = llvm_emit_ir_value(builder, zir_instruction->arg2);

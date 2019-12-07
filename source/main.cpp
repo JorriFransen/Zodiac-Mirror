@@ -155,6 +155,12 @@ int main(int argc, char** argv)
         type_info_enum_member_type_decl->aggregate_type.type;
     Builtin::type_Type_Info_Enum_Member = type_info_enum_member_type;
 
+    AST_Declaration* any_decl = ast_scope_find_declaration(context,
+                                                           builtin_ast_module->module_scope,
+                                                           Builtin::atom_Any);
+    assert(any_decl);
+    Builtin::type_Any = any_decl->aggregate_type.type;
+
     const char* file_string = read_file_string(file_name);
     // fprintf(stderr, "File contents:\n%s\n", file_string);
 
