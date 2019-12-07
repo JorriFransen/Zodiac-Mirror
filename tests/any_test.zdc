@@ -1,0 +1,30 @@
+
+_c :: import c;
+using _c;
+
+std :: import std;
+
+main :: ()
+{
+    printf("Any test\n");
+
+    int_val := 4;
+    any_int := make_any(*int_val);
+
+
+    print_any(any_int);
+    float_val := 5.6;
+    print_any(make_any(*float_val));
+
+    return 0;
+
+}
+
+print_any :: (any: Any)
+{
+}
+
+make_any :: (value: *$T) -> Any
+{
+    return { get_type_info(T), value };
+}
