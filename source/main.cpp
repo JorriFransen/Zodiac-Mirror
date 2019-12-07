@@ -96,18 +96,6 @@ int main(int argc, char** argv)
     assert(default_assert_handler_decl);
     Builtin::decl_default_assert_handler = default_assert_handler_decl;
 
-    Atom std_module_name = atom_get(context->atom_table, "std");
-    Atom std_module_path = {};
-    bool std_found = zodiac_find_module_path(context, std_module_name, &std_module_path);
-    assert(std_found);
-    // printf("std_module_path: %s\n", std_module_path.data);
-    AST_Module* std_ast_module = zodiac_compile_or_get_module(context, std_module_path,
-                                                            std_module_name);
-    if (!std_ast_module)
-    {
-        fprintf(stderr, "Compilation for std module for builtins failed, aborting\n");
-        return -1;
-    }
     AST_Declaration* string_type_decl = ast_scope_find_declaration(context,
                                                                 builtin_ast_module->module_scope,
                                                                 Builtin::atom_String);
@@ -118,7 +106,7 @@ int main(int argc, char** argv)
     Builtin::type_String = string_type;
 
     AST_Declaration* string_length_decl =
-        ast_scope_find_declaration(context, std_ast_module->module_scope,
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
                                     Builtin::atom_string_length);
     assert(string_length_decl);
     assert(string_length_decl->identifier);
