@@ -1238,7 +1238,8 @@ namespace Zodiac
                 else assert(false);
 
                 auto bool_type = llvm_type_from_ast(builder, Builtin::type_bool);
-                result = LLVMBuildCast(builder->llvm_builder, LLVMZExt, result, bool_type, ""); llvm_assign_result(builder, zir_instruction->result, result);
+                result = LLVMBuildCast(builder->llvm_builder, LLVMZExt, result, bool_type, "");
+                llvm_assign_result(builder, zir_instruction->result, result);
                 break;
             }
 
@@ -1417,7 +1418,8 @@ namespace Zodiac
                 LLVMValueRef llvm_result = LLVMBuildNot(builder->llvm_builder, llvm_value, "");
 
                 auto bool_ty = llvm_type_from_ast(builder, Builtin::type_bool);
-                llvm_result = LLVMBuildCast(builder->llvm_builder, LLVMZExt, llvm_result, bool_ty,
+                llvm_result = LLVMBuildCast(builder->llvm_builder, LLVMZExt, llvm_result,
+                                            bool_ty,
                                             "");
                 llvm_assign_result(builder, r, llvm_result);
                 break;
@@ -1474,7 +1476,8 @@ namespace Zodiac
 
                     if (zir_arg_value->kind == IRV_ALLOCL)
                     {
-                        llvm_arg_value = LLVMBuildLoad(builder->llvm_builder, llvm_arg_value, "");
+                        llvm_arg_value = LLVMBuildLoad(builder->llvm_builder, llvm_arg_value,
+                                                       "");
                     }
                     if (is_vararg && is_foreign && zir_arg_value->type == Builtin::type_float)
                     {
@@ -1546,7 +1549,8 @@ namespace Zodiac
 				assert(a1);
 
                 IR_Block* zir_dest_block = zir_instruction->arg1->block;
-                LLVMBasicBlockRef llvm_dest_block = llvm_block_from_zir(builder, zir_dest_block);
+                LLVMBasicBlockRef llvm_dest_block = llvm_block_from_zir(builder,
+                                                                        zir_dest_block);
                 LLVMBuildBr(builder->llvm_builder, llvm_dest_block);
                 break;
             }
@@ -1577,7 +1581,8 @@ namespace Zodiac
                     }
                 }
                 IR_Block* zir_then_block = zir_instruction->arg2->block;
-                LLVMBasicBlockRef llvm_then_block = llvm_block_from_zir(builder, zir_then_block);
+                LLVMBasicBlockRef llvm_then_block = llvm_block_from_zir(builder,
+                                                                        zir_then_block);
 
                 auto next_ziri = zir_instruction->next;
                 assert(next_ziri);
@@ -1633,7 +1638,8 @@ namespace Zodiac
 
                 if (builder->context->options.emit_debug)
                 {
-                    llvm_debug_register_function_local_variable(builder, llvm_alloca, zir_allocl);
+                    llvm_debug_register_function_local_variable(builder, llvm_alloca,
+                                                                zir_allocl);
                 }
                 break;
             }
@@ -1698,7 +1704,8 @@ namespace Zodiac
 				assert(a2);
 
                 LLVMValueRef llvm_dest = llvm_emit_ir_value(builder, zir_instruction->arg1);
-                LLVMValueRef llvm_new_value = llvm_emit_ir_value(builder, zir_instruction->arg2);
+                LLVMValueRef llvm_new_value = llvm_emit_ir_value(builder,
+                                                                 zir_instruction->arg2);
 
                 if (a2->kind == IRV_ALLOCL)
                 {
@@ -1711,7 +1718,8 @@ namespace Zodiac
             case IR_OP_LOADP:
             {
                 LLVMValueRef llvm_source = llvm_emit_ir_value(builder, zir_instruction->arg1);
-                LLVMValueRef llvm_result = LLVMBuildLoad(builder->llvm_builder, llvm_source, "");
+                LLVMValueRef llvm_result = LLVMBuildLoad(builder->llvm_builder,
+                                                         llvm_source, "");
 
                 llvm_assign_result(builder, zir_instruction->result, llvm_result);
                 break;
@@ -1720,7 +1728,8 @@ namespace Zodiac
             case IR_OP_STOREG:
             {
                 LLVMValueRef llvm_dest = llvm_emit_ir_value(builder, zir_instruction->arg1);
-                LLVMValueRef llvm_new_value = llvm_emit_ir_value(builder, zir_instruction->arg2);
+                LLVMValueRef llvm_new_value = llvm_emit_ir_value(builder,
+                                                                 zir_instruction->arg2);
 
                 LLVMBuildStore(builder->llvm_builder, llvm_new_value, llvm_dest);
                 break;
@@ -1729,7 +1738,8 @@ namespace Zodiac
             case IR_OP_LOADG:
             {
                 LLVMValueRef llvm_source = llvm_emit_ir_value(builder, zir_instruction->arg1);
-                LLVMValueRef llvm_result = LLVMBuildLoad(builder->llvm_builder, llvm_source, "");
+                LLVMValueRef llvm_result = LLVMBuildLoad(builder->llvm_builder, llvm_source,
+                                                         "");
                 llvm_assign_result(builder, zir_instruction->result, llvm_result);
                 break;
             }
@@ -1785,7 +1795,8 @@ namespace Zodiac
                     (a1->type->kind == AST_TYPE_POINTER &&
                      a1->type->pointer.base->kind == AST_TYPE_STATIC_ARRAY))
                 {
-                    LLVMTypeRef llvm_index_type = llvm_type_from_ast(builder, Builtin::type_u32);
+                    LLVMTypeRef llvm_index_type = llvm_type_from_ast(builder,
+                                                                     Builtin::type_u32);
                     LLVMValueRef llvm_zero = LLVMConstNull(llvm_index_type);
                     llvm_source = LLVMBuildInBoundsGEP(builder->llvm_builder, llvm_source,
                                                        &llvm_zero, 1, "");
@@ -1818,7 +1829,7 @@ namespace Zodiac
                 else
                 {
                     assert(zir_source->kind == IRV_ALLOCL || zir_source->kind == IRV_ARGUMENT ||
-                        zir_source->kind == IRV_TEMPORARY);
+                           zir_source->kind == IRV_TEMPORARY);
                     assert(zir_source->type->kind == AST_TYPE_STRUCT ||
                            zir_source->type->kind == AST_TYPE_UNION);
 
@@ -1988,7 +1999,8 @@ namespace Zodiac
                 {
                     auto& pair = zir_instruction->phi_pairs[i];
                     LLVMValueRef llvm_value = pair_llvm_values[i];
-                    LLVMBasicBlockRef llvm_block = llvm_block_from_zir(builder, pair.from_block);
+                    LLVMBasicBlockRef llvm_block = llvm_block_from_zir(builder,
+                                                                       pair.from_block);
                     LLVMAddIncoming(llvm_phi, &llvm_value, &llvm_block, 1);
                 }
 
@@ -2041,13 +2053,27 @@ namespace Zodiac
                 LLVMValueRef llvm_old_value = llvm_emit_ir_value(builder, a1);
                 LLVMValueRef llvm_new_value = llvm_emit_ir_value(builder, a2);
 
-                LLVMValueRef result = LLVMBuildAtomicCmpXchg(builder->llvm_builder, llvm_pointer,
-                                                             llvm_old_value, llvm_new_value,
-                                                             LLVMAtomicOrderingMonotonic,
-                                                             LLVMAtomicOrderingMonotonic, false);
+                LLVMValueRef result =
+                    LLVMBuildAtomicCmpXchg(builder->llvm_builder, llvm_pointer, llvm_old_value,
+                                           llvm_new_value, LLVMAtomicOrderingMonotonic,
+                                           LLVMAtomicOrderingMonotonic, false);
                 result = LLVMBuildExtractValue(builder->llvm_builder, result, 1, "");
 
                 llvm_assign_result(builder, r, result);
+                break;
+            }
+
+            case IR_OP_EXTRACT_VALUE:
+            {
+                LLVMValueRef llvm_agg_value = llvm_emit_ir_value(builder, a1);
+                assert(a2->type == Builtin::type_u64);
+                uint64_t member_offset = a2->value.u64;
+
+                LLVMValueRef result = LLVMBuildExtractValue(builder->llvm_builder,
+                                                            llvm_agg_value, member_offset, "");
+
+                llvm_assign_result(builder, r, result);
+
                 break;
             }
 
