@@ -24,6 +24,7 @@ namespace Zodiac
     AST_Type* Builtin::type_Type_Info = nullptr;
     AST_Type* Builtin::type_pointer_to_Type_Info = nullptr;
     AST_Type* Builtin::type_Type_Info_Kind = nullptr;
+    AST_Type* Builtin::type_Type_Info_Flags = nullptr;
     AST_Type* Builtin::type_Type_Info_Aggregate_Member = nullptr;
     AST_Type* Builtin::type_Type_Info_Enum_Member = nullptr;
 
@@ -45,6 +46,7 @@ namespace Zodiac
     Atom Builtin::atom___compare_and_swap__;
     Atom Builtin::atom_Type_Info;
     Atom Builtin::atom_Type_Info_Kind;
+    Atom Builtin::atom_Type_Info_Flags;
     Atom Builtin::atom_Type_Info_Aggregate_Member;
     Atom Builtin::atom_Type_Info_Enum_Member;
     Atom Builtin::atom_default_assert_handler;
@@ -94,6 +96,7 @@ namespace Zodiac
         Builtin::atom___compare_and_swap__ = atom_get(context->atom_table, "__compare_and_swap__");
         Builtin::atom_Type_Info = atom_get(context->atom_table, "Type_Info");
         Builtin::atom_Type_Info_Kind = atom_get(context->atom_table, "Type_Info_Kind");
+        Builtin::atom_Type_Info_Flags = atom_get(context->atom_table, "Type_Info_Flags");
         Builtin::atom_Type_Info_Aggregate_Member = atom_get(context->atom_table,
                                                             "Type_Info_Aggregate_Member");
         Builtin::atom_Type_Info_Enum_Member = atom_get(context->atom_table,

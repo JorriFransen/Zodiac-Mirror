@@ -133,6 +133,12 @@ int main(int argc, char** argv)
     assert(type_info_kind_decl);
     Builtin::type_Type_Info_Kind = type_info_kind_decl->aggregate_type.type;
 
+    AST_Declaration* type_info_flag_decl =
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
+                                   Builtin::atom_Type_Info_Flags);
+    assert(type_info_flag_decl);
+    Builtin::type_Type_Info_Flags = type_info_flag_decl->aggregate_type.type;
+
     AST_Declaration* type_info_aggregate_member_type_decl =
         ast_scope_find_declaration(context, builtin_ast_module->module_scope,
                                     Builtin::atom_Type_Info_Aggregate_Member);

@@ -15,6 +15,7 @@ namespace Zodiac
     LLVMTypeRef LLVM_Type::String = nullptr;
     LLVMTypeRef LLVM_Type::Type_Info = nullptr;
     LLVMTypeRef LLVM_Type::Type_Info_Kind = nullptr;
+    LLVMTypeRef LLVM_Type::Type_Info_Flag = nullptr;
     LLVMTypeRef LLVM_Type::Type_Info_Info_Union = nullptr;
     LLVMTypeRef LLVM_Type::Type_Info_Aggregate_Member = nullptr;
     LLVMTypeRef LLVM_Type::Type_Info_Enum_Member = nullptr;
@@ -50,6 +51,9 @@ namespace Zodiac
         LLVM_Type::Type_Info = llvm_type_from_ast(builder, Builtin::type_Type_Info);
         assert(Builtin::type_Type_Info_Kind);
         LLVM_Type::Type_Info_Kind = llvm_type_from_ast(builder, Builtin::type_Type_Info_Kind);
+        assert(Builtin::type_Type_Info_Flags);
+        LLVM_Type::Type_Info_Flag = llvm_type_from_ast(builder, Builtin::type_Type_Info_Flags);
+
 
         AST_Declaration* info_type_decl =
             Builtin::type_Type_Info->aggregate_type.member_declarations[3];
@@ -61,7 +65,8 @@ namespace Zodiac
         LLVM_Type::Type_Info_Enum_Member = llvm_type_from_ast(builder,
                                                               Builtin::type_Type_Info_Enum_Member);
 
-        LLVMTypeRef base_types[] = { LLVM_Type::Type_Info_Kind, LLVM_Type::String, LLVM_Type::u64,
+        LLVMTypeRef base_types[] = { LLVM_Type::Type_Info_Kind, LLVM_Type::Type_Info_Flag,
+                                     LLVM_Type::String, LLVM_Type::u64,
                                      LLVM_Type::Type_Info_Info_Union };
         unsigned base_type_count = STATIC_ARRAY_LENGTH(base_types);
         LLVM_Type::_instance_Type_Info_Base = LLVMStructType(base_types, base_type_count, false);
@@ -70,8 +75,8 @@ namespace Zodiac
         unsigned pointer_aggregate_member_count = STATIC_ARRAY_LENGTH(pointer_aggregate_members);
         LLVMTypeRef pointer_aggregate = LLVMStructType(pointer_aggregate_members,
                                                        pointer_aggregate_member_count, false);
-        LLVMTypeRef pointer_types[] = { LLVM_Type::Type_Info_Kind, LLVM_Type::String,
-                                        LLVM_Type::u64, pointer_aggregate };
+        LLVMTypeRef pointer_types[] = { LLVM_Type::Type_Info_Kind, LLVM_Type::Type_Info_Flag,
+                                        LLVM_Type::String, LLVM_Type::u64, pointer_aggregate };
         unsigned pointer_type_count = STATIC_ARRAY_LENGTH(pointer_types);
         LLVM_Type::_instance_Type_Info_Pointer = LLVMStructType(pointer_types, pointer_type_count,
                                                                 false);
@@ -86,25 +91,25 @@ namespace Zodiac
                                                       false);
         struct_aggregate = LLVMStructType(&struct_aggregate, 1, false);
 
-        LLVMTypeRef struct_types[] = { LLVM_Type::Type_Info_Kind, LLVM_Type::String,
-                                       LLVM_Type::u64, struct_aggregate };
+        LLVMTypeRef struct_types[] = { LLVM_Type::Type_Info_Kind, LLVM_Type::Type_Info_Flag,
+                                       LLVM_Type::String, LLVM_Type::u64, struct_aggregate };
         unsigned struct_type_count = STATIC_ARRAY_LENGTH(struct_types);
         LLVM_Type::_instance_Type_Info_Aggregate = LLVMStructType(struct_types,
                                                                   struct_type_count, false);
 
         auto zir_ti_type = Builtin::type_Type_Info;
-        AST_Declaration* enum_info_type_decl = zir_ti_type->aggregate_type.member_declarations[3];
+        AST_Declaration* enum_info_type_decl = zir_ti_type->aggregate_type.member_declarations[4];
         auto zir_enum_info_type = enum_info_type_decl->mutable_decl.type;
         enum_info_type_decl = zir_enum_info_type->aggregate_type.member_declarations[2];
         LLVMTypeRef llvm_enum_info_type =
             llvm_type_from_ast(builder, enum_info_type_decl->mutable_decl.type);
         llvm_enum_info_type = LLVMStructType(&llvm_enum_info_type, 1, false);
-        LLVMTypeRef enum_types[] = { LLVM_Type::Type_Info_Kind, LLVM_Type::String, LLVM_Type::u64,
-                                     llvm_enum_info_type };
+        LLVMTypeRef enum_types[] = { LLVM_Type::Type_Info_Kind, LLVM_Type::Type_Info_Flag,
+                                     LLVM_Type::String, LLVM_Type::u64, llvm_enum_info_type };
         unsigned enum_type_count = STATIC_ARRAY_LENGTH(enum_types);
         LLVM_Type::_instance_Type_Info_Enum = LLVMStructType(enum_types, enum_type_count, false);
 
-        AST_Declaration* ti_info_decl = zir_ti_type->aggregate_type.member_declarations[3];
+        AST_Declaration* ti_info_decl = zir_ti_type->aggregate_type.member_declarations[4];
         AST_Type* zir_ti_info_type = ti_info_decl->mutable_decl.type;
         AST_Declaration* function_info_decl =
             zir_ti_info_type->aggregate_type.member_declarations[3];
@@ -112,8 +117,9 @@ namespace Zodiac
         LLVMTypeRef llvm_function_info_type = llvm_type_from_ast(builder, zir_function_info_type);
         llvm_function_info_type = LLVMStructType(&llvm_function_info_type, 1, false);
 
-        LLVMTypeRef function_types[] = { LLVM_Type::Type_Info_Kind, LLVM_Type::String,
-                                         LLVM_Type::u64, llvm_function_info_type };
+        LLVMTypeRef function_types[] = { LLVM_Type::Type_Info_Kind, LLVM_Type::Type_Info_Flag,
+                                         LLVM_Type::String, LLVM_Type::u64,
+                                         llvm_function_info_type };
         unsigned function_type_count = STATIC_ARRAY_LENGTH(function_types);
         LLVM_Type::_instance_Type_Info_Function = LLVMStructType(function_types,
                                                                  function_type_count, false);
