@@ -160,6 +160,7 @@ int main(int argc, char** argv)
                                                            Builtin::atom_Any);
     assert(any_decl);
     Builtin::type_Any = any_decl->aggregate_type.type;
+    assert(Builtin::type_Any);
 
     const char* file_string = read_file_string(file_name);
     // fprintf(stderr, "File contents:\n%s\n", file_string);

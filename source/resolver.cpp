@@ -1729,7 +1729,18 @@ namespace Zodiac
                         arg_expr->flags &= ~AST_EXPR_FLAG_RESOLVED;
                     }
 
-                    result &= resolver_resolve_expression(resolver, arg_expr, scope, arg_type);
+                    if (arg_type && arg_type == Builtin::type_Any)
+                    {
+                        result &= resolver_resolve_expression(resolver, arg_expr, scope);
+                        if (result) result &= resolver_transform_to_any(resolver, arg_expr,
+                                                                        scope);
+                    }
+                    else
+                    {
+                        result &= resolver_resolve_expression(resolver, arg_expr, scope,
+                                                              arg_type);
+                    }
+
                     if (!result) break;
 
                     if (arg_type)
@@ -1782,14 +1793,22 @@ namespace Zodiac
                 {
                     points_to_import_decl = true;
                 }
+                else if (decl->kind == AST_DECL_FUNC)
+                {
+                    expression->flags |= AST_EXPR_FLAG_LVALUE;
+                }
                 else if (decl->kind == AST_DECL_FUNC_OVERLOAD)
                 {
                     points_to_overload_decl = true;
                 }
-
-                if (decl->kind == AST_DECL_CONSTANT_VAR)
+                else if (decl->kind == AST_DECL_CONSTANT_VAR)
                 {
                     expression->flags |= AST_EXPR_FLAG_CONST;
+                    expression->flags |= AST_EXPR_FLAG_LVALUE;
+                }
+                else if (decl->kind == AST_DECL_MUTABLE)
+                {
+                    expression->flags |= AST_EXPR_FLAG_LVALUE;
                 }
 
                 expression->type = resolver_get_declaration_type(decl);
@@ -1949,6 +1968,12 @@ namespace Zodiac
 
                     case AST_UNOP_ADDROF:
                     {
+                        if (!(expression->unary.operand->flags & AST_EXPR_FLAG_LVALUE))
+                        {
+                            resolver_report_error(resolver, expression->file_pos,
+                                                  "Attempting to take the addres of a non lvalue");
+                            result = false;
+                        }
                         expression->type = ast_find_or_create_pointer_type(resolver->context,
                                                                            operand_type);
                         break;
@@ -2134,10 +2159,23 @@ namespace Zodiac
             {
                  result &= resolver_resolve_dot_expression(resolver, expression, scope);
 
-                if (result && expression->dot.declaration->kind == AST_DECL_FUNC_OVERLOAD)
-                {
-                    points_to_overload_decl = true;
+                 if (result)
+                 {
+                     auto decl = expression->dot.declaration;
+                     if (decl->kind == AST_DECL_FUNC)
+                     {
+                         expression->flags |= AST_EXPR_FLAG_LVALUE;
+                     }
+                     else if (decl->kind == AST_DECL_FUNC_OVERLOAD)
+                     {
+                        points_to_overload_decl = true;
+                     }
+                     else if (decl->kind == AST_DECL_MUTABLE)
+                     {
+                         expression->flags |= AST_EXPR_FLAG_LVALUE;
+                     }
                 }
+
                 break;
             }
 
@@ -3301,6 +3339,7 @@ namespace Zodiac
         expression->kind = AST_EXPR_COMPOUND_LITERAL;
         expression->type = Builtin::type_Any;
         expression->compound_literal.expressions = nullptr;
+        expression->flags &= ~AST_EXPR_FLAG_RESOLVED;
 
         AST_Type_Spec* type_spec = ast_type_spec_from_type_new(resolver->context,
                                                                expression->file_pos,
