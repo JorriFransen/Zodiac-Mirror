@@ -2444,6 +2444,12 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_MAKE_LVALUE:
+            {
+                expression->type = expression->make_lvalue.expression->type;
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -3353,6 +3359,13 @@ namespace Zodiac
         AST_Type_Spec* void_ptr_type_spec =
             ast_type_spec_from_type_new(resolver->context, expression->file_pos,
                                         Builtin::type_pointer_to_void);
+
+        if (!(old_expr->flags & AST_EXPR_FLAG_LVALUE))
+        {
+            old_expr = ast_make_lvalue_expression_new(resolver->context, old_expr->file_pos,
+                                                      old_expr);
+        }
+
         AST_Expression* value_pointer_expr = ast_unary_expression_new(resolver->context,
                                                                       expression->file_pos,
                                                                       AST_UNOP_ADDROF, old_expr);

@@ -10,7 +10,11 @@ main :: ()
 
     printf("Any test\n");
 
-    // print_any(1);
+    print_any(1);
+    print_any(5.6);
+    print_any(1 + 2);
+
+    print_any(return_int(33));
 
     x := 42;
     print_any(x);
@@ -25,9 +29,14 @@ main :: ()
     assert(x_any.value == *x);
     assert(x_any.type_info == get_type_info(x));
 
+    unsigned : u64 = 8888;
+    print_any(unsigned);
+
     return 0;
 
 }
+
+return_int :: (x: int) -> int { return x; }
 
 print_any :: (any: Any)
 {
@@ -38,37 +47,42 @@ print_any :: (any: Any)
 
     type_info := any.type_info;
 
-    if (type_info.kind == BASE)
+    switch (type_info.kind)
     {
-        if (type_info.flags & INT)
+        case BASE:
         {
-            if (type_info.flags & SIGNED)
+            if (type_info.flags & INT)
             {
-                ptr := (:*s64)any.value;
-                printf("signed int: %d\n", <ptr);
+                if (type_info.flags & SIGNED)
+                {
+                    ptr := (:*s64)any.value;
+                    printf("signed int: %d\n", <ptr);
+                }
+                else
+                {
+                    ptr := (:*u64)any.value;
+                    printf("unsigned int: %u\n", <ptr);
+                }
             }
-            else
+            else if (type_info.flags & FLOAT)
             {
-                ptr := (:*u64)any.value;
-                printf("unsigned int: %u\n", <ptr);
-            }
-        }
-        else if (type_info.flags & FLOAT)
-        {
-            if (type_info.byte_size == 4)
-            {
-                ptr := (:*float)any.value;
-                printf("float: %f\n", <ptr);
-            }
-            else if (type_info.byte_size == 8)
-            {
-                ptr := (:*double)any.value;
-                printf("doule: %f\n", <ptr);
+                if (type_info.byte_size == 4)
+                {
+                    ptr := (:*float)any.value;
+                    printf("float: %f\n", <ptr);
+                }
+                else if (type_info.byte_size == 8)
+                {
+                    ptr := (:*double)any.value;
+                    printf("doule: %f\n", <ptr);
+                }
+                else assert(false);
             }
             else assert(false);
         }
-        else assert(false);
+
+        default: assert(false);
+
     }
-    else assert(false);
 }
 

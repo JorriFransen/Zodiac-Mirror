@@ -68,6 +68,7 @@ namespace Zodiac
         AST_EXPR_POST_DECREMENT,
         AST_EXPR_EXPRESSION_LIST,
         AST_EXPR_IGNORED_VALUE,
+        AST_EXPR_MAKE_LVALUE,
     };
 
     enum AST_Binop_Kind
@@ -234,6 +235,11 @@ namespace Zodiac
             {
                 BUF(AST_Expression*) expressions;
             } list;
+
+            struct
+            {
+                AST_Expression* expression;
+            } make_lvalue;
         };
     };
 
@@ -804,6 +810,8 @@ namespace Zodiac
     AST_Expression* ast_expression_list_expression_new(Context* context, File_Pos file_pos,
                                                        BUF(AST_Expression*) expressions);
     AST_Expression* ast_expression_ignored_value_new(Context* context, File_Pos file_pos);
+    AST_Expression* ast_make_lvalue_expression_new(Context* context, File_Pos file_pos,
+                                                   AST_Expression* non_lvalue);
 
     AST_Aggregate_Declaration*
         ast_aggregate_declaration_new(Context* context, File_Pos file_pos,

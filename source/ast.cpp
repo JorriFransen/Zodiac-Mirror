@@ -339,6 +339,18 @@ namespace Zodiac
         return result;
     }
 
+    AST_Expression* ast_make_lvalue_expression_new(Context* context, File_Pos file_pos,
+                                                   AST_Expression* non_lvalue)
+    {
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_MAKE_LVALUE);
+
+        assert(!(non_lvalue->flags & AST_EXPR_FLAG_LVALUE));
+        result->make_lvalue.expression = non_lvalue;
+        result->flags |= AST_EXPR_FLAG_LVALUE;
+
+        return result;
+    }
+
     AST_Aggregate_Declaration* ast_aggregate_declaration_new(Context* context, File_Pos file_pos,
                                                              BUF(AST_Declaration*) members,
                                                              BUF(AST_Identifier*) poly_args,
