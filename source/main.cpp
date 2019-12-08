@@ -133,6 +133,12 @@ int main(int argc, char** argv)
     assert(type_info_kind_decl);
     Builtin::type_Type_Info_Kind = type_info_kind_decl->aggregate_type.type;
 
+    AST_Declaration* type_info_flag_decl =
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
+                                   Builtin::atom_Type_Info_Flags);
+    assert(type_info_flag_decl);
+    Builtin::type_Type_Info_Flags = type_info_flag_decl->aggregate_type.type;
+
     AST_Declaration* type_info_aggregate_member_type_decl =
         ast_scope_find_declaration(context, builtin_ast_module->module_scope,
                                     Builtin::atom_Type_Info_Aggregate_Member);
@@ -148,6 +154,13 @@ int main(int argc, char** argv)
     AST_Type* type_info_enum_member_type =
         type_info_enum_member_type_decl->aggregate_type.type;
     Builtin::type_Type_Info_Enum_Member = type_info_enum_member_type;
+
+    AST_Declaration* any_decl = ast_scope_find_declaration(context,
+                                                           builtin_ast_module->module_scope,
+                                                           Builtin::atom_Any);
+    assert(any_decl);
+    Builtin::type_Any = any_decl->aggregate_type.type;
+    assert(Builtin::type_Any);
 
     const char* file_string = read_file_string(file_name);
     // fprintf(stderr, "File contents:\n%s\n", file_string);

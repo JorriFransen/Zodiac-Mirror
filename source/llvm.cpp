@@ -505,6 +505,7 @@ namespace Zodiac
                                                                    ti->name.length);
 
             LLVMValueRef llvm_kind_val = LLVMConstInt(LLVM_Type::Type_Info_Kind, ti->kind, false);
+            LLVMValueRef llvm_flag_val = LLVMConstInt(LLVM_Type::Type_Info_Flag, ti->flags, false);
             LLVMValueRef llvm_byte_size_val = LLVMConstInt(LLVM_Type::u64, ti->byte_size, false);
 
             LLVMValueRef llvm_info_val = LLVMConstNull(LLVM_Type::Type_Info_Info_Union);
@@ -535,7 +536,7 @@ namespace Zodiac
                 assert(ti->kind == BASE);
             }
 
-            LLVMValueRef ti_mem_vals[] = { llvm_kind_val, llvm_name_val,
+            LLVMValueRef ti_mem_vals[] = { llvm_kind_val, llvm_flag_val, llvm_name_val,
                                            llvm_byte_size_val, llvm_info_val };
             unsigned ti_mem_count = STATIC_ARRAY_LENGTH(ti_mem_vals);
             LLVMValueRef llvm_ti = llvm_ti = LLVMConstStruct(ti_mem_vals, ti_mem_count, false);
@@ -748,7 +749,7 @@ namespace Zodiac
 
 
         AST_Type* zir_ti_type = Builtin::type_Type_Info;
-        AST_Declaration* ti_info_decl = zir_ti_type->aggregate_type.member_declarations[3];
+        AST_Declaration* ti_info_decl = zir_ti_type->aggregate_type.member_declarations[4];
         AST_Type* zir_ti_info_type = ti_info_decl->mutable_decl.type;
         AST_Declaration* enum_info_decl = zir_ti_info_type->aggregate_type.member_declarations[2];
         AST_Type* zir_enum_info_type = enum_info_decl->mutable_decl.type;
@@ -781,7 +782,7 @@ namespace Zodiac
         unsigned mem_count = STATIC_ARRAY_LENGTH(mem_vals);
 
         AST_Type* zir_ti_type = Builtin::type_Type_Info;
-        AST_Declaration* ti_info_decl = zir_ti_type->aggregate_type.member_declarations[3];
+        AST_Declaration* ti_info_decl = zir_ti_type->aggregate_type.member_declarations[4];
         AST_Type* zir_ti_info_type = ti_info_decl->mutable_decl.type;
         AST_Declaration* function_info_decl =
             zir_ti_info_type->aggregate_type.member_declarations[3];
@@ -1363,10 +1364,11 @@ namespace Zodiac
 				assert(a2);
 
                 ASSERT_INT(a1);
+                ASSERT_INT(a2);
 
-                assert((a2->type->flags & AST_TYPE_FLAG_INT) ||
-                       a2->type->kind == AST_TYPE_ENUM &&
-                       a1->type == a2->type->aggregate_type.base_type);
+//                assert((a2->type->flags & AST_TYPE_FLAG_INT) ||
+//                       a2->type->kind == AST_TYPE_ENUM &&
+//                       a1->type == a2->type->aggregate_type.base_type);
 
                 LLVMValueRef lhs = llvm_emit_ir_value(builder, zir_instruction->arg1);
                 LLVMValueRef rhs = llvm_emit_ir_value(builder, zir_instruction->arg2);

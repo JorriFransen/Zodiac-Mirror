@@ -3471,8 +3471,9 @@ namespace Zodiac
         assert(block_value->kind == IRV_BLOCK);
 
         assert(cond_value->type == Builtin::type_bool ||
-            cond_value->type->kind == AST_TYPE_POINTER ||
-            (cond_value->type->flags & AST_TYPE_FLAG_INT));
+               cond_value->type->kind == AST_TYPE_POINTER ||
+               cond_value->type->kind == AST_TYPE_ENUM ||
+               (cond_value->type->flags & AST_TYPE_FLAG_INT));
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_JMP_IF, cond_value,
                                                 block_value, nullptr);
@@ -3971,6 +3972,22 @@ namespace Zodiac
             assert(lvalue_expr->unary.op == AST_UNOP_DEREF);
             IR_Value* result = ir_builder_emit_lvalue(ir_builder, lvalue_expr->unary.operand);
             return ir_builder_emit_load(ir_builder, result, lvalue_expr->file_pos);
+        }
+        else if (lvalue_expr->kind == AST_EXPR_MAKE_LVALUE)
+        {
+            IR_Value* allocl = ir_builder_emit_allocl(ir_builder, lvalue_expr->type, "",
+                                                      lvalue_expr->file_pos);
+            IR_Value* init_val = ir_builder_emit_expression(ir_builder,
+                                                            lvalue_expr->make_lvalue.expression);
+            ir_builder_emit_store(ir_builder, allocl, init_val, lvalue_expr->file_pos);
+
+            AST_Type* ptr_type = ast_find_or_create_pointer_type(ir_builder->context,
+                                                                 lvalue_expr->type);
+            IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, ptr_type);
+            IR_Instruction* iri = ir_instruction_new(ir_builder, lvalue_expr->file_pos,
+                                                     IR_OP_ADDROF, allocl, nullptr, result_value);
+            ir_builder_emit_instruction(ir_builder, iri);
+            return result_value;
         }
         else
         {

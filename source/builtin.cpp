@@ -24,8 +24,10 @@ namespace Zodiac
     AST_Type* Builtin::type_Type_Info = nullptr;
     AST_Type* Builtin::type_pointer_to_Type_Info = nullptr;
     AST_Type* Builtin::type_Type_Info_Kind = nullptr;
+    AST_Type* Builtin::type_Type_Info_Flags = nullptr;
     AST_Type* Builtin::type_Type_Info_Aggregate_Member = nullptr;
     AST_Type* Builtin::type_Type_Info_Enum_Member = nullptr;
+    AST_Type* Builtin::type_Any = nullptr;
 
     uint64_t Builtin::pointer_size = 0;
 
@@ -34,6 +36,7 @@ namespace Zodiac
     AST_Declaration* Builtin::decl_default_assert_handler = nullptr;
 
 	Atom Builtin::atom_main;
+    Atom Builtin::atom_Any;
     Atom Builtin::atom_insert;
     Atom Builtin::atom_required;
     Atom Builtin::atom_String;
@@ -45,6 +48,7 @@ namespace Zodiac
     Atom Builtin::atom___compare_and_swap__;
     Atom Builtin::atom_Type_Info;
     Atom Builtin::atom_Type_Info_Kind;
+    Atom Builtin::atom_Type_Info_Flags;
     Atom Builtin::atom_Type_Info_Aggregate_Member;
     Atom Builtin::atom_Type_Info_Enum_Member;
     Atom Builtin::atom_default_assert_handler;
@@ -83,6 +87,7 @@ namespace Zodiac
         Builtin::type_pointer_to_u8 = ast_find_or_create_pointer_type(context, Builtin::type_u8);
 
 		Builtin::atom_main = atom_get(context->atom_table, "main");
+        Builtin::atom_Any = atom_get(context->atom_table, "Any");
         Builtin::atom_insert = atom_get(context->atom_table, "insert");
         Builtin::atom_required = atom_get(context->atom_table, "required");
         Builtin::atom_String = atom_get(context->atom_table, "String");
@@ -94,6 +99,7 @@ namespace Zodiac
         Builtin::atom___compare_and_swap__ = atom_get(context->atom_table, "__compare_and_swap__");
         Builtin::atom_Type_Info = atom_get(context->atom_table, "Type_Info");
         Builtin::atom_Type_Info_Kind = atom_get(context->atom_table, "Type_Info_Kind");
+        Builtin::atom_Type_Info_Flags = atom_get(context->atom_table, "Type_Info_Flags");
         Builtin::atom_Type_Info_Aggregate_Member = atom_get(context->atom_table,
                                                             "Type_Info_Aggregate_Member");
         Builtin::atom_Type_Info_Enum_Member = atom_get(context->atom_table,

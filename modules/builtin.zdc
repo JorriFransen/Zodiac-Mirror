@@ -21,9 +21,17 @@ Type_Info_Kind : u64 : enum
     FUNCTION;
 }
 
+Type_Info_Flags : u64 : enum
+{
+    INT     :: 1;
+    FLOAT   :: 2;
+    SIGNED  :: 4;
+}
+
 Type_Info :: struct
 {
     kind      : Type_Info_Kind;
+    flags     : Type_Info_Flags;
     name      : String;
     byte_size : u64;
 
@@ -64,6 +72,12 @@ Type_Info_Enum_Member :: struct
     name  : String;
     value : u64;
     type  : *Type_Info;
+}
+
+Any :: struct
+{
+    type_info : *Type_Info;
+    value     : *void;
 }
 
 String :: struct

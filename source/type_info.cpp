@@ -62,6 +62,19 @@ namespace Zodiac
                 index = next_type_info_index(context);
                 type->info_index = index;
                 tid->type_infos[index].kind = BASE;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    tid->type_infos[index].flags |= INT;
+                }
+                if (type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    tid->type_infos[index].flags |= FLOAT;
+                }
+                if (type->flags & AST_TYPE_FLAG_SIGNED)
+                {
+                    tid->type_infos[index].flags |= SIGNED;
+                }
                 break;
             }
 
