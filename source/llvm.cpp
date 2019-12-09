@@ -1476,7 +1476,8 @@ namespace Zodiac
                     IR_Value* zir_arg_value = stack_peek(builder->arg_stack, peek_offset);
                     LLVMValueRef llvm_arg_value = llvm_emit_ir_value(builder, zir_arg_value);
 
-                    if (zir_arg_value->kind == IRV_ALLOCL)
+                    if (zir_arg_value->kind == IRV_ALLOCL &&
+                        zir_arg_value->type->kind != AST_TYPE_STATIC_ARRAY)
                     {
                         llvm_arg_value = LLVMBuildLoad(builder->llvm_builder, llvm_arg_value,
                                                        "");
@@ -1793,6 +1794,13 @@ namespace Zodiac
                 assert(r->type->kind == AST_TYPE_POINTER);
                 LLVMTypeRef llvm_dest_type = llvm_type_from_ast(builder, r->type->pointer.base);
                 LLVMTypeRef llvm_pointer_dest_type = LLVMPointerType(llvm_dest_type, 0);
+
+                if (a1->kind == IRV_ARGUMENT && a1->type->kind == AST_TYPE_POINTER &&
+                        a1->type->pointer.base->kind == AST_TYPE_STATIC_ARRAY)
+                {
+                    llvm_source = LLVMBuildLoad(builder->llvm_builder, llvm_source, "");
+                }
+
                 if (a1->type->kind == AST_TYPE_STATIC_ARRAY ||
                     (a1->type->kind == AST_TYPE_POINTER &&
                      a1->type->pointer.base->kind == AST_TYPE_STATIC_ARRAY))
@@ -2439,6 +2447,10 @@ namespace Zodiac
                 {
                     AST_Type* zodiac_arg_type = zir_type->function.arg_types[i];
                     LLVMTypeRef llvm_arg_type = llvm_type_from_ast(builder, zodiac_arg_type);
+                    if (zodiac_arg_type->kind == AST_TYPE_STATIC_ARRAY)
+                    {
+                        llvm_arg_type = LLVMPointerType(llvm_arg_type, 0);
+                    }
                     BUF_PUSH(llvm_arg_types, llvm_arg_type);
                 }
                 bool is_vararg = (zir_type->flags & AST_TYPE_FLAG_FUNC_VARARG);

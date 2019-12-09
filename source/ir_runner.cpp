@@ -524,6 +524,10 @@ namespace Zodiac
         {
             dcArgPointer(runner->dyn_vm, arg_value->value.pointer);
         }
+        else if (arg_type->kind == AST_TYPE_STATIC_ARRAY)
+        {
+            dcArgPointer(runner->dyn_vm, arg_value->value.pointer);
+        }
         else if (arg_type->kind == AST_TYPE_ENUM)
         {
             ir_runner_push_ex_call_arg(runner, arg_value, arg_type->aggregate_type.base_type,
@@ -1376,7 +1380,7 @@ namespace Zodiac
                 if (dest_value->type->kind == AST_TYPE_STATIC_ARRAY)
                 {
                     assert(iri->arg1->kind == IRV_ALLOCL);
-                    assert(iri->arg2->kind == IRV_ALLOCL);
+                    // assert(iri->arg2->kind == IRV_ALLOCL);
                     assert(iri->arg1->type == iri->arg2->type);
 
                     AST_Type* array_type = iri->arg1->type;
@@ -1695,6 +1699,7 @@ namespace Zodiac
             {
                 assert(iri->arg1);
                 assert(iri->arg1->kind == IRV_ALLOCL ||
+                       iri->arg1->kind == IRV_ARGUMENT ||
                        iri->arg1->kind == IRV_TEMPORARY);
                 assert(iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY ||
                        iri->arg1->type->kind == AST_TYPE_POINTER);
@@ -1883,6 +1888,11 @@ namespace Zodiac
                     (iri->result->type->flags & AST_TYPE_FLAG_INT))
                 {
                     dest->value.u64 = source->value.u64;
+                }
+                else if (iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY &&
+                         iri->result->type->kind == AST_TYPE_POINTER)
+                {
+                    dest->value.pointer = source->value.pointer;
                 }
                 else assert(false);
 
