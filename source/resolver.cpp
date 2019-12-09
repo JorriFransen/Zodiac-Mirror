@@ -1974,6 +1974,7 @@ namespace Zodiac
                                                   "Attempting to take the addres of a non lvalue");
                             result = false;
                         }
+
                         expression->type = ast_find_or_create_pointer_type(resolver->context,
                                                                            operand_type);
                         break;

@@ -1376,7 +1376,7 @@ namespace Zodiac
                 if (dest_value->type->kind == AST_TYPE_STATIC_ARRAY)
                 {
                     assert(iri->arg1->kind == IRV_ALLOCL);
-                    assert(iri->arg2->kind == IRV_ALLOCL);
+                    // assert(iri->arg2->kind == IRV_ALLOCL);
                     assert(iri->arg1->type == iri->arg2->type);
 
                     AST_Type* array_type = iri->arg1->type;

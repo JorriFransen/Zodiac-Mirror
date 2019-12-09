@@ -1223,8 +1223,26 @@ namespace Zodiac
 
                     case AST_UNOP_ADDROF:
                     {
-                        return ir_builder_emit_addrof(ir_builder, expression->unary.operand,
-                                                    expression->file_pos);
+                        if (expression->type->kind == AST_TYPE_POINTER &&
+                            expression->type->pointer.base->kind == AST_TYPE_STATIC_ARRAY &&
+                            expression->unary.operand->type->kind == AST_TYPE_STATIC_ARRAY)
+                        {
+                            AST_Type* expected_array_type = expression->type->pointer.base;
+                            AST_Type* operand_array_type = expression->unary.operand->type;
+                            assert(expected_array_type == operand_array_type);
+
+                            IR_Value* array_allocl =
+                                ir_builder_emit_expression(ir_builder, expression->unary.operand);
+
+                            return ir_builder_emit_array_offset_pointer(ir_builder, array_allocl,
+                                                                        (uint64_t)0,
+                                                                        expression->file_pos);
+                        }
+                        else
+                        {
+                            return ir_builder_emit_addrof(ir_builder, expression->unary.operand,
+                                                          expression->file_pos);
+                        }
                         break;
                     }
 

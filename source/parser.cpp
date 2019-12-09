@@ -1639,8 +1639,8 @@ namespace Zodiac
         expect_token(parser, TOK_KW_ARRAY_LENGTH);
         expect_token(parser, TOK_LPAREN);
         AST_Expression* ident_expr = parse_expression(parser, scope);
-        assert(ident_expr->kind == AST_EXPR_IDENTIFIER ||
-               ident_expr->kind == AST_EXPR_DOT);
+        // assert(ident_expr->kind == AST_EXPR_IDENTIFIER ||
+        //        ident_expr->kind == AST_EXPR_DOT);
         expect_token(parser, TOK_RPAREN);
 
         return ast_array_length_expression_new(parser->context, ft.file_pos, ident_expr);
