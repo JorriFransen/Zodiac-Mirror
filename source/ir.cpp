@@ -1231,12 +1231,16 @@ namespace Zodiac
                             AST_Type* operand_array_type = expression->unary.operand->type;
                             assert(expected_array_type == operand_array_type);
 
-                            IR_Value* array_allocl =
-                                ir_builder_emit_expression(ir_builder, expression->unary.operand);
+                            IR_Value* operand_lvalue =
+                                ir_builder_emit_lvalue(ir_builder, expression->unary.operand);
 
-                            return ir_builder_emit_array_offset_pointer(ir_builder, array_allocl,
-                                                                        (uint64_t)0,
-                                                                        expression->file_pos);
+                            IR_Value* pointer =
+                                ir_builder_emit_array_offset_pointer(ir_builder, operand_lvalue,
+                                                                     (uint64_t)0,
+                                                                     expression->file_pos);
+
+                            return ir_builder_emit_cast(ir_builder, pointer, expression->type,
+                                                        expression->file_pos);
                         }
                         else
                         {
@@ -1882,6 +1886,12 @@ namespace Zodiac
 
         AST_Type* source_type = expression->cast_expr.expr->type;
         AST_Type* dest_type = expression->type;
+
+        if (source_type == dest_type)
+        {
+            return ir_builder_emit_expression(ir_builder, expression->cast_expr.expr);
+        }
+
         AST_Type* dest_ptr_type = ast_find_or_create_pointer_type(ir_builder->context, dest_type);
 
         bool source_struct = source_type->kind == AST_TYPE_STRUCT;
@@ -4022,9 +4032,15 @@ namespace Zodiac
         assert(ir_builder);
         assert(value);
         assert(value->kind == IRV_TEMPORARY ||
-            value->kind == IRV_INT_LITERAL ||
-            value->kind == IRV_CHAR_LITERAL);
+               value->kind == IRV_INT_LITERAL ||
+               value->kind == IRV_CHAR_LITERAL ||
+               (value->kind == IRV_ALLOCL && value->type->kind == AST_TYPE_STATIC_ARRAY));
         assert(type);
+
+        if (value->type == type)
+        {
+            return value;
+        }
 
         IR_Value* result = ir_value_new(ir_builder, IRV_TEMPORARY, type);
         IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_CAST, value, nullptr,

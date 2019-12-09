@@ -35,21 +35,30 @@ main :: ()
     }
 
 
-    _c.printf("*bytes: %p\n", *bytes);
-    _c.printf("*bytes[0]: %p\n", *bytes[0]);
-    print_8x_u8_array(*bytes);
+    // _c.printf("*bytes: %p\n", *bytes);
+    // _c.printf("*bytes[0]: %p\n", *bytes[0]);
+    assert((:*u8)(*bytes) == *bytes[0]);
+    print_8x_u8_array_ptr(*bytes);
+    // print_8x_u8_array(bytes);
 
     return 0;
 }
 
-print_8x_u8_array :: (arr: *[8]u8)
+print_8x_u8_array_ptr :: (arr: *[8]u8)
 {
-    _c.printf("arr: %p\n", arr);
-    _c.printf("*(<arr)[0]: %p\n", *(<arr)[0]);
+    // _c.printf("arr: %p\n", arr);
+    // _c.printf("*(<arr)[0]: %p\n", *(<arr)[0]);
+    assert((:*u8)(arr) == *(<arr)[0]);
     for (i := 0; i < array_length(<arr); i++)
     {
-        // _arr := <arr;
-        _c.printf("arr[%d]: %d\n", i, (<arr)[i]);
-        // _c.printf("arr[%d]: %d\n", i, _arr[i]);
+        _c.printf("(<arr)[%d]: %d\n", i, (<arr)[i]);
     }
 }
+
+// print_8x_u8_array :: (arr: [8]u8)
+// {
+//     for (i := 0; i < array_length(arr); i++)
+//     {
+//         _c.printf("arr[%d]: %d\n", i, arr[i]);
+//     }
+// }

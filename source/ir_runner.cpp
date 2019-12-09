@@ -524,6 +524,10 @@ namespace Zodiac
         {
             dcArgPointer(runner->dyn_vm, arg_value->value.pointer);
         }
+        else if (arg_type->kind == AST_TYPE_STATIC_ARRAY)
+        {
+            dcArgPointer(runner->dyn_vm, arg_value->value.pointer);
+        }
         else if (arg_type->kind == AST_TYPE_ENUM)
         {
             ir_runner_push_ex_call_arg(runner, arg_value, arg_type->aggregate_type.base_type,
@@ -1883,6 +1887,11 @@ namespace Zodiac
                     (iri->result->type->flags & AST_TYPE_FLAG_INT))
                 {
                     dest->value.u64 = source->value.u64;
+                }
+                else if (iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY &&
+                         iri->result->type->kind == AST_TYPE_POINTER)
+                {
+                    dest->value.pointer = source->value.pointer;
                 }
                 else assert(false);
 

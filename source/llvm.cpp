@@ -124,6 +124,9 @@ namespace Zodiac
 
         if (root)
         {
+            char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
+            printf("%s", llvm_module_string);
+            LLVMDisposeMessage(llvm_module_string);
             if (context->options.emit_debug)
             {
                 // char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
