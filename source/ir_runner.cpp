@@ -1699,6 +1699,7 @@ namespace Zodiac
             {
                 assert(iri->arg1);
                 assert(iri->arg1->kind == IRV_ALLOCL ||
+                       iri->arg1->kind == IRV_ARGUMENT ||
                        iri->arg1->kind == IRV_TEMPORARY);
                 assert(iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY ||
                        iri->arg1->type->kind == AST_TYPE_POINTER);

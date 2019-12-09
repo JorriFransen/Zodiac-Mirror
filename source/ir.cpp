@@ -497,6 +497,10 @@ namespace Zodiac
 
                 AST_Identifier* arg_ident = arg_decl->identifier;
                 AST_Type* arg_type = arg_decl->mutable_decl.type;
+                if (arg_type->kind == AST_TYPE_STATIC_ARRAY)
+                {
+                    arg_type = ast_find_or_create_pointer_type(ir_builder->context, arg_type);
+                }
                 IR_Value* arg_value = ir_builder_emit_function_arg(ir_builder,
                                                                 arg_ident->atom.data,
                                                                 arg_type, arg_ident->file_pos);
@@ -1388,13 +1392,29 @@ namespace Zodiac
                     for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
                     {
                         bool is_vararg = false;
+
+
+                        AST_Expression* arg_expr = expression->call.arg_expressions[i];
+                        IR_Value* arg_value = nullptr;
+
                         if (i >= BUF_LENGTH(func_type->function.arg_types))
                         {
                             assert(func_type->flags & AST_TYPE_FLAG_FUNC_VARARG);
                             is_vararg = true;
                         }
-                        AST_Expression* arg_expr = expression->call.arg_expressions[i];
-                        IR_Value* arg_value = ir_builder_emit_expression(ir_builder, arg_expr);
+
+                        if (i < BUF_LENGTH(func_type->function.arg_types) &&
+                            func_type->function.arg_types[i]->kind == AST_TYPE_STATIC_ARRAY)
+                        {
+                            arg_value = ir_builder_emit_lvalue(ir_builder, arg_expr);
+                        }
+                        else
+                        {
+                            arg_value = ir_builder_emit_expression(ir_builder, arg_expr);
+                        }
+
+                        assert(arg_value);
+
                         ir_builder_emit_call_arg(ir_builder, arg_value, arg_expr->file_pos,
                                                 is_vararg);
                     }
@@ -1456,7 +1476,7 @@ namespace Zodiac
                                                                     index_expr);
                     IR_Value* base_value = ir_builder_emit_lvalue(ir_builder,
                                                                     base_expr);
-                    if (!(base_value->kind == IRV_ALLOCL && base_value->type->kind == AST_TYPE_STATIC_ARRAY) &&
+                    if (!(base_value->type->kind == AST_TYPE_STATIC_ARRAY) &&
                             !(base_value->type->kind == AST_TYPE_POINTER &&
                             base_value->type->pointer.base->kind == AST_TYPE_STATIC_ARRAY))
                     {
@@ -2496,8 +2516,7 @@ namespace Zodiac
         assert(ir_builder);
         assert(array_allocl);
         assert(array_allocl->type->kind == AST_TYPE_POINTER ||
-            (array_allocl->kind == IRV_ALLOCL &&
-                array_allocl->type->kind == AST_TYPE_STATIC_ARRAY));
+               array_allocl->type->kind == AST_TYPE_STATIC_ARRAY);
         assert(offset_value);
         assert(offset_value->kind == IRV_TEMPORARY || IRV_INT_LITERAL);
         assert(offset_value->type == Builtin::type_s64 ||
@@ -3981,8 +4000,7 @@ namespace Zodiac
 
             IR_Value* base_value = ir_builder_emit_lvalue(ir_builder,
                                                         lvalue_expr->subscript.base_expression);
-            if (!(base_value->kind == IRV_ALLOCL &&
-                base_value->type->kind == AST_TYPE_STATIC_ARRAY) &&
+            if (!(base_value->type->kind == AST_TYPE_STATIC_ARRAY) &&
                     !(base_value->type->kind == AST_TYPE_POINTER &&
                     base_value->type->pointer.base->kind == AST_TYPE_STATIC_ARRAY))
             {
