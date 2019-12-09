@@ -1235,16 +1235,10 @@ namespace Zodiac
                             AST_Type* operand_array_type = expression->unary.operand->type;
                             assert(expected_array_type == operand_array_type);
 
-                            IR_Value* operand_lvalue =
-                                ir_builder_emit_lvalue(ir_builder, expression->unary.operand);
+                           IR_Value* operand_lvalue =
+                               ir_builder_emit_lvalue(ir_builder, expression->unary.operand);
 
-                            IR_Value* pointer =
-                                ir_builder_emit_array_offset_pointer(ir_builder, operand_lvalue,
-                                                                     (uint64_t)0,
-                                                                     expression->file_pos);
-
-                            return ir_builder_emit_cast(ir_builder, pointer, expression->type,
-                                                        expression->file_pos);
+                           return operand_lvalue;
                         }
                         else
                         {
@@ -1648,6 +1642,18 @@ namespace Zodiac
 
                 return ir_builder_emit_get_type_info(ir_builder, type->info_index,
                                                     expression->file_pos);
+                break;
+            }
+
+            case AST_EXPR_MAKE_LVALUE:
+            {
+                assert(false);
+                IR_Value* allocl = ir_builder_emit_allocl(ir_builder, expression->type, "",
+                                                          expression->file_pos);
+                IR_Value* init_val =
+                    ir_builder_emit_expression(ir_builder, expression->make_lvalue.expression);
+                ir_builder_emit_store(ir_builder, allocl, init_val, expression->file_pos);
+                return allocl;
                 break;
             }
 
@@ -3923,12 +3929,6 @@ namespace Zodiac
                     (base_value->type->pointer.base->kind == AST_TYPE_STRUCT ||
                     base_value->type->pointer.base->kind == AST_TYPE_UNION)));
 
-            // while (base_value->type->kind != AST_TYPE_STRUCT &&
-            //        base_value->type->kind != AST_TYPE_UNION)
-            // {
-            //     base_value = ir_builder_emit_load(ir_builder, base_value, lvalue_expr->file_pos);
-            // }
-
             AST_Type* base_type = base_value->type;
             AST_Type* aggregate_type = nullptr;
 
@@ -3939,15 +3939,8 @@ namespace Zodiac
             }
             else if (base_type->kind == AST_TYPE_POINTER)
             {
-                // if (base_value->kind != IRV_TEMPORARY)
-                // {
-                //     base_value = ir_builder_emit_load(ir_builder, base_value,
-                //                                       lvalue_expr->file_pos);
-                // }
-
                 assert(base_type->pointer.base->kind == AST_TYPE_STRUCT ||
                     base_type->pointer.base->kind == AST_TYPE_UNION);
-                // base_value = ir_builder_emit_loadp(ir_builder, base_value, lvalue_expr->file_pos);
                 aggregate_type = base_type->pointer.base;
             }
             else assert(false);
@@ -3981,21 +3974,12 @@ namespace Zodiac
                 }
                 else if (member_expression->identifier->atom == member_decl->identifier->atom)
                 {
-                    // member_index = i;
-                    // found = true;
-                    // break;
                     return ir_builder_emit_aggregate_offset_pointer(ir_builder, base_value, i,
                                                                     member_expression->file_pos);
                 }
             }
 
             assert(false);
-            // assert(found);
-
-            // IR_Value* result = ir_builder_emit_aggregate_offset_pointer(ir_builder, base_value,
-            //                                                             member_index);
-
-            // return result;
         }
         else if (lvalue_expr->kind == AST_EXPR_SUBSCRIPT)
         {

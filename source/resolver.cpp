@@ -1703,10 +1703,10 @@ namespace Zodiac
 
                 if (is_vararg)
                 {
-                    // if (is_foreign)
+                    if (is_foreign)
                         assert(arg_expr_count >= arg_decl_count);
-                    // else
-                    //     assert(arg_expr_count >= arg_decl_count - 1);
+                    else
+                        assert(arg_expr_count >= arg_decl_count - 1);
                 }
                 else
                 {
@@ -1820,6 +1820,7 @@ namespace Zodiac
                         result &= resolver_transform_to_any(resolver, expr, scope);
                         BUF_PUSH(_vararg_exprs, expr);
                     }
+
                     AST_Expression* varargs_array_lit =
                         ast_compound_literal_expression_new(resolver->context,
                                                             vararg_exprs[0]->file_pos,
@@ -1829,6 +1830,11 @@ namespace Zodiac
                                                       BUF_LENGTH(vararg_exprs));
                     result &= resolver_resolve_expression(resolver, varargs_array_lit, scope,
                                                           array_type);
+
+                    varargs_array_lit =
+                        ast_make_lvalue_expression_new(resolver->context,
+                                                       varargs_array_lit->file_pos,
+                                                       varargs_array_lit);
 
                     BUF(AST_Expression*) array_ref_members = nullptr;
 
@@ -1863,7 +1869,7 @@ namespace Zodiac
                     *(vararg_exprs[0]) = *array_ref_expr;
                     vararg_exprs[0]->flags |= AST_EXPR_FLAG_FIRST_VARARG;
 
-                    BUF_FREE(_vararg_exprs);
+                    // BUF_FREE(_vararg_exprs);
                     BUF_FREE(vararg_exprs);
                     // BUF_FREE(array_ref_members);
                 }

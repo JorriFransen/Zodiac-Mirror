@@ -8,16 +8,55 @@ main :: () -> int
 
     // printf("varargs test\n");
 
-    // vararg_func("1", 1);
-    vararg_func("3", 4, 5, 6);
+    // printf("type_info(int): %p\n", get_type_info(int));
+
+    //
+    // LVALUES (IR) ON ARRAY (ALLOCL) SHOULD USE AGGREGATE OFFSET POINTER AGAIN
+    //
+
+    vararg_func("1", 1);
+    // vararg_func("3", 4, 5, 6.6);
+    // vararg_func("7", "89");
 
     return 0;
 }
-
 
 vararg_func :: (prefix: String, v: ...)
 {
     printf("Calling vararg_func with prefix: %s\n", prefix.data);
 
     printf("\tv.count: %d\n", v.count);
+
+
+    for (i := 0; i < v.count; i++)
+    {
+        any := v.data[i];
+        // printf("any.type_info: %p\n", any.type_info);
+        // printf("any.type_info.kind: %u\n", any.type_info.kind);
+        printf("v[%d]: ", i);
+
+        switch (any.type_info.kind)
+        {
+            case Type_Info_Kind.BASE:
+            {
+                if (any.type_info.flags & Type_Info_Flags.INT)
+                {
+                    printf("INT!\n");
+                }
+                else
+                {
+                    printf("FLOAT!\n");
+                }
+            }
+
+            case Type_Info_Kind.POINTER:
+            {
+                printf("POINTER\n");
+            }
+
+            default: assert(false);
+        }
+    }
+
+    printf("\n");
 }
