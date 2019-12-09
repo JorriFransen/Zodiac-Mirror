@@ -25,6 +25,8 @@ namespace Zodiac
         BUF(Token) tokens = nullptr;
         uint64_t ti = 0;
         Parse_Result result = {};
+
+        bool allow_vararg_type_specs = false;
     };
 
     void parser_init(Parser* parser, Context* context);

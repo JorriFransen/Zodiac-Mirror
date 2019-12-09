@@ -28,6 +28,8 @@ namespace Zodiac
     AST_Type* Builtin::type_Type_Info_Aggregate_Member = nullptr;
     AST_Type* Builtin::type_Type_Info_Enum_Member = nullptr;
     AST_Type* Builtin::type_Any = nullptr;
+    AST_Type* Builtin::type_pointer_to_Any = nullptr;
+    AST_Type* Builtin::type_Array_Ref_of_Any = nullptr;
 
     uint64_t Builtin::pointer_size = 0;
 
@@ -37,6 +39,7 @@ namespace Zodiac
 
 	Atom Builtin::atom_main;
     Atom Builtin::atom_Any;
+    Atom Builtin::atom_Array_Ref_of_Any;
     Atom Builtin::atom_insert;
     Atom Builtin::atom_required;
     Atom Builtin::atom_String;
@@ -88,6 +91,7 @@ namespace Zodiac
 
 		Builtin::atom_main = atom_get(context->atom_table, "main");
         Builtin::atom_Any = atom_get(context->atom_table, "Any");
+        Builtin::atom_Array_Ref_of_Any = atom_get(context->atom_table, "Array_Ref_of_Any");
         Builtin::atom_insert = atom_get(context->atom_table, "insert");
         Builtin::atom_required = atom_get(context->atom_table, "required");
         Builtin::atom_String = atom_get(context->atom_table, "String");

@@ -1,0 +1,23 @@
+
+_c :: import c;
+using _c;
+
+main :: () -> int
+{
+    open_std_handles();
+
+    // printf("varargs test\n");
+
+    // vararg_func("1", 1);
+    vararg_func("3", 4, 5, 6);
+
+    return 0;
+}
+
+
+vararg_func :: (prefix: String, v: ...)
+{
+    printf("Calling vararg_func with prefix: %s\n", prefix.data);
+
+    printf("\tv.count: %d\n", v.count);
+}

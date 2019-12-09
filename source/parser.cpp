@@ -13,6 +13,7 @@ namespace Zodiac
         assert(context);
 
         parser->context = context;
+        parser->allow_vararg_type_specs = false;
     }
 
     Parse_Result parse_module(Parser* parser, BUF(Token) tokens, const char* module_name,
@@ -285,20 +286,31 @@ namespace Zodiac
                 }
                 else
                 {
+                    parser->allow_vararg_type_specs = true;
                     AST_Declaration* decl = parse_declaration(parser, argument_scope, false,
                                                               nullptr, AST_DECL_LOC_ARGUMENT);
+                    parser->allow_vararg_type_specs = false;
+
                     if (!decl)
                     {
                         return nullptr;
                     }
+
                     assert(decl->kind == AST_DECL_MUTABLE);
                     auto ts = decl->mutable_decl.type_spec;
                     assert(ts);
+
                     if (ts->kind == AST_TYPE_SPEC_POLY_FUNC_ARG ||
                         (ts->flags & AST_TYPE_SPEC_FLAG_HAS_POLY_CHILDREN))
                     {
                         is_poly = true;
                     }
+
+                    if (ts->kind == AST_TYPE_SPEC_VARARG)
+                    {
+                        is_vararg = true;
+                    }
+
                     BUF_PUSH(arg_decls, decl);
                 }
             }
@@ -322,7 +334,7 @@ namespace Zodiac
             }
 
             AST_Declaration* result = ast_function_declaration_new(parser->context, fp, identifier,
-                                                                   arg_decls, is_vararg, 
+                                                                   arg_decls, is_vararg,
                                                                    return_type_spec,
                                                                    body_block, argument_scope);
             if (is_poly)
@@ -1798,6 +1810,10 @@ namespace Zodiac
                                                     base_ident, nullptr);
             }
             assert(false);
+        }
+        else if (parser->allow_vararg_type_specs && match_token(parser, TOK_ELLIPSIS))
+        {
+            return ast_type_spec_vararg_new(parser->context, ft.file_pos);
         }
         else
         {

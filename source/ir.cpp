@@ -1389,12 +1389,15 @@ namespace Zodiac
                     assert(func_type);
                     assert(func_type->kind == AST_TYPE_FUNCTION);
 
+                    uint64_t arg_count = 0;
+
                     for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
                     {
+                        arg_count++;
                         bool is_vararg = false;
 
-
                         AST_Expression* arg_expr = expression->call.arg_expressions[i];
+
                         IR_Value* arg_value = nullptr;
 
                         if (i >= BUF_LENGTH(func_type->function.arg_types))
@@ -1417,11 +1420,15 @@ namespace Zodiac
 
                         ir_builder_emit_call_arg(ir_builder, arg_value, arg_expr->file_pos,
                                                 is_vararg);
+
+                        if (arg_expr->flags & AST_EXPR_FLAG_FIRST_VARARG)
+                        {
+                            break;
+                        }
                     }
 
-                    uint64_t num_args = BUF_LENGTH(expression->call.arg_expressions);
                     IR_Value* num_args_lit = ir_integer_literal(ir_builder, Builtin::type_s64,
-                        num_args);
+                                                                arg_count);
                     return ir_builder_emit_call(ir_builder, callee_value, num_args_lit,
                                                 expression->file_pos);
                 }
