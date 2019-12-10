@@ -1642,6 +1642,10 @@ namespace Zodiac
                 {
                     dest->value.pointer = source->value.pointer;
                 }
+                else if (iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY)
+                {
+                    dest->value.pointer = source->value.pointer;
+                }
                 else
                 {
                     dest->value.s64 = (int64_t)&source->value.s64;

@@ -8,10 +8,10 @@ main :: () -> int
 
     // printf("varargs test\n");
 
-    printf("type_info(int)  : %p\n", get_type_info(int));
-    printf("type_info(float): %p\n", get_type_info(float));
-    printf("type_info(*u8)  : %p\n", get_type_info(*u8));
-    printf("\n");
+    // printf("type_info(int)  : %p\n", get_type_info(int));
+    // printf("type_info(float): %p\n", get_type_info(float));
+    // printf("type_info(*u8)  : %p\n", get_type_info(*u8));
+    // printf("\n");
 
     test_func({ null, 0 });
     // an1 : Any = 1;
@@ -22,10 +22,9 @@ main :: () -> int
     // a1 : [4]Any;
     // a1 = { an1, an2,  anf1, anf2 }
 
-
     vararg_func("1", 1);
-    // vararg_func("3", 4, 5, 6.6);
-    // vararg_func("7", "89");
+    vararg_func("3", 4, 5, 6.6);
+    vararg_func("7", "89");
 
     return 0;
 }
@@ -51,32 +50,29 @@ vararg_func :: (prefix: String, v: ...)
     for (i := 0; i < v.count; i++)
     {
         any := v.data[i];
-        printf("any.type_info: %p\n", any.type_info);
-        if (any.type_info)
-            printf("any.type_info.kind: %u\n", any.type_info.kind);
-        // printf("v[%d]: ", i);
+        printf("v[%d]: ", i);
 
-        // switch (any.type_info.kind)
-        // {
-        //     case Type_Info_Kind.BASE:
-        //     {
-        //         if (any.type_info.flags & Type_Info_Flags.INT)
-        //         {
-        //             printf("INT!\n");
-        //         }
-        //         else
-        //         {
-        //             printf("FLOAT!\n");
-        //         }
-        //     }
+        switch (any.type_info.kind)
+        {
+            case Type_Info_Kind.BASE:
+            {
+                if (any.type_info.flags & Type_Info_Flags.INT)
+                {
+                    printf("INT!\n");
+                }
+                else
+                {
+                    printf("FLOAT!\n");
+                }
+            }
 
-        //     case Type_Info_Kind.POINTER:
-        //     {
-        //         printf("POINTER\n");
-        //     }
+            case Type_Info_Kind.POINTER:
+            {
+                printf("POINTER\n");
+            }
 
-        //     default: assert(false);
-        // }
+            default: assert(false);
+        }
     }
 
     printf("\n");

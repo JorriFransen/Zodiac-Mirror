@@ -4026,6 +4026,11 @@ namespace Zodiac
             ir_builder_emit_instruction(ir_builder, iri);
             return result_value;
         }
+        else if (lvalue_expr->kind == AST_EXPR_COMPOUND_LITERAL &&
+                 lvalue_expr->type->kind == AST_TYPE_STATIC_ARRAY)
+        {
+            assert(false);
+        }
         else
         {
             assert(false);
