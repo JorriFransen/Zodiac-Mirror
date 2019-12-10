@@ -2472,6 +2472,7 @@ namespace Zodiac
 
         dest_value = ir_runner_get_local_temporary(runner, dest_value);
         uint8_t* dest_pointer = (uint8_t*)dest_value->value.pointer;
+        assert(dest_pointer);
 
         return ir_runner_store_aggregate_literal(runner, aggregate_type, dest_pointer,
                                                  literal_value);

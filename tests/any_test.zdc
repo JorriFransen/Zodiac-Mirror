@@ -32,6 +32,8 @@ main :: ()
     unsigned : u64 = 8888;
     print_any(unsigned);
 
+    z : Any = 4;
+
     return 0;
 
 }

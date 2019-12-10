@@ -1838,17 +1838,28 @@ namespace Zodiac
 
                     BUF(AST_Expression*) array_ref_members = nullptr;
 
-                   AST_Expression* array_ref_data =
-                       ast_unary_expression_new(resolver->context, varargs_array_lit->file_pos,
-                                                AST_UNOP_ADDROF, varargs_array_lit);
-                   result &= resolver_resolve_expression(resolver, array_ref_data, scope);
-                   AST_Type_Spec* ptr_to_any_ts =
-                       ast_type_spec_from_type_new(resolver->context,
-                                                   varargs_array_lit->file_pos,
-                                                   Builtin::type_pointer_to_Any);
-                   array_ref_data = ast_cast_expression_new(resolver->context,
-                                                            varargs_array_lit->file_pos,
-                                                            ptr_to_any_ts, array_ref_data);
+                    AST_Expression* zero_lit =
+                        ast_integer_literal_expression_new(resolver->context,
+                                                           varargs_array_lit->file_pos,
+                                                           0);
+                    AST_Expression* array_ref_data =
+                        ast_subscript_expression_new(resolver->context,
+                                                     varargs_array_lit->file_pos,
+                                                     varargs_array_lit, zero_lit);
+                    array_ref_data = ast_unary_expression_new(resolver->context,
+                                                              array_ref_data->file_pos,
+                                                              AST_UNOP_ADDROF, array_ref_data);
+                   // AST_Expression* array_ref_data =
+                   //     ast_unary_expression_new(resolver->context, varargs_array_lit->file_pos,
+                   //                              AST_UNOP_ADDROF, varargs_array_lit);
+                   // result &= resolver_resolve_expression(resolver, array_ref_data, scope);
+                   // AST_Type_Spec* ptr_to_any_ts =
+                   //     ast_type_spec_from_type_new(resolver->context,
+                   //                                 varargs_array_lit->file_pos,
+                   //                                 Builtin::type_pointer_to_Any);
+                   // array_ref_data = ast_cast_expression_new(resolver->context,
+                   //                                          varargs_array_lit->file_pos,
+                   //                                          ptr_to_any_ts, array_ref_data);
                    result &= resolver_resolve_expression(resolver, array_ref_data, scope);
                    BUF_PUSH(array_ref_members, array_ref_data);
 
