@@ -2190,7 +2190,41 @@ namespace Zodiac
 
             case IRV_ARRAY_LITERAL:
             {
-                assert(false);
+                LLVMTypeRef llvm_arr_type = llvm_type_from_ast(builder, zir_value->type);
+                LLVMTypeRef llvm_base_type =
+                    llvm_type_from_ast(builder, zir_value->type->static_array.base);
+                if (zir_value->flags & IRV_FLAG_CONST)
+                {
+                    BUF(LLVMValueRef) arr_vals = nullptr;
+                    for (uint64_t i = 0; i < BUF_LENGTH(zir_value->value.compound_values); i++)
+                    {
+                        IR_Value* zir_arr_member = zir_value->value.compound_values[i];
+                        LLVMValueRef llvm_compound_member = llvm_emit_ir_value(builder,
+                                                                               zir_arr_member);
+                        BUF_PUSH(arr_vals, llvm_compound_member);
+                    }
+
+                    auto result = LLVMConstArray(llvm_base_type, arr_vals,
+                                                 zir_value->type->static_array.count);
+                    BUF_FREE(arr_vals);
+                    return result;
+                }
+                else
+                {
+                    LLVMValueRef arr_value = LLVMConstNull(llvm_arr_type);
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(zir_value->value.compound_values); i++)
+                    {
+                        IR_Value* zir_compound_member = zir_value->value.compound_values[i];
+                        LLVMValueRef llvm_arr_member = llvm_emit_ir_value(builder,
+                                                                          zir_compound_member);
+
+                        arr_value = LLVMBuildInsertValue(builder->llvm_builder, arr_value,
+                                                         llvm_arr_member, (unsigned)i, "");
+                    }
+
+                    return arr_value;
+                }
                 break;
             }
 

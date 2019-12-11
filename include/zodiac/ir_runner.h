@@ -146,6 +146,10 @@ namespace Zodiac
                                            uint8_t* dest_pointer, IR_Value* literal_value);
     void ir_runner_store_aggregate_literal(IR_Runner* runner, AST_Type* aggregate_type,
                                            IR_Value* dest_value, IR_Value* literal_value);
+    void ir_runner_store_array_literal(IR_Runner* runner, AST_Type* array_type,
+                                       uint8_t* dest_pointer, IR_Value* literal_value);
+    void ir_runner_store_array_literal(IR_Runner* runner, AST_Type* array_type,
+                                       IR_Value* dest_value, IR_Value* literal_value);
 
     void ir_runner_print_stack_trace(IR_Runner* ir_runner, File_Pos origin);
 

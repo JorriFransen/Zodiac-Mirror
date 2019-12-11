@@ -1493,27 +1493,50 @@ namespace Zodiac
             {
                 if (expression->type->kind == AST_TYPE_STATIC_ARRAY)
                 {
-                    AST_Type* array_type = expression->type;
-                    IR_Value* result_value = ir_builder_emit_allocl(ir_builder, array_type,
-                                                                    "array_compound_lit",
-                                                                    expression->file_pos);
+                    // AST_Type* array_type = expression->type;
+                    // IR_Value* result_value = ir_builder_emit_allocl(ir_builder, array_type,
+                    //                                                 "array_compound_lit",
+                    //                                                 expression->file_pos);
 
+                    // auto compound_exprs = expression->compound_literal.expressions;
+                    // for (uint64_t i = 0; i < BUF_LENGTH(compound_exprs); i++)
+                    // {
+                    //     AST_Expression* element_expression = compound_exprs[i];
+                    //     IR_Value* element_value = ir_builder_emit_expression(ir_builder,
+                    //                                                         element_expression);
+
+                    //     IR_Value* pointer_value =
+                    //         ir_builder_emit_array_offset_pointer(ir_builder, result_value, i,
+                    //                                             element_expression->file_pos);
+
+                    //     ir_builder_emit_storep(ir_builder, pointer_value, element_value,
+                    //                         element_expression->file_pos);
+                    // }
+
+                    // return result_value;
+
+                    AST_Type* array_type = expression->type;
+
+                    BUF(IR_Value*) compound_values = nullptr;
                     auto compound_exprs = expression->compound_literal.expressions;
+
+                    bool all_const = true;
+
                     for (uint64_t i = 0; i < BUF_LENGTH(compound_exprs); i++)
                     {
-                        AST_Expression* element_expression = compound_exprs[i];
-                        IR_Value* element_value = ir_builder_emit_expression(ir_builder,
-                                                                            element_expression);
+                        AST_Expression* member_expression = compound_exprs[i];
+                        IR_Value* member_value = ir_builder_emit_expression(ir_builder,
+                                                                            member_expression);
 
-                        IR_Value* pointer_value =
-                            ir_builder_emit_array_offset_pointer(ir_builder, result_value, i,
-                                                                element_expression->file_pos);
+                        if (!(member_value->flags & IRV_FLAG_CONST))
+                        {
+                            all_const = false;
+                        }
 
-                        ir_builder_emit_storep(ir_builder, pointer_value, element_value,
-                                            element_expression->file_pos);
+                        BUF_PUSH(compound_values, member_value);
                     }
 
-                    return result_value;
+                    return ir_array_literal(ir_builder, array_type, compound_values, all_const);
                 }
                 else if (expression->type->kind == AST_TYPE_STRUCT)
                 {
@@ -3573,15 +3596,16 @@ namespace Zodiac
 
         assert(allocl_value->kind == IRV_ALLOCL);
         assert(new_value->kind == IRV_TEMPORARY ||
-            new_value->kind == IRV_ARGUMENT ||
-            new_value->kind == IRV_ALLOCL ||
-            new_value->kind == IRV_INT_LITERAL ||
-            new_value->kind == IRV_STRING_LITERAL ||
-            new_value->kind == IRV_CHAR_LITERAL ||
-            new_value->kind == IRV_FLOAT_LITERAL ||
-            new_value->kind == IRV_NULL_LITERAL ||
-            new_value->kind == IRV_BOOL_LITERAL ||
-                new_value->kind == IRV_AGGREGATE_LITERAL);
+               new_value->kind == IRV_ARGUMENT ||
+               new_value->kind == IRV_ALLOCL ||
+               new_value->kind == IRV_INT_LITERAL ||
+               new_value->kind == IRV_STRING_LITERAL ||
+               new_value->kind == IRV_CHAR_LITERAL ||
+               new_value->kind == IRV_FLOAT_LITERAL ||
+               new_value->kind == IRV_NULL_LITERAL ||
+               new_value->kind == IRV_BOOL_LITERAL ||
+               new_value->kind == IRV_AGGREGATE_LITERAL ||
+               new_value->kind == IRV_ARRAY_LITERAL);
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_STOREL, allocl_value,
                                                 new_value, nullptr);
@@ -4231,6 +4255,20 @@ namespace Zodiac
                                 BUF(IR_Value*) member_values, bool is_const)
     {
         IR_Value* result = ir_value_new(ir_builder, IRV_AGGREGATE_LITERAL, aggregate_type);
+        result->value.compound_values = member_values;
+        result->flags |= IRV_FLAG_ASSIGNED;
+        if (is_const)
+        {
+            result->flags |= IRV_FLAG_CONST;
+        }
+
+        return result;
+    }
+
+    IR_Value* ir_array_literal(IR_Builder* ir_builder, AST_Type* array_type,
+                               BUF(IR_Value*) member_values, bool is_const)
+    {
+        IR_Value* result = ir_value_new(ir_builder, IRV_ARRAY_LITERAL, array_type);
         result->value.compound_values = member_values;
         result->flags |= IRV_FLAG_ASSIGNED;
         if (is_const)

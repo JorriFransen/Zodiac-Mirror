@@ -477,6 +477,8 @@ namespace Zodiac
     IR_Value* ir_character_literal(IR_Builder* ir_builder, AST_Type* type, char c);
     IR_Value* ir_aggregate_literal(IR_Builder* ir_builder, AST_Type* aggregate_type,
                                    BUF(IR_Value*) member_values, bool is_const);
+    IR_Value* ir_array_literal(IR_Builder* ir_builder, AST_Type* array_type,
+                                   BUF(IR_Value*) member_values, bool is_const);
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);
 
     IR_Value* ir_builder_emit_phi(IR_Builder* ir_builder, AST_Type* type, File_Pos file_pos);

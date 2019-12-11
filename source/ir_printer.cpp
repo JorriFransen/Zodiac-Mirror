@@ -569,6 +569,7 @@ namespace Zodiac
             }
 
             case IRV_AGGREGATE_LITERAL:
+            case IRV_ARRAY_LITERAL:
             {
                 string_builder_append(sb, "{ ");
                 for (uint64_t i = 0; i < BUF_LENGTH(value->value.compound_values); i++)

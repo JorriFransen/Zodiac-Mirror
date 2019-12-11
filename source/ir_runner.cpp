@@ -442,6 +442,7 @@ namespace Zodiac
             case IRV_BOOL_LITERAL:
             case IRV_NULL_LITERAL:
             case IRV_AGGREGATE_LITERAL:
+            case IRV_ARRAY_LITERAL:
             case IRV_FUNCTION:
             {
                 result = code_value;
@@ -1385,11 +1386,21 @@ namespace Zodiac
 
                     AST_Type* array_type = iri->arg1->type;
 
-                    auto byte_count = array_type->static_array.count *
-                        (array_type->static_array.base->bit_size / 8);
+                    if (iri->arg2->kind == IRV_ALLOCL)
+                    {
+                        assert(false); // Not sure if this path is still used...
 
-                    memcpy(dest_value->value.pointer, source_value->value.pointer,
-                           byte_count);
+                        auto byte_count = array_type->static_array.count *
+                            (array_type->static_array.base->bit_size / 8);
+
+                        memcpy(dest_value->value.pointer, source_value->value.pointer,
+                            byte_count);
+                    }
+                    else if (iri->arg2->kind == IRV_ARRAY_LITERAL)
+                    {
+                        ir_runner_store_array_literal(runner, array_type, iri->arg1, iri->arg2);
+                    }
+                    else assert(false);
                 }
                 else if (dest_value->type->kind == AST_TYPE_STRUCT)
                 {
@@ -2478,8 +2489,74 @@ namespace Zodiac
         uint8_t* dest_pointer = (uint8_t*)dest_value->value.pointer;
         assert(dest_pointer);
 
-        return ir_runner_store_aggregate_literal(runner, aggregate_type, dest_pointer,
-                                                 literal_value);
+        ir_runner_store_aggregate_literal(runner, aggregate_type, dest_pointer, literal_value);
+    }
+
+    void ir_runner_store_array_literal(IR_Runner* runner, AST_Type* array_type,
+                                       uint8_t* dest_pointer, IR_Value* literal_value)
+    {
+        assert(array_type->kind == AST_TYPE_STATIC_ARRAY);
+        assert(literal_value->kind == IRV_ARRAY_LITERAL);
+
+        uint8_t* dest_cursor = dest_pointer;
+
+        for (uint64_t i = 0; i < BUF_LENGTH(literal_value->value.compound_values); i++)
+        {
+            IR_Value* member_value = literal_value->value.compound_values[i];
+            member_value = ir_runner_get_local_temporary(runner, member_value);
+
+            uint64_t byte_size = member_value->type->bit_size / 8;
+
+            switch (member_value->kind)
+            {
+                case IRV_INT_LITERAL:
+                {
+                    memcpy(dest_cursor, &member_value->value.u64, byte_size);
+                    break;
+                }
+
+                case IRV_AGGREGATE_LITERAL:
+                {
+                    ir_runner_store_aggregate_literal(runner, member_value->type, dest_cursor,
+                                                      member_value);
+                    break;
+                }
+
+                default: assert(false);
+            }
+
+            dest_cursor += byte_size;
+        }
+    }
+
+    void ir_runner_store_array_literal(IR_Runner* runner, AST_Type* array_type,
+                                       IR_Value* dest_value, IR_Value* literal_value)
+    {
+        assert(array_type->kind == AST_TYPE_STATIC_ARRAY);
+        assert(dest_value->kind == IRV_ALLOCL ||
+               (dest_value->kind == IRV_TEMPORARY &&
+                dest_value->type->kind == AST_TYPE_POINTER));
+        assert(literal_value->kind == IRV_ARRAY_LITERAL);
+
+        bool is_pointer = dest_value->type->kind == AST_TYPE_POINTER;
+
+        if (is_pointer)
+        {
+            assert(dest_value->type->pointer.base = literal_value->type);
+        }
+        else
+        {
+            assert(dest_value->type == literal_value->type);
+        }
+
+        assert(array_type->static_array.count == 
+               BUF_LENGTH(literal_value->value.compound_values));
+
+        dest_value = ir_runner_get_local_temporary(runner, dest_value);
+        uint8_t* dest_pointer = (uint8_t*)dest_value->value.pointer;
+        assert(dest_pointer);
+
+        ir_runner_store_array_literal(runner, array_type, dest_pointer, literal_value);
     }
 
     void ir_runner_print_stack_trace(IR_Runner* ir_runner, File_Pos origin)
