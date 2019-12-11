@@ -7,6 +7,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "polymorph.h"
+#include "copier.h"
 
 #include <stdarg.h>
 #include <inttypes.h>
@@ -395,6 +396,12 @@ namespace Zodiac
                     result &=
                         resolver_resolve_expression(resolver, init_expr, scope, specified_type);
 
+                    if (result && Builtin::type_Any && specified_type == Builtin::type_Any &&
+                            init_expr->type != Builtin::type_Any)
+                    {
+                        result &= resolver_transform_to_any(resolver, init_expr, scope);
+                    }
+
                     if (result)
                     {
                         if (declaration->location == AST_DECL_LOC_GLOBAL)
@@ -485,7 +492,7 @@ namespace Zodiac
             {
                 auto ts = declaration->typedef_decl.type_spec;
                 result &= resolver_resolve_type_spec(resolver, ts->file_pos, ts,
-                                                     &declaration->typedef_decl.type, scope);
+                                                     &declaration->typedef_decl.type, scope, scope);
                 break;
             }
 
@@ -1243,6 +1250,15 @@ namespace Zodiac
                         result &= resolver_resolve_expression(resolver,
                                                               statement->assign.expression,
                                                               scope, suggested_type);
+
+                        if (result && Builtin::type_Any &&
+                            suggested_type == Builtin::type_Any &&
+                            statement->assign.expression->type != Builtin::type_Any)
+                        {
+                            result &= resolver_transform_to_any(resolver,
+                                                                statement->assign.expression,
+                                                                scope);
+                        }
                     }
                 }
 
@@ -1697,9 +1713,15 @@ namespace Zodiac
                 auto arg_expr_count = BUF_LENGTH(expression->call.arg_expressions);
                 auto arg_decl_count = BUF_LENGTH(func_type->function.arg_types);
 
-                if (func_decl->flags & AST_DECL_FLAG_FUNC_VARARG)
+                bool is_foreign = func_decl->flags & AST_DECL_FLAG_FOREIGN;
+                bool is_vararg = func_decl->flags & AST_DECL_FLAG_FUNC_VARARG;
+
+                if (is_vararg)
                 {
-                    assert(arg_expr_count >= arg_decl_count);
+                    if (is_foreign)
+                        assert(arg_expr_count >= arg_decl_count);
+                    else
+                        assert(arg_expr_count >= arg_decl_count - 1);
                 }
                 else
                 {
@@ -1713,6 +1735,9 @@ namespace Zodiac
                     }
                 }
 
+                bool varargs_started = false;
+                BUF(AST_Expression*) vararg_exprs = nullptr;
+
                 for (uint64_t i = 0; i < arg_expr_count; i++)
                 {
                     AST_Expression* arg_expr = expression->call.arg_expressions[i];
@@ -1722,6 +1747,14 @@ namespace Zodiac
                     if (i < arg_decl_count)
                     {
                         arg_type = func_type->function.arg_types[i];
+
+                        if (is_vararg &&
+                            i == arg_decl_count - 1 &&
+                            arg_type == Builtin::type_Array_Ref_of_Any)
+                        {
+                            assert(!varargs_started);
+                            varargs_started = true;
+                        }
                     }
 
                     if (is_overload)
@@ -1729,21 +1762,28 @@ namespace Zodiac
                         arg_expr->flags &= ~AST_EXPR_FLAG_RESOLVED;
                     }
 
-                    if (arg_type && arg_type == Builtin::type_Any)
+                    if (varargs_started)
                     {
                         result &= resolver_resolve_expression(resolver, arg_expr, scope);
-                        if (result) result &= resolver_transform_to_any(resolver, arg_expr,
-                                                                        scope);
+                        if (result) BUF_PUSH(vararg_exprs, arg_expr);
                     }
                     else
                     {
-                        result &= resolver_resolve_expression(resolver, arg_expr, scope,
-                                                              arg_type);
+                        if (arg_type && arg_type == Builtin::type_Any)
+                        {
+                            result &= resolver_resolve_expression(resolver, arg_expr, scope);
+                            if (result) result &= resolver_transform_to_any(resolver, arg_expr,
+                                                                            scope);
+                        }
+                        else
+                        {
+                            result &= resolver_resolve_expression(resolver, arg_expr, scope,
+                                                                arg_type);
+                        }
                     }
-
                     if (!result) break;
 
-                    if (arg_type)
+                    if (arg_type && !varargs_started)
                     {
                         bool valid_conversion = resolver_check_assign_types(resolver, arg_type,
                                                                             arg_expr->type);
@@ -1772,6 +1812,84 @@ namespace Zodiac
                             mem_free(expr_type_str);
                         }
                     }
+                }
+
+                if (result && varargs_started)
+                {
+                    // Replace the first vararg with the arrayref of any
+
+                    BUF(AST_Expression*) _vararg_exprs = nullptr;
+                    for (uint64_t i = 0; i < BUF_LENGTH(vararg_exprs); i++)
+                    {
+                        AST_Expression* expr = nullptr;
+                        if (i == 0)
+                        {
+                            expr = copy_expression(resolver->context, vararg_exprs[i]);
+                            result &= resolver_resolve_expression(resolver, expr, scope);
+                        }
+                        else
+                        {
+                            expr = vararg_exprs[i];
+                        }
+                        assert(expr);
+                        result &= resolver_transform_to_any(resolver, expr, scope);
+                        BUF_PUSH(_vararg_exprs, expr);
+                    }
+
+                    AST_Expression* varargs_array_lit =
+                        ast_compound_literal_expression_new(resolver->context,
+                                                            vararg_exprs[0]->file_pos,
+                                                            _vararg_exprs);
+                    AST_Type* array_type =
+                        ast_find_or_create_array_type(resolver->context, Builtin::type_Any,
+                                                      BUF_LENGTH(vararg_exprs));
+                    result &= resolver_resolve_expression(resolver, varargs_array_lit, scope,
+                                                          array_type);
+
+                    varargs_array_lit =
+                        ast_make_lvalue_expression_new(resolver->context,
+                                                       varargs_array_lit->file_pos,
+                                                       varargs_array_lit);
+
+                    BUF(AST_Expression*) array_ref_members = nullptr;
+
+                    AST_Expression* zero_lit =
+                        ast_integer_literal_expression_new(resolver->context,
+                                                           varargs_array_lit->file_pos,
+                                                           0);
+                   AST_Expression* array_ref_data =
+                       ast_unary_expression_new(resolver->context, varargs_array_lit->file_pos,
+                                                AST_UNOP_ADDROF, varargs_array_lit);
+                   AST_Type_Spec* ptr_to_any_ts =
+                       ast_type_spec_from_type_new(resolver->context,
+                                                   varargs_array_lit->file_pos,
+                                                   Builtin::type_pointer_to_Any);
+                   array_ref_data = ast_cast_expression_new(resolver->context,
+                                                            varargs_array_lit->file_pos,
+                                                            ptr_to_any_ts, array_ref_data);
+                   result &= resolver_resolve_expression(resolver, array_ref_data, scope);
+                   BUF_PUSH(array_ref_members, array_ref_data);
+
+                    AST_Expression* array_ref_count =
+                        ast_integer_literal_expression_new(resolver->context,
+                                                           varargs_array_lit->file_pos,
+                                                           array_type->static_array.count);
+                    result &= resolver_resolve_expression(resolver, array_ref_count, scope);
+                    BUF_PUSH(array_ref_members, array_ref_count);
+
+                    AST_Expression* array_ref_expr =
+                        ast_compound_literal_expression_new(resolver->context,
+                                                            varargs_array_lit->file_pos,
+                                                            array_ref_members);
+                    result &= resolver_resolve_expression(resolver, array_ref_expr, scope,
+                                                          Builtin::type_Array_Ref_of_Any);
+
+                    *(vararg_exprs[0]) = *array_ref_expr;
+                    vararg_exprs[0]->flags |= AST_EXPR_FLAG_FIRST_VARARG;
+
+                    // BUF_FREE(_vararg_exprs);
+                    BUF_FREE(vararg_exprs);
+                    // BUF_FREE(array_ref_members);
                 }
 
                 assert(func_type->function.return_type);
@@ -2227,6 +2345,8 @@ namespace Zodiac
                 assert(suggested_type);
 
                 bool all_members_const = true;
+
+                // expression->flags |= AST_EXPR_FLAG_LVALUE;
 
                 if (suggested_type->kind == AST_TYPE_STRUCT)
                 {
@@ -3123,6 +3243,13 @@ namespace Zodiac
                 break;
             }
 
+            case AST_TYPE_SPEC_VARARG:
+            {
+                assert(Builtin::type_Array_Ref_of_Any);
+                *type_dest = Builtin::type_Array_Ref_of_Any;
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -3342,6 +3469,7 @@ namespace Zodiac
         AST_Expression* old_expr = ast_expression_new(resolver->context, expression->file_pos,
                                                       expression->kind);
         *old_expr = *expression;
+        assert(old_expr->type);
 
         expression->kind = AST_EXPR_COMPOUND_LITERAL;
         expression->type = Builtin::type_Any;

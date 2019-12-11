@@ -1642,6 +1642,10 @@ namespace Zodiac
                 {
                     dest->value.pointer = source->value.pointer;
                 }
+                else if (iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY)
+                {
+                    dest->value.pointer = source->value.pointer;
+                }
                 else
                 {
                     dest->value.s64 = (int64_t)&source->value.s64;
@@ -2472,6 +2476,7 @@ namespace Zodiac
 
         dest_value = ir_runner_get_local_temporary(runner, dest_value);
         uint8_t* dest_pointer = (uint8_t*)dest_value->value.pointer;
+        assert(dest_pointer);
 
         return ir_runner_store_aggregate_literal(runner, aggregate_type, dest_pointer,
                                                  literal_value);

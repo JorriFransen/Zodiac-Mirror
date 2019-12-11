@@ -118,6 +118,7 @@ namespace Zodiac
         AST_EXPR_FLAG_RESOLVED        = (1 << 4),
         AST_EXPR_FLAG_INTEGER_LITERAL = (1 << 5),
         AST_EXPR_FLAG_LVALUE          = (1 << 6),
+        AST_EXPR_FLAG_FIRST_VARARG    = (1 << 7),
     };
 
     enum AST_Builtin_Function
@@ -645,6 +646,7 @@ namespace Zodiac
         AST_TYPE_SPEC_FROM_TYPE,
         AST_TYPE_SPEC_POLY_FUNC_ARG,
         AST_TYPE_SPEC_MRV,
+        AST_TYPE_SPEC_VARARG,
     };
 
     typedef uint64_t _AST_Type_Spec_Flags_;
@@ -975,6 +977,7 @@ namespace Zodiac
     AST_Type_Spec* ast_type_spec_mrv_new(Context* context, File_Pos file_pos,
                                          BUF(AST_Type_Spec*) specs,
                                          BUF(AST_Directive*) directives);
+    AST_Type_Spec* ast_type_spec_vararg_new(Context* context, File_Pos file_pos);
 
 	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
 		                     bool is_module_scope, uint64_t line);

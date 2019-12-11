@@ -1326,6 +1326,13 @@ namespace Zodiac
         return result;
     }
 
+    AST_Type_Spec* ast_type_spec_vararg_new(Context* context, File_Pos file_pos)
+    {
+        AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_VARARG);
+
+        return result;
+    }
+
     AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
 		                     bool is_module_scope, uint64_t line)
 

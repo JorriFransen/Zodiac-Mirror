@@ -104,6 +104,14 @@ string_length :: (c_str: *u8) -> u64
     return length;
 }
 
+Array_Ref :: struct(T)
+{
+    data  : *T;
+    count : s64;
+}
+
+Array_Ref_of_Any :: typedef Array_Ref(Any);
+
 #foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
 #foreign exit :: (status: s32) -> void;
 

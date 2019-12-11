@@ -161,6 +161,15 @@ int main(int argc, char** argv)
     assert(any_decl);
     Builtin::type_Any = any_decl->aggregate_type.type;
     assert(Builtin::type_Any);
+    Builtin::type_pointer_to_Any = ast_find_or_create_pointer_type(context, Builtin::type_Any);
+
+    AST_Declaration* array_ref_of_any_decl =
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
+                                   Builtin::atom_Array_Ref_of_Any);
+    assert(array_ref_of_any_decl);
+    assert(array_ref_of_any_decl->kind == AST_DECL_TYPEDEF);
+    assert(array_ref_of_any_decl->typedef_decl.type);
+    Builtin::type_Array_Ref_of_Any = array_ref_of_any_decl->typedef_decl.type;
 
     const char* file_string = read_file_string(file_name);
     // fprintf(stderr, "File contents:\n%s\n", file_string);
