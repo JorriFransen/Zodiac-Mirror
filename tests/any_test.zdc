@@ -33,6 +33,9 @@ main :: ()
     print_any(unsigned);
 
     z : Any = 4;
+    print_any(z);
+    z = 5;
+    print_any(5);
 
     return 0;
 

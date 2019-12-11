@@ -395,6 +395,12 @@ namespace Zodiac
                     result &=
                         resolver_resolve_expression(resolver, init_expr, scope, specified_type);
 
+                    if (result && Builtin::type_Any && specified_type == Builtin::type_Any &&
+                            init_expr->type != Builtin::type_Any)
+                    {
+                        result &= resolver_transform_to_any(resolver, init_expr, scope);
+                    }
+
                     if (result)
                     {
                         if (declaration->location == AST_DECL_LOC_GLOBAL)
@@ -1243,6 +1249,15 @@ namespace Zodiac
                         result &= resolver_resolve_expression(resolver,
                                                               statement->assign.expression,
                                                               scope, suggested_type);
+
+                        if (result && Builtin::type_Any &&
+                            suggested_type == Builtin::type_Any &&
+                            statement->assign.expression->type != Builtin::type_Any)
+                        {
+                            result &= resolver_transform_to_any(resolver,
+                                                                statement->assign.expression,
+                                                                scope);
+                        }
                     }
                 }
 
