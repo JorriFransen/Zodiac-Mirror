@@ -246,6 +246,12 @@ array_free :: (array: *Array($T))
     }
 }
 
+make_array_ref :: (array: Array($T))
+{
+    result : Array_Ref(T) = { array.data, array.count };
+    return result;
+}
+
 Queue :: struct(T)
 {
     data        : *T;

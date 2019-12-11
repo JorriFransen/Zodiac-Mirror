@@ -1,0 +1,174 @@
+
+_std :: import std;
+using _std;
+
+
+print :: (any: Any)
+{
+    array : Array(u8) = { null, 0, 0 };
+    print_a(*array, any);
+
+    ref := make_array_ref(array);
+    output_ar(ref);
+
+    array_free(*array);
+}
+
+print_a :: (arr: *Array(u8), any: Any)
+{
+    ts := any.type_info;
+
+    switch (ts.kind)
+    {
+        case Type_Info_Kind.POINTER:
+        {
+            u8_ptr_info := get_type_info(*u8);
+            if (ts == u8_ptr_info)
+            {
+                cstr_ptr : **u8 = (:**u8)any.value;
+                print_cstr_a(arr, <cstr_ptr);
+            }
+            else assert(false);
+        }
+
+        case Type_Info_Kind.BASE:
+        {
+            if (ts.flags & Type_Info_Flags.INT)
+            {
+                signed : bool = (:bool)(ts.flags & Type_Info_Flags.SIGNED);
+                if (signed) print_signed_a(arr, any.value, ts.byte_size);
+                else        print_unsigned_a(arr, any.value, ts.byte_size);
+            }
+            else if (ts.flags & Type_Info_Flags.FLOAT)
+            {
+                buf : [1024]u8;
+                if (ts == get_type_info(float))
+                {
+                    f := (:float)(<(:*float)any.value);
+                    _c.sprintf(*buf[0], "%f", f);
+                }
+                else if (ts == get_type_info(double))
+                {
+                    d := (:double)(<(:*double)any.value);
+                    _c.sprintf(*buf[0], "%f", d);
+                }
+                else assert(false);
+
+                print_cstr_a(arr, *buf[0]);
+            }
+            else assert(false);
+        }
+
+        default: assert(false);
+    }
+}
+
+print_signed_a :: (arr: *Array(u8), value_ptr: *void, byte_size: u64)
+{
+    switch (byte_size)
+    {
+        case 1: print_signed_64_a(arr, <((:*s8)value_ptr));
+        case 2: print_signed_64_a(arr, <((:*s16)value_ptr));
+        case 4: print_signed_64_a(arr, <((:*s32)value_ptr));
+        case 8: print_signed_64_a(arr, <((:*s64)value_ptr));
+        default: assert(false);
+    }
+}
+
+print_unsigned_a :: (arr: *Array(u8), value_ptr: *void, byte_size: u64)
+{
+    u64_ptr := (:*u64)value_ptr;
+
+    switch (byte_size)
+    {
+        case 1: print_unsigned_64_a(arr, (:u8)(<u64_ptr));
+        case 2: print_unsigned_64_a(arr, (:u16)(<u64_ptr));
+        case 4: print_unsigned_64_a(arr, (:u32)(<u64_ptr));
+        case 8: print_unsigned_64_a(arr, (:u64)(<u64_ptr));
+        default: assert(false);
+    }
+}
+
+print_signed_64_a :: (arr: *Array(u8), value: s64)
+{
+    buf : [32]u8;
+    cursor : *u8 = *(buf[0]);
+    length : s64 = 0;
+
+    print_sign := false;
+    if (value < 0)
+    {
+        value = -value;
+        print_sign = true;
+    }
+
+    while (true)
+    {
+        rem := value % 10;
+        value = value / 10;
+
+        // _c.printf("rem: %d, value: %d\n", rem, value);
+
+        <cursor = ('0' + (:u8)rem);
+        cursor++;
+        length++;
+
+        if (value == 0) break;
+    }
+
+    <cursor = '\0';
+
+    if (print_sign) array_add(arr, '-');
+
+    cursor = *(buf[length - 1]);
+    for (i := 0; i < length; i++)
+    {
+        array_add(arr, <cursor);
+        cursor--;
+    }
+}
+
+print_unsigned_64_a :: (arr: *Array(u8), value: u64)
+{
+    buf : [32]u8;
+    cursor : *u8 = *(buf[0]);
+    length : s64 = 0;
+
+    while (true)
+    {
+        rem := value % 10;
+        value = value / 10;
+
+        // _c.printf("rem: %d, value: %d\n", rem, value);
+
+        <cursor = ('0' + (:u8)rem);
+        cursor++;
+        length++;
+
+        if (value == 0) break;
+    }
+
+    <cursor = '\0';
+
+    cursor = *(buf[length - 1]);
+    for (i := 0; i < length; i++)
+    {
+        array_add(arr, <cursor);
+        cursor--;
+    }
+}
+
+print_cstr_a :: (arr: *Array(u8), cstr: *u8)
+{
+    length := (:s64)string_length(cstr);
+
+    for (i := 0; i < length; i++)
+    {
+        array_add(arr, cstr[i]);
+    }
+}
+
+output_ar :: (array_ref: Array_Ref(u8))
+{
+    _c.printf("%.*s", array_ref.count, array_ref.data);
+}

@@ -256,7 +256,14 @@ namespace Zodiac
 
             case AST_STMT_WHILE:
             {
-                assert(false);
+                auto cond_copy = copy_expression(context, statement->while_stmt.cond_expr, flags);
+                assert(statement->while_stmt.body_stmt->kind == AST_STMT_BLOCK);
+                // auto scope_copy = copy_scope(context,
+                //                              statement->while_stmt.body_stmt->block.scope, flags);
+                auto body_copy = copy_statement(context, statement->while_stmt.body_stmt,
+                                                statement->while_stmt.body_stmt->block.scope,
+                                                flags);
+                return ast_while_statement_new(context, statement->file_pos, cond_copy, body_copy);
                 break;
             }
 
@@ -284,7 +291,7 @@ namespace Zodiac
 
             case AST_STMT_BREAK:
             {
-                assert(false);
+                return ast_break_statement_new(context, statement->file_pos);
                 break;
             }
 
@@ -432,7 +439,8 @@ namespace Zodiac
 
             case AST_EXPR_CHAR_LITERAL:
             {
-                assert(false);
+                return ast_character_literal_expression_new(context, expression->file_pos,
+                                                            expression->character_literal.c);
                 break;
             }
 
@@ -489,10 +497,16 @@ namespace Zodiac
             }
 
             case AST_EXPR_POST_INCREMENT:
-            case AST_EXPR_POST_DECREMENT:
             {
                 auto base_copy = copy_expression(context, expression->base_expression, flags);
                 return ast_post_increment_expression_new(context, expression->file_pos, base_copy);
+                break;
+            }
+
+            case AST_EXPR_POST_DECREMENT:
+            {
+                auto base_copy = copy_expression(context, expression->base_expression, flags);
+                return ast_post_decrement_expression_new(context, expression->file_pos, base_copy);
                 break;
             }
 
@@ -547,7 +561,11 @@ namespace Zodiac
 
             case AST_TYPE_SPEC_STATIC_ARRAY:
             {
-                assert(false);
+                auto count_copy = copy_expression(context, type_spec->static_array.count_expr,
+                                                  flags);
+                auto base_copy = copy_type_spec(context, type_spec->static_array.base, flags);
+                result = ast_type_spec_static_array_new(context, type_spec->file_pos, count_copy,
+                                                        base_copy);
                 break;
             }
 

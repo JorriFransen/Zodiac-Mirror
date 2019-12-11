@@ -1,0 +1,39 @@
+
+_c :: import c;
+using _c;
+
+_print :: import print;
+using _print;
+
+main :: ()
+{
+    open_std_handles();
+
+    print("print test\n");
+    print(1);
+    print("\n");
+    print(-2);
+    print("\n");
+    print(12345);
+    print("\n");
+    print(-1234588);
+    print("\n");
+    print((:u32)12345);
+    print("\n");
+
+    print(1.2);
+    print("\n");
+    print((:float)3.4);
+    print("\n");
+    print((:double)4.5);
+    print("\n");
+
+    print((:u8)255);
+    print("\n");
+    print((:u8)(-1));
+    print("\n");
+    print((:s8)(255));
+    print("\n");
+
+    return 0;
+}

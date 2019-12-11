@@ -2074,6 +2074,7 @@ namespace Zodiac
             }
 
             case AST_EXPR_CALL:
+            case AST_EXPR_CAST:
             {
                 expression_value = ir_builder_emit_expression(ir_builder, expression);
                 break;
@@ -4072,6 +4073,7 @@ namespace Zodiac
         assert(value->kind == IRV_TEMPORARY ||
                value->kind == IRV_INT_LITERAL ||
                value->kind == IRV_CHAR_LITERAL ||
+               value->kind == IRV_FLOAT_LITERAL ||
                (value->kind == IRV_ALLOCL && value->type->kind == AST_TYPE_STATIC_ARRAY));
         assert(type);
 
