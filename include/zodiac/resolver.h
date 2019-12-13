@@ -72,7 +72,7 @@ namespace Zodiac
     bool resolver_resolve_dot_expression(Resolver* resolver, AST_Expression* dot_expr,
                                          AST_Scope* scope);
     bool resolver_resolve_identifier(Resolver* resolver, AST_Identifier* identifier,
-                                     AST_Scope* scope);
+                                     AST_Scope* scope, bool report_undeclared = true);
     bool resolver_resolve_type_spec(Resolver* resolver, File_Pos base_fp,
                                     AST_Type_Spec* type_spec, AST_Type** type_dest,
                                     AST_Scope* scope, AST_Scope* poly_scope = nullptr);

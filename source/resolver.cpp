@@ -2956,7 +2956,7 @@ namespace Zodiac
     }
 
     bool resolver_resolve_identifier(Resolver* resolver, AST_Identifier* identifier,
-                                     AST_Scope* scope)
+                                     AST_Scope* scope, bool report_undeclared/*=true*/)
     {
         assert(resolver);
         assert(identifier);
@@ -2970,9 +2970,10 @@ namespace Zodiac
         AST_Declaration* decl = find_declaration(resolver->context, scope, identifier);
         if (!decl)
         {
-            resolver_report_error(resolver, identifier->file_pos,
-                                  "Reference to undeclared identifier: %s",
-                                  identifier->atom.data);
+            if (report_undeclared)
+                resolver_report_error(resolver, identifier->file_pos,
+                                      "Reference to undeclared identifier: %s",
+                                      identifier->atom.data);
             return false;
         }
 
@@ -3013,13 +3014,17 @@ namespace Zodiac
                 bool poly_res = true;
                 if (poly_scope)
                 {
-                    poly_res &= resolver_resolve_identifier(resolver, ident, poly_scope);
+                    poly_res &= resolver_resolve_identifier(resolver, ident, poly_scope, false);
                 }
                 else
                 {
                     result &= resolver_resolve_identifier(resolver, ident, scope);
                 }
-                assert(poly_res);
+                if (!poly_res)
+                {
+                    result &= resolver_resolve_identifier(resolver, ident, scope);
+                }
+                // assert(poly_res);
 
                 if (!result) break;
 
