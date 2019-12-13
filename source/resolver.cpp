@@ -326,7 +326,7 @@ namespace Zodiac
                     result &= resolver_resolve_type_spec(resolver,
                                                          ts->file_pos, ts,
                                                          &declaration->function.return_type,
-                                                         return_type_scope, scope);
+                                                         scope, return_type_scope);
                     if (!result) break;
                 }
 
@@ -3010,7 +3010,17 @@ namespace Zodiac
             case AST_TYPE_SPEC_IDENT:
             {
                 AST_Identifier* ident = type_spec->identifier.identifier;
-                result &= resolver_resolve_identifier(resolver, ident, scope);
+                bool poly_res = true;
+                if (poly_scope)
+                {
+                    poly_res &= resolver_resolve_identifier(resolver, ident, poly_scope);
+                }
+                else
+                {
+                    result &= resolver_resolve_identifier(resolver, ident, scope);
+                }
+                assert(poly_res);
+
                 if (!result) break;
 
                 assert(ident->declaration);

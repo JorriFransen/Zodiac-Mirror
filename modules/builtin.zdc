@@ -108,6 +108,8 @@ Array_Ref :: struct(T)
 {
     data  : *T;
     count : s64;
+
+    #overload[] array_ref_index;
 }
 
 Array_Ref_of_Any :: typedef Array_Ref(Any);

@@ -13,6 +13,18 @@ print :: (any: Any)
     array_free(*array);
 }
 
+_print :: (fmt: *u8, v: ...)
+{
+    _c.printf("Calling print with format: '%s', args:\n", fmt);
+
+    for (i := 0; i < v.count; i++)
+    {
+        print("\t");
+        print(v[i]);
+        print("\n");
+    }
+}
+
 print_a :: (arr: *Array(u8), any: Any)
 {
     ts := any.type_info;

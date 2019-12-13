@@ -2,8 +2,8 @@
 _c :: import c;
 using _c;
 
-_print :: import print;
-using _print;
+_print_ :: import print;
+using _print_;
 
 main :: ()
 {
@@ -34,6 +34,8 @@ main :: ()
     print("\n");
     print((:s8)(255));
     print("\n");
+
+    _print("format test: % % %", 1, "abc", 4.5);
 
     return 0;
 }
