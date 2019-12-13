@@ -25,6 +25,7 @@ namespace Zodiac
     LLVMTypeRef LLVM_Type::_instance_Type_Info_Aggregate = nullptr;
     LLVMTypeRef LLVM_Type::_instance_Type_Info_Enum = nullptr;
     LLVMTypeRef LLVM_Type::_instance_Type_Info_Function = nullptr;
+    LLVMTypeRef LLVM_Type::_instance_Type_Info_Static_Array = nullptr;
 
     LLVMTypeRef LLVM_Type::ptr_to_u8 = nullptr;
     LLVMTypeRef LLVM_Type::ptr_to_Type_Info = nullptr;
@@ -126,6 +127,20 @@ namespace Zodiac
         LLVM_Type::_instance_Type_Info_Function = LLVMStructType(function_types,
                                                                  function_type_count, false);
 
+
+        AST_Declaration* static_array_info_decl =
+            zir_ti_info_type->aggregate_type.member_declarations[4];
+        AST_Type* zir_static_array_info_type = static_array_info_decl->mutable_decl.type;
+        LLVMTypeRef llvm_static_array_info_type = llvm_type_from_ast(builder,
+                                                                     zir_static_array_info_type);
+        llvm_static_array_info_type = LLVMStructType(&llvm_static_array_info_type, 1, false);
+        LLVMTypeRef static_array_types[] = { LLVM_Type::Type_Info_Kind, LLVM_Type::Type_Info_Flag,
+                                             LLVM_Type::String, LLVM_Type::u64,
+                                             llvm_static_array_info_type };
+        unsigned static_array_type_count = STATIC_ARRAY_LENGTH(static_array_types);
+        LLVM_Type::_instance_Type_Info_Static_Array = LLVMStructType(static_array_types,
+                                                                    static_array_type_count,
+                                                                    false);
         LLVM_Type::generated = true;
     }
 }

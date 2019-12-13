@@ -26,6 +26,7 @@ namespace Zodiac
         static LLVMTypeRef _instance_Type_Info_Aggregate;
         static LLVMTypeRef _instance_Type_Info_Enum;
         static LLVMTypeRef _instance_Type_Info_Function;
+        static LLVMTypeRef _instance_Type_Info_Static_Array;
 
         static LLVMTypeRef ptr_to_u8;
         static LLVMTypeRef ptr_to_Type_Info;

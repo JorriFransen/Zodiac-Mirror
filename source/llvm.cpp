@@ -531,6 +531,10 @@ namespace Zodiac
             {
                 llvm_info_val = llvm_emit_function_info(builder, ti);
             }
+            else if (ti->kind == STATIC_ARRAY)
+            {
+                llvm_info_val = llvm_emit_static_array_info(builder, ti);
+            }
             else
             {
                 assert(ti->kind == BASE);
@@ -604,6 +608,12 @@ namespace Zodiac
                 case FUNCTION:
                 {
                     global_var_type = LLVM_Type::_instance_Type_Info_Function;
+                    break;
+                }
+
+                case STATIC_ARRAY:
+                {
+                    global_var_type = LLVM_Type::_instance_Type_Info_Static_Array;
                     break;
                 }
 
@@ -790,6 +800,32 @@ namespace Zodiac
         LLVMTypeRef llvm_function_info_type = llvm_type_from_ast(builder, zir_function_info_type);
 
         LLVMValueRef result = LLVMConstNamedStruct(llvm_function_info_type, mem_vals, mem_count);
+        result = LLVMConstStruct(&result, 1, false);
+        return result;
+    }
+
+    LLVMValueRef llvm_emit_static_array_info(LLVM_IR_Builder* builder, Type_Info* type_info)
+    {
+        LLVMValueRef llvm_base_ti_ptr =
+            builder->registered_type_infos[type_info->static_array.base.id - 1];
+        llvm_base_ti_ptr = LLVMConstPointerCast(llvm_base_ti_ptr, LLVM_Type::ptr_to_Type_Info);
+
+        LLVMValueRef llvm_count = LLVMConstInt(LLVM_Type::u64, type_info->static_array.count,
+                                                false);
+
+        LLVMValueRef mem_vals[] = { llvm_base_ti_ptr, llvm_count };
+        unsigned mem_count = STATIC_ARRAY_LENGTH(mem_vals);
+
+        AST_Type* zir_ti_type = Builtin::type_Type_Info;
+        AST_Declaration* ti_info_decl = zir_ti_type->aggregate_type.member_declarations[4];
+        AST_Type* zir_ti_info_type = ti_info_decl->mutable_decl.type;
+        AST_Declaration* static_array_info_decl =
+            zir_ti_info_type->aggregate_type.member_declarations[4];
+        AST_Type* zir_static_array_info_type = static_array_info_decl->mutable_decl.type;
+        LLVMTypeRef llvm_static_array_info_type = llvm_type_from_ast(builder,
+                                                                     zir_static_array_info_type);
+        LLVMValueRef result = LLVMConstNamedStruct(llvm_static_array_info_type, mem_vals,
+                                                   mem_count);
         result = LLVMConstStruct(&result, 1, false);
         return result;
     }

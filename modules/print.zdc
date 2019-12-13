@@ -113,7 +113,7 @@ print_a :: (arr: *Array(u8), any: Any)
                 }
 
                 member_ptr := base_ptr + (ts.static_array.base.byte_size * i);
-                member_any : Any = { ts.static_array.base, member_ptr };
+                member_any := make_any(ts.static_array.base, member_ptr);
                 print_a(arr, member_any);
             }
             print_a(arr, " }");

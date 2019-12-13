@@ -3,6 +3,16 @@ _c :: import c;
 
 int :: typedef s64;
 
+make_any :: (value_ptr: *$T) -> Any
+{
+    return make_any(get_type_info(T), value_ptr);
+}
+
+make_any :: (type_info: *Type_Info, value_ptr: *void) -> Any
+{
+    return { type_info, value_ptr };
+}
+
 enum_to_string :: (value: u64, ti: *Type_Info) -> String
 {
     assert(ti.kind == Type_Info_Kind.ENUM);
