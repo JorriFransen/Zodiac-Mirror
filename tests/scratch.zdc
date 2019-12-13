@@ -4,31 +4,20 @@ using _c;
 
 main :: ()
 {
-    open_std_handles();
-
-    printf("scratch\n");
-
-    int_arr : [4]int = { 1, 2, 3, 4 };
-    // assert(int_arr[0] == 1);
-    // assert(int_arr[1] == 2);
-    // assert(int_arr[2] == 3);
-    // assert(int_arr[3] == 4);
-
-    print_arr(int_arr);
-
-    return 0;
+    poly_test(1);
 }
 
-print_arr :: (arr: [4]int)
+poly_test :: (value: $T)
 {
-    printf("{ ");
 
-    for (i := 0; i < array_length(arr); i++)
+    for (i := 0; i < 1; i++)
     {
-        if (i > 0) printf(", ");
-        printf("%d", arr[i]);
+        printf("value: %d\n", value);
     }
-
-    printf(" }\n");
+    while (true)
+    {
+        printf("value: %d\n", value);
+        break;
+    }
 }
 

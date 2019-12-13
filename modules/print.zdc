@@ -8,8 +8,7 @@ print :: (any: Any)
     array : Array(u8) = { null, 0, 0 };
     print_a(*array, any);
 
-    ref := make_array_ref(array);
-    output_ar(ref);
+    output_ar(make_array_ref(array));
 
     array_free(*array);
 }

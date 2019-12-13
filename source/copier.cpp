@@ -258,12 +258,13 @@ namespace Zodiac
             {
                 auto cond_copy = copy_expression(context, statement->while_stmt.cond_expr, flags);
                 assert(statement->while_stmt.body_stmt->kind == AST_STMT_BLOCK);
-                // auto scope_copy = copy_scope(context,
-                //                              statement->while_stmt.body_stmt->block.scope, flags);
+                auto scope_copy = copy_scope(context,
+                                             statement->while_stmt.scope, flags);
+                scope_copy->parent = parent_scope;
                 auto body_copy = copy_statement(context, statement->while_stmt.body_stmt,
-                                                statement->while_stmt.body_stmt->block.scope,
-                                                flags);
-                return ast_while_statement_new(context, statement->file_pos, cond_copy, body_copy);
+                                                scope_copy, flags);
+                return ast_while_statement_new(context, statement->file_pos, scope_copy,
+                                               cond_copy, body_copy);
                 break;
             }
 

@@ -998,8 +998,13 @@ namespace Zodiac
             return nullptr;
         }
 
-        return ast_while_statement_new(parser->context, while_tok.file_pos, while_condition_expr,
-                                       while_body_statement);
+
+        auto module = parser->result.ast_module;
+        AST_Scope* while_scope = ast_scope_new(parser->context, scope, module, false,
+                                               while_tok.file_pos.line);
+
+        return ast_while_statement_new(parser->context, while_tok.file_pos, while_scope,
+                                       while_condition_expr, while_body_statement);
     }
 
     static AST_Statement* parse_for_statement(Parser* parser, AST_Scope* scope)

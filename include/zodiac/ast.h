@@ -317,6 +317,7 @@ namespace Zodiac
 
             struct
             {
+                AST_Scope* scope;
                 AST_Expression* cond_expr;
                 AST_Statement* body_stmt;
             } while_stmt;
@@ -910,9 +911,8 @@ namespace Zodiac
                                             AST_Expression* lvalue_expression,
                                             AST_Expression* expression);
     AST_Statement* ast_call_statement_new(Context* context, AST_Expression* call_expression);
-    AST_Statement* ast_while_statement_new(Context* context, File_Pos file_pos,
-                                           AST_Expression* cond_expr,
-                                           AST_Statement* body_stmt);
+    AST_Statement* ast_while_statement_new(Context* context, File_Pos file_pos, AST_Scope* scope,
+                                           AST_Expression* cond_expr, AST_Statement* body_stmt);
     AST_Statement* ast_for_statement_new(Context* context, File_Pos file_pos, AST_Scope* scope,
                                          AST_Statement* init_stmt, AST_Expression* cond_expr,
                                          AST_Statement* step_stmt, AST_Statement* body_stmt);
