@@ -1108,7 +1108,7 @@ namespace Zodiac
                 assert(BUF_LENGTH(range_expressions) % 2 == 0);
 
                 AST_Statement* case_stmt = parse_statement(parser, scope);
-                assert(case_stmt);
+                if (!case_stmt) return nullptr;
 
                 AST_Switch_Case switch_case = {};
                 switch_case.file_pos = ct.file_pos;

@@ -19,6 +19,7 @@ Type_Info_Kind : u64 : enum
     UNION;
     ENUM;
     FUNCTION;
+    STATIC_ARRAY;
 }
 
 Type_Info_Flags : u64 : enum
@@ -57,6 +58,12 @@ Type_Info :: struct
             return_type : *Type_Info;
             arg_count   : u64;
             first_arg   : *Type_Info_Aggregate_Member;
+        }
+
+        static_array :: struct
+        {
+            base : *Type_Info;
+            count : u64;
         }
     }
 }

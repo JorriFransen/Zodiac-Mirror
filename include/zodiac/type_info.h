@@ -14,6 +14,7 @@ namespace Zodiac
         UNION,
         ENUM,
         FUNCTION,
+        STATIC_ARRAY,
     };
 
     typedef uint64_t Type_Info_Flag_T;
@@ -71,6 +72,12 @@ namespace Zodiac
                 uint64_t arg_count;
                 Type_Info_Pointer_Or_Id first_arg;
             } function;
+
+            struct
+            {
+                Type_Info_Pointer_Or_Id base;
+                uint64_t count;
+            } static_array;
         };
     };
 

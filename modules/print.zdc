@@ -44,6 +44,11 @@ print :: (fmt: *u8, v: ...)
         }
     }
 
+    if (length)
+    {
+        print_cstr_a(*array, start, length);
+    }
+
     assert(va_idx == v.count);
 
     output_ar(make_array_ref(array));
@@ -93,6 +98,25 @@ print_a :: (arr: *Array(u8), any: Any)
                 print_cstr_a(arr, *buf[0]);
             }
             else assert(false);
+        }
+
+        case Type_Info_Kind.STATIC_ARRAY:
+        {
+            print_a(arr, "{ ");
+
+            base_ptr := (:*u8)any.value;
+            for (i : u64 = 0; i < ts.static_array.count; i++)
+            {
+                if (i > 0)
+                {
+                    print_a(arr, ", ");
+                }
+
+                member_ptr := base_ptr + (ts.static_array.base.byte_size * i);
+                member_any : Any = { ts.static_array.base, member_ptr };
+                print_a(arr, member_any);
+            }
+            print_a(arr, " }");
         }
 
         default: assert(false);

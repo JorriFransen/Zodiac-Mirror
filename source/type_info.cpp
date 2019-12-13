@@ -205,6 +205,20 @@ namespace Zodiac
                 break;
             }
 
+            case AST_TYPE_STATIC_ARRAY:
+            {
+                uint64_t base_id = maybe_register_type_info(context, type->static_array.base,
+                                                            false, placeholders);
+                assert(base_id);
+                index = next_type_info_index(context);
+                tid->type_infos[index].kind = STATIC_ARRAY;
+                type->info_index = index;
+
+                tid->type_infos[index].static_array.base.id = base_id;
+                tid->type_infos[index].static_array.count = type->static_array.count;
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -533,6 +547,15 @@ namespace Zodiac
                     assert(mem_id < tid->agg_count);
                     type_info->function.first_arg.aggregate_member =
                         &tid->aggregate_members[mem_id];
+                    break;
+                }
+
+                case STATIC_ARRAY:
+                {
+                    auto base_id = type_info->static_array.base.id;
+                    assert(base_id < tid->type_info_count);
+                    type_info->static_array.base.type_info = &tid->type_infos[base_id];
+
                     break;
                 }
 

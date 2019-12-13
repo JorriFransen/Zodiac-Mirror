@@ -35,7 +35,10 @@ main :: ()
     print((:s8)(255));
     print("\n");
 
-    print("format test: % % %", 1, "abc", 4.5);
+    print("format test: % % %\n", 1, "abc", 4.5);
+
+    int_array : [10]int = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    print("int_array: %\n", int_array);
 
     return 0;
 }
