@@ -2,7 +2,6 @@
 _std :: import std;
 using _std;
 
-
 Format_Spec_Int :: struct
 {
     value        : u64;
@@ -14,16 +13,22 @@ Format_Spec_Int :: struct
 
 format_int :: (value: $T, min_digits: u32, base: u32) -> Format_Spec_Int
 {
+    return format_int((:u64)value, get_type_info(T), min_digits, base);
+}
+
+format_int :: (value: u64, type_info: *Type_Info, min_digits: u32, base: u32) -> Format_Spec_Int
+{
     result : Format_Spec_Int;
 
-    result.value = (:u64)value;
-    result.type = get_type_info(T);
+    result.value = value;
+    result.type = type_info;
     result.min_digits = min_digits;
     result.base = base;
     result.prepend_char = '0';
 
     return result;
 }
+
 
 print :: (any: Any)
 {
@@ -195,8 +200,18 @@ print_a :: (arr: *Array(u8), any: Any)
                     print_cstr_a(arr, member_info.name.data, (:s64)member_info.name.length);
                     print_cstr_a(arr, "=");
 
-                    member_any := make_any(member_info.type, member_ptr);
-                    print_a(arr, member_any);
+                    if (member_info.type.kind == Type_Info_Kind.POINTER)
+                    {
+                        print_cstr_a(arr, "0x");
+                        u64_ptr := (:*u64)member_ptr;
+                        ptr := format_int(<u64_ptr, member_info.type, 0, 16);
+                        print_a(arr, ptr);
+                    }
+                    else
+                    {
+                        member_any := make_any(member_info.type, member_ptr);
+                        print_a(arr, member_any);
+                    }
 
                     if (ts.kind == Type_Info_Kind.STRUCT)
                         member_ptr += member_info.type.byte_size;
