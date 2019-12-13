@@ -35,7 +35,7 @@ main :: ()
     print((:s8)(255));
     print("\n");
 
-    _print("format test: % % %", 1, "abc", 4.5);
+    print("format test: % % %", 1, "abc", 4.5);
 
     return 0;
 }

@@ -13,7 +13,7 @@ print :: (any: Any)
     array_free(*array);
 }
 
-_print :: (fmt: *u8, v: ...)
+print :: (fmt: *u8, v: ...)
 {
     _c.printf("Calling print with format: '%s', args:\n", fmt);
 

@@ -3671,11 +3671,30 @@ namespace Zodiac
 
         assert((func_decl->flags & AST_DECL_FLAG_RESOLVED) || allow_poly_templates);
 
-        if (BUF_LENGTH(func_decl->function.args) !=
-            BUF_LENGTH(call_expression->call.arg_expressions))
+        bool is_vararg = false;
+
+        auto arg_decl_count = BUF_LENGTH(func_decl->function.args);
+        auto arg_expr_count = BUF_LENGTH(call_expression->call.arg_expressions);
+
+        if (arg_decl_count != arg_expr_count)
         {
-            *valid_match = false;
-            return UINT64_MAX;
+            if (func_decl->flags & AST_DECL_FLAG_FUNC_VARARG)
+            {
+                if (!(arg_expr_count >= arg_decl_count))
+                {
+                    *valid_match = false;
+                    return UINT64_MAX;
+                }
+                else
+                {
+                    is_vararg = true;
+                }
+            }
+            else
+            {
+                *valid_match = false;
+                return UINT64_MAX;
+            }
         }
 
         auto arg_decls = func_decl->function.args;
@@ -3690,11 +3709,13 @@ namespace Zodiac
 
             assert(arg_decl->kind == AST_DECL_MUTABLE);
             auto arg_ts = arg_decl->mutable_decl.type_spec;
-            // if (arg_ts->kind == AST_TYPE_SPEC_IDENTIFIER &&
-            //     type_spec_matches_poly_arg(resolver, func_decl, arg_ts))
-            // {
-            //     assert(false);
-            // }
+
+            if (arg_ts->kind == AST_TYPE_SPEC_VARARG)
+            {
+                *valid_match = true;
+                distance += 10;
+                break;
+            }
 
             auto poly_flags = (AST_TYPE_SPEC_POLY_FUNC_ARG |
                                AST_TYPE_SPEC_FLAG_HAS_POLY_CHILDREN |
