@@ -91,8 +91,8 @@ namespace Zodiac
     void* ir_runner_thread_entry(void* user_data);
     void ir_runner_cancel_all_threads(IR_Runner* runner);
 
-    bool ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* AST_Module, IR_Module* ir_module,
-		                             bool load_defaults = true);
+    bool ir_runner_load_dynamic_libs(IR_Runner* ir_runner, AST_Module* AST_Module,
+                                     IR_Module* ir_module, bool load_defaults = true);
 
 	bool ir_runner_load_dynamic_lib(IR_Runner* ir_runner, const char* lib_name);
     bool ir_runner_load_dynamic_lib(IR_Runner* ir_runner, Atom lib_name);

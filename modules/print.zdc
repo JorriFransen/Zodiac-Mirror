@@ -64,12 +64,14 @@ print_a :: (arr: *Array(u8), any: Any)
 
 print_signed_a :: (arr: *Array(u8), value_ptr: *void, byte_size: u64)
 {
+    s64_ptr := (:*s64)value_ptr;
+
     switch (byte_size)
     {
-        case 1: print_signed_64_a(arr, <((:*s8)value_ptr));
-        case 2: print_signed_64_a(arr, <((:*s16)value_ptr));
-        case 4: print_signed_64_a(arr, <((:*s32)value_ptr));
-        case 8: print_signed_64_a(arr, <((:*s64)value_ptr));
+        case 1: print_signed_64_a(arr, (:s8)(<s64_ptr));
+        case 2: print_signed_64_a(arr, (:s16)(<s64_ptr));
+        case 4: print_signed_64_a(arr, (:s32)(<s64_ptr));
+        case 8: print_signed_64_a(arr, (:s64)(<s64_ptr));
         default: assert(false);
     }
 }
@@ -88,7 +90,7 @@ print_unsigned_a :: (arr: *Array(u8), value_ptr: *void, byte_size: u64)
     }
 }
 
-print_signed_64_a :: (arr: *Array(u8), value: s64)
+print_signed_64_a :: (arr: *Array(u8), value: $T)
 {
     buf : [32]u8;
     cursor : *u8 = *(buf[0]);
@@ -115,8 +117,6 @@ print_signed_64_a :: (arr: *Array(u8), value: s64)
         if (value == 0) break;
     }
 
-    <cursor = '\0';
-
     if (print_sign) array_add(arr, '-');
 
     cursor = *(buf[length - 1]);
@@ -127,7 +127,7 @@ print_signed_64_a :: (arr: *Array(u8), value: s64)
     }
 }
 
-print_unsigned_64_a :: (arr: *Array(u8), value: u64)
+print_unsigned_64_a :: (arr: *Array(u8), value: $T)
 {
     buf : [32]u8;
     cursor : *u8 = *(buf[0]);

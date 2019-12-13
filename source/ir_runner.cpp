@@ -921,7 +921,44 @@ namespace Zodiac
 
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 < arg2->value.s64;
+                    if (type->flags & AST_TYPE_FLAG_SIGNED)
+                    {
+                        switch (type->bit_size)
+                        {
+                            case 8: { dest->value.s8 = arg1->value.s8 < arg2->value.s8;
+                                break;
+                            }
+                            case 16: { dest->value.s16 = arg1->value.s16 < arg2->value.s16;
+                                break;
+                            }
+                            case 32: { dest->value.s32 = arg1->value.s32 < arg2->value.s32;
+                                break;
+                            }
+                            case 64: { dest->value.s64 = arg1->value.s64 < arg2->value.s64;
+                                break;
+                            }
+                            default: assert(false);
+                        }
+                    }
+                    else
+                    {
+                        switch (type->bit_size)
+                        {
+                        case 8: { dest->value.u8 = arg1->value.u8 < arg2->value.u8;
+                                break;
+                        }
+                        case 16: { dest->value.u16 = arg1->value.u16 < arg2->value.u16;
+                                break;
+                        }
+                        case 32: { dest->value.u32 = arg1->value.u32 < arg2->value.u32;
+                                break;
+                        }
+                        case 64: { dest->value.u64 = arg1->value.u64 < arg2->value.u64;
+                                break;
+                        }
+                        default: assert(false);
+                        }
+                    }
                 }
                 else if (type == Builtin::type_double)
                 {
