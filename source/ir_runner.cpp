@@ -1760,8 +1760,7 @@ namespace Zodiac
                 assert(iri->arg2);
                 assert(iri->arg2->kind == IRV_INT_LITERAL ||
                        iri->arg2->kind == IRV_TEMPORARY);
-                assert(iri->arg2->type == Builtin::type_s64 ||
-                       iri->arg2->type == Builtin::type_u64 ||
+                assert((iri->arg2->type->flags & AST_TYPE_FLAG_INT) ||
                        iri->arg2->type->kind == AST_TYPE_ENUM);
 
                 assert(iri->result);
@@ -2548,6 +2547,7 @@ namespace Zodiac
             switch (member_value->kind)
             {
                 case IRV_INT_LITERAL:
+                case IRV_CHAR_LITERAL:
                 {
                     memcpy(dest_cursor, &member_value->value.u64, byte_size);
                     break;

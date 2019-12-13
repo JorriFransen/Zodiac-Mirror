@@ -1365,6 +1365,7 @@ namespace Zodiac
 
                 assert(assert_expr->type == Builtin::type_bool ||
                        assert_expr->type->kind == AST_TYPE_POINTER ||
+                       assert_expr->type->kind == AST_TYPE_ENUM ||
                        (assert_expr->type->flags & AST_TYPE_FLAG_INT));
                 break;
             }
@@ -2323,6 +2324,7 @@ namespace Zodiac
             case AST_EXPR_CHAR_LITERAL:
             {
                 expression->type = Builtin::type_u8;
+                expression->flags |= AST_EXPR_FLAG_CONST;
                 break;
             }
 
@@ -2436,7 +2438,17 @@ namespace Zodiac
                         {
                             assert(member_expr->type == suggested_member_type);
                             expression->type = suggested_type;
+
+                            if (!(member_expr->flags & AST_EXPR_FLAG_CONST))
+                            {
+                                all_members_const = false;
+                            }
                         }
+                    }
+
+                    if (all_members_const)
+                    {
+                        expression->flags |= AST_EXPR_FLAG_CONST;
                     }
                 }
                 else

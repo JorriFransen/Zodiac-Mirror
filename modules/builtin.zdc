@@ -24,6 +24,7 @@ Type_Info_Kind : u64 : enum
 
 Type_Info_Flags : u64 : enum
 {
+    NONE    :: 0;
     INT     :: 1;
     FLOAT   :: 2;
     SIGNED  :: 4;
