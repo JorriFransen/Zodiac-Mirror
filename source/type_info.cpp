@@ -27,6 +27,7 @@ namespace Zodiac
 
         if (type->flags & AST_TYPE_FLAG_REGISTERING_TYPE_INFO)
         {
+            if (type->info_index != 0) return type->info_index;
             return 0; // Signal that our caller will need a placeholder
         }
 
@@ -80,11 +81,12 @@ namespace Zodiac
 
             case AST_TYPE_POINTER:
             {
-                uint64_t base_id = maybe_register_type_info(context, type->pointer.base, false,
-                                                            placeholders);
                 index = next_type_info_index(context);
                 tid->type_infos[index].kind = POINTER;
                 type->info_index = index;
+
+                uint64_t base_id = maybe_register_type_info(context, type->pointer.base, false,
+                                                            placeholders);
 
                 if (base_id)
                 {

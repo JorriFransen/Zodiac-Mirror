@@ -86,11 +86,6 @@ print_a :: (arr: *Array(u8), any: Any)
 {
     ts := any.type_info;
 
-    // @HACK: @FIXME: Make sure we register this first, if we try get_type_info(Any) before we've
-    //                 registered the info for the type info struct itself, there is a problem
-    //                 in maybe_register_type_info.
-    tii := get_type_info(Type_Info);
-
     switch (ts.kind)
     {
         case Type_Info_Kind.POINTER:
