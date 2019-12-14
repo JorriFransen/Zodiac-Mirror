@@ -180,39 +180,40 @@ print_a :: (arr: *Array(u8), any: Any)
                     print_unsigned_a(arr, *fsi.value, fsi.type.byte_size, fsi.base,
                                      fsi.min_digits, fsi.prepend_char);
                 }
+
+                // _c.printf("gonna_break");
+                break;
             }
-            else
+
+            print_cstr_a(arr, "{ ");
+            member_ptr := (:*u8)any.value;
+            for (i : u64 = 0; i < ts.aggregate.count; i++)
             {
-                print_cstr_a(arr, "{ ");
-                member_ptr := (:*u8)any.value;
-                for (i : u64 = 0; i < ts.aggregate.count; i++)
+                if (i > 0)
                 {
-                    if (i > 0)
-                    {
-                        print_cstr_a(arr, ", ");
-                    }
-                    member_info := ts.aggregate.first[i];
-                    print_cstr_a(arr, member_info.name.data, (:s64)member_info.name.length);
-                    print_cstr_a(arr, "=");
-
-                    if (member_info.type.kind == Type_Info_Kind.POINTER)
-                    {
-                        print_cstr_a(arr, "0x");
-                        u64_ptr := (:*u64)member_ptr;
-                        ptr := format_int(<u64_ptr, member_info.type, 0, 16);
-                        print_a(arr, ptr);
-                    }
-                    else
-                    {
-                        member_any := make_any(member_info.type, member_ptr);
-                        print_a(arr, member_any);
-                    }
-
-                    if (ts.kind == Type_Info_Kind.STRUCT)
-                        member_ptr += member_info.type.byte_size;
+                    print_cstr_a(arr, ", ");
                 }
-                print_cstr_a(arr, " }");
+                member_info := ts.aggregate.first[i];
+                print_cstr_a(arr, member_info.name.data, (:s64)member_info.name.length);
+                print_cstr_a(arr, "=");
+
+                if (member_info.type.kind == Type_Info_Kind.POINTER)
+                {
+                    print_cstr_a(arr, "0x");
+                    u64_ptr := (:*u64)member_ptr;
+                    ptr := format_int(<u64_ptr, member_info.type, 0, 16);
+                    print_a(arr, ptr);
+                }
+                else
+                {
+                    member_any := make_any(member_info.type, member_ptr);
+                    print_a(arr, member_any);
+                }
+
+                if (ts.kind == Type_Info_Kind.STRUCT)
+                    member_ptr += member_info.type.byte_size;
             }
+            print_cstr_a(arr, " }");
         }
 
         case Type_Info_Kind.ENUM:

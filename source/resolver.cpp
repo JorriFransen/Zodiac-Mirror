@@ -1465,7 +1465,8 @@ namespace Zodiac
             {
                 assert(resolver->current_break_context);
                 assert(resolver->current_break_context->kind == AST_STMT_WHILE ||
-                       resolver->current_break_context->kind == AST_STMT_FOR);
+                       resolver->current_break_context->kind == AST_STMT_FOR ||
+                       resolver->current_break_context->kind == AST_STMT_SWITCH);
                 break;
             }
 
