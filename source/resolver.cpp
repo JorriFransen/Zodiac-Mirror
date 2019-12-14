@@ -2436,8 +2436,16 @@ namespace Zodiac
 
                         if (result)
                         {
-                            assert(member_expr->type == suggested_member_type);
-                            expression->type = suggested_type;
+                            if (member_expr->type != suggested_member_type &&
+                                suggested_member_type == Builtin::type_Any)
+                            {
+                                resolver_transform_to_any(resolver, member_expr, scope);
+                                assert(member_expr->type == Builtin::type_Any);
+                            }
+                            else
+                            {
+                                assert(member_expr->type == suggested_member_type);
+                            }
 
                             if (!(member_expr->flags & AST_EXPR_FLAG_CONST))
                             {
@@ -2446,9 +2454,14 @@ namespace Zodiac
                         }
                     }
 
-                    if (all_members_const)
+                    if (result)
                     {
-                        expression->flags |= AST_EXPR_FLAG_CONST;
+                        expression->type = suggested_type;
+
+                        if (all_members_const)
+                        {
+                            expression->flags |= AST_EXPR_FLAG_CONST;
+                        }
                     }
                 }
                 else
