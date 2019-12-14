@@ -181,7 +181,6 @@ print_a :: (arr: *Array(u8), any: Any)
                                      fsi.min_digits, fsi.prepend_char);
                 }
 
-                // _c.printf("gonna_break");
                 break;
             }
 

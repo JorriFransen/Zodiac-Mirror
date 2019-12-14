@@ -209,10 +209,7 @@ semaphore_test :: ()
         queue_enqueue(*pc_data.empty_buffers, buffer);
     }
 
-    producers : Array(Thread);
-    producers.data = null;
-    producers.count = 0;
-    producers.capacity = 0;
+  producers : Array(Thread) = { null, 0, 0 };
     defer array_free(*producers);
 
     for (i : s64 = 0; i < SEM_PRODUCER_COUNT; i++)
@@ -221,10 +218,7 @@ semaphore_test :: ()
         array_add(*producers, pt);
     }
 
-    consumers : Array(Thread);
-    consumers.data = null;
-    consumers.count = 0;
-    consumers.capacity = 0;
+  consumers : Array(Thread) = { null, 0, 0 };
     defer array_free(*consumers);
     for (i : s64 = 0; i < SEM_CONSUMER_COUNT; i++)
     {
@@ -281,7 +275,7 @@ produce :: (thread: *Thread) -> *void
         for (i : s64 = 0; i < SEM_BUFFER_CAP; i++)
         {
             buffer[i] = (:u64)(i * i);
-            std.sleep(50);
+            std.sleep(5);
         }
 
         semaphore_wait(*sem_lock);
