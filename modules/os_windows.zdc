@@ -1,4 +1,7 @@
 
+_builtin :: import builtin;
+using _builtin;
+
 static_assert(PLATFORM_WINDOWS);
 
 std :: import std;
@@ -6,6 +9,9 @@ using std;
 
 _og :: import os_generic;
 using _og;
+
+_thread :: import thread;
+using _thread;
 
 LPCSTR :: typedef *u8;
 LPSTR :: typedef *u8;

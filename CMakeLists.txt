@@ -34,8 +34,10 @@ target_include_directories(zodiac PRIVATE include/zodiac)
 target_include_directories(zodiac PRIVATE lib/include)
 
 if(MSVC)
+    add_compile_definitions(NOMINMAX)
+    
     if(CMAKE_BUILD_TYPE STREQUAL Debug)
-        target_link_directories(zodiac PRIVATE lib/windows/lib/debug)
+        target_link_directories(zodiac PRIVATE lib/windows/lib/Debug)
     else()
         target_link_directories(zodiac PRIVATE lib/windows/lib)
     endif()
@@ -80,10 +82,10 @@ if(MSVC)
         LLVMBinaryFormat.lib
         LLVMSupport.lib
         LLVMDemangle.lib
-        LLVMLinker.a
-        LLVMLTO.a
-        LLVMSymbolize.a
-        LLVMTextAPI.a
+        LLVMLinker.lib
+        LLVMLTO.lib
+        LLVMSymbolize.lib
+        LLVMTextAPI.lib
     )
 
 elseif(UNIX)

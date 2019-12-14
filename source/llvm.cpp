@@ -13,7 +13,7 @@
 #include <dynload.h>
 
 #ifdef WIN32
-#include <Windows.h>
+	#include <Windows.h>
 #endif
 
 namespace Zodiac
@@ -300,6 +300,11 @@ namespace Zodiac
 		string_builder_append(&sb, "\\bin\\Hostx64\\x64\\link.exe ");
 
 		string_builder_append(&sb, "/NOLOGO /WX /SUBSYSTEM:CONSOLE ");
+
+		if (builder->context->options.emit_debug)
+		{
+			string_builder_append(&sb, " /DEBUG ");
+		}
 
 		string_builder_append(&sb, " msvcrtd.lib");
 		//string_builder_append(&sb, " ucrtd.lib");
