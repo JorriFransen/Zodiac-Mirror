@@ -283,7 +283,7 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
         exe_file_name.length -= 4;
         exe_file_name.data[exe_file_name.length] = '\0';
 
-        append(sb, " && ./");
+        append(sb, " && .\\");
         append(sb, exe_file_name);
         // append(sb, " 2>&1 ");
 
