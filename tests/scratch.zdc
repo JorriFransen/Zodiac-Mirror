@@ -9,11 +9,13 @@ main :: ()
 
 poly_test :: (value: $T)
 {
+    open_std_handles();
 
     for (i := 0; i < 1; i++)
     {
         printf("value: %d\n", value);
     }
+
     while (true)
     {
         printf("value: %d\n", value);
