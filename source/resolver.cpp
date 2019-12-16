@@ -2408,7 +2408,7 @@ namespace Zodiac
                 }
                 else if (suggested_type->kind == AST_TYPE_STATIC_ARRAY)
                 {
-                    assert(suggested_type->static_array.count ==
+                    assert(suggested_type->static_array.count >=
                            BUF_LENGTH(expression->compound_literal.expressions));
 
                     for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions);

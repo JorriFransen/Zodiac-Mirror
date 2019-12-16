@@ -1521,6 +1521,11 @@ namespace Zodiac
                     ir_runner_store_aggregate_literal(runner, source_value->type, iri->arg1,
                                                       iri->arg2);
                 }
+                else if (iri->arg2->kind == IRV_ARRAY_LITERAL)
+                {
+                    ir_runner_store_array_literal(runner, source_value->type, iri->arg1,
+                                                  iri->arg2);
+                }
                 else
                 {
                     AST_Type* dest_type = iri->arg1->type->pointer.base;
@@ -2546,6 +2551,13 @@ namespace Zodiac
 
             switch (member_value->kind)
             {
+                case IRV_TEMPORARY:
+                {
+                    ir_runner_store_temporary(runner, member_value->type, dest_cursor,
+                                            member_value);
+                    break;
+                }
+
                 case IRV_INT_LITERAL:
                 case IRV_CHAR_LITERAL:
                 {
@@ -2557,6 +2569,13 @@ namespace Zodiac
                 {
                     ir_runner_store_aggregate_literal(runner, member_value->type, dest_cursor,
                                                       member_value);
+                    break;
+                }
+
+                case IRV_ARRAY_LITERAL:
+                {
+                    ir_runner_store_array_literal(runner, member_value->type, dest_cursor,
+                                                  member_value);
                     break;
                 }
 
@@ -2587,7 +2606,7 @@ namespace Zodiac
             assert(dest_value->type == literal_value->type);
         }
 
-        assert(array_type->static_array.count == 
+        assert(array_type->static_array.count >=
                BUF_LENGTH(literal_value->value.compound_values));
 
         dest_value = ir_runner_get_local_temporary(runner, dest_value);

@@ -3681,7 +3681,8 @@ namespace Zodiac
             new_value->kind == IRV_BOOL_LITERAL ||
             new_value->kind == IRV_NULL_LITERAL ||
             new_value->kind == IRV_STRING_LITERAL ||
-            new_value->kind == IRV_AGGREGATE_LITERAL);
+            new_value->kind == IRV_AGGREGATE_LITERAL ||
+            new_value->kind == IRV_ARRAY_LITERAL);
 
         assert(pointer_allocl->type->pointer.base == new_value->type);
 

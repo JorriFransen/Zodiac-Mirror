@@ -2,27 +2,53 @@
 _c :: import c;
 using _c;
 
+_printer :: import print;
+using _printer;
+
+My_Struct :: struct
+{
+    sa : [5]int;
+}
+
 main :: ()
 {
     open_std_handles();
 
-    poly_test(1);
+    sa : [4]int = { 1, 2, 3 };
+    sa[3] = 999;
+    sa = { 4, 5, 6 };
+    assert(sa[3] == 999);
+    c := get_char();
+    sa = { 3, 4, c };
+
+    for (i := 0; i < array_length(sa); i++)
+    {
+        print("sa[%]: %\n", i, sa[i]);
+    }
+
+    ms : My_Struct;
+    ms.sa = { 1, 2, 3, 4, 5 };
+    ms.sa = { get_char(), get_char(), 555 };
+
+
+    for (i := 0; i < array_length(ms.sa); i++)
+    {
+        print("ms.sa[%]: %\n", i, ms.sa[i]);
+    }
+
 
     return 0;
 }
 
-poly_test :: (value: $T)
+last_char : int = 97;
+
+get_char :: () -> int
 {
-    for (i := 0; i < 1; i++)
-    {
-        printf("value: %d\n", value);
-    }
+    // c := _c.getchar();
+    // while (_c.getchar() != (:int)('\n')) { }
+    // return c;
 
-    while (true)
-    {
-        printf("value: %d\n", value);
-        break;
-    }
-
+    c := last_char;
+    last_char++;
+    return c;
 }
-

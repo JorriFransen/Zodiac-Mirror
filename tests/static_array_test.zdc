@@ -14,13 +14,14 @@ main :: ()
 
     wa : WA;
 
-    wa.bytes[0] = 1;
-    wa.bytes[1] = 2;
-    wa.bytes[2] = 4;
+    wa.bytes = { 1, 2, 4 };
+    // wa.bytes[0] = 1;
+    // wa.bytes[1] = 2;
+    // wa.bytes[2] = 4;
 
-    bytes : [8]u8;
-    bytes[0] = 2;
-    bytes[1] = 4;
+    bytes : [8]u8 = { 1, 2 };
+    // bytes[0] = 2;
+    // bytes[1] = 4;
 
     // _c.printf("*wa.bytes[0]: %p\n", *wa.bytes[0]);
 

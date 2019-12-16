@@ -124,6 +124,9 @@ namespace Zodiac
 
         if (root)
         {
+            // char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
+            // printf("%s", llvm_module_string);
+            // LLVMDisposeMessage(llvm_module_string);
             if (context->options.emit_debug)
             {
                 // char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
@@ -1703,6 +1706,7 @@ namespace Zodiac
                 {
                     llvm_new_value = LLVMBuildLoad(builder->llvm_builder, llvm_new_value, "");
                 }
+
                 LLVMBuildStore(builder->llvm_builder, llvm_new_value, llvm_dest_value);
                 break;
             }
@@ -2234,34 +2238,52 @@ namespace Zodiac
                 LLVMTypeRef llvm_arr_type = llvm_type_from_ast(builder, zir_value->type);
                 LLVMTypeRef llvm_base_type =
                     llvm_type_from_ast(builder, zir_value->type->static_array.base);
+
                 if (zir_value->flags & IRV_FLAG_CONST)
                 {
                     BUF(LLVMValueRef) arr_vals = nullptr;
-                    for (uint64_t i = 0; i < BUF_LENGTH(zir_value->value.compound_values); i++)
+                    for (uint64_t i = 0; i < zir_value->type->static_array.count; i++)
                     {
-                        IR_Value* zir_arr_member = zir_value->value.compound_values[i];
-                        LLVMValueRef llvm_compound_member = llvm_emit_ir_value(builder,
-                                                                               zir_arr_member);
+                        LLVMValueRef llvm_compound_member = nullptr;
+                        if (i < BUF_LENGTH(zir_value->value.compound_values))
+                        {
+                            IR_Value* zir_arr_member = zir_value->value.compound_values[i];
+                            llvm_compound_member = llvm_emit_ir_value(builder, zir_arr_member);
+                        }
+                        else
+                        {
+                            llvm_compound_member = LLVMGetUndef(llvm_base_type);
+                        }
+
+                        assert(llvm_compound_member);
                         BUF_PUSH(arr_vals, llvm_compound_member);
                     }
 
                     auto result = LLVMConstArray(llvm_base_type, arr_vals,
-                                                 zir_value->type->static_array.count);
-                    BUF_FREE(arr_vals);
+                                                 BUF_LENGTH(arr_vals));
                     return result;
                 }
                 else
                 {
                     LLVMValueRef arr_value = LLVMConstNull(llvm_arr_type);
 
-                    for (uint64_t i = 0; i < BUF_LENGTH(zir_value->value.compound_values); i++)
+                    for (uint64_t i = 0; i < zir_value->type->static_array.count; i++)
                     {
-                        IR_Value* zir_compound_member = zir_value->value.compound_values[i];
-                        LLVMValueRef llvm_arr_member = llvm_emit_ir_value(builder,
-                                                                          zir_compound_member);
+                        if (i < BUF_LENGTH(zir_value->value.compound_values))
+                        {
+                            IR_Value* zir_compound_member = zir_value->value.compound_values[i];
+                            LLVMValueRef llvm_arr_member = llvm_emit_ir_value(builder,
+                                                                            zir_compound_member);
 
-                        arr_value = LLVMBuildInsertValue(builder->llvm_builder, arr_value,
-                                                         llvm_arr_member, (unsigned)i, "");
+                            arr_value = LLVMBuildInsertValue(builder->llvm_builder, arr_value,
+                                                            llvm_arr_member, (unsigned)i, "");
+                        }
+                        else
+                        {
+                            LLVMValueRef undef_value = LLVMGetUndef(llvm_base_type);
+                            arr_value = LLVMBuildInsertValue(builder->llvm_builder, arr_value,
+                                                             undef_value, (unsigned)i, "");
+                        }
                     }
 
                     return arr_value;
