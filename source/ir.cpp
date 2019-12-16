@@ -2080,6 +2080,18 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_UNARY:
+            {
+                auto op = expression->unary.op;
+                if (op == AST_UNOP_ADDROF)
+                {
+                    expression_value = ir_builder_emit_expression(ir_builder, expression);
+                }
+                else assert(false);
+
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -3890,7 +3902,8 @@ namespace Zodiac
                 return ir_builder_emit_addrof_function(ir_builder, target_alloc, lvalue_decl->function.type, lvalue_expr->file_pos);
             }
             else if (force_pointer &&
-                (target_alloc->kind == IRV_ALLOCL || target_alloc->kind == IRV_GLOBAL))
+                (target_alloc->kind == IRV_ALLOCL || target_alloc->kind == IRV_ARGUMENT ||
+                 target_alloc->kind == IRV_GLOBAL))
             {
                 AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,
                                                                         lvalue_expr->type);
@@ -4075,6 +4088,7 @@ namespace Zodiac
                value->kind == IRV_INT_LITERAL ||
                value->kind == IRV_CHAR_LITERAL ||
                value->kind == IRV_FLOAT_LITERAL ||
+               value->kind == IRV_ARGUMENT ||
                (value->kind == IRV_ALLOCL && value->type->kind == AST_TYPE_STATIC_ARRAY));
         assert(type);
 
@@ -4541,14 +4555,14 @@ namespace Zodiac
         IR_Block* block = ir_function->first_block;
         while (block)
         {
-            result &= ir_validate_block(block, valres);
+            result &= ir_validate_block(ir_function, block, valres);
             block = block->next;
         }
 
         return result;
     }
 
-    bool ir_validate_block(IR_Block* ir_block, IR_Validation_Result* valres)
+    bool ir_validate_block(IR_Function* ir_func, IR_Block* ir_block, IR_Validation_Result* valres)
     {
         assert(ir_block);
         assert(valres);
@@ -4559,7 +4573,8 @@ namespace Zodiac
         {
             assert(!ir_block->last_instruction);
             result = false;
-            ir_report_validation_error(valres, "Block is empty: %s", ir_block->name.data);
+            ir_report_validation_error(valres, "Block is empty: %s:%s", ir_func->name,
+                                       ir_block->name.data);
         }
         else
         {

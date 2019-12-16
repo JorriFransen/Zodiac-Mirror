@@ -2,6 +2,9 @@
 std :: import std;
 using std;
 
+_printer :: import print;
+using _printer;
+
 main :: ()
 {
     // assert(false);
@@ -54,7 +57,6 @@ main :: ()
 
     print(test_str);
 
-    print({ "This should work as well", 5 });
     print("This should work as well");
     print(c_string);
 
@@ -133,14 +135,14 @@ main :: ()
     print(" ");
     test_align_forward();
 
-    print("abc\ndef\tghi\0jkl");
+    print("abc\ndef\tghi\n\0jkl");
 
     return 0;
 }
 
 queue_test :: ()
 {
-    std.print(" ");
+    print(" ");
 
     q : std.Queue(u64);
     queue_init(*q, 4);

@@ -37,7 +37,19 @@ main :: ()
     }
 
 
+    print("\n");
+    take_arg_addr(42, 1234);
+
     return 0;
+}
+
+take_arg_addr :: (x: int, y: int)
+{
+    print("take_arg_addr(x=%, y=%)\n", x, y);
+    print("\t*x=0x%\n", *x);
+    print("\t*y=0x%\n", *y);
+    print("\t<(*x)=%\n", <(*x));
+    print("\t<(*y)=%\n", <(*y));
 }
 
 last_char : int = 97;

@@ -2,6 +2,9 @@
 std :: import std;
 using std;
 
+_printer :: import print;
+using _printer;
+
 _builtin :: import builtin;
 using _builtin.Type_Info_Kind;
 
@@ -45,65 +48,66 @@ main :: () -> int
     u64_info := get_type_info(u64);
     pu64_info := get_type_info(*u64);
 
-    _c.printf("sizeof(Type_Info): %d\n", sizeof(Type_Info));
-    _c.printf("int_info: %p\n", int_info);
-    _c.printf("pint_info: %p\n", pint_info);
-    _c.printf("float_info: %p\n", float_info);
-    _c.printf("u8_info: %p\n", u8_info);
-    _c.printf("u64_info: %p\n", u64_info);
-    _c.printf("pu64_info: %p\n", pu64_info);
-    _c.printf("pu64_info.kind: %d\n", pu64_info.kind);
-    _c.printf("pu64_info.base: %p\n", pu64_info.base);
+    print("sizeof(Type_Info): %\n", sizeof(Type_Info));
+    print("int_info: %\n", int_info);
+    print("pint_info: %\n", pint_info);
+    print("float_info: %\n", float_info);
+    print("u8_info: %\n", u8_info);
+    print("u64_info: %\n", u64_info);
+    print("pu64_info: %\n", pu64_info);
+    print("pu64_info.kind: %\n", pu64_info.kind);
+    print("pu64_info.base: %\n", pu64_info.base);
 
-    print_type_info("int", int_info);
-    print_type_info("pint", pint_info);
-    print_type_info("float", float_info);
+    // print_type_info("int", int_info);
+    // print_type_info("pint", pint_info);
+    // print_type_info("float", float_info);
     print_type_info("u8", u8_info);
-    print_type_info("u64", u64_info);
-    print_type_info("pu64", pu64_info);
+    // print_type_info("u64", u64_info);
+    // print_type_info("pu64", pu64_info);
 
-    x : int;
-    print_type_info("typeof(x)", get_type_info(typeof(x)));
-    print_type_info("pint_info", pint_info);
-    print_type_info("typeof(*x)", get_type_info(typeof(*x)));
-    print_type_info("u64", get_type_info(u64));
-    print_type_info("*int", get_type_info(*int));
-    print_type_info("*u64", get_type_info(*u64));
-    print_type_info("u8", get_type_info(u8));
+    // x : int;
+    // print_type_info("typeof(x)", get_type_info(typeof(x)));
+    // print_type_info("pint_info", pint_info);
+    // print_type_info("typeof(*x)", get_type_info(typeof(*x)));
+    // print_type_info("u64", get_type_info(u64));
+    // print_type_info("*int", get_type_info(*int));
+    // print_type_info("*u64", get_type_info(*u64));
+    // print_type_info("u8", get_type_info(u8));
 
-    print_type_info("String", get_type_info(String));
-    print_type_info("Type_Info", get_type_info(Type_Info));
-    print_type_info("Value", get_type_info(Value));
+    // print_type_info("String", get_type_info(String));
+    // print_type_info("Type_Info", get_type_info(Type_Info));
+    // print_type_info("Value", get_type_info(Value));
 
-    mode_info := get_type_info(Mode);
-    assert(mode_info.kind == Type_Info_Kind.ENUM);
-    print_type_info("Mode", mode_info);
-    print_enum(mode_info);
+    // mode_info := get_type_info(Mode);
+    // assert(mode_info.kind == Type_Info_Kind.ENUM);
+    // print_type_info("Mode", mode_info);
+    // print_enum(mode_info);
 
-    on_str := enum_to_string(Mode.ON);
-    off_str := enum_to_string(Mode.OFF);
-    hib_str := enum_to_string(Mode.HIBERNATE);
-    hib2_str := enum_to_string(Mode2.HIBERNATE);
+    // on_str := enum_to_string(Mode.ON);
+    // off_str := enum_to_string(Mode.OFF);
+    // hib_str := enum_to_string(Mode.HIBERNATE);
+    // hib2_str := enum_to_string(Mode2.HIBERNATE);
 
-    _c.printf("enum_to_string(Mode.ON): %.*s\n", on_str.length, on_str.data);
-    _c.printf("enum_to_string(Mode.OFF): %.*s\n", off_str.length, off_str.data);
-    _c.printf("enum_to_string(Mode.HIBERNATE): %.*s\n", hib_str.length, hib_str.data);
-    _c.printf("enum_to_string(Mode2.HIBERNATE): %.*s\n", hib2_str.length, hib2_str.data);
+    // print("enum_to_string(Mode.ON): %\n", on_str.data);
+    // print("enum_to_string(Mode.OFF): %\n", off_str.data);
+    // print("enum_to_string(Mode.HIBERNATE): %\n", hib_str.data);
+    // print("enum_to_string(Mode2.HIBERNATE): %\n", hib2_str.data);
 
-    print(" ");
+    // print(" ");
 
-    pti_func_info := get_type_info(typeof(print_type_info));
-    print_type_info("typeof(print_type_info)", pti_func_info);
-    print_type_info("typeof(*print_type_info)", get_type_info(typeof(*print_type_info)));
-    print_type_info("typeof(_print_type_info)", get_type_info(typeof(_print_type_info)));
-    print_type_info("typeof(_c.printf)", get_type_info(typeof(_c.printf)));
+    // pti_func_info := get_type_info(typeof(print_type_info));
+    // print_type_info("typeof(print_type_info)", pti_func_info);
+    // print_type_info("typeof(*print_type_info)", get_type_info(typeof(*print_type_info)));
+    // print_type_info("typeof(_print_type_info)", get_type_info(typeof(_print_type_info)));
+    // print_type_info("typeof(_c.printf)", get_type_info(typeof(_c.printf)));
 
     return 0;
 }
 
 print_type_info :: (name: *u8, info: *Type_Info)
 {
-    _c.printf("%s: ", name);
+    assert(name);
+    print("%: ", name);
     assert(info);
     _print_type_info(info, true, 0);
     _c.printf("\n");

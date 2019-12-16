@@ -1,0 +1,12 @@
+
+_c :: import c;
+using _c;
+
+std :: import std;
+
+main :: ()
+{
+    open_std_handles();
+
+    std.print("Subprocess test");
+}

@@ -6,6 +6,9 @@ os :: import os;
 
 posix :: import posix;
 
+_printer :: import print;
+using _printer;
+
 Arena :: struct {
     current_block: *Arena_Block;
     first_block:   *Arena_Block;

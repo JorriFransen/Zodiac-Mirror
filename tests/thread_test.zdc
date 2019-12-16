@@ -5,6 +5,9 @@ using std;
 // _c :: import c;
 using _c;
 
+_printer :: import print;
+using _printer;
+
 _thread :: import thread;
 using _thread;
 

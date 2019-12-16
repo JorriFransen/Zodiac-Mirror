@@ -4,6 +4,9 @@ _c :: import c;
 
 using _c;
 
+_print_module :: import print;
+using _print_module;
+
 Vec2 :: struct
 {
     x : float;
@@ -50,72 +53,72 @@ main :: () -> int
 {
     _c.open_std_handles();
 
-    _c.printf("new_resolver_test\n");
-    printf("using test\n");
+    print("new_resolver_test\n");
+    print("using test\n");
 
-    std.print(global_mutable);
-    std.print(GLOBAL_CONSTANT);
+    print(global_mutable);
+    print(GLOBAL_CONSTANT);
 
-    // printf("x: %d\n", x);
+    // print("x: %\n", x);
     x : int = 4;
 
-    printf("x: %d\n", x);
+    print("x: %\n", x);
 
     x = x + 8;
 
-    printf("x: %d\n", x);
+    print("x: %\n", x);
 
-    printf("sizeof(Vec2): %d\n", sizeof(Vec2));
+    print("sizeof(Vec2): %\n", sizeof(Vec2));
 
     v : Vec2;
-    printf("v: "); print_vec2(v);
+    print("v: "); print_vec2(v);
 
     v.x = 1;
     v.y = 2;
-    printf("v: "); print_vec2(v);
+    print("v: "); print_vec2(v);
 
     v = { 3, 4 };
-    printf("v: "); print_vec2(v);
+    print("v: "); print_vec2(v);
 
     v2 : Vec2 = { 4, 5 };
-    printf("v2: "); print_vec2(v2);
+    print("v2: "); print_vec2(v2);
 
-    printf("*v: "); print_vec2p(*v);
-    printf("*v2: "); print_vec2p(*v2);
+    print("*v: "); print_vec2p(*v);
+    print("*v2: "); print_vec2p(*v2);
 
     b : bool = false;
 
     if (!b && false)
     {
-        printf("b = true\n");
+        print("b = true\n");
     }
     else
     {
-        printf("b = false\n");
+        print("b = false\n");
     }
 
     using State;
-    printf("State.INVALID:       %d\n", State.INVALID);
-    printf("State.PLAYING:       %d\n", PLAYING);
-    printf("State.PAUSED:        %d\n", State.PAUSED);
-    printf("State.MAIN_MENU:     %d\n", State.MAIN_MENU);
-    printf("State.SETTINGS_MENU: %d\n", State.SETTINGS_MENU);
-    printf("State.GRAPHICS_MENU: %d\n", State.GRAPHICS_MENU);
+    print("State.INVALID:       %\n", State.INVALID);
+    print("State.PLAYING:       %\n", PLAYING);
+    print("State.PAUSED:        %\n", State.PAUSED);
+    print("State.MAIN_MENU:     %\n", State.MAIN_MENU);
+    print("State.SETTINGS_MENU: %\n", State.SETTINGS_MENU);
+    print("State.GRAPHICS_MENU: %\n", State.GRAPHICS_MENU);
 
-    printf("Custom_State.INVALID:       %d\n", Custom_State.INVALID);
-    printf("Custom_State.PLAYING:       %d\n", Custom_State.PLAYING);
-    printf("Custom_State.PAUSED:        %d\n", Custom_State.PAUSED);
-    printf("Custom_State.MENU_FIRST:    %d\n", Custom_State.MENU_FIRST);
-    printf("Custom_State.MAIN_MENU:     %d\n", Custom_State.MAIN_MENU);
-    printf("Custom_State.SETTINGS_MENU: %d\n", Custom_State.SETTINGS_MENU);
-    printf("Custom_State.GRAPHICS_MENU: %d\n", Custom_State.GRAPHICS_MENU);
-    printf("Custom_State.MENU_LAST:     %d\n", Custom_State.MENU_LAST);
+    print("Custom_State.INVALID:       %\n", Custom_State.INVALID);
+    print("Custom_State.PLAYING:       %\n", Custom_State.PLAYING);
+    print("Custom_State.PAUSED:        %\n", Custom_State.PAUSED);
+    print("Custom_State.MENU_FIRST:    %\n", Custom_State.MENU_FIRST);
+    print("Custom_State.MAIN_MENU:     %\n", Custom_State.MAIN_MENU);
+    print("Custom_State.SETTINGS_MENU: %\n", Custom_State.SETTINGS_MENU);
+    print("Custom_State.GRAPHICS_MENU: %\n", Custom_State.GRAPHICS_MENU);
+    print("Custom_State.MENU_LAST:     %\n", Custom_State.MENU_LAST);
 
-    printf("Menu.FIRST:    %d\n", Menu.FIRST);
-    printf("Menu.MAIN:     %d\n", Menu.MAIN);
-    printf("Menu.SETTINGS: %d\n", Menu.SETTINGS);
-    printf("Menu.GRAPHICS: %d\n", Menu.GRAPHICS);
-    printf("Menu.LAST:     %d\n", Menu.LAST);
+    print("Menu.FIRST:    %d\n", Menu.FIRST);
+    print("Menu.MAIN:     %d\n", Menu.MAIN);
+    print("Menu.SETTINGS: %d\n", Menu.SETTINGS);
+    print("Menu.GRAPHICS: %d\n", Menu.GRAPHICS);
+    print("Menu.LAST:     %d\n", Menu.LAST);
 
     ps_int : Poly_Struct(int, *u8);
     ps_int.name = "ps_int";
@@ -128,30 +131,30 @@ main :: () -> int
     ps_int2.key = 6;
     ps_int2.value = "Six";
 
-    printf("ps_int: %s, %d, %s\n", ps_int.name, ps_int.key, ps_int.value);
-    printf("ps_int2: %s, %d, %s\n", ps_int2.name, ps_int2.key, ps_int2.value);
+    print("ps_int: %, %, %\n", ps_int.name, ps_int.key, ps_int.value);
+    print("ps_int2: %, %, %\n", ps_int2.name, ps_int2.key, ps_int2.value);
 
     ps_int2 = ps_int;
-    printf("ps_int: %s, %d, %s\n", ps_int.name, ps_int.key, ps_int.value);
-    printf("ps_int2: %s, %d, %s\n", ps_int2.name, ps_int2.key, ps_int2.value);
+    print("ps_int: %, %, %\n", ps_int.name, ps_int.key, ps_int.value);
+    print("ps_int2: %, %, %\n", ps_int2.name, ps_int2.key, ps_int2.value);
 
     ps_float : Poly_Struct(float, *u8);
     ps_float.name = "ps_float";
     ps_float.key = 3.3;
     ps_float.value = "Three point three";
 
-    printf("ps_float: %s, %f, %s\n", ps_float.name, ps_float.key, ps_float.value);
+    print("ps_float: %, %, %\n", ps_float.name, ps_float.key, ps_float.value);
 
     ps_vec2 : Poly_Struct(Vec2, *u8);
     ps_vec2.name = "ps_vec2";
     ps_vec2.key = { 1.1, 2.2 };
     ps_vec2.value = "{ x: 1.1, y: 2.2 }";
 
-    printf("ps_vec2: %s, %f,%f, %s\n", ps_vec2.name, ps_vec2.key.x, ps_vec2.key.y, ps_vec2.value);
+    print("ps_vec2: %, %,%, %\n", ps_vec2.name, ps_vec2.key.x, ps_vec2.key.y, ps_vec2.value);
 
-    printf("sizeof(typeof(ps_int)): %d\n", sizeof(typeof(ps_int)));
-    printf("sizeof(typeof(ps_float)): %d\n", sizeof(typeof(ps_float)));
-    printf("sizeof(typeof(ps_vec2)): %d\n", sizeof(typeof(ps_vec2)));
+    print("sizeof(typeof(ps_int)): %\n", sizeof(typeof(ps_int)));
+    print("sizeof(typeof(ps_float)): %\n", sizeof(typeof(ps_float)));
+    print("sizeof(typeof(ps_vec2)): %\n", sizeof(typeof(ps_vec2)));
 
     poly_print(1);
     poly_print(2.3);
@@ -180,18 +183,18 @@ nest_test :: ()
     t.x = 1;
     t.nested.x = 4;
 
-    printf("t.x: %d\n", t.x);
-    printf("t.nested.x: %d\n", t.nested.x);
+    print("t.x: %\n", t.x);
+    print("t.nested.x: %\n", t.nested.x);
 }
 
 print_vec2 :: (v: Vec2)
 {
-    printf("{ %f, %f }\n", v.x, v.y);
+    print("{ %, % }\n", v.x, v.y);
 }
 
 print_vec2p :: (v: *Vec2)
 {
-    printf("*{ %f, %f }\n", v.x, v.y);
+    print("*{ %, % }\n", v.x, v.y);
 }
 
 Poly_Struct :: struct(K, V)
@@ -203,5 +206,5 @@ Poly_Struct :: struct(K, V)
 
 poly_print :: (value: $T) -> void
 {
-    printf("%d, %f, %p\n", value, value, value);
+    print("%, %, %\n", value, value, value);
 }

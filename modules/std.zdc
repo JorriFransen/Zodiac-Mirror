@@ -150,27 +150,6 @@ string_ends_with :: (a: String, b: String) -> bool
     return true;
 }
 
-print :: (str: String)
-{
-    _c.printf("%.*s\n", str.length, str.data);
-}
-
-print :: (num: u64)
-{
-    _buf: [32]u8;
-    buf := *_buf[0];
-    length := _c.sprintf(buf, "%llu", num);
-    print({ buf, (:u64)length });
-}
-
-print :: (num: int)
-{
-    _buf: [32]u8;
-    buf := *_buf[0];
-    length := _c.sprintf(buf, "%lld", num);
-    print({ buf, (:u64)length });
-}
-
 Array :: struct(T)
 {
     data     : *T;

@@ -509,7 +509,7 @@ namespace Zodiac
 
     IR_Validation_Result ir_validate(IR_Builder* ir_builder);
     bool ir_validate_function(IR_Function* ir_function, IR_Validation_Result* valres);
-    bool ir_validate_block(IR_Block* ir_block, IR_Validation_Result* valres);
+    bool ir_validate_block(IR_Function* ir_func, IR_Block* ir_block, IR_Validation_Result* valres);
     void ir_report_validation_error(IR_Validation_Result* valres, const char* format, ...);
 
     void ir_builder_print_result(IR_Builder* ir_builder);

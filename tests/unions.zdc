@@ -2,6 +2,9 @@
 std :: import std;
 using std;
 
+_printer :: import print;
+using _printer;
+
 Value :: union
 {
     uint64 : u64;

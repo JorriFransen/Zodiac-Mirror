@@ -578,7 +578,8 @@ namespace Zodiac
 
             case AST_TYPE_SPEC_TYPEOF:
             {
-                assert(false);
+                auto expr_copy = copy_expression(context, type_spec->typeof_expr.expr, flags);
+                result = ast_type_spec_typeof_new(context, type_spec->file_pos, expr_copy);
                 break;
             }
 
