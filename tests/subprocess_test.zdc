@@ -2,11 +2,12 @@
 _c :: import c;
 using _c;
 
-std :: import std;
+_printer :: import print;
+using _printer;
 
 main :: ()
 {
     open_std_handles();
 
-    std.print("Subprocess test");
+    print("Subprocess test\n");
 }
