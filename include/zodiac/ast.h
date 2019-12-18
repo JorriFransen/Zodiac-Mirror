@@ -825,12 +825,14 @@ namespace Zodiac
     AST_Declaration* ast_declaration_new(Context* context, File_Pos file_Pos,
                                          AST_Declaration_Kind kind,
                                          AST_Declaration_Location location,
-                                         AST_Identifier* identifier, AST_Directive* directive);
+                                         AST_Identifier* identifier,
+                                         AST_Directive* directive);
     AST_Declaration* ast_list_declaration_new(Context* context, File_Pos file_pos,
                                               AST_Expression* list_expr,
                                               AST_Expression* init_expr);
 
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
+                                                  AST_Scope* scope,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
                                                   bool is_vararg,

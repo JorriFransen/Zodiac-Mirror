@@ -97,10 +97,10 @@ print_a :: (arr: *Array(u8), any: Any)
             {
                 print_cstr_a(arr, <cstr_ptr);
             }
-            else if (ts == (get_type_info(*void)))
-            {
-                assert(false);
-            }
+            // else if (ts == (get_type_info(*void)))
+            // {
+            //     assert(false);
+            // }
             else
             {
                 print_cstr_a(arr, "0x");

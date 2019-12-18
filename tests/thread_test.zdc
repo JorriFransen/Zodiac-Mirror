@@ -11,6 +11,9 @@ using _thread;
 os :: import os;
 using os.Thread;
 
+_printer :: import print;
+using _printer;
+
 global_counter : u64 = 0;
 global_counter_2 : u64 = 0;
 
@@ -30,14 +33,14 @@ _main :: ()
     t1 := os.create_thread(*printer, printer_args);
     t2 := os.create_thread(*printer, t0.user_data);
 
-    _c.printf("t1.handle: %d\n", t1.handle);
-    _c.printf("t2.handle: %d\n", t2.handle);
+    print("t1.handle: %\n", t1.handle);
+    print("t2.handle: %\n", t2.handle);
 
     os.join_thread(t1);
     os.join_thread(t2);
 
     t3 := os.create_thread(*printer, (:*void)3);
-    _c.printf("t3.handle: %d\n", t3.handle);
+    print("t3.handle: %\n", t3.handle);
 
     os.join_thread(t3);
 }
@@ -45,13 +48,13 @@ _main :: ()
 printer :: (thread: *Thread) -> *void
 {
     count := (:u64)thread.user_data;
-    _c.printf("starting printer, handle=%d, data=%ld\n", thread.handle, count);
+    print("starting printer, handle=%, data=%\n", thread.handle, count);
 
     // _c.getchar();
 
     while (count > 0)
     {
-        _c.printf("Printer %d: %d\n", thread.handle, count);
+        print("Printer %: %\n", thread.handle, count);
         count--;
     }
 }
@@ -59,11 +62,11 @@ printer :: (thread: *Thread) -> *void
 main :: ()
 {
     _c.open_std_handles();
-    std.print("thread _main");
+    print("thread _main\n");
     _main();
 
-    std.print("\nthread test");
-    printf("global_counter: %llu\n", global_counter);
+    print("\nthread test\n");
+    print("global_counter: %\n", global_counter);
 
     adders : std.Array(Thread) = { null, 0, 0 };
 
@@ -88,21 +91,21 @@ main :: ()
         }
         else
         {
-            fprintf(_stderr, "Thread creation failed!\n");
+            _c.fprintf(_stderr, "Thread creation failed!\n");
             adder_count = i;
             break;
         }
 
         if (i % 1000 == 0)
         {
-            std.print("\t1000 threads created for pool 1");
-            _c.printf("\t\tglobal_counter: %lu\n", global_counter);
+            print("\t1000 threads created for pool 1\n");
+            print("\t\tglobal_counter: %\n", global_counter);
         }
 
     }
 
 
-    std.print("All threads for pool 1 created");
+    print("All threads for pool 1 created\n");
 
     all_returns : u64 = 0;
 
@@ -112,10 +115,10 @@ main :: ()
         all_returns += (:u64)os.join_thread(at);
     }
 
-    printf("global_counter: %llu\n", global_counter);
-    printf("\texpected: %llu\n", (:u64)(adder_count * amount_per_adder));
+    print("global_counter: %\n", global_counter);
+    print("\texpected: %\n", (:u64)(adder_count * amount_per_adder));
     assert(global_counter == (:u64)(adder_count * amount_per_adder));
-    printf("\tall_returns: %lu\n\n", all_returns);
+    print("\tall_returns: %n\n", all_returns);
 
     adders.count = 0;
 
@@ -137,13 +140,13 @@ main :: ()
         }
         else
         {
-            fprintf(_stderr, "Thread creation failed\n");
+            _c.fprintf(_stderr, "Thread creation failed\n");
             adder_count = i;
             break;
         }
     }
 
-    std.print("All threads for pool 2 created");
+    print("All threads for pool 2 created\n");
 
     all_returns_2 : u64 = 0;
 
@@ -153,10 +156,10 @@ main :: ()
         all_returns_2 += (:u64)os.join_thread(at);
     }
 
-    printf("global_counter_2: %llu\n", global_counter_2);
-    printf("\texpected: %llu\n", (:u64)(adder_count * amount_per_adder));
+    print("global_counter_2: %\n", global_counter_2);
+    print("\texpected: %\n", (:u64)(adder_count * amount_per_adder));
     assert(global_counter_2 == (:u64)(adder_count * amount_per_adder));
-    printf("\tall_returns_2: %lu\n\n", all_returns_2);
+    print("\tall_returns_2: %\n\n", all_returns_2);
 
     array_free(*adders);
 
@@ -189,8 +192,8 @@ PC_Data :: struct
 
 semaphore_test :: ()
 {
-    std.print(" ");
-    std.print("Semaphore test");
+    print("\n");
+    print("Semaphore test\n");
 
     semaphore_init(*sem_lock, 1);
     semaphore_init(*sem_buf_full, 0);
@@ -199,7 +202,7 @@ semaphore_test :: ()
     mutex_init(*print_lock);
 
     pc_data : PC_Data;
-    std.print(SEM_BUFFER_COUNT);
+    print("%\n", SEM_BUFFER_COUNT);
     queue_init(*pc_data.empty_buffers, SEM_BUFFER_COUNT);
     queue_init(*pc_data.full_buffers, SEM_BUFFER_COUNT);
 
@@ -239,9 +242,9 @@ semaphore_test :: ()
         os.join_thread(consumers[i]);
     }
 
-    _c.printf("produced_count %d\n", produced_count);
+    print("produced_count %\n", produced_count);
 
-    // _c.printf("empty_buffers.count: %lu\n", pc_data.empty_buffers.count);
+    // print("empty_buffers.count: %lu\n", pc_data.empty_buffers.count);
     // assert(pc_data.empty_buffers.count == SEM_BUFFER_COUNT);
     assert(pc_data.empty_buffers.count + pc_data.full_buffers.count == SEM_BUFFER_COUNT);
 
@@ -269,7 +272,7 @@ produce :: (thread: *Thread) -> *void
         semaphore_wait(*sem_lock);
         pc_data := (:*PC_Data)thread.user_data;
         buffer := queue_dequeue(*pc_data.empty_buffers);
-        _c.printf("Producing in buffer: %p\n", buffer);
+        print("Producing in buffer: %\n", buffer);
         semaphore_signal(*sem_lock);
 
         for (i : s64 = 0; i < SEM_BUFFER_CAP; i++)
@@ -301,13 +304,13 @@ consume :: (thread: *Thread) -> *void
         semaphore_signal(*sem_lock);
 
         mutex_lock(*print_lock);
-        std.print("=========================================");
+        print("=========================================\n");
         for (i : s64 = 0; i < SEM_BUFFER_CAP; i++)
         {
-            _c.printf("buffer[%lu]: %lu\n", i, buffer[i]);
+            print("buffer[%lu]: %\n", i, buffer[i]);
             assert(buffer[i] == (:u64)(i * i));
         }
-        std.print("=========================================\n");
+        print("=========================================\n\n");
         mutex_unlock(*print_lock);
 
         semaphore_wait(*sem_lock);

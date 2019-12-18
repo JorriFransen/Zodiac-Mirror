@@ -31,9 +31,11 @@ namespace Zodiac
                 auto body_block_copy = copy_statement(context, declaration->function.body_block,
                                                       arg_scope_copy, flags);
 
-                return ast_function_declaration_new(context, declaration->file_pos, ident_copy,
-                                                    args_copy, is_vararg, return_ts_copy,
-                                                    body_block_copy, arg_scope_copy);
+                return ast_function_declaration_new(context, declaration->file_pos,
+                                                    declaration->scope,
+                                                    ident_copy, args_copy, is_vararg,
+                                                    return_ts_copy, body_block_copy,
+                                                    arg_scope_copy);
                 break;
             }
 
@@ -50,9 +52,9 @@ namespace Zodiac
                 auto init_expr_copy = copy_expression(context,
                                                       declaration->mutable_decl.init_expression,
                                                       flags);
-                return ast_mutable_declaration_new(context, declaration->file_pos, ident_copy,
-                                                   type_spec_copy, init_expr_copy,
-                                                   declaration->location);
+                return ast_mutable_declaration_new(context, declaration->file_pos,
+                                                   ident_copy, type_spec_copy,
+                                                   init_expr_copy, declaration->location);
                 break;
             }
 
