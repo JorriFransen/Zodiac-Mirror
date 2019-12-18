@@ -1,10 +1,13 @@
 std :: import std;
 using std;
 
+_printer :: import print;
+using _printer;
+
 main :: () -> u64
 {
     _c.open_std_handles();
-    std.print("wire");
+    print("wire\n");
     test_lazy_and();
     test_lazy_or();
 
@@ -13,7 +16,7 @@ main :: () -> u64
 
 test_lazy_or :: ()
 {
-    std.print("\n\nTEST_LAZY_OR\n");
+    print("\n\nTEST_LAZY_OR\n\n");
 
     assert(print_and_return_true("This should be executed") || false);
     assert(false || print_and_return_true("This should also be executed..."));
@@ -24,65 +27,65 @@ test_lazy_or :: ()
 
     if (false || print_and_return_true("This should be executed"))
     {
-        std.print("We should get here");
+        print("We should get here\n");
     }
 
     if (true || print_and_return_true("This should never be executed"))
     {
-        std.print("We should get here");
+        print("We should get here\n");
     }
     else assert(false);
 
     if (print_and_return_true("This should be executed") || true)
     {
-        std.print("We should get here");
+        print("We should get here\n");
     }
     else assert(false);
 
     if (print_and_return_true("This should be executed") || false)
     {
-        std.print("We should get here");
+        print("We should get here\n");
     }
     else assert(false);
 
     if (print_and_return_false("This should be executed") || true)
     {
-        std.print("We should get here");
+        print("We should get here\n");
     }
     else assert(false);
 
     if (print_and_return_false("This should be executed") || false)
     {
-        std.print("We should never get here");
+        print("We should never get here\n");
         assert(false);
     }
 
     if (true || print_and_return_false("This should never be executed"))
     {
-        std.print("We should get here");
+        print("We should get here\n");
     }
     else assert(false);
 
     if (false || print_and_return_false("This should be executed"))
     {
-        std.print("We should never get here");
+        print("We should never get here\n");
         assert(false);
     }
 }
 
 test_lazy_and :: ()
 {
-    std.print("\n\nTEST_LAZY_AND\n");
+    print("\n\nTEST_LAZY_AND\n\n");
 
     if (false && print_and_return_true("This should never be executed"))
     {
-        std.print("We should never get here");
+        print("We should never get here\n");
         assert(false);
     }
 
     if (false && assert_false_and_return_true())
     {
-        std.print("we should never get here");
+        print("we should never get here\n");
         assert(false);
     }
 
@@ -99,7 +102,7 @@ test_lazy_and :: ()
 
     if (true && print_and_return_true("This should be executed"))
     {
-        std.print("We should get here");
+        print("We should get here\n");
     }
     else
     {
@@ -108,13 +111,13 @@ test_lazy_and :: ()
 
     if (print_and_return_true("This should be executed") && false)
     {
-        std.print("We should never get here");
+        print("We should never get here\n");
         assert(false);
     }
 
     if (print_and_return_true("This should be executed") && true)
     {
-        std.print("We should get here");
+        print("We should get here\n");
     }
     else
     {
@@ -124,13 +127,13 @@ test_lazy_and :: ()
 
 print_and_return_true :: (str: *u8) -> bool
 {
-    std.print(str);
+    print("%\n", str);
     return true;
 }
 
 print_and_return_false :: (str: *u8) -> bool
 {
-    std.print(str);
+    print("%\n", str);
     return false;
 }
 

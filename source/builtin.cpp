@@ -170,7 +170,9 @@ namespace Zodiac
         init_expression->type = Builtin::type_bool;
 
         AST_Declaration* result = ast_constant_variable_declaration_new(context, file_pos,
-            identifier, type_spec, init_expression, AST_DECL_LOC_GLOBAL);
+                                                                        identifier, type_spec,
+                                                                        init_expression,
+                                                                        AST_DECL_LOC_GLOBAL);
         result->flags |= AST_DECL_FLAG_RESOLVED;
         result->constant_var.type = Builtin::type_bool;
 

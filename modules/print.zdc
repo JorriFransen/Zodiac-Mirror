@@ -84,6 +84,7 @@ print :: (fmt: *u8, v: ...)
 
 print_a :: (arr: *Array(u8), any: Any)
 {
+    assert(any.value);
     ts := any.type_info;
 
     switch (ts.kind)
@@ -96,12 +97,13 @@ print_a :: (arr: *Array(u8), any: Any)
             {
                 print_cstr_a(arr, <cstr_ptr);
             }
-            else if (ts == (get_type_info(*void)))
-            {
-                assert(false);
-            }
+            // else if (ts == (get_type_info(*void)))
+            // {
+            //     assert(false);
+            // }
             else
             {
+                print_cstr_a(arr, "0x");
                 print_unsigned_a(arr, any.value, ts.byte_size, 16, 0, '0');
             }
         }
@@ -230,6 +232,7 @@ print_a :: (arr: *Array(u8), any: Any)
 print_signed_a :: (arr: *Array(u8), value_ptr: *void, byte_size: u64, base: u32, min_digits: u32,
                    prepend_char: u8)
 {
+    assert(value_ptr);
     s64_ptr := (:*s64)value_ptr;
 
     switch (byte_size)
@@ -304,9 +307,13 @@ print_unsigned_64_a :: (arr: *Array(u8), value: $T, base: u32, min_digits: u32, 
     cursor : *u8 = *(buf[0]);
     length : s64 = 0;
 
+    assert(base > 0);
+    assert(base <= 16);
+
     while (true)
     {
         rem := value % (:T)base;
+        oldval := value;
         value = value / (:T)base;
 
         <cursor = u8_to_digit((:u8)rem);

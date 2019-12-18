@@ -104,6 +104,12 @@ namespace Zodiac
         return ir_builder->result;
     }
 
+    struct _Dirty_Overload
+    {
+        AST_Declaration* decl = nullptr;
+        IR_Builder* ir_builder = nullptr;
+    };
+
     void ir_builder_emit_missing_poly_functions(IR_Builder* ir_builder, AST_Module* module)
     {
         assert(ir_builder);
@@ -119,18 +125,25 @@ namespace Zodiac
             }
         }
 
-        BUF(AST_Declaration*) dirty_overloads = nullptr;
+        BUF(_Dirty_Overload) dirty_overloads = nullptr;
 
         for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
         {
             AST_Declaration* global_decl = module->global_declarations[i];
 
+            AST_Module* overload_module = nullptr;
+            IR_Builder* overload_ir_builder = nullptr;
+
             bool dirty = false;
             if (global_decl->kind == AST_DECL_FUNC_OVERLOAD)
             {
+                overload_module = global_decl->scope->module;
+                overload_ir_builder = (IR_Builder*)overload_module->gen_data;
+
                 for (uint64_t j = 0; j < BUF_LENGTH(global_decl->function_overload.overloads); j++)
                 {
                     AST_Declaration* overload = global_decl->function_overload.overloads[j];
+
                     if (overload->flags & AST_DECL_FLAG_FUNC_POLY)
                     {
                         IR_Value* value = ir_builder_value_for_declaration(ir_builder, overload);
@@ -144,14 +157,16 @@ namespace Zodiac
 
             if (dirty)
             {
-                ir_builder_emit_global_declaration(ir_builder, global_decl);
-                BUF_PUSH(dirty_overloads, global_decl);
+                ir_builder_emit_global_declaration(overload_ir_builder, global_decl);
+                _Dirty_Overload _do = { global_decl, overload_ir_builder };
+                BUF_PUSH(dirty_overloads, _do);
             }
         }
 
         for (uint64_t i = 0; i < BUF_LENGTH(dirty_overloads); i++)
         {
-            ir_builder_emit_decl_body(ir_builder, dirty_overloads[i]);
+            auto _do = dirty_overloads[i];
+            ir_builder_emit_decl_body(_do.ir_builder, _do.decl);
         }
 
         BUF_FREE(dirty_overloads);
@@ -3902,7 +3917,8 @@ namespace Zodiac
                 return ir_builder_emit_addrof_function(ir_builder, target_alloc, lvalue_decl->function.type, lvalue_expr->file_pos);
             }
             else if (force_pointer &&
-                (target_alloc->kind == IRV_ALLOCL || target_alloc->kind == IRV_ARGUMENT ||
+                (target_alloc->kind == IRV_ALLOCL ||
+                 target_alloc->kind == IRV_ARGUMENT ||
                  target_alloc->kind == IRV_GLOBAL))
             {
                 AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,

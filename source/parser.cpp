@@ -333,7 +333,8 @@ namespace Zodiac
                 expect_token(parser, TOK_SEMICOLON);
             }
 
-            AST_Declaration* result = ast_function_declaration_new(parser->context, fp, identifier,
+            AST_Declaration* result = ast_function_declaration_new(parser->context, fp, scope,
+                                                                   identifier,
                                                                    arg_decls, is_vararg,
                                                                    return_type_spec,
                                                                    body_block, argument_scope);

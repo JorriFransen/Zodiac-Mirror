@@ -4,8 +4,8 @@ _c :: import c;
 
 using _c;
 
-_print_module :: import print;
-using _print_module;
+_printer :: import print;
+using _printer;
 
 Vec2 :: struct
 {
@@ -56,10 +56,10 @@ main :: () -> int
     print("new_resolver_test\n");
     print("using test\n");
 
-    print(global_mutable);
-    print(GLOBAL_CONSTANT);
+    print("%\n", global_mutable);
+    print("%\n", GLOBAL_CONSTANT);
 
-    // print("x: %\n", x);
+    // print("x: %d\n", x);
     x : int = 4;
 
     print("x: %\n", x);
@@ -114,11 +114,11 @@ main :: () -> int
     print("Custom_State.GRAPHICS_MENU: %\n", Custom_State.GRAPHICS_MENU);
     print("Custom_State.MENU_LAST:     %\n", Custom_State.MENU_LAST);
 
-    print("Menu.FIRST:    %d\n", Menu.FIRST);
-    print("Menu.MAIN:     %d\n", Menu.MAIN);
-    print("Menu.SETTINGS: %d\n", Menu.SETTINGS);
-    print("Menu.GRAPHICS: %d\n", Menu.GRAPHICS);
-    print("Menu.LAST:     %d\n", Menu.LAST);
+    print("Menu.FIRST:    %\n", Menu.FIRST);
+    print("Menu.MAIN:     %\n", Menu.MAIN);
+    print("Menu.SETTINGS: %\n", Menu.SETTINGS);
+    print("Menu.GRAPHICS: %\n", Menu.GRAPHICS);
+    print("Menu.LAST:     %\n", Menu.LAST);
 
     ps_int : Poly_Struct(int, *u8);
     ps_int.name = "ps_int";

@@ -372,7 +372,8 @@ namespace Zodiac
     AST_Declaration* ast_declaration_new(Context* context, File_Pos file_pos,
                                          AST_Declaration_Kind kind,
                                          AST_Declaration_Location location,
-                                         AST_Identifier* identifier, AST_Directive* directive)
+                                         AST_Identifier* identifier,
+                                         AST_Directive* directive)
     {
         assert(context);
 
@@ -404,6 +405,7 @@ namespace Zodiac
     }
 
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
+                                                  AST_Scope* scope,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
                                                   bool is_vararg, 
@@ -430,6 +432,7 @@ namespace Zodiac
         result->function.inferred_return_type = nullptr;
         result->function.body_block = body_block;
         result->function.body_generated = false;
+        result->scope = scope;
 
         result->function.argument_scope = argument_scope;
         if (body_block)
@@ -454,8 +457,7 @@ namespace Zodiac
         assert(location != AST_DECL_LOC_INVALID);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_MUTABLE,
-                                                      location,
-                                                      identifier, nullptr);
+                                                      location, identifier, nullptr);
 
         result->mutable_decl.type_spec = type_spec;
         result->mutable_decl.init_expression = init_expr;
@@ -474,8 +476,7 @@ namespace Zodiac
         // assert(init_expr);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_CONSTANT_VAR,
-                                                      location,
-                                                      identifier, nullptr);
+                                                      location, identifier, nullptr);
 
         result->constant_var.type_spec = type_spec;
         result->constant_var.init_expression = init_expr;

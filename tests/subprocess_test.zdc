@@ -10,4 +10,6 @@ main :: ()
     open_std_handles();
 
     print("Subprocess test\n");
+
+    return 0;
 }
