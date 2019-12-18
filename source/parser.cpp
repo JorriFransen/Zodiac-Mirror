@@ -1166,7 +1166,11 @@ namespace Zodiac
                 expr = parse_expression(parser, scope);
             }
 
-            assert(expr);
+            if (!expr)
+            {
+                BUF_FREE(exprs);
+                return nullptr;
+            }
             BUF_PUSH(exprs, expr);
 
             if (!match_token(parser, TOK_COMMA))
@@ -1415,6 +1419,10 @@ namespace Zodiac
             else if (is_token(parser, TOK_KW_GET_TYPE_INFO))
             {
                 result = parse_get_type_info_expression(parser, scope);
+            }
+            else if (match_token(parser, TOK_POUND))
+            {
+                return parse_directive_expression(parser, scope);
             }
             else
             {
@@ -1693,6 +1701,35 @@ namespace Zodiac
         expect_token(parser, TOK_RPAREN);
 
         return ast_get_type_info_expression_new(parser->context, ft.file_pos, type_spec);
+    }
+
+    static AST_Expression* parse_directive_expression(Parser* parser, AST_Scope* scope)
+    {
+        auto context = parser->context;
+        auto ft = current_token(parser);
+
+        AST_Identifier* ident = parse_identifier(parser);
+        if (ident->atom == Builtin::atom_FUNC_NAME)
+        {
+            return ast_func_name_expression_new(context, ft.file_pos);
+        }
+        else if (ident->atom == Builtin::atom_FILE_NAME)
+        {
+            auto module = parser->result.ast_module;
+            Atom a_dir = atom_get(context->atom_table, module->module_file_dir);
+            Atom a_file = atom_get(context->atom_table, module->module_file_name);
+            Atom a_path = atom_append(context->atom_table, a_dir, a_file);
+
+            return ast_string_literal_expression_new(context, ft.file_pos, a_path);
+        }
+        else if (ident->atom == Builtin::atom_LINE_NO)
+        {
+            return ast_integer_literal_expression_new(context, ft.file_pos,
+                                                      ident->file_pos.line);
+        }
+
+        assert(false);
+        return nullptr;
     }
 
     static AST_Expression* parse_call_expression(Parser* parser, AST_Expression* ident_expression,

@@ -141,14 +141,15 @@ else static_if(PLATFORM_WINDOWS)
 #foreign getenv :: (name: *u8) -> *u8;
 
 pid_t :: typedef u32;
+fd_t :: typedef s32;
 
-STDIN_FILENO  : u32 : 0;
-STDOUT_FILENO : u32 : 1;
-STDERR_FILENO : u32 : 2;
+STDIN_FILENO  : fd_t : 0;
+STDOUT_FILENO : fd_t : 1;
+STDERR_FILENO : fd_t : 2;
 
-#foreign read :: (fd: u32, buf: *void, count: u32) -> u32;
-#foreign write :: (fd: u32, buf: *void, count: u32) -> u32;
-#foreign close :: (fd: u32) -> u32;
+#foreign read :: (fd: fd_t, buf: *void, count: s32) -> s32;
+#foreign write :: (fd: fd_t, buf: *void, count: s32) -> s32;
+#foreign close :: (fd: fd_t) -> s32;
 
 #foreign fopen :: (path: *u8, mode: *u8) -> *FILE;
 #foreign fclose :: (file: *FILE) -> int;
@@ -157,9 +158,10 @@ STDERR_FILENO : u32 : 2;
 #foreign ftell :: (stream: *FILE) -> int;
 #foreign fread :: (buffer: *void, size: u64, count: u64, stream: *FILE) -> u64;
 
-#foreign pipe :: (pipefd: *u32) -> u32;
+#foreign pipe :: (pipefd: *[2]fd_t) -> s32;
 #foreign fork :: () -> pid_t;
 #foreign dup2 :: (oldfd: int, newfd: int) -> int;
 #foreign execl :: (path: *u8, arg: *u8, ...) -> int;
+#foreign execv :: (path: *u8, args: **u8) -> int;
 #foreign wait :: (stat_loc: *u32) -> pid_t;
 #foreign _exit :: (status: int) -> void;

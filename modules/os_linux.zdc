@@ -202,12 +202,13 @@ _join_thread :: (thread: Thread) -> *void
 
 Pipe :: struct
 {
-    read_fd: u32;
-    write_fd: u32;
+    read_fd  : posix.fd_t;
+    write_fd : posix.fd_t;
 }
 
 IO_Error :: enum
 {
+    INVALID;
     NONE;
     ERRNO;
 }
@@ -215,7 +216,7 @@ IO_Error :: enum
 pipe_create :: () -> IO_Error #required, Pipe
 {
     result : Pipe;
-    ret := posix.pipe(*result.read_fd);
+    ret := posix.pipe((:*[2]s32)(*result.read_fd));
 
     if (ret == 0)
     {
@@ -224,7 +225,7 @@ pipe_create :: () -> IO_Error #required, Pipe
     else if (ret == -1)
     {
         dummy_res : Pipe;
-        return IO_Error.ERRNO, { 0, 0 };
+        return IO_Error.ERRNO, { -1, -1 };
     }
 
     assert(false);
@@ -240,28 +241,44 @@ pipe_close :: (pipe: *Pipe) -> IO_Error #required
 
 pipe_close_read :: (pipe: *Pipe) -> IO_Error #required
 {
+    if (pipe.read_fd == -1)
+        return IO_Error.NONE;
+
     ret := posix.close(pipe.read_fd);
     if (ret == 0)
     {
+        pipe.read_fd = -1;
         return IO_Error.NONE;
     }
     else if (ret == -1)
     {
         return IO_Error.ERRNO;
     }
+    _c.fprintf(stdout, "[read]posix.close returned: %d\n", ret);
+    _c.fflush(stdout);
+
     assert(false);
+    return IO_Error.INVALID;
 }
 
 pipe_close_write :: (pipe: *Pipe) -> IO_Error #required
 {
+    if (pipe.write_fd == -1)
+        return IO_Error.NONE;
+
     ret := posix.close(pipe.write_fd);
     if (ret == 0)
     {
+        pipe.write_fd = -1;
         return IO_Error.NONE;
     }
     else if (ret == -1)
     {
         return IO_Error.ERRNO;
     }
+
+    _c.printf("posix.close returned: %d\n", ret);
+
     assert(false);
+    return IO_Error.INVALID;
 }

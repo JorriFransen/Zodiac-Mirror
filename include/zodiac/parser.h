@@ -101,6 +101,7 @@ namespace Zodiac
 		AST_Scope* scope);
     static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier,
 		AST_Scope* scope);
+    static AST_Expression* parse_directive_expression(Parser* parser, AST_Scope* scope);
 
     static AST_Type_Spec* parse_type_spec(Parser* parser, AST_Scope* scope);
     static AST_Type_Spec* parse_return_type_spec(Parser* parser, AST_Scope* scope);

@@ -60,6 +60,9 @@ namespace Zodiac
         static Atom atom_Type_Info_Aggregate_Member;
         static Atom atom_Type_Info_Enum_Member;
         static Atom atom_default_assert_handler;
+        static Atom atom_FUNC_NAME;
+        static Atom atom_FILE_NAME;
+        static Atom atom_LINE_NO;
 
         static AST_Identifier* identifier_Thread;
     };

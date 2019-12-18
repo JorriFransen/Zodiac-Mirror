@@ -1069,6 +1069,14 @@ namespace Zodiac
             }
         }
 
+        auto type = decl->aggregate_type.type;
+        for (uint64_t i = 0; i < BUF_LENGTH(type->overloads); i++)
+        {
+            AST_Identifier* overload_ident = type->overloads[i].identifier;
+            result &= resolver_resolve_identifier(resolver, overload_ident, scope);
+            if (result) assert(overload_ident->declaration);
+        }
+
         BUF_FREE(members_to_resolve.members);
         BUF_FREE(members_to_replace);
 
@@ -2599,6 +2607,15 @@ namespace Zodiac
             case AST_EXPR_MAKE_LVALUE:
             {
                 expression->type = expression->make_lvalue.expression->type;
+                break;
+            }
+
+            case AST_EXPR_FUNC_NAME:
+            {
+                Atom func_name = resolver->current_func_decl->identifier->atom;
+                ast_string_literal_expression_new(resolver->context, expression,
+                                                  expression->file_pos, func_name);
+                result &= resolver_resolve_expression(resolver, expression, scope);
                 break;
             }
 

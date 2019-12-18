@@ -10,6 +10,40 @@ stderr : *FILE = null;
 PLATFORM_WINDOWS :: false;
 PLATFORM_LINUX   :: false;
 
+static_if (PLATFORM_WINDOWS)
+{
+    print_stack_trace :: ()
+    {
+    }
+
+    #foreign _fdopen :: (fd: int, mode: *u8) -> *FILE;
+    fdopen :: (fd: int, mode: *u8) -> *FILE { return _fdopen(fd, mode); }
+}
+else static_if(PLATFORM_LINUX)
+{
+    #foreign fdopen :: (fd: int, mode: *u8) -> *FILE;
+    #foreign backtrace :: (buffer: **void, size: int) -> int;
+    #foreign backtrace_symbols :: (buffer: **void, size: int) -> **u8;
+
+    print_stack_trace :: ()
+    {
+        MAX_STACK_TRACE_LENGTH :: 1024;
+        frames : [MAX_STACK_TRACE_LENGTH]*void;
+        trace_length := backtrace(*frames[0], MAX_STACK_TRACE_LENGTH);
+
+        names := backtrace_symbols(*frames[0], trace_length);
+        for (i := 0; i < trace_length; i++)
+        {
+            fprintf(stderr, "%s:\n", names[i]);
+        }
+    }
+}
+else
+{
+    static_assert(false);
+}
+
+
 Type_Info_Kind : u64 : enum
 {
     INVALID;
@@ -88,14 +122,6 @@ Any :: struct
     value     : *void;
 }
 
-String :: struct
-{
-    data   : *u8;
-    length : u64;
-
-    #overload[] string_index;
-}
-
 string_length :: (c_str: *u8) -> u64
 {
     if (!c_str) return 0;
@@ -120,43 +146,15 @@ Array_Ref :: struct(T)
     #overload[] array_ref_index;
 }
 
+array_ref_index :: (array_ref: Array_Ref($T), index: s64) -> T
+{
+    return array_ref.data[index];
+}
+
 Array_Ref_of_Any :: typedef Array_Ref(Any);
 
 #foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
 #foreign exit :: (status: s32) -> void;
-
-static_if (PLATFORM_WINDOWS)
-{
-    print_stack_trace :: ()
-    {
-    }
-
-    #foreign _fdopen :: (fd: int, mode: *u8) -> *FILE;
-    fdopen :: (fd: int, mode: *u8) -> *FILE { return _fdopen(fd, mode); }
-}
-else static_if(PLATFORM_LINUX)
-{
-    #foreign fdopen :: (fd: int, mode: *u8) -> *FILE;
-    #foreign backtrace :: (buffer: **void, size: int) -> int;
-    #foreign backtrace_symbols :: (buffer: **void, size: int) -> **u8;
-
-    print_stack_trace :: ()
-    {
-        MAX_STACK_TRACE_LENGTH :: 1024;
-        frames : [MAX_STACK_TRACE_LENGTH]*void;
-        trace_length := backtrace(*frames[0], MAX_STACK_TRACE_LENGTH);
-
-        names := backtrace_symbols(*frames[0], trace_length);
-        for (i := 0; i < trace_length; i++)
-        {
-            fprintf(stderr, "%s:\n", names[i]);
-        }
-    }
-}
-else
-{
-    static_assert(false);
-}
 
 _builtin_open_std_handles :: () -> void
 {
@@ -194,3 +192,18 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
     }
 }
 
+String :: struct
+{
+    data   : *u8;
+    length : u64;
+
+    #overload[] string_index;
+}
+
+
+string_index :: (str: String, index: u64) -> u8
+{
+    default_assert_handler(index < str.length, #FUNC_NAME, #FILE_NAME, #LINE_NO);
+
+    return str.data[index];
+}

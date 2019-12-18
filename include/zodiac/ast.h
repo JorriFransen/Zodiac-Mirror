@@ -69,6 +69,7 @@ namespace Zodiac
         AST_EXPR_EXPRESSION_LIST,
         AST_EXPR_IGNORED_VALUE,
         AST_EXPR_MAKE_LVALUE,
+        AST_EXPR_FUNC_NAME,
     };
 
     enum AST_Binop_Kind
@@ -786,6 +787,8 @@ namespace Zodiac
     AST_Expression* ast_null_literal_expression_new(Context* context, File_Pos file_pos);
     AST_Expression* ast_string_literal_expression_new(Context* context, File_Pos file_pos,
                                                       Atom value);
+    AST_Expression* ast_string_literal_expression_new(Context* context, AST_Expression* ex_expr,
+                                                      File_Pos file_pos, Atom value);
     AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos,
                                                        uint64_t value);
     AST_Expression* ast_float_literal_expression_new(Context* context, File_Pos file_pos,
@@ -815,6 +818,7 @@ namespace Zodiac
     AST_Expression* ast_expression_ignored_value_new(Context* context, File_Pos file_pos);
     AST_Expression* ast_make_lvalue_expression_new(Context* context, File_Pos file_pos,
                                                    AST_Expression* non_lvalue);
+    AST_Expression* ast_func_name_expression_new(Context* context, File_Pos file_pos);
 
     AST_Aggregate_Declaration*
         ast_aggregate_declaration_new(Context* context, File_Pos file_pos,

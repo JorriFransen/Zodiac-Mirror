@@ -10,19 +10,26 @@ posix :: import posix;
 os_linux :: import os_linux;
 using os_linux;
 
+// @TODO: @FIXME: @HACK: Needed for array index to be found...
+// using std;
+
 main :: ()
 {
     open_std_handles();
 
     print("Subprocess test\n");
 
-    res := execute_process("./tp");
+    res := execute_process("./tp", "");
+    _c.printf("execute_process returned: %d\n", res);
     assert(res == 7);
+
+    // res = execute_process("ls", "-la");
+    // _c.printf("execute_process returned: %d\n", res);
 
     return 0;
 }
 
-execute_process :: (command: String) -> int
+execute_process :: (command: String, args: ...) -> int
 {
     pipe_err : IO_Error;
     in       : Pipe;
@@ -31,26 +38,40 @@ execute_process :: (command: String) -> int
 
     pipe_err, in = pipe_create();
     if (pipe_err != IO_Error.NONE) return -1;
+    defer pipe_close(*in);
 
     pipe_err, out = pipe_create();
-    if (pipe_err != IO_Error.NONE)
-    {
-        pipe_close(*in);
-        return -1;
-    }
+    if (pipe_err != IO_Error.NONE) return -1;
+    // defer pipe_close(*out);
 
     pipe_err, err = pipe_create();
-    if (pipe_err != IO_Error.NONE)
-    {
-        pipe_close(*in);
-        pipe_close(*out);
-        return -1;
-    }
+    if (pipe_err != IO_Error.NONE) return -1;
+    // defer pipe_close(*err);
 
     pid := posix.fork();
 
     if (pid == 0)
     {
+        _args : std.Array(*u8) = { null, 0, 0 };
+        defer std.array_free(*_args);
+
+        std.array_add(*_args, "sh");
+        std.array_add(*_args, "-c");
+        std.array_add(*_args, command.data);
+        for (i := 0; i < args.count; i++)
+        {
+            arg_any := args[i];
+            assert(arg_any.type_info == get_type_info(*u8));
+            arg_val := <((:**u8)arg_any.value)
+            std.array_add(*_args, arg_val);
+        }
+        std.array_add(*_args, null);
+
+        // _c.fprintf(stdout, "Executing command: \"");
+        // for (i := 0; i < _args.count; i++) _c.fprintf(stdout, "%s ", _args[i]);
+        // _c.fprintf(stdout, "\"\n");
+        // _c.fflush(stdout);
+
         pipe_close_write(*in);
         pipe_close_read(*out);
         pipe_close_read(*err);
@@ -63,8 +84,13 @@ execute_process :: (command: String) -> int
         pipe_close_write(*out);
         pipe_close_write(*err);
 
-        exec_res := posix.execl(command.data, command.data, null);
-        assert(exec_res != -1);
+        exec_res := posix.execv("/bin/sh", _args.data);
+
+        if (exec_res == -1)
+        {
+            _c.printf("Command execution failed: \"sh -c %s\"\n", command.data);
+            assert(false);
+        }
 
         posix._exit(1);
     }
@@ -81,11 +107,12 @@ execute_process :: (command: String) -> int
         wait_res := posix.wait(*status);
         assert(wait_res == pid);
         assert(posix.WIFEXITED(status));
-        _c.printf("status: %d\n", posix.WEXITSTATUS(status));
+        _c.printf("status: %d\n", status);
+        _c.printf("exit status: %d\n", posix.WEXITSTATUS(status));
 
         while (true)
         {
-            readc = posix.read(out.read_fd, *buf, (:u32)array_length(buf));
+            readc = posix.read(out.read_fd, *buf, (:s32)array_length(buf));
             assert(readc >= 0);
             _c.printf("%.*s", readc, *buf);
             if (readc <= 0) break;
@@ -93,7 +120,7 @@ execute_process :: (command: String) -> int
 
         while (true)
         {
-            readc = posix.read(err.read_fd, *buf, (:u32)array_length(buf));
+            readc = posix.read(err.read_fd, *buf, (:s32)array_length(buf));
             assert(readc >= 0);
             _c.printf("%.*s", readc, *buf);
             if (readc <= 0) break;
@@ -103,10 +130,10 @@ execute_process :: (command: String) -> int
     }
     else
     {
-        pipe_close(*in);
-        pipe_close(*out);
-        pipe_close(*err);
-
+        assert(false);
         return -1;
     }
+
+    assert(false);
+    return -1;
 }

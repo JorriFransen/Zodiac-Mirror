@@ -182,9 +182,17 @@ namespace Zodiac
         assert(context);
 
         auto result = ast_expression_new(context, file_pos, AST_EXPR_STRING_LITERAL);
-        result->string_literal.atom = value;
-        result->flags |= AST_EXPR_FLAG_LITERAL;
+        ast_string_literal_expression_new(context, result, file_pos, value);
         return result;
+    }
+
+    AST_Expression* ast_string_literal_expression_new(Context* context, AST_Expression* ex_expr,
+                                                      File_Pos file_pos, Atom value)
+    {
+        ex_expr->kind = AST_EXPR_STRING_LITERAL;
+        ex_expr->string_literal.atom = value;
+        ex_expr->flags |= AST_EXPR_FLAG_LITERAL;
+        return ex_expr;
     }
 
     AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos,
@@ -348,6 +356,13 @@ namespace Zodiac
         result->make_lvalue.expression = non_lvalue;
         result->flags |= AST_EXPR_FLAG_LVALUE;
 
+        return result;
+    }
+
+    AST_Expression* ast_func_name_expression_new(Context* context, File_Pos file_pos)
+    {
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_FUNC_NAME);
+        result->flags |= AST_EXPR_FLAG_CONST;
         return result;
     }
 

@@ -55,6 +55,9 @@ namespace Zodiac
     Atom Builtin::atom_Type_Info_Aggregate_Member;
     Atom Builtin::atom_Type_Info_Enum_Member;
     Atom Builtin::atom_default_assert_handler;
+    Atom Builtin::atom_FUNC_NAME;
+    Atom Builtin::atom_FILE_NAME;
+    Atom Builtin::atom_LINE_NO;
 
     AST_Identifier* Builtin::identifier_Thread = nullptr;
 
@@ -110,6 +113,9 @@ namespace Zodiac
                                                             "Type_Info_Enum_Member");
         Builtin::atom_default_assert_handler = atom_get(context->atom_table,
                                                         "default_assert_handler");
+        Builtin::atom_FUNC_NAME = atom_get(context->atom_table, "FUNC_NAME");
+        Builtin::atom_FILE_NAME = atom_get(context->atom_table, "FILE_NAME");
+        Builtin::atom_LINE_NO = atom_get(context->atom_table, "LINE_NO");
 
         File_Pos builtin_file_pos = {};
         builtin_file_pos.file_name = "<builtin>";
