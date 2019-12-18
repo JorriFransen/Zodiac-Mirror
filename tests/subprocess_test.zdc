@@ -5,11 +5,108 @@ using _c;
 _printer :: import print;
 using _printer;
 
+posix :: import posix;
+
+os_linux :: import os_linux;
+using os_linux;
+
 main :: ()
 {
     open_std_handles();
 
     print("Subprocess test\n");
 
+    res := execute_process("./tp");
+    assert(res == 7);
+
     return 0;
+}
+
+execute_process :: (command: String) -> int
+{
+    pipe_err : IO_Error;
+    in       : Pipe;
+    out      : Pipe;
+    err      : Pipe;
+
+    pipe_err, in = pipe_create();
+    if (pipe_err != IO_Error.NONE) return -1;
+
+    pipe_err, out = pipe_create();
+    if (pipe_err != IO_Error.NONE)
+    {
+        pipe_close(*in);
+        return -1;
+    }
+
+    pipe_err, err = pipe_create();
+    if (pipe_err != IO_Error.NONE)
+    {
+        pipe_close(*in);
+        pipe_close(*out);
+        return -1;
+    }
+
+    pid := posix.fork();
+
+    if (pid == 0)
+    {
+        pipe_close_write(*in);
+        pipe_close_read(*out);
+        pipe_close_read(*err);
+
+        posix.dup2(in.read_fd, posix.STDIN_FILENO);
+        posix.dup2(out.write_fd, posix.STDOUT_FILENO);
+        posix.dup2(err.write_fd, posix.STDERR_FILENO);
+
+        pipe_close_read(*in);
+        pipe_close_write(*out);
+        pipe_close_write(*err);
+
+        exec_res := posix.execl(command.data, command.data, null);
+        assert(exec_res != -1);
+
+        posix._exit(1);
+    }
+    else if (pid > 0)
+    {
+        pipe_close_read(*in);
+        pipe_close_write(*out);
+        pipe_close_write(*err);
+
+        buf : [1024]u8;
+        readc : int;
+
+        status : u32 = 0;
+        wait_res := posix.wait(*status);
+        assert(wait_res == pid);
+        assert(posix.WIFEXITED(status));
+        _c.printf("status: %d\n", posix.WEXITSTATUS(status));
+
+        while (true)
+        {
+            readc = posix.read(out.read_fd, *buf, (:u32)array_length(buf));
+            assert(readc >= 0);
+            _c.printf("%.*s", readc, *buf);
+            if (readc <= 0) break;
+        }
+
+        while (true)
+        {
+            readc = posix.read(err.read_fd, *buf, (:u32)array_length(buf));
+            assert(readc >= 0);
+            _c.printf("%.*s", readc, *buf);
+            if (readc <= 0) break;
+        }
+
+        return posix.WEXITSTATUS(status);
+    }
+    else
+    {
+        pipe_close(*in);
+        pipe_close(*out);
+        pipe_close(*err);
+
+        return -1;
+    }
 }

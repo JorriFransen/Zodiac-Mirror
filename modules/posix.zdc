@@ -109,6 +109,16 @@ static_if (PLATFORM_LINUX)
         return status >> 8;
     }
 
+    WIFEXITED :: (status: int) -> int
+    {
+        return (:int)(_WSTATUS(status) == 0);
+    }
+
+    _WSTATUS :: (status: int) -> int
+    {
+        return status & 0177;
+    }
+
     exit_status :: (status: int) -> int { return status >> 8; }
 }
 else static_if(PLATFORM_WINDOWS)
@@ -130,6 +140,15 @@ else static_if(PLATFORM_WINDOWS)
 
 #foreign getenv :: (name: *u8) -> *u8;
 
+pid_t :: typedef u32;
+
+STDIN_FILENO  : u32 : 0;
+STDOUT_FILENO : u32 : 1;
+STDERR_FILENO : u32 : 2;
+
+#foreign read :: (fd: u32, buf: *void, count: u32) -> u32;
+#foreign write :: (fd: u32, buf: *void, count: u32) -> u32;
+#foreign close :: (fd: u32) -> u32;
 
 #foreign fopen :: (path: *u8, mode: *u8) -> *FILE;
 #foreign fclose :: (file: *FILE) -> int;
@@ -138,3 +157,9 @@ else static_if(PLATFORM_WINDOWS)
 #foreign ftell :: (stream: *FILE) -> int;
 #foreign fread :: (buffer: *void, size: u64, count: u64, stream: *FILE) -> u64;
 
+#foreign pipe :: (pipefd: *u32) -> u32;
+#foreign fork :: () -> pid_t;
+#foreign dup2 :: (oldfd: int, newfd: int) -> int;
+#foreign execl :: (path: *u8, arg: *u8, ...) -> int;
+#foreign wait :: (stat_loc: *u32) -> pid_t;
+#foreign _exit :: (status: int) -> void;

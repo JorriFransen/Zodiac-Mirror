@@ -2225,9 +2225,13 @@ namespace Zodiac
                 {
                     memcpy(&dest_value->value, member_ptr, result_type->bit_size / 8);
                 }
-                else
+                else if (result_type->kind == AST_TYPE_STATIC_ARRAY)
                 {
                     assert(false);
+                }
+                else
+                {
+                    memcpy(&dest_value->value, member_ptr, result_type->bit_size / 8);
                 }
 
                 break;

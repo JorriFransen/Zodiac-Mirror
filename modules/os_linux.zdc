@@ -199,3 +199,69 @@ _join_thread :: (thread: Thread) -> *void
     assert(result == 0);
     return ret_val;
 }
+
+Pipe :: struct
+{
+    read_fd: u32;
+    write_fd: u32;
+}
+
+IO_Error :: enum
+{
+    NONE;
+    ERRNO;
+}
+
+pipe_create :: () -> IO_Error #required, Pipe
+{
+    result : Pipe;
+    ret := posix.pipe(*result.read_fd);
+
+    if (ret == 0)
+    {
+        return IO_Error.NONE, result;
+    }
+    else if (ret == -1)
+    {
+        dummy_res : Pipe;
+        return IO_Error.ERRNO, { 0, 0 };
+    }
+
+    assert(false);
+}
+
+pipe_close :: (pipe: *Pipe) -> IO_Error #required
+{
+    read_res := pipe_close_read(pipe);
+    if (read_res != IO_Error.NONE) return read_res;
+
+    return pipe_close_write(pipe);
+}
+
+pipe_close_read :: (pipe: *Pipe) -> IO_Error #required
+{
+    ret := posix.close(pipe.read_fd);
+    if (ret == 0)
+    {
+        return IO_Error.NONE;
+    }
+    else if (ret == -1)
+    {
+        return IO_Error.ERRNO;
+    }
+    assert(false);
+}
+
+pipe_close_write :: (pipe: *Pipe) -> IO_Error #required
+{
+    ret := posix.close(pipe.write_fd);
+    if (ret == 0)
+    {
+        return IO_Error.NONE;
+    }
+    else if (ret == -1)
+    {
+        return IO_Error.ERRNO;
+    }
+    assert(false);
+}

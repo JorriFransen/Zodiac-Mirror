@@ -864,6 +864,7 @@ namespace Zodiac
         else if (match_token(parser, TOK_EQ))
         {
             AST_Expression* assign_expression = parse_expression(parser, scope);
+            if (!assign_expression) return nullptr;
             match_token(parser, TOK_SEMICOLON);
             return ast_assign_statement_new(parser->context, ft.file_pos, lvalue_expr,
                                             assign_expression);

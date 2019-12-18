@@ -29,6 +29,7 @@ uint64_t _get_int_hash(const int& x)
 // #include <syscall.h>
 // #include <sys/stat.h>
 // #include <stdio.h>
+// #include <unistd.h>
 
 int main(int argc, char** argv)
 {
@@ -40,6 +41,9 @@ int main(int argc, char** argv)
     // printf("EOF: %d\n", EOF);
 	//printf("sizeof(DWORD): %d\n", sizeof(DWORD));
 	//GetStdHandle(STD_OUTPUT_HANDLE);
+    // printf("STDIN_FILENO: %d\n", STDIN_FILENO);
+    // printf("STDOUT_FILENO: %d\n", STDOUT_FILENO);
+    // printf("STDERR_FILENO: %d\n", STDERR_FILENO);
 
 
 
