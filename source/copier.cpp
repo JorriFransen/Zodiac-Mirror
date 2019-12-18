@@ -434,7 +434,9 @@ namespace Zodiac
 
             case AST_EXPR_FLOAT_LITERAL:
             {
-                assert(false);
+                return ast_float_literal_expression_new(context, expression->file_pos,
+                                                        expression->float_literal.r64,
+                                                        expression->float_literal.r32);
                 break;
             }
 
@@ -477,8 +479,14 @@ namespace Zodiac
             case AST_EXPR_CAST:
             {
                 auto ts_copy = copy_type_spec(context, expression->cast_expr.type_spec, flags);
+                if (!ts_copy)
+                {
+                    assert(expression->type);
+                    ts_copy = ast_type_spec_from_type_new(context, expression->file_pos, expression->type);
+                }
                 auto expr_copy = copy_expression(context, expression->cast_expr.expr, flags);
-                return ast_cast_expression_new(context, expression->file_pos, ts_copy, expr_copy);
+                auto result = ast_cast_expression_new(context, expression->file_pos, ts_copy, expr_copy);
+                return result;
                 break;
             }
 
@@ -578,7 +586,8 @@ namespace Zodiac
 
             case AST_TYPE_SPEC_TYPEOF:
             {
-                assert(false);
+                auto expr_copy = copy_expression(context, type_spec->typeof_expr.expr, flags);
+                return ast_type_spec_typeof_new(context, type_spec->file_pos, expr_copy);
                 break;
             }
 

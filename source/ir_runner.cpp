@@ -824,7 +824,14 @@ namespace Zodiac
 
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 % arg2->value.s64;
+                    if (type->flags & AST_TYPE_FLAG_SIGNED)
+                    {
+                        dest->value.s64 = arg1->value.s64 % arg2->value.s64;
+                    }
+                    else
+                    {
+                        dest->value.u64 = arg1->value.u64 % arg2->value.u64;
+                    }
                 }
                 else assert(false);
 
@@ -1685,6 +1692,7 @@ namespace Zodiac
             {
                 assert(iri->arg1);
                 assert(iri->arg1->kind == IRV_ALLOCL ||
+                       iri->arg1->kind == IRV_ARGUMENT ||
                        iri->arg1->kind == IRV_GLOBAL);
                 assert(iri->result);
                 assert(iri->result->kind == IRV_TEMPORARY);

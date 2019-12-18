@@ -1924,7 +1924,6 @@ namespace Zodiac
                 else if (decl->kind == AST_DECL_CONSTANT_VAR)
                 {
                     expression->flags |= AST_EXPR_FLAG_CONST;
-                    expression->flags |= AST_EXPR_FLAG_LVALUE;
                 }
                 else if (decl->kind == AST_DECL_MUTABLE)
                 {
@@ -2345,6 +2344,12 @@ namespace Zodiac
 
             case AST_EXPR_COMPOUND_LITERAL:
             {
+                if (!suggested_type && expression->type &&
+                    expression->type->kind == AST_TYPE_STRUCT)
+                {
+                    // assert(false);
+                    suggested_type = expression->type;
+                }
                 assert(suggested_type);
 
                 bool all_members_const = true;

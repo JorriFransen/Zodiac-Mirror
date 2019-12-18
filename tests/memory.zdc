@@ -4,6 +4,8 @@ using _c;
 
 os :: import os;
 
+_printer :: import print;
+
 posix :: import posix;
 
 Arena :: struct {

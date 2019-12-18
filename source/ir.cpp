@@ -3890,7 +3890,9 @@ namespace Zodiac
                 return ir_builder_emit_addrof_function(ir_builder, target_alloc, lvalue_decl->function.type, lvalue_expr->file_pos);
             }
             else if (force_pointer &&
-                (target_alloc->kind == IRV_ALLOCL || target_alloc->kind == IRV_GLOBAL))
+                (target_alloc->kind == IRV_ALLOCL ||
+                 target_alloc->kind == IRV_ARGUMENT ||
+                 target_alloc->kind == IRV_GLOBAL))
             {
                 AST_Type* result_type = ast_find_or_create_pointer_type(ir_builder->context,
                                                                         lvalue_expr->type);

@@ -2,23 +2,22 @@
 _std :: import std;
 using _std;
 
+_printer :: import print;
+using _printer;
+
 main :: () -> int
 {
     _c.open_std_handles();
 
     defer_test1(1);
-    print(" ");
     defer_test1(2);
-    print(" ");
     defer_test1(3);
-    print(" ");
 
     defer_test2(1);
-    print(" ");
 
-    defer print("main defer 1");
-    defer print("main defer 2");
-    defer print("main defer 3");
+    defer print("main defer 1\n");
+    defer print("main defer 2\n");
+    defer print("main defer 3\n");
 
     // defer defer print("nested defer");
     // defer { print("abc"); return -1; }
@@ -29,47 +28,47 @@ main :: () -> int
 
 defer_test1 :: (arg: int)
 {
-    defer print("beginning of defer_test()");
+    defer print("beginning of defer_test()\n");
 
     if (arg == 1)
     {
-        defer print("deferred arg = 1");
+        defer print("deferred arg = 1\n");
         print("arg is 1");
         return;
     }
     else if (arg == 2)
     {
-        defer print("Arg is 2");
+        defer print("Arg is 2\n");
     }
 
-    defer print("end of defer_test()");
+    defer print("end of defer_test()\n");
 }
 
 defer_test2 :: (arg: int)
 {
-    defer print("calling defer test2");
+    defer print("calling defer test2\n");
 
     assert(arg >= 0);
 
     while (arg >= 0)
     {
-        defer print(arg);
+        defer print("%\n", arg);
 
         arg = arg - 1;
     }
 
     while (true)
     {
-        defer print(arg);
-        defer _c.printf("%d\n", arg);
+        defer print("%\n", arg);
+        defer print("%\n", arg);
 
         arg -= 1;
         if (arg < 0)
         {
-            defer print("defer in break block");
+            defer print("defer in break block\n");
             break;
         }
     }
 
-    defer print("end of defer_test2");
+    defer print("end of defer_test2\n");
 }

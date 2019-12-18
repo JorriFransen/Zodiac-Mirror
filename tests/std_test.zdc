@@ -2,6 +2,9 @@
 std :: import std;
 using std;
 
+_printer :: import print;
+using _printer;
+
 main :: ()
 {
     // assert(false);
@@ -9,7 +12,7 @@ main :: ()
     // assert(false);
     // test_stringabc : String = "test string";
 
-    print("Print test with auto converted string literal");
+    print("Print test with auto converted string literal\n");
 
     es : String = { null, 0 };
     num_str : String = { "1234", 4 };
@@ -17,10 +20,10 @@ main :: ()
     es2 := get_empty_string();
     num_str2 := get_num_string();
 
-    print(es);
-    print(num_str);
-    print(es2);
-    print(num_str2);
+    print("%\n", es);
+    print("%\n", num_str);
+    print("%\n", es2);
+    print("%\n", num_str2);
 
 
     name := "Jorri Fransen";
@@ -36,26 +39,26 @@ main :: ()
 
     print("");
 
-    _c.printf("add(1, 2): %d\n", add(1, 2));
-    _c.printf("add(4, 8): %d\n", add(4, 8));
-    _c.printf("add(1.2, 3.4): %f\n", add(1.2, 3.4));
+    print("add(1, 2): %\n", add(1, 2));
+    print("add(4, 8): %\n", add(4, 8));
+    print("add(1.2, 3.4): %\n", add(1.2, 3.4));
 
-    print(" ");
+    print("\n");
 
     c_string := "This is a test string";
-    print(std.string_length("abc"));
+    print("%\n", std.string_length("abc"));
     test_str : String = { c_string, _c.strlen(c_string) };
 
-    _c.printf("test_str.length: %llu\n", test_str.length);
-    _c.printf("test_str[2]: '%c'\n", test_str[2]);
+    print("test_str.length: %\n", test_str.length);
+    print("test_str[2]: '%'\n", test_str[2]);
 
     // test_str_ptr := *test_str;
-    // _c.printf("test_str_ptr[2]: '%c'\n", test_str_ptr[2]);
+    // print("test_str_ptr[2]: '%c'\n", test_str_ptr[2]);
 
-    print(test_str);
+    print("%\n", test_str);
 
-    print({ "This should work as well", 5 });
-    print("This should work as well");
+    // print({ "This should work as well", 5 });
+    print("This should work as well\n");
     print(c_string);
 
     print(" ");
@@ -76,53 +79,53 @@ main :: ()
 
     for (i : s64 = 0; i < int_array.count; i += 1)
     {
-        _c.printf("int_array[%d]: %d\n", i, int_array[i]);
+        print("int_array[%]: %\n", i, int_array[i]);
         array_add(*int_array2, int_array[i]);
     }
 
-    print(" ");
+    print("\n");
 
     array_remove_unordered(*float_array, 0);
-    _c.printf("float_array.count: %d\n", float_array.count);
+    print("float_array.count: %\n", float_array.count);
 
     for (i : s64 = 0; i < float_array.count; i += 1)
     {
-        _c.printf("float_array[%d]: %f\n", i, float_array[i]);
+        print("float_array[%]: %\n", i, float_array[i]);
         array_add(*int_array2, (:int)float_array[i]);
     }
 
-    print(" ");
+    print("\n");
 
     for (i : s64 = 0; i < int_array2.count; i += 1)
     {
-        _c.printf("int_array2[%d]: %d\n", i, int_array2[i]);
+        print("int_array2[%]: %\n", i, int_array2[i]);
     }
 
-    print(" ");
+    print("\n");
 
     // int_array_ptr := *int_array;
-    // _c.printf("int_array_ptr[2]: %d\n", int_array_ptr[2]);
+    // print("int_array_ptr[2]: %d\n", int_array_ptr[2]);
 
     // float_array_ptr := *float_array;
-    // _c.printf("float_array_ptr[3]: %f\n", float_array_ptr[3]);
+    // print("float_array_ptr[3]: %f\n", float_array_ptr[3]);
 
     array_free(*int_array);
     array_free(*int_array2);
     array_free(*float_array);
 
-    print(" ");
+    print("\n");
 
     var := 5;
     var += 3;
-    _c.printf("var: %d\n", var);
+    print("var: %\n", var);
     var += var;
-    _c.printf("var: %d\n", var);
+    print("var: %\n", var);
     var *= 3;
-    _c.printf("var: %d\n", var);
+    print("var: %\n", var);
     var -= 7;
-    _c.printf("var: %d\n", var);
+    print("var: %\n", var);
 
-    print(" ");
+    print("\n");
 
     post_inc_test := 4;
     print(post_inc_test++);
@@ -130,17 +133,17 @@ main :: ()
     print(post_inc_test);
 
     queue_test();
-    print(" ");
+    print("\n");
     test_align_forward();
 
-    print("abc\ndef\tghi\0jkl");
+    print("abc\ndef\tghi\n\0jkl");
 
     return 0;
 }
 
 queue_test :: ()
 {
-    std.print(" ");
+    print("\n");
 
     q : std.Queue(u64);
     queue_init(*q, 4);
@@ -155,7 +158,7 @@ queue_test :: ()
     {
         dq := queue_dequeue(*q);
         // assert(dq == i);
-        _c.printf("dequeued: %lu\n", dq);
+        print("dequeued: %\n", dq);
     }
 
     for (i : u64 = 20; i < 35; i++)
@@ -167,17 +170,17 @@ queue_test :: ()
     {
         dq := queue_dequeue(*q);
         // assert(dq == i);
-        _c.printf("dequeued: %lu\n", dq);
+        print("dequeued: %\n", dq);
     }
 
     for (i : u64 = 20; i < 35; i++)
     {
         dq := queue_dequeue(*q);
         // assert(dq == i);
-        _c.printf("dequeued: %lu\n", dq);
+        print("dequeued: %\n", dq);
     }
 
-    print(" ");
+    print("\n");
 
     pq : std.Queue(*u64);
     queue_init(*pq, 4);
@@ -189,21 +192,21 @@ queue_test :: ()
     {
         p := *arr[i];
         queue_enqueue(*pq, (:*u64)p);
-        _c.printf("enqueued: %p (%lu)\n", p, <p);
+        print("enqueued: % (%)\n", p, <p);
     }
 
-    print(" ");
+    print("\n");
 
     for (i := 0; i < array_length(arr); i++)
     {
         ip := queue_dequeue(*pq);
-        _c.printf("dequeued: %p (%lu)\n", ip, <ip);
+        print("dequeued: % (%)\n", ip, <ip);
         assert(<ip == arr[i]);
     }
 
     my_int := 4;
     my_int_ptr := *my_int;
-    _c.printf("<my_int_ptr = %d\n", <my_int_ptr);
+    print("<my_int_ptr = %\n", <my_int_ptr);
 }
 
 add :: (a: $T, b: T) -> T
@@ -227,38 +230,41 @@ Pet :: struct
 
 print_person_and_thing :: (person: Person, thing: $T)
 {
-    print("print_person_and_thing");
-    _c.printf("  name: %s\n", person.name.data);
-    _c.printf("  thing: %x\n", thing);
+    print("print_person_and_thing\n");
+    print("  name: %\n", person.name.data);
+    print("  thing: %\n", thing);
 }
 
 print_person_and_thing :: (pet: Pet, thing: $T)
 {
-    print("print_person_and_thing (but person is a pet)");
-    _c.printf("  name: %s\n", pet.name.data);
-    _c.printf("  owner: %x\n", pet.owner);
-    _c.printf("  thing: %x\n", thing);
+    print("print_person_and_thing (but person is a pet)\n");
+    print("  name: %\n", pet.name.data);
+    print("  owner: %\n", pet.owner);
+    print("  thing: %\n", thing);
     // assert(false);
 }
 
 test_align_forward  :: ()
 {
-    print("test_align_forward");
+    print("test_align_forward\n");
 
     stack_value : u8;
     ptr : *u8 = *stack_value;
 
-    _c.printf("ptr: %p\n", ptr);
+    print("ptr: %\n", ptr);
 
     for (j : u64 = 0; j < 16; j++)
     {
-        _c.printf("ptr + %d\n", j);
+        print("ptr + %\n", j);
         for (i : u64 = 1; i <= 64; i*=2)
         {
             aligned := align_forward(ptr, i);
             aligned_b := align_forward_b(ptr, i);
-            _c.printf("\taligned: %d, %p,%p\n", i, aligned, aligned_b);
-            // assert((:u64)aligned == (:u64)aligned_b);
+            print("\taligned: %, 0x%, 0x%\n",
+                  i,
+                  format_int(aligned, 0, 16),
+                  format_int(aligned_b, 0, 16));
+            assert((:u64)aligned == (:u64)aligned_b);
         }
         ptr += 1;
     }
