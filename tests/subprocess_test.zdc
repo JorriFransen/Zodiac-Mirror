@@ -10,9 +10,6 @@ posix :: import posix;
 os_linux :: import os_linux;
 using os_linux;
 
-// @TODO: @FIXME: @HACK: Needed for array index to be found...
-// using std;
-
 main :: ()
 {
     open_std_handles();
@@ -23,13 +20,13 @@ main :: ()
     _c.printf("execute_process returned: %d\n", res);
     assert(res == 7);
 
-    // res = execute_process("ls", "-la");
-    // _c.printf("execute_process returned: %d\n", res);
+    res = execute_process("ls", "-la");
+    _c.printf("execute_process returned: %d\n", res);
 
     return 0;
 }
 
-execute_process :: (command: String, args: ...) -> int
+execute_process :: (command: String, args: ...) -> u32
 {
     pipe_err : IO_Error;
     in       : Pipe;
@@ -42,11 +39,11 @@ execute_process :: (command: String, args: ...) -> int
 
     pipe_err, out = pipe_create();
     if (pipe_err != IO_Error.NONE) return -1;
-    // defer pipe_close(*out);
+    defer pipe_close(*out);
 
     pipe_err, err = pipe_create();
     if (pipe_err != IO_Error.NONE) return -1;
-    // defer pipe_close(*err);
+    defer pipe_close(*err);
 
     pid := posix.fork();
 
@@ -88,7 +85,7 @@ execute_process :: (command: String, args: ...) -> int
 
         if (exec_res == -1)
         {
-            _c.printf("Command execution failed: \"sh -c %s\"\n", command.data);
+            _c.fprintf(stderr, "Command execution failed: \"sh -c %s\"\n", command.data);
             assert(false);
         }
 
@@ -101,29 +98,29 @@ execute_process :: (command: String, args: ...) -> int
         pipe_close_write(*err);
 
         buf : [1024]u8;
-        readc : int;
+        readc : s32;
 
         status : u32 = 0;
         wait_res := posix.wait(*status);
         assert(wait_res == pid);
         assert(posix.WIFEXITED(status));
-        _c.printf("status: %d\n", status);
-        _c.printf("exit status: %d\n", posix.WEXITSTATUS(status));
 
-        while (true)
+        reading := true;
+        while (reading)
         {
             readc = posix.read(out.read_fd, *buf, (:s32)array_length(buf));
             assert(readc >= 0);
             _c.printf("%.*s", readc, *buf);
-            if (readc <= 0) break;
+            if (readc <= 0) reading = false;
         }
 
-        while (true)
+        reading = true;
+        while (reading)
         {
             readc = posix.read(err.read_fd, *buf, (:s32)array_length(buf));
             assert(readc >= 0);
             _c.printf("%.*s", readc, *buf);
-            if (readc <= 0) break;
+            if (readc <= 0) reading = false;
         }
 
         return posix.WEXITSTATUS(status);
@@ -135,5 +132,5 @@ execute_process :: (command: String, args: ...) -> int
     }
 
     assert(false);
-    return -1;
+    return -2;
 }

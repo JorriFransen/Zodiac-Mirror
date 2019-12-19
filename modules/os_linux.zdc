@@ -254,8 +254,6 @@ pipe_close_read :: (pipe: *Pipe) -> IO_Error #required
     {
         return IO_Error.ERRNO;
     }
-    _c.fprintf(stdout, "[read]posix.close returned: %d\n", ret);
-    _c.fflush(stdout);
 
     assert(false);
     return IO_Error.INVALID;

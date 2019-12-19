@@ -704,6 +704,30 @@ namespace Zodiac
         assert(runner);
         assert(iri);
 
+#define _EXECUTE_SIGNED_INT_BINOP(lhs, op, rhs, dest, type)                            \
+    switch ((type)->bit_size) {                                                        \
+        case 8:  { (dest)->value.s8 = (lhs)->value.s8 op (rhs)->value.s8; break; }     \
+        case 16: { (dest)->value.s16 = (lhs)->value.s16 op (rhs)->value.s16; break; }  \
+        case 32: { (dest)->value.s32 = (lhs)->value.s32 op (rhs)->value.s32; break; }  \
+        case 64: { (dest)->value.s64 = (lhs)->value.s64 op (rhs)->value.s64; break; }  \
+        default: assert(false);                                                        \
+    }                                                                                  \
+
+#define _EXECUTE_UNSIGNED_INT_BINOP(lhs, op, rhs, dest, type)                         \
+    switch ((type)->bit_size) {                                                       \
+        case 8:  { (dest)->value.u8 = (lhs)->value.u8 op (rhs)->value.u8; break; }    \
+        case 16: { (dest)->value.u16 = (lhs)->value.u16 op (rhs)->value.u16; break; } \
+        case 32: { (dest)->value.u32 = (lhs)->value.u32 op (rhs)->value.u32; break; } \
+        case 64: { (dest)->value.u64 = (lhs)->value.u64 op (rhs)->value.u64; break; } \
+        default: assert(false);                                                       \
+    }                                                                                 \
+
+#define _EXECUTE_INT_BINOP(lhs, op, rhs, dest, type)                         \
+           {bool sign = (type)->flags & AST_TYPE_FLAG_SIGNED;                \
+            if (sign) {_EXECUTE_SIGNED_INT_BINOP(lhs, op, rhs, dest, type);} \
+            else {_EXECUTE_UNSIGNED_INT_BINOP(lhs, op, rhs, dest, type);}}   \
+
+
         switch (iri->op)
         {
             case IR_OP_NOP:
@@ -727,7 +751,7 @@ namespace Zodiac
 
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 + arg2->value.s64;
+                    _EXECUTE_INT_BINOP(arg1, +, arg2, dest, type);
                 }
                 else if (type == Builtin::type_double)
                 {
@@ -760,7 +784,7 @@ namespace Zodiac
 
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 - arg2->value.s64;
+                    _EXECUTE_INT_BINOP(arg1, -, arg2, dest, type);
                 }
                 else if (type == Builtin::type_float)
                 {
@@ -794,7 +818,7 @@ namespace Zodiac
 
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 * arg2->value.s64;
+                    _EXECUTE_INT_BINOP(arg1, *, arg2, dest, type);
                 }
                 else if (type == Builtin::type_double)
                 {
@@ -826,7 +850,7 @@ namespace Zodiac
                 {
                     if (type->flags & AST_TYPE_FLAG_SIGNED)
                     {
-                        dest->value.s64 = arg1->value.s64 % arg2->value.s64;
+                        _EXECUTE_INT_BINOP(arg1, %, arg2, dest, type);
                     }
                     else
                     {
@@ -853,7 +877,7 @@ namespace Zodiac
 
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 / arg2->value.s64;
+                    _EXECUTE_INT_BINOP(arg1, /, arg2, dest, type);
                 }
                 else if (type == Builtin::type_double)
                 {
@@ -877,19 +901,11 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
-                uint64_t lhs = arg1->value.u64;
-                uint64_t rhs = arg2->value.u64;
+                assert(arg1->type == arg2->type);
+                auto type = arg1->type;
 
-                uint64_t mask = UINT64_MAX;
+                _EXECUTE_INT_BINOP(arg1, <<, arg2, dest, type);
 
-                if (arg1->type->bit_size != 64)
-                {
-                    mask = ((uint64_t)1 << arg1->type->bit_size) - 1;
-                    lhs = mask & lhs;
-                    rhs = mask & rhs;
-                }
-
-                dest->value.u64 = mask & (lhs << rhs);
                 break;
             }
 
@@ -902,19 +918,10 @@ namespace Zodiac
                 IR_Value* arg2 = ir_runner_get_local_temporary(runner, iri->arg2);
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
-                uint64_t lhs = arg1->value.u64;
-                uint64_t rhs = arg2->value.u64;
+                assert(arg1->type == arg2->type);
+                auto type = arg1->type;
 
-                uint64_t mask = UINT64_MAX;
-
-                if (arg1->type->bit_size != 64)
-                {
-                    mask = ((uint64_t)1 << arg1->type->bit_size) - 1;
-                    lhs = mask & lhs;
-                    rhs = mask & rhs;
-                }
-
-                dest->value.u64 = mask & (lhs >> rhs);
+                _EXECUTE_INT_BINOP(arg1, >>, arg2, dest, type);
                 break;
             }
 
@@ -928,44 +935,7 @@ namespace Zodiac
 
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    if (type->flags & AST_TYPE_FLAG_SIGNED)
-                    {
-                        switch (type->bit_size)
-                        {
-                            case 8: { dest->value.s8 = arg1->value.s8 < arg2->value.s8;
-                                break;
-                            }
-                            case 16: { dest->value.s16 = arg1->value.s16 < arg2->value.s16;
-                                break;
-                            }
-                            case 32: { dest->value.s32 = arg1->value.s32 < arg2->value.s32;
-                                break;
-                            }
-                            case 64: { dest->value.s64 = arg1->value.s64 < arg2->value.s64;
-                                break;
-                            }
-                            default: assert(false);
-                        }
-                    }
-                    else
-                    {
-                        switch (type->bit_size)
-                        {
-                        case 8: { dest->value.u8 = arg1->value.u8 < arg2->value.u8;
-                                break;
-                        }
-                        case 16: { dest->value.u16 = arg1->value.u16 < arg2->value.u16;
-                                break;
-                        }
-                        case 32: { dest->value.u32 = arg1->value.u32 < arg2->value.u32;
-                                break;
-                        }
-                        case 64: { dest->value.u64 = arg1->value.u64 < arg2->value.u64;
-                                break;
-                        }
-                        default: assert(false);
-                        }
-                    }
+                    _EXECUTE_INT_BINOP(arg1, <, arg2, dest, type);
                 }
                 else if (type == Builtin::type_double)
                 {
@@ -989,7 +959,7 @@ namespace Zodiac
 
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 <= arg2->value.s64;
+                    _EXECUTE_INT_BINOP(arg1, <=, arg2, dest, type);
                 }
                 else if (type == Builtin::type_double)
                 {
@@ -1013,7 +983,7 @@ namespace Zodiac
 
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 > arg2->value.s64;
+                    _EXECUTE_INT_BINOP(arg1, >, arg2, dest, type);
                 }
                 else if (type == Builtin::type_double)
                 {
@@ -1037,7 +1007,7 @@ namespace Zodiac
 
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 >= arg2->value.s64;
+                    _EXECUTE_INT_BINOP(arg1, >=, arg2, dest, type);
                 }
                 else if (type == Builtin::type_double)
                 {
@@ -1061,7 +1031,7 @@ namespace Zodiac
 
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 == arg2->value.s64;
+                    _EXECUTE_INT_BINOP(arg1, ==, arg2, dest, type)
                 }
                 else if (type == Builtin::type_double)
                 {
@@ -1093,7 +1063,7 @@ namespace Zodiac
 
                 if (type->flags & AST_TYPE_FLAG_INT)
                 {
-                    dest->value.s64 = arg1->value.s64 != arg2->value.s64;
+                    _EXECUTE_INT_BINOP(arg1, !=, arg2, dest, type);
                 }
                 else if (type == Builtin::type_double)
                 {
@@ -1126,13 +1096,10 @@ namespace Zodiac
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
                 AST_Type* type = arg1->type;
-                if (type->flags & AST_TYPE_FLAG_INT)
+                if (type->flags & AST_TYPE_FLAG_INT ||
+                    type->kind == AST_TYPE_ENUM)
                 {
-                    dest->value.s64 = arg1->value.s64 & arg2->value.s64;
-                }
-                else if (type->kind == AST_TYPE_ENUM)
-                {
-                    dest->value.s64 = arg1->value.s64 & arg2->value.s64;
+                    _EXECUTE_INT_BINOP(arg1, &, arg2, dest, type);
                 }
                 else assert(false);
                 break;
@@ -1145,13 +1112,11 @@ namespace Zodiac
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
 
                 AST_Type* type = arg1->type;
-                if (type->flags & AST_TYPE_FLAG_INT)
+
+                if (type->flags & AST_TYPE_FLAG_INT ||
+                    type->kind == AST_TYPE_ENUM)
                 {
-                    dest->value.s64 = arg1->value.s64 | arg2->value.s64;
-                }
-                else if (type->kind == AST_TYPE_ENUM)
-                {
-                    dest->value.s64 = arg1->value.s64 | arg2->value.s64;
+                    _EXECUTE_INT_BINOP(arg1, |, arg2, dest, type);
                 }
                 else assert(false);
                 break;
@@ -2314,7 +2279,11 @@ namespace Zodiac
         }
 
         return result;
-    }
+
+#undef _EXECUTE_SIGNED_INT_BINOP
+#undef _EXECUTE_UNSIGNED_INT_BINOP
+#undef _EXECUTE_INT_BINOP
+}
 
     IR_Stack_Frame* ir_runner_push_stack_frame(IR_Runner* ir_runner, File_Pos call_site,
                                                IR_Function* function, BUF(IR_Value) args,

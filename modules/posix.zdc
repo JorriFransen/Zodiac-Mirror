@@ -104,17 +104,17 @@ static_if (PLATFORM_LINUX)
 
     #foreign realpath :: (path: *u8, resolved_path: *u8) -> *u8;
 
-    WEXITSTATUS :: (status: int) -> int
+    WEXITSTATUS :: (status: u32) -> u32
     {
         return status >> 8;
     }
 
-    WIFEXITED :: (status: int) -> int
+    WIFEXITED :: (status: u32) -> u32
     {
-        return (:int)(_WSTATUS(status) == 0);
+        return (:u32)(_WSTATUS(status) == 0);
     }
 
-    _WSTATUS :: (status: int) -> int
+    _WSTATUS :: (status: u32) -> u32
     {
         return status & 0177;
     }
@@ -140,7 +140,7 @@ else static_if(PLATFORM_WINDOWS)
 
 #foreign getenv :: (name: *u8) -> *u8;
 
-pid_t :: typedef u32;
+pid_t :: typedef s32;
 fd_t :: typedef s32;
 
 STDIN_FILENO  : fd_t : 0;
@@ -160,8 +160,9 @@ STDERR_FILENO : fd_t : 2;
 
 #foreign pipe :: (pipefd: *[2]fd_t) -> s32;
 #foreign fork :: () -> pid_t;
-#foreign dup2 :: (oldfd: int, newfd: int) -> int;
-#foreign execl :: (path: *u8, arg: *u8, ...) -> int;
-#foreign execv :: (path: *u8, args: **u8) -> int;
+#foreign dup2 :: (oldfd: s32, newfd: s32) -> s32;
+#foreign execl :: (path: *u8, arg: *u8, ...) -> s32;
+#foreign execv :: (path: *u8, args: **u8) -> s32;
 #foreign wait :: (stat_loc: *u32) -> pid_t;
 #foreign _exit :: (status: int) -> void;
+#foreign getpid :: () -> pid_t;
