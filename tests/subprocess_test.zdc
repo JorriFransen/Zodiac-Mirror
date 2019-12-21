@@ -18,19 +18,68 @@ main :: ()
 
     print("Subprocess test\n");
 
-    err, res := execute_process("./tp", "");
-    assert(err == Execute_Process_Error.NONE);
-    _c.printf("execute_process returned: %d\n", res.exit_code);
-    assert(res.exit_code == 7);
-
-    print("\nstdout: \n%\n", res.stdout.data);
-    print("stderr: \n%\n", res.stderr.data);
-
-    // err, res = execute_process("ls", "-la");
+    // err, res := execute_process("./tp", "");
     // assert(err == Execute_Process_Error.NONE);
     // _c.printf("execute_process returned: %d\n", res.exit_code);
+    // assert(res.exit_code == 7);
+
+    // print("\nstdout: \n%\n", res.stdout.data);
+    // print("stderr: \n%\n", res.stderr.data);
+
+    err, res := execute_process("ls", "-lah");
+    assert(err == Execute_Process_Error.NONE);
+    _c.printf("execute_process returned: %d\n", res.exit_code);
+
+    if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
+    if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);
+
+    err, res = execute_process("echo", "Hello world!");
+    assert(err == Execute_Process_Error.NONE);
+    _c.printf("execute_process returned: %d\n", res.exit_code);
+
+    if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
+    if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);
+
+    err, res = execute_process("sh", "-c", ">&2 echo \"Echo to stderr!!!\"");
+    assert(err == Execute_Process_Error.NONE);
+    _c.printf("execute_process returned: %d\n", res.exit_code);
+
+    if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
+    if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);
+
+    err, res = execute_process_shell(">&2 echo", "Echo to stderr via shell...");
+    assert(err == Execute_Process_Error.NONE);
+    _c.printf("execute_process returned: %d\n", res.exit_code);
+
+    if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
+    if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);
 
     return 0;
+}
+
+execute_process_shell :: (command: String, args: ...) ->
+    Execute_Process_Error #required,
+    Execute_Process_Result
+{
+    sb := string_builder.create(256);
+    defer string_builder.free(*sb);
+
+    string_builder.append(*sb, command);
+    string_builder.append(*sb, " ");
+
+    for (i := 0; i < args.count; i++)
+    {
+        any := args[i];
+        assert(any.type_info == get_type_info(*u8));
+        _arg := <((:**u8)any.value);
+        string_builder.append(*sb, _arg);
+    }
+
+    concat_command := string_builder.copy_to_string(*sb);
+    defer _c.free(concat_command.data);
+
+    err, ret :=  execute_process("sh", "-c", concat_command.data);
+    return err, ret;
 }
 
 Execute_Process_Error :: enum
@@ -82,8 +131,6 @@ execute_process :: (command: String, args: ...) ->
         _args : std.Array(*u8) = { null, 0, 0 };
         defer std.array_free(*_args);
 
-        std.array_add(*_args, "sh");
-        std.array_add(*_args, "-c");
         std.array_add(*_args, command.data);
         for (i := 0; i < args.count; i++)
         {
@@ -93,6 +140,7 @@ execute_process :: (command: String, args: ...) ->
             std.array_add(*_args, arg_val);
         }
         std.array_add(*_args, null);
+
 
         pipe_close_write(*in);
         pipe_close_read(*out);
@@ -106,7 +154,7 @@ execute_process :: (command: String, args: ...) ->
         pipe_close_write(*out);
         pipe_close_write(*err);
 
-        exec_res := posix.execv("/bin/sh", _args.data);
+        exec_res := posix.execvp(command.data, _args.data);
 
         if (exec_res == -1)
         {

@@ -1327,19 +1327,44 @@ namespace Zodiac
                         suggested_type = current_func->function.inferred_return_type;
                     }
 
-                    if (suggested_type && suggested_type->kind == AST_TYPE_MRV &&
-                        statement->return_expression->kind != AST_EXPR_EXPRESSION_LIST)
-                    {
-                        resolver_report_error(
-                            resolver, statement->file_pos,
-                            "Returning one value, expected %d",
-                            BUF_LENGTH(suggested_type->mrv.types));
+                    bool expr_resolved = false;
 
-                        return false;
+                    if (suggested_type)
+                    {
+                        bool mrv_expected = suggested_type->kind == AST_TYPE_MRV;
+                        auto ret_expr = statement->return_expression;
+                        bool ret_expr_is_list = ret_expr->kind == AST_EXPR_EXPRESSION_LIST;
+                        bool ret_expr_is_mrv_type = false;
+
+                        if (!ret_expr_is_list)
+                        {
+                            result &= resolver_resolve_expression(resolver, ret_expr, scope,
+                                                                  suggested_type);
+                            if (result)
+                            {
+                                assert(ret_expr->type);
+                                ret_expr_is_mrv_type = ret_expr->type->kind == AST_TYPE_MRV;
+                                expr_resolved = true;
+                            }
+                        }
+
+                        if (mrv_expected && !(ret_expr_is_list || ret_expr_is_mrv_type))
+                        {
+                            resolver_report_error(
+                                resolver, statement->file_pos,
+                                "Returning one value, expected %d",
+                                BUF_LENGTH(suggested_type->mrv.types));
+
+                            return false;
+                        }
                     }
 
-                    result &= resolver_resolve_expression(resolver, statement->return_expression,
-                                                          scope, suggested_type);
+                    if (!expr_resolved)
+                    {
+                        result &= resolver_resolve_expression(resolver,
+                                                              statement->return_expression,
+                                                              scope, suggested_type);
+                    }
 
                     if (!result) return false;
                     else if (result && suggested_type)

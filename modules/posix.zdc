@@ -163,6 +163,7 @@ STDERR_FILENO : fd_t : 2;
 #foreign dup2 :: (oldfd: s32, newfd: s32) -> s32;
 #foreign execl :: (path: *u8, arg: *u8, ...) -> s32;
 #foreign execv :: (path: *u8, args: **u8) -> s32;
+#foreign execvp :: (path: *u8, args: **u8) -> s32;
 #foreign wait :: (stat_loc: *u32) -> pid_t;
 #foreign _exit :: (status: int) -> void;
 #foreign getpid :: () -> pid_t;

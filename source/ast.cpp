@@ -1684,6 +1684,7 @@ namespace Zodiac
         while (iterations < context->type_count)
         {
             AST_Type* ex_type = context->type_hash[hash_index];
+
             if (ex_type && ex_type->kind == AST_TYPE_MRV)
             {
                 bool len_match = BUF_LENGTH(mrv_types) == BUF_LENGTH(ex_type->mrv.types);
@@ -1705,7 +1706,11 @@ namespace Zodiac
                     {
                         if (directives[i] != ex_type->mrv.directives[i])
                         {
-                            match = false;
+                            if (!(directives[i]->kind == AST_DIREC_REQUIRED &&
+                                  ex_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED))
+                            {
+                                match = false;
+                            }
                             break;
                         }
                     }
@@ -1749,7 +1754,9 @@ namespace Zodiac
         else
         {
             ast_grow_type_hash(context);
-            return ast_find_or_create_mrv_type(context, mrv_types, directives, scope);
+            auto result = ast_find_or_create_mrv_type(context, mrv_types, directives, scope);
+            assert(result->kind == AST_TYPE_MRV);
+            return result;
         }
     }
 

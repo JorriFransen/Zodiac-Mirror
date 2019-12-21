@@ -26,6 +26,13 @@ init :: (sb: *String_Builder, initial_block_size: u64)
     sb.current_block = sb.first_block;
 }
 
+create :: (initial_block_size: u64) -> String_Builder
+{
+    result : String_Builder;
+    init(*result, initial_block_size);
+    return result;
+}
+
 create_block :: (block_size: u64) -> *_String_Builder_Block
 {
     result := (:*_String_Builder_Block)malloc((:u64)sizeof(_String_Builder_Block));
@@ -42,9 +49,10 @@ append :: (sb: *String_Builder, str: std.String)
 {
     block := sb.current_block;
 
-    if ((block.used_size + (:u64)str.length) < block.size)
+    if ((block.used_size + (:u64)str.length) <= block.size)
     {
-        append_to_block(block, str);
+        append_res := append_to_block(block, str);
+        assert(append_res);
     }
     else
     {
@@ -65,6 +73,12 @@ append :: (sb: *String_Builder, str: std.String)
 
 append :: (sb: *String_Builder, cstr: *u8, length: s64)
 {
+    str := std.string_ref(cstr, length);
+    append(sb, str);
+}
+
+append :: (sb: *String_Builder, cstr: *u8)
+{
     str := std.string_ref(cstr);
     append(sb, str);
 }
@@ -79,7 +93,7 @@ appendi :: (sb: *String_Builder, number: u64)
 
 append_to_block :: (sb: *_String_Builder_Block, str: std.String) -> bool
 {
-    if ((sb.used_size + (:u64)str.length) < sb.size)
+    if ((sb.used_size + (:u64)str.length) <= sb.size)
     {
         sbi := sb.used_size;
         for (i:= 0; i < str.length; i +=  1)
@@ -133,6 +147,8 @@ copy_to_string :: (sb: *String_Builder) -> std.String
     }
 
     result.data[ri] = '\0';
+    // _c.fprintf(stderr, "[sbcts] result.length: %d\n", result.length);
+    // _c.fprintf(stderr, "[sbcts] result.data: %p\n", result.data);
 
     return result;
 }
