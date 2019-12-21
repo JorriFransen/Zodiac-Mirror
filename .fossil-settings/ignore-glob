@@ -6,3 +6,5 @@ lib_linux.7z
 build/
 build_release/
 build_debug/
+
+CMakeLists.txt.user

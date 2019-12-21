@@ -78,8 +78,9 @@ execute_process_shell :: (command: String, args: ...) ->
     concat_command := string_builder.copy_to_string(*sb);
     defer _c.free(concat_command.data);
 
-    err, ret :=  execute_process("sh", "-c", concat_command.data);
-    return err, ret;
+    return execute_process("sh", "-c", concat_command.data);
+    // err, ret := execute_process("sh", "-c", concat_command.data);
+    // return err, ret;
 }
 
 Execute_Process_Error :: enum

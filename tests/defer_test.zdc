@@ -23,6 +23,8 @@ main :: () -> int
     // defer { print("abc"); return -1; }
     // defer while (true) break;
 
+    test_defer_return_value();
+
     return 0;
 }
 
@@ -71,4 +73,31 @@ defer_test2 :: (arg: int)
     }
 
     defer print("end of defer_test2\n");
+}
+
+test_defer_return_value :: ()
+{
+    _c.printf("Calling _test_defer_return_value(%d)\n", 42);
+    value := _test_defer_return_value(42);
+    _c.printf("returned value: %d\n", value);
+    assert(value == 42);
+}
+
+_test_defer_return_value :: (value: int) -> int
+{
+    mem : *int = (:*int)_c.malloc((:u64)sizeof(int));
+    defer _c.free(mem);
+
+    <mem = value;
+
+    // _mess_with_stack(4);
+
+    return print_and_return_value(mem);
+}
+
+print_and_return_value :: (ptr: *int) -> int
+{
+    assert(ptr);
+    _c.printf("Value: %d\n", <ptr);
+    return <ptr;
 }

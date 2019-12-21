@@ -638,8 +638,6 @@ namespace Zodiac
             case AST_STMT_RETURN:
             {
                 auto return_file_pos = statement->file_pos;
-                ir_builder_emit_defer_statements_before_return(ir_builder, scope,
-                                                               return_file_pos);
 
                 IR_Value* return_value = nullptr;
                 if (statement->return_expression)
@@ -654,6 +652,8 @@ namespace Zodiac
                         return_value = ir_builder_emit_expression(ir_builder,
                                                                   statement->return_expression);
                     }
+                    ir_builder_emit_defer_statements_before_return(ir_builder, scope,
+                                                                    return_file_pos);
                 }
                 ir_builder_emit_return(ir_builder, return_value, return_file_pos);
                 break;

@@ -1645,7 +1645,7 @@ namespace Zodiac
                     }
                 }
             }
-            else
+            else if (!ex_type)
             {
                 found_slot = true;
                 break;
@@ -1710,8 +1710,8 @@ namespace Zodiac
                                   ex_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED))
                             {
                                 match = false;
+                                break;
                             }
-                            break;
                         }
                     }
 
@@ -1721,7 +1721,7 @@ namespace Zodiac
                     }
                 }
             }
-            else
+            else if (!ex_type)
             {
                 found_slot = true;
                 break;
@@ -1729,7 +1729,7 @@ namespace Zodiac
 
             iterations++;
             hash_index++;
-            if (context->type_count <= hash_index)
+            if (hash_index >= context->type_count)
             {
                 hash_index = 0;
             }
@@ -1803,6 +1803,8 @@ namespace Zodiac
             AST_Type* old_type = old_data[i];
             if (old_type)
             {
+                assert(old_type->kind == AST_TYPE_FUNCTION);
+
                 uint64_t hash = get_function_type_hash((old_type->flags &
                                                         AST_TYPE_FLAG_FUNC_VARARG),
                                                        old_type->function.arg_types,
@@ -1979,6 +1981,8 @@ namespace Zodiac
                     ast_type_to_string(type->mrv.types[i], string_builder);
                 }
                 string_builder_append(string_builder, " }");
+
+                string_builder_appendf(string_builder, " (%p)", type);
                 break;
             }
 
