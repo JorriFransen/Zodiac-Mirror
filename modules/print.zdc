@@ -43,6 +43,7 @@ print :: (any: Any)
 print :: (fmt: *u8, v: ...)
 {
     array : Array(u8) = { null, 0, 0 };
+    defer array_free(*array);
 
     start := fmt;
     length := 0;
@@ -50,7 +51,7 @@ print :: (fmt: *u8, v: ...)
 
     va_idx := 0;
 
-    for (i : u64 = 0; i < fmt_length; i++)
+    for (i : s64 = 0; i < fmt_length; i++)
     {
         if (fmt[i] == '%')
         {
@@ -79,7 +80,6 @@ print :: (fmt: *u8, v: ...)
     assert(va_idx == v.count);
 
     output_ar(make_array_ref(array));
-    array_free(*array);
 }
 
 print_a :: (arr: *Array(u8), any: Any)

@@ -122,11 +122,11 @@ Any :: struct
     value     : *void;
 }
 
-string_length :: (c_str: *u8) -> u64
+string_length :: (c_str: *u8) -> s64
 {
     if (!c_str) return 0;
 
-    length : u64 = 0;
+    length := 0;
     i : u64 = 0;
 
     while (c_str[i] != 0)
@@ -195,13 +195,13 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
 String :: struct
 {
     data   : *u8;
-    length : u64;
+    length : s64;
 
     #overload[] string_index;
 }
 
 
-string_index :: (str: String, index: u64) -> u8
+string_index :: (str: String, index: s64) -> u8
 {
     default_assert_handler(index < str.length, #FUNC_NAME, #FILE_NAME, #LINE_NO);
 

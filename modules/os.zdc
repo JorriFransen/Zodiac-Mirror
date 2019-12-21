@@ -72,7 +72,7 @@ read_file_string :: (path: String, result_ptr: *bool) -> String
         file_size := posix.ftell(file);
         posix.fseek(file, 0, posix.SEEK_SET);
 
-        result_str : String = { null, (:u64)file_size };
+        result_str : String = { null, file_size };
         result_str.data = (:*u8)_c.malloc((:u64)file_size + 1);
 
         read_result := posix.fread(result_str.data, (:u64)file_size, 1, file);

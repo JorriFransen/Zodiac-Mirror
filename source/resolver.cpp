@@ -1327,6 +1327,17 @@ namespace Zodiac
                         suggested_type = current_func->function.inferred_return_type;
                     }
 
+                    if (suggested_type && suggested_type->kind == AST_TYPE_MRV &&
+                        statement->return_expression->kind != AST_EXPR_EXPRESSION_LIST)
+                    {
+                        resolver_report_error(
+                            resolver, statement->file_pos,
+                            "Returning one value, expected %d",
+                            BUF_LENGTH(suggested_type->mrv.types));
+
+                        return false;
+                    }
+
                     result &= resolver_resolve_expression(resolver, statement->return_expression,
                                                           scope, suggested_type);
 
@@ -2101,9 +2112,11 @@ namespace Zodiac
                                                   "Attempting to take the addres of a non lvalue");
                             result = false;
                         }
-
-                        expression->type = ast_find_or_create_pointer_type(resolver->context,
-                                                                           operand_type);
+                        else
+                        {
+                            expression->type = ast_find_or_create_pointer_type(resolver->context,
+                                                                               operand_type);
+                        }
                         break;
                     }
 
@@ -2752,7 +2765,16 @@ namespace Zodiac
 				{
 					resolver_transform_to_cast_expression(resolver, lhs, rhs->type);
 				}
-				else assert(false);
+                else
+                {
+                    auto lhs_str = ast_type_to_string(lhs->type);
+                    auto rhs_str = ast_type_to_string(rhs->type);
+                    resolver_report_error(resolver, expression->file_pos, "Mismathing integer types in binary expression\n\tlhs: %s\n\trhs: %s",
+                                          lhs_str, rhs_str);
+                    mem_free(lhs_str);
+                    mem_free(rhs_str);
+                    return false;
+                }
             }
             else if (lhs->type == Builtin::type_pointer_to_void &&
                      rhs->type->kind == AST_TYPE_POINTER)
@@ -3686,7 +3708,8 @@ namespace Zodiac
         else if (match_count == 0)
         {
             resolver_report_error(resolver, call_expression->file_pos,
-                                  "No suitable (polymorphic) overload was found");
+                                  "No suitable (polymorphic) overload was found for \"%s\"",
+                overload_decl->identifier->atom.data);
             return nullptr;
         }
         else assert(match_count == 1);

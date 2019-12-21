@@ -10,39 +10,69 @@ posix :: import posix;
 os_linux :: import os_linux;
 using os_linux;
 
+string_builder :: import string_builder;
+
 main :: ()
 {
     open_std_handles();
 
     print("Subprocess test\n");
 
-    res := execute_process("./tp", "");
-    _c.printf("execute_process returned: %d\n", res);
-    assert(res == 7);
+    err, res := execute_process("./tp", "");
+    assert(err == Execute_Process_Error.NONE);
+    _c.printf("execute_process returned: %d\n", res.exit_code);
+    assert(res.exit_code == 7);
 
-    res = execute_process("ls", "-la");
-    _c.printf("execute_process returned: %d\n", res);
+    print("\nstdout: \n%\n", res.stdout.data);
+    print("stderr: \n%\n", res.stderr.data);
+
+    // err, res = execute_process("ls", "-la");
+    // assert(err == Execute_Process_Error.NONE);
+    // _c.printf("execute_process returned: %d\n", res.exit_code);
 
     return 0;
 }
 
-execute_process :: (command: String, args: ...) -> u32
+Execute_Process_Error :: enum
+{
+    NONE;
+    PIPE_CREATE_FAILED;
+    FORK_FAILED;
+    UNEXPECTED;
+}
+
+Execute_Process_Result :: struct
+{
+    exit_code : u32;
+    stdout    : String;
+    stderr    : String;
+}
+
+execute_process :: (command: String, args: ...) ->
+    Execute_Process_Error #required,
+    Execute_Process_Result
 {
     pipe_err : IO_Error;
     in       : Pipe;
     out      : Pipe;
     err      : Pipe;
 
+    using Execute_Process_Error;
+
+    result : Execute_Process_Result;
+    result.exit_code = 0;
+    result.stdout = { null, 0 };
+
     pipe_err, in = pipe_create();
-    if (pipe_err != IO_Error.NONE) return -1;
+    if (pipe_err != IO_Error.NONE) return PIPE_CREATE_FAILED, result;
     defer pipe_close(*in);
 
     pipe_err, out = pipe_create();
-    if (pipe_err != IO_Error.NONE) return -1;
+    if (pipe_err != IO_Error.NONE) return PIPE_CREATE_FAILED, result;
     defer pipe_close(*out);
 
     pipe_err, err = pipe_create();
-    if (pipe_err != IO_Error.NONE) return -1;
+    if (pipe_err != IO_Error.NONE) return PIPE_CREATE_FAILED, result;
     defer pipe_close(*err);
 
     pid := posix.fork();
@@ -63,11 +93,6 @@ execute_process :: (command: String, args: ...) -> u32
             std.array_add(*_args, arg_val);
         }
         std.array_add(*_args, null);
-
-        // _c.fprintf(stdout, "Executing command: \"");
-        // for (i := 0; i < _args.count; i++) _c.fprintf(stdout, "%s ", _args[i]);
-        // _c.fprintf(stdout, "\"\n");
-        // _c.fflush(stdout);
 
         pipe_close_write(*in);
         pipe_close_read(*out);
@@ -105,32 +130,43 @@ execute_process :: (command: String, args: ...) -> u32
         assert(wait_res == pid);
         assert(posix.WIFEXITED(status));
 
+        result.exit_code = posix.WEXITSTATUS(status);
+
+        str_builder : string_builder.String_Builder;
+        string_builder.init(*str_builder, (:u64)array_length(buf));
+        defer string_builder.free(*str_builder);
+
         reading := true;
         while (reading)
         {
             readc = posix.read(out.read_fd, *buf, (:s32)array_length(buf));
             assert(readc >= 0);
-            _c.printf("%.*s", readc, *buf);
-            if (readc <= 0) reading = false;
+            if (readc) string_builder.append(*str_builder, (:*u8)(*buf), (:s64)readc);
+            else reading = false;
         }
+
+        result.stdout = string_builder.copy_to_string(*str_builder);
+        string_builder.reset(*str_builder);
 
         reading = true;
         while (reading)
         {
             readc = posix.read(err.read_fd, *buf, (:s32)array_length(buf));
             assert(readc >= 0);
-            _c.printf("%.*s", readc, *buf);
-            if (readc <= 0) reading = false;
+            if (readc) string_builder.append(*str_builder, (:*u8)(*buf), (:s64)readc);
+            else reading = false;
         }
 
-        return posix.WEXITSTATUS(status);
+        result.stderr = string_builder.copy_to_string(*str_builder);
+
+        return NONE, result;
     }
     else
     {
         assert(false);
-        return -1;
+        return FORK_FAILED, result;
     }
 
     assert(false);
-    return -2;
+    return UNEXPECTED, result;
 }

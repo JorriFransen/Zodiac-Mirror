@@ -1265,6 +1265,7 @@ namespace Zodiac
         assert(parser);
 
         AST_Expression* lhs = parse_cmp_expression(parser, scope);
+        if (!lhs) return nullptr;
 
         while (match_token(parser, TOK_AND))
         {
