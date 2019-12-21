@@ -2984,7 +2984,7 @@ namespace Zodiac
                     return false;
                 }
             }
-            else assert(false);
+            else return false;
         }
         else if (base_decl->kind == AST_DECL_IMPORT)
         {
@@ -3347,7 +3347,6 @@ namespace Zodiac
                         }
                     }
                 }
-                else assert(false);
 
                 BUF_FREE(mrv_types);
                 break;

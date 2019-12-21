@@ -90,8 +90,6 @@ _test_defer_return_value :: (value: int) -> int
 
     <mem = value;
 
-    // _mess_with_stack(4);
-
     return print_and_return_value(mem);
 }
 

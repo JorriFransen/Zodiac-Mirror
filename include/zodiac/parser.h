@@ -59,8 +59,11 @@ namespace Zodiac
 		AST_Scope* scope);
     static AST_Declaration* parse_link_declaration(Parser* parser, bool global, AST_Scope* scope,
                                                    AST_Directive* directive);
-    static AST_Declaration* parse_static_if_declaration(Parser* parser, bool global, AST_Scope* scope);
-    static AST_Declaration* parse_block_declaration(Parser* parser, bool global, AST_Scope* scope);
+    static AST_Declaration* parse_static_if_declaration(Parser* parser, bool global,
+                                                        AST_Scope* scope,
+                                                        AST_Declaration_Location location);
+    static AST_Declaration* parse_block_declaration(Parser* parser, bool global, AST_Scope* scope,
+                                                    AST_Declaration_Location location);
     static AST_Declaration* parse_static_assert_declaration(Parser* parser, bool global, AST_Scope* scope);
     static AST_Declaration* parse_using_declaration(Parser* parser,
                                                     AST_Declaration_Location location,

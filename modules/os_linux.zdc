@@ -14,6 +14,8 @@ using _thread;
 
 pthread :: import pthread;
 
+string_builder :: import string_builder;
+
 #foreign unlink :: (pathname: *u8) -> int;
 
 is_directory :: (path: String) -> bool
@@ -279,4 +281,186 @@ pipe_close_write :: (pipe: *Pipe) -> IO_Error #required
 
     assert(false);
     return IO_Error.INVALID;
+}
+
+pipe_read :: (pipe: *Pipe) -> IO_Error #required, String
+{
+    assert(pipe.read_fd);
+
+    sb := string_builder.create(1024);
+    defer string_builder.free(*sb);
+
+    buf: [1024]u8;
+    readc : s32; // @TODO: This should be a an s64 when we have correct integer conversion
+
+  reading := true;
+    while (reading)
+    {
+        readc = posix.read(pipe.read_fd, *buf, (:s32)array_length(buf));
+        assert(readc >= 0); // @TODO: handle errno
+        if (readc) string_builder.append(*sb, (:*u8)(*buf), (:s64)readc);
+        else reading = false;
+    }
+
+    return IO_Error.NONE, string_builder.copy_to_string(*sb);
+}
+
+Execute_Process_Error :: enum
+{
+    NONE;
+    PIPE_CREATE_FAILED;
+    PIPE_READ_FAILED;
+    FORK_FAILED;
+    UNEXPECTED;
+}
+
+Execute_Process_Result :: struct
+{
+    exit_code : u32;
+    stdout    : String;
+    stderr    : String;
+}
+
+execute_process :: (command: String, args: ...) ->
+    Execute_Process_Error #required,
+    Execute_Process_Result
+    {
+      _args: Array(*u8) = { null, 0, 0 };
+        defer array_free(*_args);
+
+        for (i := 0; i < args.count; i++)
+        {
+          any_arg := args[i];
+            assert(any_arg.type_info == get_type_info(*u8));
+            array_add(*_args, <(:**u8)(any_arg.value));
+        }
+
+        return _execute_process(command, make_array_ref(_args));
+    }
+
+_execute_process :: (command: String, args: Array_Ref(*u8)) ->
+    Execute_Process_Error #required,
+    Execute_Process_Result
+{
+    pipe_err : IO_Error;
+    in       : Pipe;
+    out      : Pipe;
+    err      : Pipe;
+
+    using Execute_Process_Error;
+
+    result : Execute_Process_Result;
+    result.exit_code = 0;
+    result.stdout = { null, 0 };
+
+    pipe_err, in = pipe_create();
+    if (pipe_err != IO_Error.NONE) return PIPE_CREATE_FAILED, result;
+    defer pipe_close(*in);
+
+    pipe_err, out = pipe_create();
+    if (pipe_err != IO_Error.NONE) return PIPE_CREATE_FAILED, result;
+    defer pipe_close(*out);
+
+    pipe_err, err = pipe_create();
+    if (pipe_err != IO_Error.NONE) return PIPE_CREATE_FAILED, result;
+    defer pipe_close(*err);
+
+    pid := posix.fork();
+
+    if (pid == 0)
+    {
+        _args : std.Array(*u8) = { null, 0, 0 };
+        defer std.array_free(*_args);
+
+        std.array_add(*_args, command.data);
+        for (i := 0; i < args.count; i++)
+        {
+            std.array_add(*_args, args[i]);
+        }
+        std.array_add(*_args, null);
+
+        pipe_close_write(*in);
+        pipe_close_read(*out);
+        pipe_close_read(*err);
+
+        posix.dup2(in.read_fd, posix.STDIN_FILENO);
+        posix.dup2(out.write_fd, posix.STDOUT_FILENO);
+        posix.dup2(err.write_fd, posix.STDERR_FILENO);
+
+        pipe_close_read(*in);
+        pipe_close_write(*out);
+        pipe_close_write(*err);
+
+        exec_res := posix.execvp(command.data, _args.data);
+        assert(exec_res == -1);
+
+        if (exec_res == -1)
+        {
+            _c.fprintf(stderr, "Command execution failed: \"sh -c %s\"\n", command.data);
+            assert(false);
+        }
+
+        posix._exit(1);
+    }
+    else if (pid > 0)
+    {
+        pipe_close_read(*in);
+        pipe_close_write(*out);
+        pipe_close_write(*err);
+
+        status : u32 = 0;
+        wait_res := posix.wait(*status);
+        assert(wait_res == pid);
+        assert(posix.WIFEXITED(status));
+
+        result.exit_code = posix.WEXITSTATUS(status);
+
+        io_err := IO_Error.NONE;
+
+        io_err, result.stdout = pipe_read(*out);
+        if (io_err != IO_Error.NONE) return PIPE_READ_FAILED, result;
+
+        io_err, result.stderr = pipe_read(*err);
+        if (io_err != IO_Error.NONE) return PIPE_READ_FAILED, result;
+
+        return NONE, result;
+    }
+    else
+    {
+        assert(false);
+        return FORK_FAILED, result;
+    }
+
+    assert(false);
+    return UNEXPECTED, result;
+}
+
+execute_process_shell :: (command: String, args: ...) ->
+    Execute_Process_Error #required,
+    Execute_Process_Result
+{
+    sb := string_builder.create(256);
+    defer string_builder.free(*sb);
+
+    _array : Array(*u8) = { null, 0, 0 };
+    defer array_free(*_array);
+
+    string_builder.append(*sb, command.data);
+    string_builder.append(*sb, " ");
+
+    for (i := 0; i < args.count; i++)
+    {
+        any := args[i];
+        assert(any.type_info == get_type_info(*u8));
+        _arg := <((:**u8)any.value);
+        string_builder.append(*sb, _arg);
+    }
+
+    command_str := string_builder.copy_to_string(*sb);
+    defer _c.free(command_str.data);
+
+    array_add(*_array, "-c");
+    array_add(*_array, command_str.data);
+
+    return _execute_process("sh", make_array_ref(_array));
 }

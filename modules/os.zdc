@@ -13,10 +13,12 @@ using _thread;
 static_if (PLATFORM_WINDOWS)
 {
     os_specific :: import os_windows;
+    using os_specific;
 }
 else static_if (PLATFORM_LINUX)
 {
     os_specific :: import os_linux;
+    using os_specific;
 }
 
 get_cwd :: () -> String
@@ -171,3 +173,4 @@ join_thread :: (thread: Thread) -> *void
         return os_specific._join_thread(thread);
     }
 }
+

@@ -144,12 +144,12 @@ namespace Zodiac
 
         if (is_token(parser, TOK_KW_STATIC_IF))
         {
-            return parse_static_if_declaration(parser, global, scope);
+            return parse_static_if_declaration(parser, global, scope, location);
         }
 
         if (is_token(parser, TOK_LBRACE))
         {
-            return parse_block_declaration(parser, global, scope);
+            return parse_block_declaration(parser, global, scope, location);
         }
 
         if (is_token(parser, TOK_KW_STATIC_ASSERT))
@@ -468,7 +468,9 @@ namespace Zodiac
             AST_DECL_LOC_GLOBAL);
     }
 
-    static AST_Declaration* parse_static_if_declaration(Parser* parser, bool global, AST_Scope* scope)
+    static AST_Declaration* parse_static_if_declaration(Parser* parser, bool global,
+                                                        AST_Scope* scope,
+                                                        AST_Declaration_Location location)
     {
         assert(parser);
         assert(global);
@@ -488,7 +490,7 @@ namespace Zodiac
         }
         expect_token(parser, TOK_RPAREN);
 
-        AST_Declaration* then_declaration = parse_declaration(parser, scope, true);
+        AST_Declaration* then_declaration = parse_declaration(parser, scope, true, location);
         if (!then_declaration)
         {
             return nullptr;
@@ -498,7 +500,7 @@ namespace Zodiac
 
         if (match_token(parser, TOK_KW_ELSE))
         {
-            else_declaration = parse_declaration(parser, scope, true, nullptr);
+            else_declaration = parse_declaration(parser, scope, true, nullptr, location);
             if (!else_declaration)
             {
                 return nullptr;
@@ -509,7 +511,8 @@ namespace Zodiac
                                              then_declaration, else_declaration);
     }
 
-    static AST_Declaration* parse_block_declaration(Parser* parser, bool global, AST_Scope* scope)
+    static AST_Declaration* parse_block_declaration(Parser* parser, bool global, AST_Scope* scope,
+                                                    AST_Declaration_Location location)
     {
         assert(parser);
         assert(global);
@@ -523,7 +526,9 @@ namespace Zodiac
 
         while (!match_token(parser, TOK_RBRACE))
         {
-            AST_Declaration* block_decl = parse_declaration(parser, scope, global);
+            AST_Declaration_Location loc = AST_DECL_LOC_LOCAL;
+            if (global) loc = AST_DECL_LOC_LOCAL;
+            AST_Declaration* block_decl = parse_declaration(parser, scope, global, location);
             if (!block_decl)
             {
                 return nullptr;
