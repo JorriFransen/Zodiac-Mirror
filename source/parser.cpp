@@ -999,16 +999,19 @@ namespace Zodiac
 
         expect_token(parser, TOK_RPAREN);
 
-        AST_Statement* while_body_statement = parse_statement(parser, scope);
+        if (scope->flags & AST_SCOPE_FLAG_BREAK_SCOPE)  assert(false);
+
+        auto module = parser->result.ast_module;
+        AST_Scope* while_scope = ast_scope_new(parser->context, scope, module, false,
+                                               while_tok.file_pos.line);
+        while_scope->flags |= AST_SCOPE_FLAG_BREAK_SCOPE;
+
+        AST_Statement* while_body_statement = parse_statement(parser, while_scope);
         if (!while_body_statement)
         {
             return nullptr;
         }
 
-
-        auto module = parser->result.ast_module;
-        AST_Scope* while_scope = ast_scope_new(parser->context, scope, module, false,
-                                               while_tok.file_pos.line);
 
         return ast_while_statement_new(parser->context, while_tok.file_pos, while_scope,
                                        while_condition_expr, while_body_statement);
@@ -1026,6 +1029,7 @@ namespace Zodiac
 		auto module = parser->result.ast_module;
         AST_Scope* for_scope = ast_scope_new(parser->context, scope, module, false,
                                              for_tok.file_pos.line);
+        for_scope->flags |= AST_SCOPE_FLAG_BREAK_SCOPE;
 
         AST_Statement* for_decl_statement = parse_statement(parser, for_scope);
         if (!for_decl_statement)
@@ -1035,7 +1039,7 @@ namespace Zodiac
 
         assert(for_decl_statement->kind == AST_STMT_DECLARATION);
 
-        AST_Expression* for_cond_expr = parse_expression(parser, scope);
+        AST_Expression* for_cond_expr = parse_expression(parser, for_scope);
         if (!for_cond_expr)
         {
             return nullptr;
@@ -1078,10 +1082,13 @@ namespace Zodiac
 
         expect_token(parser, TOK_LBRACE);
 
-
         while (is_token(parser, TOK_KW_CASE) || is_token(parser, TOK_KW_DEFAULT))
         {
             auto ct = current_token(parser);
+
+            AST_Scope* case_scope = ast_scope_new(parser->context, scope, scope->module, false,
+                                                  ct.file_pos.line);
+            case_scope->flags |= AST_SCOPE_FLAG_BREAK_SCOPE;
 
             if (match_token(parser, TOK_KW_CASE))
             {
@@ -1114,7 +1121,7 @@ namespace Zodiac
 
                 assert(BUF_LENGTH(range_expressions) % 2 == 0);
 
-                AST_Statement* case_stmt = parse_statement(parser, scope);
+                AST_Statement* case_stmt = parse_statement(parser, case_scope);
                 if (!case_stmt) return nullptr;
 
                 AST_Switch_Case switch_case = {};

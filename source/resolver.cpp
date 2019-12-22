@@ -4028,6 +4028,12 @@ namespace Zodiac
                     return false;
             }
 
+            case AST_STMT_POST_INCREMENT:
+            case AST_STMT_POST_DECREMENT:
+            {
+                return true;
+            }
+
             default: assert(false);
         }
 
