@@ -26,12 +26,14 @@ Test_File :: struct
     flags : u64;
     name : String;
     path : String;
+
+    exe_name : String;
 }
 
 Test_Files :: struct
 {
     files             : Array(Test_File);
-    longest_file_name : u64;
+    longest_file_name : int;
 }
 
 Test_Results :: struct
@@ -81,7 +83,7 @@ main :: (argc: int, argv: **u8) -> int
 
     if (!os.is_directory(test_folder_path))
     {
-        _c.fprintf(_c._stderr, "Path is not a directory: %s\n", test_folder_str.data);
+        _c.fprintf(_c._stderr, "Path is not a directory: '%s'\n", test_folder_str.data);
         return -1;
     }
 
@@ -126,10 +128,10 @@ main :: (argc: int, argv: **u8) -> int
    llvm_results := run_tests(Test_Mode.RUNNING_LLVM, files);
 
     _c.printf("\n");
-    _c.printf("Done, ran %d tests\n", compile_results.total_file_count);
+    _c.printf("Done, ran %d tests\n", files.files.count);
     report_test_results(compile_results);
     report_test_results(bytecode_results);
-   report_test_results(llvm_results);
+    report_test_results(llvm_results);
 
     for (i := 0; i < files.files.count; i++)
     {
@@ -152,15 +154,20 @@ find_test_files :: (test_folder: String) -> Test_Files
     result.files = { null, 0, 0 };
     result.longest_file_name = 0;
 
+    exe_file_ext : String;
+    static_if (PLATFORM_WINDOWS) { exe_file_ext = string_ref(".exe"); }
+    else                          { exe_file_ext = string_ref(""); }
+
     for (i := 0; i < files.count; i++)
     {
         file_name := files[i];
         if (string_ends_with(files[i], ".zdc"))
         {
-            tf : Test_File;
-            tf.flags = 0;
-            tf.name = file_name;
-            tf.path = string_append(test_folder, file_name);
+            tf : Test_File = { 0, file_name, string_append(test_folder, file_name),
+                               string_append(file_name, exe_file_ext) };
+            // tf.flags = 0;
+            // tf.name = file_name;
+            // tf.path = string_append(test_folder, file_name);
             array_add(*result.files, tf);
 
             if (tf.name.length > result.longest_file_name)
@@ -184,7 +191,7 @@ run_tests :: (mode: Test_Mode, files: Test_Files) -> Test_Results
     result : Test_Results = { mode, 0, 0, 0, 0 };
     result.total_file_count = files.files.count;
 
-    longest_mode_name : u64 = 0;
+    longest_mode_name := 0;
     mode_info := get_type_info(Test_Mode);
 
     for (i : u64 = 0; i < mode_info.enum_info.member_count; i++)
@@ -201,7 +208,7 @@ run_tests :: (mode: Test_Mode, files: Test_Files) -> Test_Results
     for (i := 0; i < files.files.count; i++)
     {
         file := files.files[i];
-        result_status := run_test(mode, file, files.longest_file_name, longest_mode_name);
+      result_status := run_test(mode, file, (:u64)files.longest_file_name, (:u64)longest_mode_name);
 
         using Test_Result_Status;
 
@@ -276,9 +283,11 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
         exe_file_name.length -= 4;
         exe_file_name.data[exe_file_name.length] = '\0';
 
-        append(sb, " && ./");
+        static_if (PLATFORM_WINDOWS) append(sb, " && .\\");
+        else append(sb, " && ./");
+
         append(sb, exe_file_name);
-        append(sb, " 2>&1 ");
+        // append(sb, " 2>&1 ");
 
         // @CLEANUP: Do we really wanna do this here?
         if (os.is_regular_file(exe_file_name))
@@ -295,12 +304,12 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     mode_name := enum_to_string(mode);
     _c.printf("    %s:", mode_name.data);
 
-    mode_padding := _mode_padding - mode_name.length;
-    for (i : u64 = 0; i < mode_padding; i++) _c.printf(" ");
+    mode_padding := _mode_padding - (:u64)mode_name.length;
+    for (i : u64= 0; i < mode_padding; i++) _c.printf(" ");
 
     _c.printf(" %s", tf.name.data);
 
-    padding := longest_name_length - tf.name.length + 2;
+    padding := longest_name_length - (:u64)tf.name.length + 2;
     for (i : u64 = 0; i < padding; i++)
     {
         _c.printf(" ");
@@ -385,6 +394,7 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
             os.set_terminal_color(Terminal_Color.GREEN, true);
             _c.printf(" SKIPPED\n");
             os.reset_terminal_state();
+            // _c.printf("\n%s\n", output_str.data);
             return Test_Result_Status.SKIPPED;
         }
         else
@@ -423,7 +433,7 @@ parse_test_config :: (path: String) -> Test_Config
         }
 
         str_start := c;
-        str_len : u64 = 0;
+        str_len := 0;
 
         while (is_ident(<c))
         {

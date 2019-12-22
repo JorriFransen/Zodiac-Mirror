@@ -1,6 +1,4 @@
 
-_thread :: import thread;
-
 Terminal_Color :: enum
 {
     WHITE;
@@ -13,20 +11,5 @@ Terminal_Color :: enum
     YELLOW;
 }
 
-Thread :: struct
-{
-    handle: u64;
-    user_data: *void;
-}
-
-Thread_Routine :: typedef *(thread: *Thread) -> *void;
-
-Thread_Start_Info :: struct
-{
-    thread: Thread;
-    thread_routine: Thread_Routine;
-    signal_started: _thread.Atomic_Cond;
-    signal_thread_copied: _thread.Atomic_Cond;
-}
 
 

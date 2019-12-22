@@ -18,6 +18,7 @@ set (ZODIAC_COMPILER_SOURCE
     source/ir_runner.cpp
     source/lexer.cpp
     source/llvm.cpp
+    source/llvm_debug_info.cpp
     source/llvm_types.cpp
     source/parser.cpp
     source/platform.cpp
@@ -33,8 +34,10 @@ target_include_directories(zodiac PRIVATE include/zodiac)
 target_include_directories(zodiac PRIVATE lib/include)
 
 if(MSVC)
+    add_compile_definitions(NOMINMAX)
+    
     if(CMAKE_BUILD_TYPE STREQUAL Debug)
-        target_link_directories(zodiac PRIVATE lib/windows/lib/debug)
+        target_link_directories(zodiac PRIVATE lib/windows/lib/Debug)
     else()
         target_link_directories(zodiac PRIVATE lib/windows/lib)
     endif()
@@ -79,6 +82,10 @@ if(MSVC)
         LLVMBinaryFormat.lib
         LLVMSupport.lib
         LLVMDemangle.lib
+        LLVMLinker.lib
+        LLVMLTO.lib
+        LLVMSymbolize.lib
+        LLVMTextAPI.lib
     )
 
 elseif(UNIX)
@@ -93,8 +100,6 @@ elseif(UNIX)
         dyncallback_s.a
     )
     
-    set (LLVM_DEBUG_LIBS)
-
     set (LLVM_LIBS
         LLVMX86CodeGen.a
         LLVMGlobalISel.a
@@ -105,6 +110,7 @@ elseif(UNIX)
         LLVMSelectionDAG.a
         LLVMAsmPrinter.a
         LLVMDebugInfoDWARF.a
+        LLVMDebugInfoCodeView.a
         LLVMCodeGen.a
         LLVMTarget.a
         LLVMScalarOpts.a
@@ -119,13 +125,17 @@ elseif(UNIX)
         LLVMBitReader.a
         LLVMBitstreamReader.a
         LLVMMC.a
-        LLVMDebugInfoCodeView.a
         LLVMDebugInfoMSF.a
         LLVMCore.a
         LLVMRemarks.a
         LLVMBinaryFormat.a
         LLVMSupport.a
         LLVMDemangle.a
+        LLVMWindowsManifest.a
+        LLVMTableGen.a
+        LLVMTransformUtils.a
+        LLVMInstrumentation.a
+        LLVMOption.a
 
         tinfo
         z

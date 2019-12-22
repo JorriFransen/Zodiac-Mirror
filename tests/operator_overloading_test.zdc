@@ -1,0 +1,70 @@
+
+_c :: import c;
+using _c;
+
+std :: import std;
+
+main :: ()
+{
+    open_std_handles();
+
+    at1 := atom_new("abcd");
+    printf("at1.data: %p\n", at1.data);
+
+    printf("at1.data: '%s'\n", at1.data);
+    printf("at1.data[1]: '%c'\n", at1.data[1]);
+    printf("at1[1]: '%c'\n", at1[1]);
+
+    at1.data[0] = 'x';
+    printf("at1.data: '%s'\n", at1.data);
+
+    at1[1] = 'y';
+    printf("at1.data: '%s'\n", at1.data);
+
+    at1_sub2_ptr := *at1[2];
+    assert(at1_sub2_ptr == *at1.data[2]);
+
+    printf("*at1.data[2]: %p\n", *at1.data[2]);
+    printf("*at1[2]     : %p\n", *at1[2]);
+
+    <at1_sub2_ptr = 'z';
+    printf("at1.data: '%s'\n", at1.data);
+
+    assert(std.string_equal(at1.data, "xyzd"));
+
+    return 0;
+}
+
+Atom :: struct
+{
+    data: *u8;
+    length: s64;
+
+    #overload[] atom_index_overload;
+    #overload[]* atom_index_overload_lvalue;
+}
+
+atom_new :: (c_str: *u8, length: s64) -> Atom
+{
+    data := (:*u8)_c.malloc((:u64)length + 1);
+    _c.memcpy(data, c_str, (:u64)length);
+    data[length] = '\0';
+
+    return { data, length };
+}
+
+atom_new :: (c_str: *u8) -> Atom
+{
+    length := std.string_length(c_str);
+    return atom_new(c_str, (:s64)length);
+}
+
+atom_index_overload :: (atom: Atom, index: s64) -> u8
+{
+    return <atom_index_overload_lvalue(atom, index);
+}
+
+atom_index_overload_lvalue :: (atom: Atom, index: s64) -> *u8
+{
+    return *atom.data[index];
+}

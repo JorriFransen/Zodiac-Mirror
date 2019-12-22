@@ -1,0 +1,96 @@
+
+_c :: import c;
+using _c;
+
+std :: import std;
+
+_printer :: import print;
+using _printer;
+
+main :: ()
+{
+    open_std_handles();
+
+    print("Any test\n");
+
+    print_any(1);
+    print_any(5.6);
+    print_any(1 + 2);
+
+    print_any(return_int(33));
+
+    x := 42;
+    print_any(x);
+
+    x_any : Any = x;
+    print_any(x_any);
+
+    y := 4.5;
+    y_any : Any = y;
+    print_any(y_any);
+
+    assert(x_any.value == *x);
+    assert(x_any.type_info == get_type_info(x));
+
+    unsigned : u64 = 8888;
+    print_any(unsigned);
+
+    z : Any = 4;
+    print_any(z);
+    z = 5;
+    print_any(5);
+
+    return 0;
+
+}
+
+return_int :: (x: int) -> int { return x; }
+
+print_any :: (any: Any)
+{
+    using Type_Info_Kind;
+    using Type_Info_Flags;
+
+    // print("Any { %p, %p }\n", any.type_info, any.value);
+
+    type_info := any.type_info;
+
+    switch (type_info.kind)
+    {
+        case BASE:
+        {
+            if (type_info.flags & INT)
+            {
+                if (type_info.flags & SIGNED)
+                {
+                    ptr := (:*s64)any.value;
+                    print("signed int: %\n", <ptr);
+                }
+                else
+                {
+                    ptr := (:*u64)any.value;
+                    print("unsigned int: %\n", <ptr);
+                }
+            }
+            else if (type_info.flags & FLOAT)
+            {
+                if (type_info.byte_size == 4)
+                {
+                    ptr := (:*float)any.value;
+                    print("float: %\n", <ptr);
+                }
+                else if (type_info.byte_size == 8)
+                {
+                    ptr := (:*double)any.value;
+                    print("doule: %\n", <ptr);
+                }
+                else assert(false);
+            }
+            else assert(false);
+        }
+
+        default: assert(false);
+
+    }
+}
+

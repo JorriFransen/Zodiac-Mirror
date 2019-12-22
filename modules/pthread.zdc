@@ -1,6 +1,9 @@
+
 static_assert(PLATFORM_LINUX);
+static_assert(!PLATFORM_WINDOWS);
 
 #dynamic_link "libpthread.so.0";
+
 
 int :: typedef s64;
 

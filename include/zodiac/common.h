@@ -13,8 +13,8 @@
 #define MB(n) (KB((n)) * (uint64_t)1024)
 #define GB(n) (MB((n)) * (uint64_t)1024)
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define _MAX(a, b) ((a) > (b) ? (a) : (b))
+#define _MIN(a, b) ((a) < (b) ? (a) : (b))
 
 // Use these memory management macros for now, so we can add support for custom
 //   allocators later.
@@ -277,7 +277,7 @@ bool string_ends_with(const char* str, const char* end);
 
 // Paths
 const char* extract_directory_from_path(const char* path);
-const char* extract_file_name_from_path(const char* path);
+const char* extract_file_name_from_path(const char* path, bool strip_ext = true);
 const char* full_path_from_cwd(const char* rel_path);
 const char* normalize_path(const char* path);
 

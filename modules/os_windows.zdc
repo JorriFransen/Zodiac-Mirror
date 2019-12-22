@@ -1,4 +1,7 @@
 
+_builtin :: import builtin;
+using _builtin;
+
 static_assert(PLATFORM_WINDOWS);
 
 std :: import std;
@@ -6,6 +9,9 @@ using std;
 
 _og :: import os_generic;
 using _og;
+
+_thread :: import thread;
+using _thread;
 
 LPCSTR :: typedef *u8;
 LPSTR :: typedef *u8;
@@ -26,6 +32,7 @@ THREAD_START_ROUTINE :: typedef (lpThreadParameter: LPVOID) -> DWORD;
 #foreign FindFirstFileA :: (lpFileName: LPCSTR, lpFindFileData: *WIN32_FIND_DATA) -> HANDLE;
 #foreign FindNextFileA :: (hFindFile: HANDLE, lpFindFileData: *WIN32_FIND_DATA) -> BOOL;
 #foreign FindClose :: (hFindFile: HANDLE) -> BOOL;
+#foreign DeleteFileA :: (lpFileName: LPCSTR) -> BOOL;
 #foreign GetLastError :: () -> DWORD;
 #foreign GetStdHandle :: (nStdHandle: DWORD) -> HANDLE;
 
@@ -149,6 +156,13 @@ get_full_path :: (name: String) -> String
     assert(l == result.length);
 
     return result;
+}
+
+delete_file :: (path: String) -> bool
+{
+    result := DeleteFileA(path.data); 
+
+    return (:bool)result;
 }
 
 is_directory :: (path: String) -> bool

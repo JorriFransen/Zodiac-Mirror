@@ -29,6 +29,7 @@ uint64_t _get_int_hash(const int& x)
 // #include <syscall.h>
 // #include <sys/stat.h>
 // #include <stdio.h>
+// #include <unistd.h>
 
 int main(int argc, char** argv)
 {
@@ -40,6 +41,9 @@ int main(int argc, char** argv)
     // printf("EOF: %d\n", EOF);
 	//printf("sizeof(DWORD): %d\n", sizeof(DWORD));
 	//GetStdHandle(STD_OUTPUT_HANDLE);
+    // printf("STDIN_FILENO: %d\n", STDIN_FILENO);
+    // printf("STDOUT_FILENO: %d\n", STDOUT_FILENO);
+    // printf("STDERR_FILENO: %d\n", STDERR_FILENO);
 
 
 
@@ -84,9 +88,9 @@ int main(int argc, char** argv)
     bool builtin_found = zodiac_find_module_path(context, builtin_module_name,
                                                  &builtin_module_path);
     assert(builtin_found);
-    AST_Module* builtin_ast_module = zodiac_compile_or_get_module(context,
-                                                                    builtin_module_path,
-                                                                    builtin_module_name);
+    AST_Module* builtin_ast_module = zodiac_compile_or_get_module(context, builtin_module_path,
+                                                                  builtin_module_name, true);
+    if (!builtin_ast_module) return 42;
 
     assert(builtin_ast_module);
     context->builtin_ast_module = builtin_ast_module;
@@ -96,20 +100,8 @@ int main(int argc, char** argv)
     assert(default_assert_handler_decl);
     Builtin::decl_default_assert_handler = default_assert_handler_decl;
 
-    Atom std_module_name = atom_get(context->atom_table, "std");
-    Atom std_module_path = {};
-    bool std_found = zodiac_find_module_path(context, std_module_name, &std_module_path);
-    assert(std_found);
-    // printf("std_module_path: %s\n", std_module_path.data);
-    AST_Module* std_ast_module = zodiac_compile_or_get_module(context, std_module_path,
-                                                            std_module_name);
-    if (!std_ast_module)
-    {
-        fprintf(stderr, "Compilation for std module for builtins failed, aborting\n");
-        return -1;
-    }
     AST_Declaration* string_type_decl = ast_scope_find_declaration(context,
-                                                                std_ast_module->module_scope,
+                                                                builtin_ast_module->module_scope,
                                                                 Builtin::atom_String);
     assert(string_type_decl);
     assert(string_type_decl->kind == AST_DECL_AGGREGATE_TYPE);
@@ -118,7 +110,7 @@ int main(int argc, char** argv)
     Builtin::type_String = string_type;
 
     AST_Declaration* string_length_decl =
-        ast_scope_find_declaration(context, std_ast_module->module_scope,
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
                                     Builtin::atom_string_length);
     assert(string_length_decl);
     assert(string_length_decl->identifier);
@@ -127,7 +119,7 @@ int main(int argc, char** argv)
     Builtin::decl_string_length->identifier->declaration = Builtin::decl_string_length;
 
     AST_Declaration* type_info_type_decl =
-        ast_scope_find_declaration(context, std_ast_module->module_scope,
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
                                     Builtin::atom_Type_Info);
     assert(type_info_type_decl);
     assert(type_info_type_decl->kind == AST_DECL_AGGREGATE_TYPE);
@@ -140,13 +132,19 @@ int main(int argc, char** argv)
     Builtin::type_pointer_to_Type_Info = pointer_to_type_info;
 
     AST_Declaration* type_info_kind_decl =
-        ast_scope_find_declaration(context, std_ast_module->module_scope,
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
                                     Builtin::atom_Type_Info_Kind);
     assert(type_info_kind_decl);
     Builtin::type_Type_Info_Kind = type_info_kind_decl->aggregate_type.type;
 
+    AST_Declaration* type_info_flag_decl =
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
+                                   Builtin::atom_Type_Info_Flags);
+    assert(type_info_flag_decl);
+    Builtin::type_Type_Info_Flags = type_info_flag_decl->aggregate_type.type;
+
     AST_Declaration* type_info_aggregate_member_type_decl =
-        ast_scope_find_declaration(context, std_ast_module->module_scope,
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
                                     Builtin::atom_Type_Info_Aggregate_Member);
     assert(type_info_aggregate_member_type_decl);
     AST_Type* type_info_aggregate_member_type =
@@ -154,12 +152,28 @@ int main(int argc, char** argv)
     Builtin::type_Type_Info_Aggregate_Member = type_info_aggregate_member_type;
 
     AST_Declaration* type_info_enum_member_type_decl =
-        ast_scope_find_declaration(context, std_ast_module->module_scope,
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
                                     Builtin::atom_Type_Info_Enum_Member);
     assert(type_info_enum_member_type_decl);
     AST_Type* type_info_enum_member_type =
         type_info_enum_member_type_decl->aggregate_type.type;
     Builtin::type_Type_Info_Enum_Member = type_info_enum_member_type;
+
+    AST_Declaration* any_decl = ast_scope_find_declaration(context,
+                                                           builtin_ast_module->module_scope,
+                                                           Builtin::atom_Any);
+    assert(any_decl);
+    Builtin::type_Any = any_decl->aggregate_type.type;
+    assert(Builtin::type_Any);
+    Builtin::type_pointer_to_Any = ast_find_or_create_pointer_type(context, Builtin::type_Any);
+
+    AST_Declaration* array_ref_of_any_decl =
+        ast_scope_find_declaration(context, builtin_ast_module->module_scope,
+                                   Builtin::atom_Array_Ref_of_Any);
+    assert(array_ref_of_any_decl);
+    assert(array_ref_of_any_decl->kind == AST_DECL_TYPEDEF);
+    assert(array_ref_of_any_decl->typedef_decl.type);
+    Builtin::type_Array_Ref_of_Any = array_ref_of_any_decl->typedef_decl.type;
 
     const char* file_string = read_file_string(file_name);
     // fprintf(stderr, "File contents:\n%s\n", file_string);
@@ -187,7 +201,7 @@ int main(int argc, char** argv)
     Parser parser;
     parser_init(&parser, context);
 
-    Parse_Result parse_result = parse_module(&parser, lex_result.tokens, module_name);
+    Parse_Result parse_result = parse_module(&parser, lex_result.tokens, module_name, file_name);
     if (BUF_LENGTH(parse_result.errors) != 0)
     {
         parser_report_errors(&parser);
@@ -198,8 +212,8 @@ int main(int argc, char** argv)
 
 
     Resolver resolver;
-    resolver_init(&resolver, context);
-    Resolve_Result rr = resolver_resolve_module(&resolver, parse_result.ast_module);
+    resolver_init(&resolver, context, false);
+    Resolve_Result rr = resolver_resolve_module(&resolver, parse_result.ast_module, false);
     if (resolve_result_has_errors(&rr))
     {
         resolve_result_report_errors(&rr);
@@ -265,6 +279,7 @@ int main(int argc, char** argv)
         llvm_builder_init(&llvm_ir_builder);
         llvm_ir_builder.context = context;
         llvm_emit_ir_module(&llvm_ir_builder, &ir_module);
+
         llvm_builder_free(&llvm_ir_builder);
     }
 

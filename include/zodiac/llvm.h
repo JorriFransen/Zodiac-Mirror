@@ -3,6 +3,7 @@
 #include "zodiac.h"
 #include "hash.h"
 #include "ir.h"
+#include "llvm_debug_info.h"
 
 #include <llvm-c/Core.h>
 
@@ -58,6 +59,8 @@ namespace Zodiac
         LLVMValueRef aggregate_member_info_global = nullptr;
         LLVMValueRef enum_member_info_global = nullptr;
 
+        Debug_Info* debug_info = nullptr;
+
         Hash_Table<Atom, LLVMValueRef> const_c_string_table;
     };
 
@@ -79,6 +82,7 @@ namespace Zodiac
     LLVMValueRef llvm_emit_aggregate_info(LLVM_IR_Builder* builder, Type_Info* type_info);
     LLVMValueRef llvm_emit_enum_info(LLVM_IR_Builder* builder, Type_Info* type_info);
     LLVMValueRef llvm_emit_function_info(LLVM_IR_Builder* builder, Type_Info* type_info);
+    LLVMValueRef llvm_emit_static_array_info(LLVM_IR_Builder* builder, Type_Info* type_info);
     LLVMValueRef llvm_emit_constant_string(LLVM_IR_Builder* builder, const char* data,
                                            uint64_t length);
     LLVMValueRef llvm_emit_c_string(LLVM_IR_Builder* builder, const char* data, uint64_t length);

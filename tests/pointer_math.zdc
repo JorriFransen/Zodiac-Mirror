@@ -2,11 +2,14 @@
 std :: import std;
 using std;
 
+_printer :: import print;
+using _printer;
+
 print_buf :: (buf: *int, length: int)
 {
     for (i := 0; i < length; i++)
     {
-        _c.printf("buf[%d] = %d\n", i, buf[i]);
+        print("buf[%] = %\n", i, buf[i]);
     }
 }
 
@@ -14,7 +17,7 @@ main :: () -> int
 {
     _c.open_std_handles();
 
-    print("pointer math test");
+    print("pointer math test\n");
 
     count : s64 = 5;
 
@@ -25,9 +28,9 @@ main :: () -> int
     for (i : s64 = 0; i < count; i += 1)
     {
         <int_cur = (:int)(i + 1) * 5;
-        // _c.printf("<int_cur: %d\n", <int_cur);
-        // _c.printf("int_cur: %p\n", int_cur);
-        // _c.printf("*int_buf[i]: %p\n", *int_buf[i]);
+        // print("<int_cur: %d\n", <int_cur);
+        // print("int_cur: %p\n", int_cur);
+        // print("*int_buf[i]: %p\n", *int_buf[i]);
         // int_cur += 1;
         int_cur++;
 
@@ -39,7 +42,7 @@ main :: () -> int
 
     for (i : s64 = 0; i < count; i += 1)
     {
-        _c.printf("int_buf[%d] = %d\n", 4 - i, <int_cur);
+        print("int_buf[%] = %\n", 4 - i, <int_cur);
         int_cur -= 1;
     }
 

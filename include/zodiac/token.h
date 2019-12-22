@@ -8,6 +8,7 @@ namespace Zodiac
 
 #define DEFINE_TOKEN_KINDS      \
     DEFINE_TOKEN(TOK_INVALID),  \
+    DEFINE_TOKEN(TOK_UNDERSCORE), /* _ */ \
     DEFINE_TOKEN(TOK_PLUS),       /* + */ \
     DEFINE_TOKEN(TOK_MINUS),      /* - */ \
     DEFINE_TOKEN(TOK_MUL),        /* * */ \

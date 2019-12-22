@@ -25,11 +25,14 @@ namespace Zodiac
         BUF(Token) tokens = nullptr;
         uint64_t ti = 0;
         Parse_Result result = {};
+
+        bool allow_vararg_type_specs = false;
     };
 
     void parser_init(Parser* parser, Context* context);
 
-    Parse_Result parse_module(Parser* parser, BUF(Token) tokens, const char* module_name);
+    Parse_Result parse_module(Parser* parser, BUF(Token) tokens, const char* module_name,
+                              const char* path);
 
     static AST_Identifier* parse_identifier(Parser* parser);
     static AST_Directive* parse_directive(Parser* parser);
@@ -44,6 +47,8 @@ namespace Zodiac
     AST_Declaration* parse_declaration(Parser* parser, AST_Identifier* identifier,
                                        AST_Scope* scope, bool global, AST_Directive* directive,
                                        AST_Declaration_Location location = AST_DECL_LOC_INVALID);
+    AST_Declaration* parse_list_declaration(Parser* parser, AST_Expression* list_expr,
+                                            AST_Scope* scope);
 
     static AST_Declaration* parse_constant_declaration(Parser* parser, AST_Identifier* identifier,
                                                        AST_Type_Spec* type_spec, AST_Scope* scope,
@@ -54,8 +59,11 @@ namespace Zodiac
 		AST_Scope* scope);
     static AST_Declaration* parse_link_declaration(Parser* parser, bool global, AST_Scope* scope,
                                                    AST_Directive* directive);
-    static AST_Declaration* parse_static_if_declaration(Parser* parser, bool global, AST_Scope* scope);
-    static AST_Declaration* parse_block_declaration(Parser* parser, bool global, AST_Scope* scope);
+    static AST_Declaration* parse_static_if_declaration(Parser* parser, bool global,
+                                                        AST_Scope* scope,
+                                                        AST_Declaration_Location location);
+    static AST_Declaration* parse_block_declaration(Parser* parser, bool global, AST_Scope* scope,
+                                                    AST_Declaration_Location location);
     static AST_Declaration* parse_static_assert_declaration(Parser* parser, bool global, AST_Scope* scope);
     static AST_Declaration* parse_using_declaration(Parser* parser,
                                                     AST_Declaration_Location location,
@@ -65,13 +73,15 @@ namespace Zodiac
                                                       bool is_enum = false);
 
     AST_Statement* parse_statement(Parser* parser, AST_Scope* scope);
-    static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope);
+    static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope,
+                                                uint64_t opening_line);
     static AST_Statement* parse_return_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_if_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_while_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_for_statement(Parser* parser, AST_Scope* scope);
     static AST_Statement* parse_switch_statement(Parser* parser, AST_Scope* scope);
 
+    static AST_Expression* parse_list_expression(Parser* parser, AST_Scope* scope);
     static AST_Expression* parse_expression(Parser* parser, AST_Scope* scope);
     static AST_Expression* parse_ternary_expression(Parser* parser, AST_Scope* scope);
     static AST_Expression* parse_or_or_expression(Parser* parser, AST_Scope* scope);
@@ -94,8 +104,10 @@ namespace Zodiac
 		AST_Scope* scope);
     static AST_Expression* parse_call_expression(Parser* parser, AST_Identifier* identifier,
 		AST_Scope* scope);
+    static AST_Expression* parse_directive_expression(Parser* parser, AST_Scope* scope);
 
     static AST_Type_Spec* parse_type_spec(Parser* parser, AST_Scope* scope);
+    static AST_Type_Spec* parse_return_type_spec(Parser* parser, AST_Scope* scope);
 	static AST_Type_Spec* parse_function_type_spec(Parser* parser, AST_Scope* scope);
 
     static AST_Overload_Operator_Kind parse_overload_operator(Parser* parser);

@@ -1,0 +1,54 @@
+
+_c :: import c;
+using _c;
+
+_printer :: import print;
+using _printer;
+
+os :: import os;
+
+main :: ()
+{
+    open_std_handles();
+
+    print("Subprocess test\n");
+
+    err, res := os.execute_process_shell("./tp", "");
+    assert(err == os.Execute_Process_Error.NONE);
+    _c.printf("os.execute_process returned: %d\n", res.exit_code);
+    // assert(res.exit_code == 7);
+
+    print("\nstdout: \n%\n", res.stdout.data);
+    print("stderr: \n%\n", res.stderr.data);
+
+    err, res = os.execute_process("ls", "-lah");
+    assert(err == os.Execute_Process_Error.NONE);
+    _c.printf("os.execute_process returned: %d\n", res.exit_code);
+
+    if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
+    if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);
+
+    err, res = os.execute_process("echo", "Hello world!");
+    assert(err == os.Execute_Process_Error.NONE);
+    _c.printf("os.execute_process returned: %d\n", res.exit_code);
+
+    if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
+    if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);
+
+    err, res = os.execute_process("sh", "-c", ">&2 echo \"Echo to stderr!!!\"");
+    assert(err == os.Execute_Process_Error.NONE);
+    _c.printf("os.execute_process returned: %d\n", res.exit_code);
+
+    if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
+    if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);
+
+    err, res = os.execute_process_shell(">&2 echo", "Echo to stderr via shell...");
+    assert(err == os.Execute_Process_Error.NONE);
+    _c.printf("os.execute_process returned: %d\n", res.exit_code);
+
+    if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
+    if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);
+
+    return 0;
+}
+

@@ -7,25 +7,21 @@ stdin  : *FILE = null;
 stdout : *FILE = null;
 stderr : *FILE = null;
 
-#foreign fdopen :: (fd: int, mode: *u8) -> *FILE;
-#foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
-#foreign exit :: (status: s32) -> void;
-
-open_std_handles :: () -> void
-{
-    stdin = fdopen(0, "r");
-    stdout = fdopen(1, "w");
-    stderr = fdopen(2, "w");
-}
+PLATFORM_WINDOWS :: false;
+PLATFORM_LINUX   :: false;
 
 static_if (PLATFORM_WINDOWS)
 {
     print_stack_trace :: ()
     {
     }
+
+    #foreign _fdopen :: (fd: int, mode: *u8) -> *FILE;
+    fdopen :: (fd: int, mode: *u8) -> *FILE { return _fdopen(fd, mode); }
 }
 else static_if(PLATFORM_LINUX)
 {
+    #foreign fdopen :: (fd: int, mode: *u8) -> *FILE;
     #foreign backtrace :: (buffer: **void, size: int) -> int;
     #foreign backtrace_symbols :: (buffer: **void, size: int) -> **u8;
 
@@ -47,6 +43,126 @@ else
     static_assert(false);
 }
 
+
+Type_Info_Kind : u64 : enum
+{
+    INVALID;
+    BASE;
+    POINTER;
+    STRUCT;
+    UNION;
+    ENUM;
+    FUNCTION;
+    STATIC_ARRAY;
+}
+
+Type_Info_Flags : u64 : enum
+{
+    NONE    :: 0;
+    INT     :: 1;
+    FLOAT   :: 2;
+    SIGNED  :: 4;
+}
+
+Type_Info :: struct
+{
+    kind      : Type_Info_Kind;
+    flags     : Type_Info_Flags;
+    name      : String;
+    byte_size : u64;
+
+    union
+    {
+        base  : *Type_Info;
+
+        aggregate :: struct
+        {
+            count : u64;
+            first : *Type_Info_Aggregate_Member;
+        }
+
+        enum_info :: struct
+        {
+            enum_base    : *Type_Info;
+            member_count : u64;
+            first        : *Type_Info_Enum_Member;
+        }
+
+        function :: struct
+        {
+            return_type : *Type_Info;
+            arg_count   : u64;
+            first_arg   : *Type_Info_Aggregate_Member;
+        }
+
+        static_array :: struct
+        {
+            base : *Type_Info;
+            count : u64;
+        }
+    }
+}
+
+Type_Info_Aggregate_Member :: struct
+{
+    name : String;
+    type : *Type_Info;
+}
+
+Type_Info_Enum_Member :: struct
+{
+    name  : String;
+    value : u64;
+    type  : *Type_Info;
+}
+
+Any :: struct
+{
+    type_info : *Type_Info;
+    value     : *void;
+}
+
+string_length :: (c_str: *u8) -> s64
+{
+    if (!c_str) return 0;
+
+    length := 0;
+    i : u64 = 0;
+
+    while (c_str[i] != 0)
+    {
+        i += 1;
+        length += 1;
+    }
+
+    return length;
+}
+
+Array_Ref :: struct(T)
+{
+    data  : *T;
+    count : s64;
+
+    #overload[] array_ref_index;
+}
+
+array_ref_index :: (array_ref: Array_Ref($T), index: s64) -> T
+{
+    return array_ref.data[index];
+}
+
+Array_Ref_of_Any :: typedef Array_Ref(Any);
+
+#foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
+#foreign exit :: (status: s32) -> void;
+
+_builtin_open_std_handles :: () -> void
+{
+    stdin = fdopen(0, "r");
+    stdout = fdopen(1, "w");
+    stderr = fdopen(2, "w");
+}
+
 default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line: s64)
 {
     if (value)
@@ -54,9 +170,9 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
         return;
     }
 
-    if (stderr)
+    if (!stderr)
     {
-        open_std_handles();
+        _builtin_open_std_handles();
     }
 
     // _c.fprintf(_c._stderr, "\n\n");
@@ -76,7 +192,18 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
     }
 }
 
-Context :: struct
+String :: struct
 {
-    
+    data   : *u8;
+    length : s64;
+
+    #overload[] string_index;
+}
+
+
+string_index :: (str: String, index: s64) -> u8
+{
+    default_assert_handler(index < str.length, #FUNC_NAME, #FILE_NAME, #LINE_NO);
+
+    return str.data[index];
 }
