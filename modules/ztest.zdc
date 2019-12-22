@@ -208,7 +208,8 @@ run_tests :: (mode: Test_Mode, files: Test_Files) -> Test_Results
     for (i := 0; i < files.files.count; i++)
     {
         file := files.files[i];
-      result_status := run_test(mode, file, (:u64)files.longest_file_name, (:u64)longest_mode_name);
+        result_status := run_test(mode, file, (:u64)files.longest_file_name,
+                                  (:u64)longest_mode_name);
 
         using Test_Result_Status;
 
@@ -249,16 +250,18 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
 {
     __sb : String_Builder;
     sb := *__sb;
-    init(sb, 1024);
+    init(sb, 512);
     defer free(sb);
+
+    exe_name : String;
 
     static_if (PLATFORM_WINDOWS)
     {
-        append(sb, "zodiac.exe ");
+        exe_name = string_ref("zodiac.exe");
     }
     else
     {
-        append(sb, "./zodiac ");
+        exe_name = string_ref("./zodiac");
     }
 
     using Test_Mode;
@@ -272,7 +275,6 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     }
 
     append(sb, tf.path);
-    append(sb, " 2>&1");
 
     if (mode == RUNNING_LLVM)
     {
@@ -328,26 +330,13 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
           (tf.flags & Test_File_Flag.DONT_RUN)))
     {
         // _c.printf("running command: '%s'\n", command.data);
-        out_buf : [1024]u8;
-        command_process := posix.popen(command.data, "r");
 
-        while (posix.fgets(*out_buf[0], array_length(out_buf), command_process) != null)
-        {
-            output := string_new(*out_buf[0]);
-            append(output_sb, output);
-        }
+        err, res := os.execute_process_shell(exe_name, command.data);
+        assert(err == os.Execute_Process_Error.NONE);
+        defer os.execute_process_result_free(*res);
+        exit_code = res.exit_code;
 
-        close_ret = posix.pclose(command_process);
-        // _c.printf("close_ret: %d\n", close_ret);
-        if (close_ret != -1)
-        {
-            exit_code = posix.exit_status(close_ret);
-            // _c.printf("close: %d, exit: %d", close_ret, exit_code);
-        }
-        else
-        {
-            exit_code = 1;
-        }
+        append(output_sb, res.stderr);
     }
     else
     {
