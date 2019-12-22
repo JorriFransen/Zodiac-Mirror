@@ -138,11 +138,6 @@ set_terminal_color :: (color: Terminal_Color, bold: bool)
 
     if (bold) fmt.data[2] = '1';
 
-    // for (i : u64 = 0; i < string_length(fmt); i++)
-    // {
-    //     _c.printf("fmt[%d]: '%c', %d\n", i, fmt[i], fmt[i]);
-    // }
-
     using Terminal_Color;
 
     cc : *u8;

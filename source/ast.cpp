@@ -1131,7 +1131,7 @@ namespace Zodiac
         uint64_t bit_size = 0;
 
         for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++) bit_size += mrv_types[i]->bit_size;
-        AST_Type* result = ast_type_new(context, AST_TYPE_MRV, AST_TYPE_FLAG_NONE, {}, bit_size);
+        AST_Type* result = ast_type_new(context, AST_TYPE_MRV, AST_TYPE_FLAG_NONE, nullptr, bit_size);
         result->mrv.types = mrv_types;
 
         File_Pos gen_fp = {};
@@ -1706,11 +1706,16 @@ namespace Zodiac
                     {
                         if (directives[i] != ex_type->mrv.directives[i])
                         {
-                            if (!(directives[i]->kind == AST_DIREC_REQUIRED &&
-                                  ex_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED))
+                            // We allow null directives because it's a parallel array, and not
+                            //  all types have directives
+                            if (ex_type->mrv.directives[i])
                             {
-                                match = false;
-                                break;
+                                if (!(directives[i]->kind == AST_DIREC_REQUIRED &&
+                                      ex_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED))
+                                {
+                                    match = false;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -1745,7 +1750,9 @@ namespace Zodiac
             BUF(AST_Directive*) directives_copy = nullptr;
 
             for (uint64_t i = 0; i < BUF_LENGTH(directives); i++)
+            {
                 BUF_PUSH(directives_copy, directives[i]);
+            }
 
             AST_Type* result = ast_type_mrv_new(context, mrv_types_copy, directives_copy, scope);
             context->type_hash[hash_index] = result;
