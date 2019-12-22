@@ -3150,7 +3150,7 @@ namespace Zodiac
         assert(scope);
 
         while (!(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE) &&
-            !(scope->flags & AST_SCOPE_FLAG_BREAK_SCOPE))
+               !(scope->flags & AST_SCOPE_FLAG_BREAK_SCOPE))
         {
             for (uint64_t i = 0; i < BUF_LENGTH(scope->defer_statements); i++)
             {

@@ -288,13 +288,12 @@ pipe_read :: (pipe: *Pipe) -> IO_Error #required, String
     buf: [1024]u8;
     readc : s32; // @TODO: This should be a an s64 when we have correct integer conversion
 
-  reading := true;
-    while (reading)
+    while (true)
     {
         readc = posix.read(pipe.read_fd, *buf, (:s32)array_length(buf));
         assert(readc >= 0); // @TODO: handle errno
         if (readc) string_builder.append(*sb, (:*u8)(*buf), (:s64)readc);
-        else reading = false;
+        else break;
     }
 
     return IO_Error.NONE, string_builder.copy_to_string(*sb);

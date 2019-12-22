@@ -25,6 +25,8 @@ main :: () -> int
 
     test_defer_return_value();
 
+    test_defer_break_while();
+
     return 0;
 }
 
@@ -98,4 +100,31 @@ print_and_return_value :: (ptr: *int) -> int
     assert(ptr);
     _c.printf("Value: %d\n", <ptr);
     return <ptr;
+}
+
+test_defer_break_while :: ()
+{
+    ITERATION_COUNT :: 5;
+    defer_counter := 0;
+    loop_counter := 0;
+
+    defer defer_counter++;
+
+    while (true)
+    {
+        print("loop_counter: %\n", loop_counter);
+        loop_counter++;
+
+        defer defer_counter++;
+
+        if (loop_counter >= ITERATION_COUNT)
+            break;
+    }
+
+    print("defer_counter: %\n", defer_counter);
+    print("loop_counter: %\n", loop_counter);
+
+    assert(loop_counter == ITERATION_COUNT);
+    assert(defer_counter == ITERATION_COUNT);
+
 }
