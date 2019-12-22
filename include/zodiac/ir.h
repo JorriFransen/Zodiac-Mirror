@@ -308,8 +308,7 @@ namespace Zodiac
 
     void ir_builder_init(IR_Builder* ir_builder, Context* context);
 
-    IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module,
-                                     bool emit_builtin_decls);
+    IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module);
     void ir_builder_emit_missing_poly_functions(IR_Builder* ir_builder, AST_Module* module);
 
 	void ir_builder_emit_decl_body(IR_Builder* ir_builder, AST_Declaration* func_decl);

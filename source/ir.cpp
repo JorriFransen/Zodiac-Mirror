@@ -28,8 +28,7 @@ namespace Zodiac
 
     }
 
-    IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module,
-                                    bool emit_builtin_decls)
+    IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module)
     {
         assert(ir_builder);
         assert(module);
@@ -53,18 +52,18 @@ namespace Zodiac
         }
 
         // Emit builtin declarations
-        if (emit_builtin_decls)
-        {
-            auto builtin_decls = ir_builder->context->builtin_decls;
-            for (uint64_t i = 0; i < BUF_LENGTH(builtin_decls); i++)
-            {
-                ir_builder_emit_global_declaration(ir_builder, builtin_decls[i]);
-                if (ir_builder->result.error_count)
-                {
-                    return ir_builder->result;
-                }
-            }
-        }
+        // if (emit_builtin_decls)
+        // {
+        //     auto builtin_decls = ir_builder->context->builtin_decls;
+        //     for (uint64_t i = 0; i < BUF_LENGTH(builtin_decls); i++)
+        //     {
+        //         ir_builder_emit_global_declaration(ir_builder, builtin_decls[i]);
+        //         if (ir_builder->result.error_count)
+        //         {
+        //             return ir_builder->result;
+        //         }
+        //     }
+        // }
 
         // Emit global declarations
         for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)

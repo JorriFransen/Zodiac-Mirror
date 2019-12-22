@@ -352,7 +352,7 @@ namespace Zodiac
         IR_Builder* ir_builder = arena_alloc(context->arena, IR_Builder);
         ir_builder_init(ir_builder, context);
 
-        IR_Module ir_module = ir_builder_emit_module(ir_builder, parse_result.ast_module, false);
+        IR_Module ir_module = ir_builder_emit_module(ir_builder, parse_result.ast_module);
 
         if (ir_module.error_count)
         {
