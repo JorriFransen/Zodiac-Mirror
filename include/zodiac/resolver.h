@@ -7,6 +7,7 @@ namespace Zodiac
     enum Resolve_Error_Flag : uint64_t
     {
         RE_FLAG_NONE       = 0,
+        RE_FLAG_WARNING    = 1,
     };
 
     struct Resolve_Error
@@ -147,4 +148,8 @@ namespace Zodiac
     Resolve_Error* resolver_report_error(Resolver* resolver, File_Pos file_pos,
                                          Resolve_Error_Flag flags, const char* format,
                                          ...);
+
+    void resolver_report_warning(Resolver* resolver, File_Pos file_pos, const char* format, ...);
+    void resolver_report_warning(Resolver* resolver, File_Pos file_pos, const char* format,
+                                 va_list args);
 }
