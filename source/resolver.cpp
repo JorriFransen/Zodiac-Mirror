@@ -83,8 +83,7 @@ namespace Zodiac
 
         for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
         {
-            auto decl = module->global_declarations[i];
-            if (decl->kind == AST_DECL_USING)
+            auto decl = module->global_declarations[i]; if (decl->kind == AST_DECL_USING)
             {
                 resolver_resolve_declaration(resolver, decl, module->module_scope);
             }
@@ -865,42 +864,46 @@ namespace Zodiac
                 auto mrv_type_count = BUF_LENGTH(mrv_type->mrv.types);
 
                 assert(lvalue_count <= mrv_type_count);
-                // assert(BUF_LENGTH(lvalue_list->list.expressions) ==
-                //        BUF_LENGTH(mrv_type->mrv.types));
 
-                for (uint64_t i = 0; i < lvalue_count; i++)
+                for (uint64_t i = 0; i < mrv_type_count; i++)
                 {
-                    AST_Expression* lvalue_expr = lvalue_list->list.expressions[i];
-                    if (lvalue_expr->kind != AST_EXPR_IGNORED_VALUE)
+                    if (i < lvalue_count)
                     {
-                        AST_Identifier* lvalue_ident = lvalue_expr->identifier;
-                        AST_Type* type = mrv_type->mrv.types[i];
-                        AST_Type_Spec* type_spec =
-                            ast_type_spec_from_type_new(resolver->context, lvalue_expr->file_pos,
-                                                        type);
-                        AST_Declaration* decl = ast_mutable_declaration_new(resolver->context,
-                                                                            lvalue_expr->file_pos,
-                                                                            lvalue_ident,
-                                                                            type_spec,
-                                                                            nullptr,
-                                                                            declaration->location);
-                        assert(decl);
-
-                        BUF_PUSH(declaration->list.declarations, decl);
-
-                        bool decl_res = resolver_resolve_declaration(resolver, decl, scope);
-                        result &= decl_res;
-                        if (decl_res)
+                        AST_Expression* lvalue_expr = lvalue_list->list.expressions[i];
+                        if (lvalue_expr->kind != AST_EXPR_IGNORED_VALUE)
                         {
-                            result &= resolver_resolve_expression(resolver, lvalue_expr, scope);
+                            AST_Identifier* lvalue_ident = lvalue_expr->identifier;
+                            AST_Type* type = mrv_type->mrv.types[i];
+                            AST_Type_Spec* type_spec =
+                                ast_type_spec_from_type_new(resolver->context,
+                                                            lvalue_expr->file_pos,
+                                                            type);
+                            AST_Declaration* decl =
+                                ast_mutable_declaration_new(resolver->context,
+                                                            lvalue_expr->file_pos,
+                                                            lvalue_ident,
+                                                            type_spec,
+                                                            nullptr,
+                                                            declaration->location);
+                            assert(decl);
+
+                            BUF_PUSH(declaration->list.declarations, decl);
+
+                            bool decl_res = resolver_resolve_declaration(resolver, decl, scope);
+                            result &= decl_res;
+                            if (decl_res)
+                            {
+                                result &= resolver_resolve_expression(resolver, lvalue_expr,
+                                                                      scope);
+                            }
                         }
-                    }
-                    else if (mrv_type->mrv.directives[i])
-                    {
-                        resolver_report_error(resolver, lvalue_expr->file_pos,
-                                              "This returned value has the '#required' directive, so it is not allowed to be ignored");
-                        result = false;
-                        break;
+                        else if (mrv_type->mrv.directives[i])
+                        {
+                            resolver_report_error(resolver, lvalue_expr->file_pos,
+                                                "This returned value has the '#required' directive, so it is not allowed to be ignored");
+                            result = false;
+                            break;
+                        }
                     }
                 }
 

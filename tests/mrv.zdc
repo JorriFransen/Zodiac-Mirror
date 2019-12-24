@@ -256,7 +256,7 @@ return_implicit :: () -> int, int
 {
 }
 
-return_three :: (x: int, y: int, z: int) -> int, int, int
+return_three :: (x: int, y: int, z: int) -> int, int, int #required
 {
     return x, y, z;
 }
