@@ -181,6 +181,32 @@ namespace Zodiac
 		return string_append(base_dir, "");
 	}
 
+#elif __linux__
+
+    const char* find_linux_x64_lib_path()
+    {
+        if (file_exists("/usr/lib64/libc.so.6"))
+            return "/usr/lib64/";
+        else if (file_exists("/usr/lib/x86_64-linux-gnu/libc.so"))
+            return "/usr/lib/x86_64-linux-gnu/";
+        else if (file_exists("/lib/x86_64-linux-gnu/libc.so.6"))
+            return "/lib/x86_64-linux-gnu/";
+
+        assert(false);
+    }
+
+    const char* find_linux_gcc_lib_path()
+    {
+        if (file_exists("/usr/lib64/libc.so.6"))
+            return "/usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/";
+        else if (dir_exists("/usr/lib/gcc/x86_64-linux-gnu/9/"))
+            return "/usr/lib/gcc/x86_64-linux-gnu/9/";
+        else if (dir_exists("/usr/lib/gcc/x86_64-linux-gnu/7/"))
+            return "/usr/lib/gcc/x86_64-linux-gnu/7/";
+
+        assert(false);
+    }
+
 #endif
 
 

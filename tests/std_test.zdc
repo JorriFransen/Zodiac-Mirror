@@ -64,6 +64,8 @@ main :: ()
     float_array : Array(float) = { null, 0, 0 };
     int_array2 : Array(int) = { null, 0, 0 };
 
+    // int_array = 3;
+
     for (i : u64 = 0; i < 5; i += 1)
     {
         j := i + 1;

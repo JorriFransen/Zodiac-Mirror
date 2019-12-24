@@ -453,7 +453,7 @@ const char* extract_directory_from_path(const char* path)
     return result;
 }
 
-const char* extract_file_name_from_path(const char* path)
+const char* extract_file_name_from_path(const char* path, bool strip_ext/*=true*/)
 {
     assert(path);
 
@@ -487,7 +487,7 @@ const char* extract_file_name_from_path(const char* path)
         new_len -= (last_sep_idx + 1);
         cpy_offset = last_sep_idx + 1;
     }
-    if (dot_found) new_len -= (path_len - last_dot_idx);
+    if (strip_ext && dot_found) new_len -= (path_len - last_dot_idx);
 
     char* result = (char*)mem_alloc(sizeof(char) * (new_len + 1));
 	assert(result);

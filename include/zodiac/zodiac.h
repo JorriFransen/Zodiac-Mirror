@@ -46,6 +46,8 @@ namespace Zodiac
         bool print_ir = false;
 		bool execute_ir = false;
         bool emit_llvm = false;
+        bool print_llvm = false;
+        bool emit_debug = false;
     };
 
     enum Option_Kind
@@ -112,13 +114,11 @@ namespace Zodiac
     bool zodiac_match_short_option(Option_Parse_Context* opc, char c);
 
     AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path,
-                                             const Atom& module_name);
+                                             const Atom& module_name, bool is_builtin = false);
     AST_Module* zodiac_compile_module(Context* context, const Atom& module_path,
-                                      const Atom& module_name);
+                                      const Atom& module_name, bool is_builtin);
     bool zodiac_find_module_path(Context* context, const Atom& module_name,
                                  Atom* module_path_dest);
-
-	void grow_type_hash(Context* context);
 
     static void context_init_keywords(Context* context);
     static bool init_module_search_path(Context* context, Atom first_file_path);

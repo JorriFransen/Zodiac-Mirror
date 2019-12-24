@@ -8,6 +8,8 @@ WA :: struct
 
 main :: ()
 {
+    _c.open_std_handles();
+
     _c.printf("static array test\n");
 
     wa : WA;

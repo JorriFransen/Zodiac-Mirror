@@ -13,6 +13,9 @@ _sb :: import string_builder;
 using std;
 using _sb;
 
+_builtin :: import builtin;
+using _builtin;
+
 int :: typedef s64;
 
 Test_File_Flag : u64 : enum
@@ -26,6 +29,8 @@ Test_File :: struct
     flags : u64;
     name : String;
     path : String;
+
+    exe_name : String;
 }
 
 Test_Files :: struct
@@ -81,7 +86,7 @@ main :: (argc: int, argv: **u8) -> int
 
     if (!os.is_directory(test_folder_path))
     {
-        _c.fprintf(_c._stderr, "Path is not a directory: %s\n", test_folder_str.data);
+        _c.fprintf(_c._stderr, "Path is not a directory: '%s'\n", test_folder_str.data);
         return -1;
     }
 
@@ -126,10 +131,10 @@ main :: (argc: int, argv: **u8) -> int
    llvm_results := run_tests(Test_Mode.RUNNING_LLVM, files);
 
     _c.printf("\n");
-    _c.printf("Done, ran %d tests\n", compile_results.total_file_count);
+    _c.printf("Done, ran %d tests\n", files.files.count);
     report_test_results(compile_results);
     report_test_results(bytecode_results);
-   report_test_results(llvm_results);
+    report_test_results(llvm_results);
 
     for (i := 0; i < files.files.count; i++)
     {
@@ -152,15 +157,20 @@ find_test_files :: (test_folder: String) -> Test_Files
     result.files = { null, 0, 0 };
     result.longest_file_name = 0;
 
+    exe_file_ext : String;
+    static_if (PLATFORM_WINDOWS) { exe_file_ext = string_ref(".exe"); }
+    else                          { exe_file_ext = string_ref(""); }
+
     for (i := 0; i < files.count; i++)
     {
         file_name := files[i];
         if (string_ends_with(files[i], ".zdc"))
         {
-            tf : Test_File;
-            tf.flags = 0;
-            tf.name = file_name;
-            tf.path = string_append(test_folder, file_name);
+            tf : Test_File = { 0, file_name, string_append(test_folder, file_name),
+                               string_append(file_name, exe_file_ext) };
+            // tf.flags = 0;
+            // tf.name = file_name;
+            // tf.path = string_append(test_folder, file_name);
             array_add(*result.files, tf);
 
             if (tf.name.length > result.longest_file_name)
@@ -257,11 +267,11 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     using Test_Mode;
     if (mode == RUNNING_BYTECODE)
     {
-        append(sb, " -e ");
+        append(sb, " -r ");
     }
     else if (mode == RUNNING_LLVM)
     {
-        append(sb, " -l ");
+        append(sb, " -e ");
     }
 
     append(sb, tf.path);
@@ -276,9 +286,15 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
         exe_file_name.length -= 4;
         exe_file_name.data[exe_file_name.length] = '\0';
 
-        append(sb, " && ./");
-        append(sb, exe_file_name);
-        append(sb, " 2>&1 ");
+        // append(sb, " && ./");
+        // append(sb, exe_file_name);
+        // append(sb, " 2>&1 ");
+
+        // @CLEANUP: Do we really wanna do this here?
+        if (os.is_regular_file(exe_file_name))
+        {
+            os.delete_file(exe_file_name);
+        }
     }
 
     command := copy_to_string(sb);
@@ -310,9 +326,9 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     defer free(output_sb);
 
     if (!((mode == RUNNING_BYTECODE || mode == RUNNING_LLVM) &&
-          (:bool)(tf.flags & Test_File_Flag.DONT_RUN)))
+          (tf.flags & Test_File_Flag.DONT_RUN)))
     {
-        //_c.printf("running command: '%s'\n", command.data);
+        // _c.printf("running command: '%s'\n", command.data);
         out_buf : [1024]u8;
         command_process := posix.popen(command.data, "r");
 
@@ -384,7 +400,7 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
         else
         {
             os.set_terminal_color(Terminal_Color.GREEN, false);
-            _c.printf(" OK\n");
+            _c.printf(" OK (ret: %d)\n", exit_code);
             os.reset_terminal_state();
             // _c.printf("\n%s\n", output_str.data);
             return Test_Result_Status.SUCCESS;
@@ -493,8 +509,7 @@ apply_config :: (tests: *Test_Files, config: *Test_Config)
 
             if (string_equal(ef_name, tf.name))
             {
-                // tf.flags |= Test_File_Flag.EXPECTED_FAIL;
-                tf.flags = tf.flags | Test_File_Flag.EXPECT_FAIL;
+                tf.flags |= Test_File_Flag.EXPECT_FAIL;
             }
         }
     }
@@ -508,7 +523,7 @@ apply_config :: (tests: *Test_Files, config: *Test_Config)
 
             if (string_equal(dr_name, tf.name))
             {
-                tf.flags = tf.flags | Test_File_Flag.DONT_RUN;
+                tf.flags |= Test_File_Flag.DONT_RUN;
             }
         }
     }

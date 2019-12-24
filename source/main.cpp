@@ -50,6 +50,11 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
+    if (options.print_llvm && !options.emit_llvm)
+    {
+        fprintf(stderr, "Invalid option: 'print_llvm' requires 'emit_llvm'\n");
+    }
+
 
     Arena arena = arena_create(MB(2));
     Context _context;
@@ -79,9 +84,9 @@ int main(int argc, char** argv)
     bool builtin_found = zodiac_find_module_path(context, builtin_module_name,
                                                  &builtin_module_path);
     assert(builtin_found);
-    AST_Module* builtin_ast_module = zodiac_compile_or_get_module(context,
-                                                                    builtin_module_path,
-                                                                    builtin_module_name);
+    AST_Module* builtin_ast_module = zodiac_compile_or_get_module(context, builtin_module_path,
+                                                                  builtin_module_name, true);
+    if (!builtin_ast_module) return 42;
 
     assert(builtin_ast_module);
     context->builtin_ast_module = builtin_ast_module;
@@ -182,7 +187,7 @@ int main(int argc, char** argv)
     Parser parser;
     parser_init(&parser, context);
 
-    Parse_Result parse_result = parse_module(&parser, lex_result.tokens, module_name);
+    Parse_Result parse_result = parse_module(&parser, lex_result.tokens, module_name, file_name);
     if (BUF_LENGTH(parse_result.errors) != 0)
     {
         parser_report_errors(&parser);
@@ -193,7 +198,7 @@ int main(int argc, char** argv)
 
 
     Resolver resolver;
-    resolver_init(&resolver, context);
+    resolver_init(&resolver, context, false);
     Resolve_Result rr = resolver_resolve_module(&resolver, parse_result.ast_module);
     if (resolve_result_has_errors(&rr))
     {
@@ -210,7 +215,7 @@ int main(int argc, char** argv)
     IR_Builder ir_builder;
     ir_builder_init(&ir_builder, context);
 
-    IR_Module ir_module = ir_builder_emit_module(&ir_builder, parse_result.ast_module);
+    IR_Module ir_module = ir_builder_emit_module(&ir_builder, parse_result.ast_module, false);
 
     if (ir_module.error_count)
     {
@@ -243,8 +248,7 @@ int main(int argc, char** argv)
                 ir_return_value = 7;
             }
 
-			printf("return value: %" PRIu64 "\n", ir_return_value);
-		}
+        }
     }
     else
     {
@@ -261,6 +265,7 @@ int main(int argc, char** argv)
         llvm_builder_init(&llvm_ir_builder);
         llvm_ir_builder.context = context;
         llvm_emit_ir_module(&llvm_ir_builder, &ir_module);
+
         llvm_builder_free(&llvm_ir_builder);
     }
 

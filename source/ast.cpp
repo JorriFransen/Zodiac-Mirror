@@ -7,7 +7,7 @@
 
 namespace Zodiac
 {
-    AST_Module* ast_module_new(Context* context, const char* module_name)
+    AST_Module* ast_module_new(Context* context, const char* module_name, const char* path)
     {
         assert(context);
         assert(module_name);
@@ -17,10 +17,15 @@ namespace Zodiac
 		result->declarations = (AST_Declaration**)mem_alloc(sizeof(AST_Declaration*) * 128);
 		result->declaration_count = 128;
 
+        const char* file_name = extract_file_name_from_path(path, false);
+        const char* file_dir = extract_directory_from_path(path);
+
         result->global_declarations = nullptr;
-        result->module_scope = ast_scope_new(context, context->builtin_scope, result, true);
+        result->module_scope = ast_scope_new(context, context->builtin_scope, result, true, 0);
         result->entry_point = nullptr;
         result->module_name = module_name;
+        result->module_file_name = file_name;
+        result->module_file_dir = file_dir;
         result->import_decls = nullptr;
         result->import_modules = nullptr;
         result->resolved = false;
@@ -53,7 +58,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Expression* ast_expression_new(Context* context, File_Pos file_pos, AST_Expression_Kind kind)
+    AST_Expression* ast_expression_new(Context* context, File_Pos file_pos,
+                                       AST_Expression_Kind kind)
     {
         assert(context);
 
@@ -1220,7 +1226,7 @@ namespace Zodiac
     }
 
     AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
-		                     bool is_module_scope)
+		                     bool is_module_scope, uint64_t line)
 
     {
         assert(context);
@@ -1236,6 +1242,7 @@ namespace Zodiac
         result->module = module;
         result->using_modules = nullptr;
         result->using_declarations = nullptr;
+        result->line = line;
 
         return result;
     }
@@ -1649,8 +1656,23 @@ namespace Zodiac
             {
                 if (type->name)
                 {
-                    string_builder_append(string_builder, "(struct) ");
+                    string_builder_append(string_builder, "(struct ");
                     string_builder_append(string_builder, type->name);
+
+                    if (type->aggregate_type.poly_from)
+                    {
+                        string_builder_append(string_builder, "(");
+                        AST_Declaration* poly_decl = type->aggregate_type.poly_from;
+                        auto agg_decl = poly_decl->aggregate_type.aggregate_decl;
+                        for (uint64_t i = 0; i < BUF_LENGTH(agg_decl->poly_args); i++)
+                        {
+                            if (i > 0) string_builder_append(string_builder, ", ");
+                            string_builder_append(string_builder, agg_decl->poly_args[i]->atom);
+                        }
+                        string_builder_append(string_builder, ")");
+                    }
+
+                    string_builder_append(string_builder, ")");
                 }
                 else
                 {

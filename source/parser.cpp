@@ -15,14 +15,15 @@ namespace Zodiac
         parser->context = context;
     }
 
-    Parse_Result parse_module(Parser* parser, BUF(Token) tokens, const char* module_name)
+    Parse_Result parse_module(Parser* parser, BUF(Token) tokens, const char* module_name,
+                              const char* path)
     {
         assert(parser);
         assert(tokens);
         assert(module_name);
 
         parser->result.module_name = module_name;
-        auto ast_module = ast_module_new(parser->context, module_name);
+        auto ast_module = ast_module_new(parser->context, module_name, path);
         parser->result.ast_module = ast_module;
         parser->tokens = tokens;
         parser->ti = 0;
@@ -235,7 +236,7 @@ namespace Zodiac
 
         auto ast_module = parser->result.ast_module;
         AST_Scope* argument_scope = ast_scope_new(parser->context, ast_module->module_scope,
-                                                  ast_module, false);
+                                                  ast_module, false, identifier->file_pos.line);
 
         if (is_token(parser, TOK_LPAREN) && !(peek_token(parser, 1).kind == TOK_COLON))
         {
@@ -287,9 +288,10 @@ namespace Zodiac
 
             AST_Statement* body_block = nullptr;
 
+            auto _ct = current_token(parser);
             if (is_token(parser, TOK_LBRACE))
             {
-                body_block = parse_block_statement(parser, argument_scope);
+                body_block = parse_block_statement(parser, argument_scope, _ct.file_pos.line);
             }
             else
             {
@@ -337,7 +339,7 @@ namespace Zodiac
 
             AST_Scope* struct_scope = ast_scope_new(parser->context, scope,
                                                     parser->result.ast_module,
-                                                    false);
+                                                    false, identifier->file_pos.line);
 
             AST_Aggregate_Declaration* agg_decl = parse_aggregate(parser, struct_scope);
             if (!agg_decl) return nullptr;
@@ -351,7 +353,7 @@ namespace Zodiac
 
             AST_Scope* union_scope = ast_scope_new(parser->context, scope,
                                                    parser->result.ast_module,
-                                                   false);
+                                                   false, identifier->file_pos.line);
 
             AST_Aggregate_Declaration* agg_decl = parse_aggregate(parser, union_scope);
 
@@ -362,7 +364,7 @@ namespace Zodiac
         {
             AST_Scope* enum_scope = ast_scope_new(parser->context, scope,
                                                   parser->result.ast_module,
-                                                  false);
+                                                  false, identifier->file_pos.line);
             enum_scope->flags |= AST_SCOPE_FLAG_IS_ENUM_SCOPE;
 
             AST_Aggregate_Declaration* agg_decl = parse_aggregate(parser, enum_scope, true);
@@ -687,7 +689,7 @@ namespace Zodiac
             }
 
             case TOK_LBRACE:
-                return parse_block_statement(parser, scope);
+                return parse_block_statement(parser, scope, ft.file_pos.line);
                 break;
 
             case TOK_KW_WHILE:
@@ -855,7 +857,8 @@ namespace Zodiac
         return nullptr;
     }
 
-    static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope)
+    static AST_Statement* parse_block_statement(Parser* parser, AST_Scope* scope,
+                                                uint64_t opening_line)
     {
         assert(parser);
         assert(scope);
@@ -866,7 +869,8 @@ namespace Zodiac
         BUF(AST_Statement*) block_statements = nullptr;
 
 		auto module = parser->result.ast_module;
-        AST_Scope* block_scope = ast_scope_new(parser->context, scope, module, false);
+        AST_Scope* block_scope = ast_scope_new(parser->context, scope, module, false,
+                                               opening_line);
 
         while (!match_token(parser, TOK_RBRACE))
         {
@@ -970,7 +974,8 @@ namespace Zodiac
         expect_token(parser, TOK_LPAREN);
 
 		auto module = parser->result.ast_module;
-        AST_Scope* for_scope = ast_scope_new(parser->context, scope, module, false);
+        AST_Scope* for_scope = ast_scope_new(parser->context, scope, module, false,
+                                             for_tok.file_pos.line);
 
         AST_Statement* for_decl_statement = parse_statement(parser, for_scope);
         if (!for_decl_statement)
@@ -1148,7 +1153,9 @@ namespace Zodiac
 
         while (match_token(parser, TOK_OR))
         {
+            if (peek_token(parser, 0).kind == TOK_EQ) break;
             AST_Expression* rhs = parse_and_expression(parser, scope);
+            if (!rhs) return nullptr;
             auto op = AST_BINOP_OR;
             lhs = ast_binary_expression_new(parser->context, lhs->file_pos, lhs, op, rhs);
         }
@@ -1164,6 +1171,7 @@ namespace Zodiac
 
         while (match_token(parser, TOK_AND))
         {
+            if (peek_token(parser, 0).kind == TOK_EQ) break;
             AST_Expression* rhs = parse_cmp_expression(parser, scope);
 			if (!rhs) return nullptr;
             auto op = AST_BINOP_AND;
@@ -1717,7 +1725,12 @@ namespace Zodiac
             }
             assert(false);
         }
-        else assert(false);
+        else
+        {
+			auto err_tok = current_token(parser);
+			parser_report_error(parser, err_tok.file_pos, "Unexpected token '%s' when parsing a type spec", err_tok.atom.data);
+			return nullptr;
+        }
 
 		assert(false);
 		return nullptr;
@@ -1734,7 +1747,8 @@ namespace Zodiac
 		BUF(AST_Declaration*) arg_decls = nullptr;
 
 		auto module = parser->result.ast_module;
-        AST_Scope* arg_scope = ast_scope_new(parser->context, scope, module, false);
+        AST_Scope* arg_scope = ast_scope_new(parser->context, scope, module, false,
+                                             ft.file_pos.line);
 
 		expect_token(parser, TOK_LPAREN);
 		while (!match_token(parser, TOK_RPAREN))
@@ -2042,6 +2056,8 @@ namespace Zodiac
             case TOK_MINUS:
             case TOK_MUL:
             case TOK_DIV:
+            case TOK_OR:
+            case TOK_AND:
                 return true;
 
             default:
@@ -2080,6 +2096,18 @@ namespace Zodiac
             case TOK_DIV:
             {
                 result = AST_BINOP_DIV;
+                break;
+            }
+
+            case TOK_OR:
+            {
+                result = AST_BINOP_OR;
+                break;
+            }
+
+            case TOK_AND:
+            {
+                result = AST_BINOP_AND;
                 break;
             }
 

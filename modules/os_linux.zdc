@@ -1,4 +1,7 @@
 
+_builtin :: import builtin;
+using _builtin;
+
 static_assert(PLATFORM_LINUX);
 
 std :: import std;
@@ -11,12 +14,15 @@ using _og;
 
 pthread :: import pthread;
 
+#foreign unlink :: (pathname: *u8) -> int;
+
 is_directory :: (path: String) -> bool
 {
     statbuf : posix.stat_struct;
     stat_res := posix.stat(path.data, *statbuf);
     if (stat_res != 0)
     {
+        _c.printf("stat res not zero\n");
         return false;
     }
 
@@ -87,6 +93,13 @@ get_full_path :: (name: String) -> String
 
     _c.printf("result: %s\n", result.data);
     return result;
+}
+
+delete_file :: (path: String) -> bool
+{
+    result := unlink(path.data);
+
+    return result == 0;
 }
 
 get_page_size :: () -> s64

@@ -10,6 +10,9 @@ using _og;
 _thread :: import thread;
 using _thread;
 
+_builtin :: import builtin;
+using _builtin;
+
 static_if (PLATFORM_WINDOWS)
 {
     os_specific :: import os_windows;
@@ -89,15 +92,11 @@ read_file_string :: (path: String, result_ptr: *bool) -> String
     <result_ptr = false;
 }
 
-// get_terminal_state :: () -> os_specific.Terminal_State
-// {
-//     return os_specific.get_terminal_state();
-// }
-
-// set_terminal_state :: (new_state: os_specific.Terminal_State)
-// {
-//     os_specific.set_terminal_state(new_state);
-// }
+delete_file :: (path: String) -> bool
+{
+    assert(is_regular_file(path));
+    return os_specific.delete_file(path);
+}
 
 save_terminal_state :: () -> void
 {

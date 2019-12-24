@@ -13,7 +13,7 @@
 
 namespace Zodiac
 {
-    void resolver_init(Resolver* resolver, Context* context)
+    void resolver_init(Resolver* resolver, Context* context, bool is_builtin)
     {
         assert(resolver);
         assert(context);
@@ -23,6 +23,7 @@ namespace Zodiac
         resolver->current_break_context = nullptr;
         resolver->current_func_decl = nullptr;
         resolver->result = {};
+        resolver->is_builtin = is_builtin;
     }
 
     void resolver_do_initial_scope_population(Resolver* resolver, AST_Module* module,
@@ -69,6 +70,31 @@ namespace Zodiac
             if (global_decl->kind == AST_DECL_IMPORT && !res)
                 resolver_report_error(resolver, global_decl->file_pos, "Import failed");
             if (!res) break;
+
+            if (resolver->is_builtin && global_decl->kind == AST_DECL_CONSTANT_VAR)
+            {
+                bool platform_linux = false;
+                bool platform_windows = false;
+
+#ifdef WIN32 
+                platform_windows = true;
+#elif defined __linux__
+                platform_linux = true;
+#elif
+                assert(false);
+#endif
+                auto at = resolver->context->atom_table;
+                if (global_decl->identifier->atom == atom_get(at, "PLATFORM_LINUX"))
+                {
+                    global_decl->constant_var.init_expression->bool_literal.boolean =
+                        platform_linux;
+                }
+                else if (global_decl->identifier->atom == atom_get(at, "PLATFORM_WINDOWS"))
+                {
+                    global_decl->constant_var.init_expression->bool_literal.boolean =
+                        platform_windows;
+                }
+            }
         }
 
         resolver->module = old_module;
@@ -1095,7 +1121,6 @@ namespace Zodiac
                 if (result)
                 {
                     suggested_type = statement->assign.lvalue_expression->type;
-
                     result &= resolver_resolve_expression(resolver, statement->assign.expression,
                                                           scope, suggested_type);
                 }
@@ -1107,22 +1132,25 @@ namespace Zodiac
                                                 statement->assign.lvalue_expression->type,
                                                 statement->assign.expression->type);
 
-				if (types_match && statement->assign.lvalue_expression->type !=
-					statement->assign.expression->type && statement->assign.lvalue_expression->type->flags & AST_TYPE_FLAG_INT)
+                auto lvalue_expr = statement->assign.lvalue_expression;
+                auto assign_type = statement->assign.expression->type;
+				if (types_match && lvalue_expr->type != assign_type &&
+                    lvalue_expr->type->flags & AST_TYPE_FLAG_INT)
 				{
-					resolver_transform_to_cast_expression(resolver, statement->assign.expression, statement->assign.lvalue_expression->type);
+					resolver_transform_to_cast_expression(resolver, statement->assign.expression,
+                                                          lvalue_expr->type);
 				}
 
                 if (!types_match)
                 {
                     auto lvalue = statement->assign.lvalue_expression;
                     auto expr = statement->assign.expression;
-                    types_match = true;
 
                     if ((lvalue->type->flags & AST_TYPE_FLAG_FLOAT) &&
                         (expr->type->flags & AST_TYPE_FLAG_INT))
                     {
                         resolver_transform_to_cast_expression(resolver, expr, lvalue->type);
+                        types_match = true;
                     }
                     else
                     {
@@ -1669,8 +1697,7 @@ namespace Zodiac
                 if (suggested_type)
                 {
                     if (suggested_type->flags & AST_TYPE_FLAG_INT ||
-                        suggested_type->kind == AST_TYPE_ENUM ||
-                        suggested_type->kind == AST_TYPE_STRUCT)
+                        suggested_type->kind == AST_TYPE_ENUM)
                     {
                     }
                     else if (suggested_type->flags & AST_TYPE_FLAG_FLOAT)
@@ -1680,7 +1707,8 @@ namespace Zodiac
                         expression->float_literal.r32 = (float)int_value;
                         expression->float_literal.r64 = (double)int_value;
                     }
-                    else if (suggested_type->kind == AST_TYPE_POINTER)
+                    else if (suggested_type->kind == AST_TYPE_POINTER ||
+                             suggested_type->kind == AST_TYPE_STRUCT)
                     {
                         suggested_type = Builtin::type_s64;
                     }
@@ -3675,7 +3703,8 @@ namespace Zodiac
 
             if (decl_to_emit)
             {
-                resolver_push_static_declarations_to_scope(resolver, decl_to_emit, scope);
+                result &= resolver_push_static_declarations_to_scope(resolver, decl_to_emit,
+                                                                     scope);
                 if (decl_to_emit->kind != AST_DECL_STATIC_IF &&
                     decl_to_emit->kind != AST_DECL_BLOCK)
                 {
@@ -3751,7 +3780,7 @@ namespace Zodiac
         }
     }
 
-    void resolver_push_static_declarations_to_scope(Resolver* resolver,
+    bool resolver_push_static_declarations_to_scope(Resolver* resolver,
                                                     AST_Declaration* decl_to_emit,
                                                     AST_Scope* scope)
     {
@@ -3759,18 +3788,19 @@ namespace Zodiac
         assert(decl_to_emit);
         assert(scope);
 
+        bool res = true;
+
         if (decl_to_emit->kind == AST_DECL_BLOCK)
         {
             for (uint64_t i = 0; i < BUF_LENGTH(decl_to_emit->block.decls); i++)
             {
                 auto block_decl = decl_to_emit->block.decls[i];
-                resolver_push_static_declarations_to_scope(resolver, block_decl, scope);
+                res &= resolver_push_static_declarations_to_scope(resolver, block_decl, scope);
             }
         }
         else if (decl_to_emit->kind == AST_DECL_STATIC_IF)
         {
-            bool res = resolver_resolve_static_if_declaration(resolver, decl_to_emit, scope);
-            assert(res);
+            res = resolver_resolve_static_if_declaration(resolver, decl_to_emit, scope);
         }
         else
         {
@@ -3778,6 +3808,8 @@ namespace Zodiac
             assert(scope->flags & AST_SCOPE_FLAG_IS_MODULE_SCOPE);
             BUF_PUSH(resolver->module->global_declarations, decl_to_emit);
         }
+
+        return res;
     }
 
     AST_Declaration* find_declaration(Context* context, AST_Scope* scope,
@@ -3916,7 +3948,7 @@ namespace Zodiac
         bool old_zrb_val = bool_lit_expr->bool_literal.boolean;
         zrb_decl->constant_var.init_expression->bool_literal.boolean = true;
 
-        IR_Module ir_module = ir_builder_emit_module(&ir_builder, resolver->module);
+        IR_Module ir_module = ir_builder_emit_module(&ir_builder, resolver->module, false);
         resolver_clean_module_after_emit(resolver, resolver->module);
 
         zrb_decl->constant_var.init_expression->bool_literal.boolean = old_zrb_val;

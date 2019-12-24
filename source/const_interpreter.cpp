@@ -86,6 +86,13 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_DOT:
+            {
+                AST_Declaration* decl = expression->dot.declaration;
+                return const_bool_decl_value(context, decl, scope);
+                break;
+            }
+
             default: assert(false);
         }
 

@@ -7,7 +7,6 @@ gl :: import gl;
 using glfw;
 using gl;
 
-
 main :: () -> int
 {
     c.printf("GLFW_KEY_ESCAPE: %lu\n", glfw_keys.GLFWkey.GLFW_KEY_ESCAPE);

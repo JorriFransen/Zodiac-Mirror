@@ -1,11 +1,14 @@
 
 int :: typedef s64;
 
+builtin :: import builtin;
+using builtin;
+
 static_if (PLATFORM_WINDOWS)
 {
     // #dynamic_link "msvcrt.dll";
-    #foreign _fdopen :: (fd: int, mode: *u8) -> *FILE;
-    fdopen :: (fd: int, mode: *u8) -> *FILE { return _fdopen(fd, mode); }
+    // #foreign _fdopen :: (fd: int, mode: *u8) -> *FILE;
+    // fdopen :: (fd: int, mode: *u8) -> *FILE { return _fdopen(fd, mode); }
 
     // #dynamic_link "Kernel32.dll";
     #foreign Sleep :: (msec: int) -> void;
@@ -13,9 +16,9 @@ static_if (PLATFORM_WINDOWS)
 }
 else static_if (PLATFORM_LINUX)
 {
-    #dynamic_link "/usr/lib64/libc.so.6";
-    #dynamic_link "/usr/lib64/libm.so.6";
-    #foreign fdopen :: (fd: int, mode: *u8) -> *FILE;
+    #dynamic_link "libc.so.6";
+    #dynamic_link "libm.so.6";
+    // #foreign fdopen :: (fd: int, mode: *u8) -> *FILE;
 
     #foreign usleep :: (usec: int) -> int;
     _msleep :: (msec: int) { usleep(msec * 1000); }
@@ -40,7 +43,7 @@ _stderr : *FILE = null;
 #foreign puts :: (string: *u8) -> int;
 #foreign fflush :: (file: *FILE) -> int;
 #foreign printf :: (format: *u8, ...) -> int;
-#foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
+// #foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
 #foreign sprintf :: (buffer: *u8, format: *u8, ...) -> int;
 
 #foreign strlen :: (str: *u8) -> u64;
@@ -59,7 +62,11 @@ _stderr : *FILE = null;
 
 open_std_handles :: () -> void
 {
-    _stdin = fdopen(0, "r");
-    _stdout = fdopen(1, "w");
-    _stderr = fdopen(2, "w");
+    if (!stdin || !stdout || !stderr)
+    {
+        builtin._builtin_open_std_handles();
+    }
+    _stdin = stdin;
+    _stdout = stdout;
+    _stderr = stderr;
 }

@@ -24,7 +24,7 @@ namespace Zodiac
         context->compiled_modules = nullptr;
         context->foreign_table = nullptr;
 
-		context->builtin_scope = ast_scope_new(context, nullptr, nullptr, false);
+		context->builtin_scope = ast_scope_new(context, nullptr, nullptr, false, 0);
 
         context->type_hash = (AST_Type**)mem_alloc(sizeof(AST_Type*) * 256);
         context->type_count = 256;
@@ -59,9 +59,13 @@ namespace Zodiac
         {
             BOOL_OPTION(verbose, 'v'),
             BOOL_OPTION(print_ir, 'p'),
-            BOOL_OPTION(execute_ir, 'e'),
-            BOOL_OPTION(emit_llvm, 'l'),
+            BOOL_OPTION(execute_ir, 'r'),
+            BOOL_OPTION(emit_llvm, 'e'),
+            BOOL_OPTION(print_llvm, 'l'),
+            BOOL_OPTION(emit_debug, 'd'),
+
             STRING_OPTION(run_argument, 'a'),
+
         };
 
 		const char* exe_name = argv[0];
@@ -259,7 +263,7 @@ namespace Zodiac
     }
 
     AST_Module* zodiac_compile_or_get_module(Context* context, const Atom& module_path,
-		    const Atom& module_name)
+                                             const Atom& module_name, bool is_builtin/*=false*/)
     {
         assert(context);
 
@@ -281,7 +285,8 @@ namespace Zodiac
             }
         }
 
-        AST_Module* module = zodiac_compile_module(context, module_path, module_name);
+        AST_Module* module = zodiac_compile_module(context, module_path, module_name,
+                                                   is_builtin);
         if (!module)
         {
             Compiled_Module cm = { module_name, module_path, nullptr };
@@ -299,7 +304,7 @@ namespace Zodiac
     }
 
     AST_Module* zodiac_compile_module(Context* context, const Atom& module_path,
-                                      const Atom& module_name)
+                                      const Atom& module_name, bool is_builtin)
     {
         assert(context);
 
@@ -321,7 +326,8 @@ namespace Zodiac
         Parser parser;
         parser_init(&parser, context);
 
-        Parse_Result parse_result = parse_module(&parser, lex_result.tokens, module_name.data);
+        Parse_Result parse_result = parse_module(&parser, lex_result.tokens, module_name.data,
+                                                 module_path.data);
         if (BUF_LENGTH(parse_result.errors) != 0)
         {
             parser_report_errors(&parser);
@@ -329,40 +335,13 @@ namespace Zodiac
         }
 
         Resolver resolver;
-        resolver_init(&resolver, context);
+        resolver_init(&resolver, context, is_builtin);
         Resolve_Result rr = resolver_resolve_module(&resolver, parse_result.ast_module);
         if (resolve_result_has_errors(&rr))
         {
             resolve_result_report_errors(&rr);
             return nullptr;
         }
-        // resolver_init(&resolver, context, parse_result.ast_module);
-
-        // while (!resolver.done)
-        // {
-        //     resolver_do_cycle(&resolver);
-
-        //     if (!resolver.progressed_on_last_cycle)
-        //     {
-        //         break;
-        //     }
-
-        //     if (resolver.override_done)
-        //     {
-        //         break;
-        //     }
-
-		// 	if (resolver.import_error)
-		// 	{
-		// 		break;
-		// 	}
-        // }
-
-        // if (!resolver.done)
-        // {
-        //     resolver_report_errors(&resolver);
-        //     return nullptr;
-        // }
 
         if (context->options.verbose)
         {
@@ -372,7 +351,7 @@ namespace Zodiac
         IR_Builder* ir_builder = arena_alloc(context->arena, IR_Builder);
         ir_builder_init(ir_builder, context);
 
-        IR_Module ir_module = ir_builder_emit_module(ir_builder, parse_result.ast_module);
+        IR_Module ir_module = ir_builder_emit_module(ir_builder, parse_result.ast_module, false);
 
         if (ir_module.error_count)
         {
