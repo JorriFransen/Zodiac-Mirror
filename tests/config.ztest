@@ -1,6 +1,7 @@
 expect_fail:
   use_before_declare.zdc
   ztest.zdc
+  subprocess_test.zdc
 
 dont_run:
   game.zdc

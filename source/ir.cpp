@@ -528,8 +528,7 @@ namespace Zodiac
             {
                 func_value->function->flags |= IR_FUNC_FLAG_VARARG;
             }
-            func_value->function->foreign_index =
-                ir_builder_emit_foreign(ir_builder, decl->identifier->atom);
+            func_value->function->foreign_index = ir_builder_emit_foreign(ir_builder, decl);
         }
 
         ir_builder_end_function(ir_builder, func_value);
@@ -4311,19 +4310,25 @@ namespace Zodiac
         return result;
     }
 
-    uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom)
+    uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, AST_Declaration* decl)
     {
         assert(ir_builder);
+        assert(decl->kind == AST_DECL_FUNC);
+
+        assert(decl->identifier);
+        auto atom = decl->identifier->atom;
 
         for (uint64_t i = 0; i < BUF_LENGTH(ir_builder->context->foreign_table); i++)
         {
-            if (ir_builder->context->foreign_table[i] == atom)
+            if (ir_builder->context->foreign_table[i].name == atom)
             {
                 return i;
             }
         }
 
-        BUF_PUSH(ir_builder->context->foreign_table, atom);
+        Foreign_Function ff = { atom, decl->file_pos };
+
+        BUF_PUSH(ir_builder->context->foreign_table, ff);
         return BUF_LENGTH(ir_builder->context->foreign_table) - 1;
     }
 

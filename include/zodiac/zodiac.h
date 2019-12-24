@@ -79,6 +79,12 @@ namespace Zodiac
 
     struct IR_Builder;
 
+    struct Foreign_Function
+    {
+        Atom name = {};
+        File_Pos file_pos{};
+    };
+
     struct Context
     {
         Arena* arena = nullptr;
@@ -96,7 +102,7 @@ namespace Zodiac
 
         BUF(Compiled_Module) compiled_modules = nullptr;
         BUF(Compiled_Module) modules_with_errors = nullptr;
-        BUF(Atom) foreign_table = nullptr;
+        BUF(Foreign_Function) foreign_table = nullptr;
 
         BUF(Global_Variable) global_table = nullptr;
 

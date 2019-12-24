@@ -345,7 +345,8 @@ namespace Zodiac
 
         for (uint64_t i = 0; i < BUF_LENGTH(ir_runner->context->foreign_table); i++)
         {
-            const Atom& foreign_name = ir_runner->context->foreign_table[i];
+            const auto& ff = ir_runner->context->foreign_table[i];
+            const auto& foreign_name = ff.name;
 
             bool found = false;
 
@@ -369,7 +370,10 @@ namespace Zodiac
 
             if (!found)
             {
+                // @TODO: Better error handling for this (errors in ir and ir runner in general)
                 fprintf(stderr, "Failed to load foreign symbol: %s\n", foreign_name.data);
+                fprintf(stderr, "Declared here: %s:%u:%u\n", ff.file_pos.file_name, ff.file_pos.line,
+						ff.file_pos.line_relative_char_pos);
                 assert(false);
             }
         }
