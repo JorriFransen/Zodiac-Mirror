@@ -10,16 +10,15 @@ using _og;
 _thread :: import thread;
 using _thread;
 
-_builtin :: import builtin;
-using _builtin;
-
 static_if (PLATFORM_WINDOWS)
 {
     os_specific :: import os_windows;
-} 
+    using os_specific;
+}
 else static_if (PLATFORM_LINUX)
 {
     os_specific :: import os_linux;
+    using os_specific;
 }
 
 get_cwd :: () -> String
@@ -75,7 +74,7 @@ read_file_string :: (path: String, result_ptr: *bool) -> String
         file_size := posix.ftell(file);
         posix.fseek(file, 0, posix.SEEK_SET);
 
-        result_str : String = { null, (:u64)file_size };
+        result_str : String = { null, file_size };
         result_str.data = (:*u8)_c.malloc((:u64)file_size + 1);
 
         read_result := posix.fread(result_str.data, (:u64)file_size, 1, file);
@@ -174,3 +173,4 @@ join_thread :: (thread: Thread) -> *void
         return os_specific._join_thread(thread);
     }
 }
+

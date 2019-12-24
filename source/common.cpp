@@ -73,7 +73,7 @@ void* _arena_alloc(Arena* arena, size_t size)
     if (arena->blocks == NULL ||
         _arena_block_fits(arena->blocks, size)  == false)
     {
-        auto new_size = MAX(size, arena->default_block_size);
+        auto new_size = _MAX(size, arena->default_block_size);
         Arena_Block* new_block = _arena_alloc_new_block(arena, new_size);
 
         new_block->next_block = arena->blocks;
@@ -89,7 +89,7 @@ Arena_Block* _arena_alloc_new_block(Arena* arena, size_t min_block_size)
 {
     assert(arena);
 
-    size_t byte_size = MAX(ARENA_DEFAULT_BLOCK_SIZE, min_block_size);
+    size_t byte_size = _MAX(ARENA_DEFAULT_BLOCK_SIZE, min_block_size);
 
     Arena_Block* block = (Arena_Block*)mem_alloc(sizeof(Arena_Block));
 	assert(block);

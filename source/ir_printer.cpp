@@ -491,6 +491,15 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_EXTRACT_VALUE:
+            {
+                string_builder_append(sb, "EXTRACT_VALUE ");
+                ir_print_value(instruction->arg1, sb);
+                string_builder_append(sb, ", ");
+                ir_print_value(instruction->arg2, sb);
+                break;
+            }
+
             default: assert(false);
 
         }
@@ -560,6 +569,7 @@ namespace Zodiac
             }
 
             case IRV_AGGREGATE_LITERAL:
+            case IRV_ARRAY_LITERAL:
             {
                 string_builder_append(sb, "{ ");
                 for (uint64_t i = 0; i < BUF_LENGTH(value->value.compound_values); i++)

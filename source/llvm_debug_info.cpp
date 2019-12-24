@@ -218,9 +218,27 @@ namespace Zodiac
     }
 
     DIFile* llvm_debug_find_or_create_file(Debug_Info* di, const char* file_name,
-                                           const char* dir_name)
+                                           const char* _dir_name)
     {
-        return di->builder->createFile(file_name, dir_name);
+		auto dir_name_len = strlen(_dir_name);
+		char* dir_name = (char*)mem_alloc(dir_name_len + 1);
+		for (uint64_t i = 0; i < dir_name_len; i++)
+		{
+			if (_dir_name[i] == '\\')
+			{
+				dir_name[i] = '/';
+			}
+			else
+			{
+				dir_name[i] = _dir_name[i];
+			}
+		}
+
+		dir_name[dir_name_len] = '\0';
+
+        auto result = di->builder->createFile(file_name, dir_name);
+		mem_free(dir_name);
+		return result;
     }
 
     DIType* llvm_debug_get_type(Debug_Info* di, AST_Type* ast_type)
@@ -369,6 +387,12 @@ namespace Zodiac
                 BUF_FREE(members);
 
                 assert(result);
+                break;
+            }
+
+            case AST_TYPE_MRV:
+            {
+                return llvm_debug_get_type(di, ast_type->mrv.struct_type);
                 break;
             }
 

@@ -1,0 +1,81 @@
+
+_c :: import c;
+using _c;
+
+_print_ :: import print;
+using _print_;
+
+main :: ()
+{
+    open_std_handles();
+
+    print("print test\n");
+    print(1);
+    print("\n");
+    print(-2);
+    print("\n");
+    print(12345);
+    print("\n");
+    print(-1234588);
+    print("\n");
+    print((:u32)12345);
+    print("\n");
+
+    print(1.2);
+    print("\n");
+    print((:float)3.4);
+    print("\n");
+    print((:double)4.5);
+    print("\n");
+
+    print((:u8)255);
+    print("\n");
+    print((:u8)(-1));
+    print("\n");
+    print((:s8)(255));
+    print("\n");
+
+    print("format test: % % %\n", 1, "abc", 4.5);
+    print("\n");
+
+    int_array : [10]int = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    print("int_array: %\n", int_array);
+    print("\n");
+
+    v : Vec2 = { 1, 2 };
+    print("v: %\n", v);
+    print("\n");
+
+
+    v2_ti_ptr := get_type_info(Vec2);
+    print("<get_type_info(Vec2): %\n", <v2_ti_ptr);
+    print("\n");
+    print("get_type_info(Vec2): %\n", v2_ti_ptr);
+    print("\n");
+
+    for (i := 0; i < 20; i++)
+    {
+        idx := format_int(i, 2, 10);
+        idx.prepend_char = ' ';
+
+        ptr := format_int((:*void)i, 2, 16);
+        print("%: 0x%\n", idx, ptr);
+    }
+
+    print("\n");
+    any_arr : [3]Any = { "0", 1, 3.4 };
+    for (i:= 0; i < array_length(any_arr); i++)
+    {
+        print(any_arr[i]);
+        print("\n");
+    }
+
+    return 0;
+}
+
+Vec2 :: struct
+{
+    x: float;
+    y: float;
+}
+

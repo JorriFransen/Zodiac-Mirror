@@ -29,8 +29,12 @@ namespace Zodiac
         static AST_Type* type_Type_Info;
         static AST_Type* type_pointer_to_Type_Info;
         static AST_Type* type_Type_Info_Kind;
+        static AST_Type* type_Type_Info_Flags;
         static AST_Type* type_Type_Info_Aggregate_Member;
         static AST_Type* type_Type_Info_Enum_Member;
+        static AST_Type* type_Any;
+        static AST_Type* type_pointer_to_Any;
+        static AST_Type* type_Array_Ref_of_Any;
 
         static uint64_t pointer_size;
 
@@ -39,7 +43,10 @@ namespace Zodiac
         static AST_Declaration* decl_default_assert_handler;
 
 		static Atom atom_main;
+        static Atom atom_Any;
+        static Atom atom_Array_Ref_of_Any;
         static Atom atom_insert;
+        static Atom atom_required;
         static Atom atom_String;
         static Atom atom_string_length;
         static Atom atom_overload;
@@ -49,9 +56,13 @@ namespace Zodiac
         static Atom atom___compare_and_swap__;
         static Atom atom_Type_Info;
         static Atom atom_Type_Info_Kind;
+        static Atom atom_Type_Info_Flags;
         static Atom atom_Type_Info_Aggregate_Member;
         static Atom atom_Type_Info_Enum_Member;
         static Atom atom_default_assert_handler;
+        static Atom atom_FUNC_NAME;
+        static Atom atom_FILE_NAME;
+        static Atom atom_LINE_NO;
 
         static AST_Identifier* identifier_Thread;
     };

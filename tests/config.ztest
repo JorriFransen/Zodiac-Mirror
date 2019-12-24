@@ -1,5 +1,6 @@
 expect_fail:
   use_before_declare.zdc
+  ztest.zdc
 
 dont_run:
   game.zdc

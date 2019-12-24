@@ -1,9 +1,6 @@
 
 int :: typedef s64;
 
-builtin :: import builtin;
-using builtin;
-
 static_if (PLATFORM_WINDOWS)
 {
     // #dynamic_link "msvcrt.dll";
@@ -64,7 +61,7 @@ open_std_handles :: () -> void
 {
     if (!stdin || !stdout || !stderr)
     {
-        builtin._builtin_open_std_handles();
+        _builtin_open_std_handles();
     }
     _stdin = stdin;
     _stdout = stdout;

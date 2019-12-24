@@ -44,6 +44,9 @@ namespace Zodiac
 
         union
         {
+            int8_t s8;
+            int16_t s16;
+            int32_t s32;
             int64_t s64;
 
             uint8_t u8;
@@ -145,6 +148,7 @@ namespace Zodiac
         IR_OP_DEREF,
         IR_OP_ARRAY_OFFSET_POINTER,
         IR_OP_AGGREGATE_OFFSET_POINTER,
+        IR_OP_EXTRACT_VALUE,
 
 		IR_OP_CAST,
         IR_OP_ASSERT_FAIL,
@@ -304,8 +308,7 @@ namespace Zodiac
 
     void ir_builder_init(IR_Builder* ir_builder, Context* context);
 
-    IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module,
-                                     bool emit_builtin_decls);
+    IR_Module ir_builder_emit_module(IR_Builder* ir_builder, AST_Module* module);
     void ir_builder_emit_missing_poly_functions(IR_Builder* ir_builder, AST_Module* module);
 
 	void ir_builder_emit_decl_body(IR_Builder* ir_builder, AST_Declaration* func_decl);
@@ -373,6 +376,8 @@ namespace Zodiac
     IR_Value* ir_builder_emit_aggregate_offset_pointer(IR_Builder* ir_builder,
                                                        IR_Value* struct_value,
                                                        uint64_t offset, File_Pos origin);
+    IR_Value* ir_builder_emit_extract_value(IR_Builder* ir_builder, IR_Value* aggregate_val,
+                                            uint64_t member_index, File_Pos file_pos);
 
     void ir_builder_emit_instruction(IR_Builder* ir_builder, IR_Instruction* iri);
 
@@ -474,11 +479,15 @@ namespace Zodiac
     IR_Value* ir_character_literal(IR_Builder* ir_builder, AST_Type* type, char c);
     IR_Value* ir_aggregate_literal(IR_Builder* ir_builder, AST_Type* aggregate_type,
                                    BUF(IR_Value*) member_values, bool is_const);
+    IR_Value* ir_array_literal(IR_Builder* ir_builder, AST_Type* array_type,
+                                   BUF(IR_Value*) member_values, bool is_const);
     uint64_t ir_builder_emit_foreign(IR_Builder* ir_builder, Atom atom);
 
     IR_Value* ir_builder_emit_phi(IR_Builder* ir_builder, AST_Type* type, File_Pos file_pos);
     IR_Value* ir_builder_emit_get_type_info(IR_Builder* ir_builder, uint64_t index,
                                             File_Pos file_pos);
+
+    IR_Value* ir_builder_emit_mrv(IR_Builder* ir_builder, AST_Expression* list_expr);
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, File_Pos file_pos, const char* name,
                                  AST_Type* func_type, AST_Scope* body_scope);
@@ -499,7 +508,7 @@ namespace Zodiac
 
     IR_Validation_Result ir_validate(IR_Builder* ir_builder);
     bool ir_validate_function(IR_Function* ir_function, IR_Validation_Result* valres);
-    bool ir_validate_block(IR_Block* ir_block, IR_Validation_Result* valres);
+    bool ir_validate_block(IR_Function* ir_func, IR_Block* ir_block, IR_Validation_Result* valres);
     void ir_report_validation_error(IR_Validation_Result* valres, const char* format, ...);
 
     void ir_builder_print_result(IR_Builder* ir_builder);

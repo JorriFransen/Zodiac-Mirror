@@ -24,8 +24,12 @@ namespace Zodiac
     AST_Type* Builtin::type_Type_Info = nullptr;
     AST_Type* Builtin::type_pointer_to_Type_Info = nullptr;
     AST_Type* Builtin::type_Type_Info_Kind = nullptr;
+    AST_Type* Builtin::type_Type_Info_Flags = nullptr;
     AST_Type* Builtin::type_Type_Info_Aggregate_Member = nullptr;
     AST_Type* Builtin::type_Type_Info_Enum_Member = nullptr;
+    AST_Type* Builtin::type_Any = nullptr;
+    AST_Type* Builtin::type_pointer_to_Any = nullptr;
+    AST_Type* Builtin::type_Array_Ref_of_Any = nullptr;
 
     uint64_t Builtin::pointer_size = 0;
 
@@ -34,7 +38,10 @@ namespace Zodiac
     AST_Declaration* Builtin::decl_default_assert_handler = nullptr;
 
 	Atom Builtin::atom_main;
+    Atom Builtin::atom_Any;
+    Atom Builtin::atom_Array_Ref_of_Any;
     Atom Builtin::atom_insert;
+    Atom Builtin::atom_required;
     Atom Builtin::atom_String;
     Atom Builtin::atom_string_length;
     Atom Builtin::atom_overload;
@@ -44,9 +51,13 @@ namespace Zodiac
     Atom Builtin::atom___compare_and_swap__;
     Atom Builtin::atom_Type_Info;
     Atom Builtin::atom_Type_Info_Kind;
+    Atom Builtin::atom_Type_Info_Flags;
     Atom Builtin::atom_Type_Info_Aggregate_Member;
     Atom Builtin::atom_Type_Info_Enum_Member;
     Atom Builtin::atom_default_assert_handler;
+    Atom Builtin::atom_FUNC_NAME;
+    Atom Builtin::atom_FILE_NAME;
+    Atom Builtin::atom_LINE_NO;
 
     AST_Identifier* Builtin::identifier_Thread = nullptr;
 
@@ -82,7 +93,10 @@ namespace Zodiac
         Builtin::type_pointer_to_u8 = ast_find_or_create_pointer_type(context, Builtin::type_u8);
 
 		Builtin::atom_main = atom_get(context->atom_table, "main");
+        Builtin::atom_Any = atom_get(context->atom_table, "Any");
+        Builtin::atom_Array_Ref_of_Any = atom_get(context->atom_table, "Array_Ref_of_Any");
         Builtin::atom_insert = atom_get(context->atom_table, "insert");
+        Builtin::atom_required = atom_get(context->atom_table, "required");
         Builtin::atom_String = atom_get(context->atom_table, "String");
         Builtin::atom_string_length = atom_get(context->atom_table, "string_length");
         Builtin::atom_overload = atom_get(context->atom_table, "overload");
@@ -92,12 +106,16 @@ namespace Zodiac
         Builtin::atom___compare_and_swap__ = atom_get(context->atom_table, "__compare_and_swap__");
         Builtin::atom_Type_Info = atom_get(context->atom_table, "Type_Info");
         Builtin::atom_Type_Info_Kind = atom_get(context->atom_table, "Type_Info_Kind");
+        Builtin::atom_Type_Info_Flags = atom_get(context->atom_table, "Type_Info_Flags");
         Builtin::atom_Type_Info_Aggregate_Member = atom_get(context->atom_table,
                                                             "Type_Info_Aggregate_Member");
         Builtin::atom_Type_Info_Enum_Member = atom_get(context->atom_table,
                                                             "Type_Info_Enum_Member");
         Builtin::atom_default_assert_handler = atom_get(context->atom_table,
                                                         "default_assert_handler");
+        Builtin::atom_FUNC_NAME = atom_get(context->atom_table, "FUNC_NAME");
+        Builtin::atom_FILE_NAME = atom_get(context->atom_table, "FILE_NAME");
+        Builtin::atom_LINE_NO = atom_get(context->atom_table, "LINE_NO");
 
         File_Pos builtin_file_pos = {};
         builtin_file_pos.file_name = "<builtin>";
@@ -158,7 +176,9 @@ namespace Zodiac
         init_expression->type = Builtin::type_bool;
 
         AST_Declaration* result = ast_constant_variable_declaration_new(context, file_pos,
-            identifier, type_spec, init_expression, AST_DECL_LOC_GLOBAL);
+                                                                        identifier, type_spec,
+                                                                        init_expression,
+                                                                        AST_DECL_LOC_GLOBAL);
         result->flags |= AST_DECL_FLAG_RESOLVED;
         result->constant_var.type = Builtin::type_bool;
 

@@ -46,6 +46,11 @@ namespace Zodiac
         return result;
     }
 
+    AST_Identifier* ast_identifier_new(Context* context, const char* name, File_Pos file_pos)
+    {
+        return ast_identifier_new(context, atom_get(context->atom_table, name), file_pos);
+    }
+
     AST_Directive* ast_directive_new(Context* context, AST_Directive_Kind kind, File_Pos file_pos)
     {
         assert(context);
@@ -177,9 +182,17 @@ namespace Zodiac
         assert(context);
 
         auto result = ast_expression_new(context, file_pos, AST_EXPR_STRING_LITERAL);
-        result->string_literal.atom = value;
-        result->flags |= AST_EXPR_FLAG_LITERAL;
+        ast_string_literal_expression_new(context, result, file_pos, value);
         return result;
+    }
+
+    AST_Expression* ast_string_literal_expression_new(Context* context, AST_Expression* ex_expr,
+                                                      File_Pos file_pos, Atom value)
+    {
+        ex_expr->kind = AST_EXPR_STRING_LITERAL;
+        ex_expr->string_literal.atom = value;
+        ex_expr->flags |= AST_EXPR_FLAG_LITERAL;
+        return ex_expr;
     }
 
     AST_Expression* ast_integer_literal_expression_new(Context* context, File_Pos file_pos,
@@ -318,6 +331,41 @@ namespace Zodiac
         return result;
     }
 
+    AST_Expression* ast_expression_list_expression_new(Context* context, File_Pos file_pos,
+                                                       BUF(AST_Expression*) expressions)
+    {
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_EXPRESSION_LIST);
+        result->list.expressions = expressions;
+
+        return result;
+    }
+
+    AST_Expression* ast_expression_ignored_value_new(Context* context, File_Pos file_pos)
+    {
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_IGNORED_VALUE);
+
+        return result;
+    }
+
+    AST_Expression* ast_make_lvalue_expression_new(Context* context, File_Pos file_pos,
+                                                   AST_Expression* non_lvalue)
+    {
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_MAKE_LVALUE);
+
+        assert(!(non_lvalue->flags & AST_EXPR_FLAG_LVALUE));
+        result->make_lvalue.expression = non_lvalue;
+        result->flags |= AST_EXPR_FLAG_LVALUE;
+
+        return result;
+    }
+
+    AST_Expression* ast_func_name_expression_new(Context* context, File_Pos file_pos)
+    {
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_FUNC_NAME);
+        result->flags |= AST_EXPR_FLAG_CONST;
+        return result;
+    }
+
     AST_Aggregate_Declaration* ast_aggregate_declaration_new(Context* context, File_Pos file_pos,
                                                              BUF(AST_Declaration*) members,
                                                              BUF(AST_Identifier*) poly_args,
@@ -339,7 +387,8 @@ namespace Zodiac
     AST_Declaration* ast_declaration_new(Context* context, File_Pos file_pos,
                                          AST_Declaration_Kind kind,
                                          AST_Declaration_Location location,
-                                         AST_Identifier* identifier, AST_Directive* directive)
+                                         AST_Identifier* identifier,
+                                         AST_Directive* directive)
     {
         assert(context);
 
@@ -353,7 +402,25 @@ namespace Zodiac
         return result;
     }
 
+    AST_Declaration* ast_list_declaration_new(Context* context, File_Pos file_pos,
+                                              AST_Expression* list_expr,
+                                              AST_Expression* init_expr)
+    {
+        assert(list_expr->kind == AST_EXPR_EXPRESSION_LIST);
+        assert(init_expr->kind == AST_EXPR_CALL);
+
+        AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_LIST,
+                                                      AST_DECL_LOC_LOCAL, nullptr, nullptr);
+
+        result->list.list_expression = list_expr;
+        result->list.init_expression = init_expr;
+        result->list.declarations = nullptr;
+
+        return result;
+    }
+
     AST_Declaration* ast_function_declaration_new(Context* context, File_Pos file_pos,
+                                                  AST_Scope* scope,
                                                   AST_Identifier* identifier,
                                                   BUF(AST_Declaration*) args,
                                                   bool is_vararg, 
@@ -380,6 +447,7 @@ namespace Zodiac
         result->function.inferred_return_type = nullptr;
         result->function.body_block = body_block;
         result->function.body_generated = false;
+        result->scope = scope;
 
         result->function.argument_scope = argument_scope;
         if (body_block)
@@ -404,8 +472,7 @@ namespace Zodiac
         assert(location != AST_DECL_LOC_INVALID);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_MUTABLE,
-                                                      location,
-                                                      identifier, nullptr);
+                                                      location, identifier, nullptr);
 
         result->mutable_decl.type_spec = type_spec;
         result->mutable_decl.init_expression = init_expr;
@@ -424,8 +491,7 @@ namespace Zodiac
         // assert(init_expr);
 
         AST_Declaration* result = ast_declaration_new(context, file_pos, AST_DECL_CONSTANT_VAR,
-                                                      location,
-                                                      identifier, nullptr);
+                                                      location, identifier, nullptr);
 
         result->constant_var.type_spec = type_spec;
         result->constant_var.init_expression = init_expr;
@@ -498,6 +564,14 @@ namespace Zodiac
         result->using_decl.scope_decl = nullptr;
 
         return result;
+    }
+
+    AST_Declaration* ast_using_declaration_new(Context* context, File_Pos file_pos,
+                                               AST_Identifier* ident,
+                                               AST_Declaration_Location location)
+    {
+        AST_Expression* ident_expr = ast_ident_expression_new(context, file_pos, ident);
+        return ast_using_declaration_new(context, file_pos, ident_expr, location);
     }
 
     AST_Declaration* ast_block_declaration_new(Context* context, File_Pos file_pos,
@@ -769,18 +843,19 @@ namespace Zodiac
         return result;
     }
 
-    AST_Statement* ast_while_statement_new(Context* context, File_Pos file_pos,
-                                           AST_Expression* cond_expr,
-        AST_Statement* body_stmt)
+    AST_Statement* ast_while_statement_new(Context* context, File_Pos file_pos, AST_Scope* scope,
+                                           AST_Expression* cond_expr, AST_Statement* body_stmt)
     {
         assert(context);
         assert(cond_expr);
         assert(body_stmt);
+        assert(scope);
 
         AST_Statement* result = arena_alloc(context->arena, AST_Statement);
         result->kind = AST_STMT_WHILE;
         result->file_pos = file_pos;
 
+        result->while_stmt.scope = scope;
         result->while_stmt.cond_expr = cond_expr;
         result->while_stmt.body_stmt = body_stmt;
 
@@ -1050,6 +1125,37 @@ namespace Zodiac
         return result;
     }
 
+    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types,
+                               BUF(AST_Directive*) directives, AST_Scope* scope)
+    {
+        uint64_t bit_size = 0;
+
+        for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++) bit_size += mrv_types[i]->bit_size;
+        AST_Type* result = ast_type_new(context, AST_TYPE_MRV, AST_TYPE_FLAG_NONE, nullptr, bit_size);
+        result->mrv.types = mrv_types;
+
+        File_Pos gen_fp = {};
+        gen_fp.file_name = "<generated>";
+
+        BUF(AST_Declaration*) member_decls = nullptr;
+        for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
+        {
+            AST_Type_Spec* type_spec = ast_type_spec_from_type_new(context, gen_fp, mrv_types[i]);
+            AST_Declaration* mem_decl =
+                ast_mutable_declaration_new(context, gen_fp, nullptr, type_spec, nullptr,
+                                            AST_DECL_LOC_AGGREGATE_MEMBER);
+            BUF_PUSH(member_decls, mem_decl);
+        }
+
+        assert(directives);
+        result->mrv.directives = directives;
+        result->mrv.struct_type = ast_type_struct_new(context, member_decls, "mrv", bit_size,
+                                                      scope, nullptr);
+        result->mrv.struct_type->flags |= AST_TYPE_FLAG_FROM_MRV;
+
+        return result;
+    }
+
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind)
     {
         assert(context);
@@ -1221,6 +1327,25 @@ namespace Zodiac
 
         AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_POLY_FUNC_ARG);
         result->poly_func_arg.identifier = identifier;
+
+        return result;
+    }
+
+    AST_Type_Spec* ast_type_spec_mrv_new(Context* context, File_Pos file_pos,
+                                         BUF(AST_Type_Spec*) specs,
+                                         BUF(AST_Directive*) directives)
+    {
+        AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_MRV);
+        result->mrv.specs = specs;
+        assert(directives);
+        result->mrv.directives = directives;
+
+        return result;
+    }
+
+    AST_Type_Spec* ast_type_spec_vararg_new(Context* context, File_Pos file_pos)
+    {
+        AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_VARARG);
 
         return result;
     }
@@ -1490,9 +1615,8 @@ namespace Zodiac
         while (iterations < context->type_count)
         {
             AST_Type* ex_type = context->type_hash[hash_index];
-            if (ex_type)
+            if (ex_type && ex_type->kind == AST_TYPE_FUNCTION)
             {
-                assert(ex_type->kind == AST_TYPE_FUNCTION);
                 bool ret_match = ex_type->function.return_type == return_type;
                 bool var_match = (bool)((ex_type->flags & AST_TYPE_FLAG_FUNC_VARARG)) ==
                                     is_vararg;
@@ -1521,7 +1645,7 @@ namespace Zodiac
                     }
                 }
             }
-            else
+            else if (!ex_type)
             {
                 found_slot = true;
                 break;
@@ -1549,6 +1673,100 @@ namespace Zodiac
 
 	}
 
+    AST_Type* ast_find_or_create_mrv_type(Context* context, BUF(AST_Type*) mrv_types,
+                                          BUF(AST_Directive*) directives, AST_Scope* scope)
+    {
+        uint64_t hash = get_mrv_type_hash(mrv_types);
+        uint64_t hash_index = hash & (context->type_count - 1);
+
+        uint64_t iterations = 0;
+        bool found_slot = false;
+        while (iterations < context->type_count)
+        {
+            AST_Type* ex_type = context->type_hash[hash_index];
+
+            if (ex_type && ex_type->kind == AST_TYPE_MRV)
+            {
+                bool len_match = BUF_LENGTH(mrv_types) == BUF_LENGTH(ex_type->mrv.types);
+                bool direc_match = BUF_LENGTH(directives) == BUF_LENGTH(ex_type->mrv.directives);
+
+                if (len_match && direc_match)
+                {
+                    bool match = true;
+                    for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
+                    {
+                        if (mrv_types[i] != ex_type->mrv.types[i])
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+
+                    for (uint64_t i = 0; i < BUF_LENGTH(directives); i++)
+                    {
+                        if (directives[i] != ex_type->mrv.directives[i])
+                        {
+                            // We allow null directives because it's a parallel array, and not
+                            //  all types have directives
+                            if (ex_type->mrv.directives[i])
+                            {
+                                if (!(directives[i]->kind == AST_DIREC_REQUIRED &&
+                                      ex_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED))
+                                {
+                                    match = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (match)
+                    {
+                        return ex_type;
+                    }
+                }
+            }
+            else if (!ex_type)
+            {
+                found_slot = true;
+                break;
+            }
+
+            iterations++;
+            hash_index++;
+            if (hash_index >= context->type_count)
+            {
+                hash_index = 0;
+            }
+        }
+
+        if (found_slot)
+        {
+            BUF(AST_Type*) mrv_types_copy = nullptr;
+
+            for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
+                BUF_PUSH(mrv_types_copy, mrv_types[i]);
+
+            BUF(AST_Directive*) directives_copy = nullptr;
+
+            for (uint64_t i = 0; i < BUF_LENGTH(directives); i++)
+            {
+                BUF_PUSH(directives_copy, directives[i]);
+            }
+
+            AST_Type* result = ast_type_mrv_new(context, mrv_types_copy, directives_copy, scope);
+            context->type_hash[hash_index] = result;
+            return result;
+        }
+        else
+        {
+            ast_grow_type_hash(context);
+            auto result = ast_find_or_create_mrv_type(context, mrv_types, directives, scope);
+            assert(result->kind == AST_TYPE_MRV);
+            return result;
+        }
+    }
+
     uint64_t get_function_type_hash(bool is_vararg, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type)
     {
@@ -1558,6 +1776,19 @@ namespace Zodiac
             hash = hash_mix(hash, hash_pointer(arg_types[i]));
         }
         hash = hash_mix(hash, is_vararg);
+
+        return hash;
+    }
+
+    uint64_t get_mrv_type_hash(BUF(AST_Type*) mrv_types)
+    {
+        assert(BUF_LENGTH(mrv_types));
+
+        uint64_t hash = hash_string("mrv");
+        for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
+        {
+            hash = hash_mix(hash, hash_pointer(mrv_types[i]));
+        }
 
         return hash;
     }
@@ -1579,6 +1810,8 @@ namespace Zodiac
             AST_Type* old_type = old_data[i];
             if (old_type)
             {
+                assert(old_type->kind == AST_TYPE_FUNCTION);
+
                 uint64_t hash = get_function_type_hash((old_type->flags &
                                                         AST_TYPE_FLAG_FUNC_VARARG),
                                                        old_type->function.arg_types,
@@ -1743,6 +1976,20 @@ namespace Zodiac
 
                 string_builder_append(string_builder, ") -> ");
                 ast_type_to_string(type->function.return_type, string_builder);
+                break;
+            }
+
+            case AST_TYPE_MRV:
+            {
+                string_builder_append(string_builder, "mrv { ");
+                for (uint64_t i = 0; i < BUF_LENGTH(type->mrv.types); i++)
+                {
+                    if (i > 0) string_builder_append(string_builder, ", ");
+                    ast_type_to_string(type->mrv.types[i], string_builder);
+                }
+                string_builder_append(string_builder, " }");
+
+                string_builder_appendf(string_builder, " (%p)", type);
                 break;
             }
 

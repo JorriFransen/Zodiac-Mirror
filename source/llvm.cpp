@@ -13,7 +13,7 @@
 #include <dynload.h>
 
 #ifdef WIN32
-#include <Windows.h>
+	#include <Windows.h>
 #endif
 
 namespace Zodiac
@@ -124,6 +124,9 @@ namespace Zodiac
 
         if (root)
         {
+            // char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
+            // printf("%s", llvm_module_string);
+            // LLVMDisposeMessage(llvm_module_string);
             if (context->options.emit_debug)
             {
                 // char* llvm_module_string = LLVMPrintModuleToString(builder->llvm_module);
@@ -300,6 +303,11 @@ namespace Zodiac
 		string_builder_append(&sb, "\\bin\\Hostx64\\x64\\link.exe ");
 
 		string_builder_append(&sb, "/NOLOGO /WX /SUBSYSTEM:CONSOLE ");
+
+		if (builder->context->options.emit_debug)
+		{
+			string_builder_append(&sb, " /DEBUG ");
+		}
 
 		string_builder_append(&sb, " msvcrtd.lib");
 		//string_builder_append(&sb, " ucrtd.lib");
@@ -505,6 +513,7 @@ namespace Zodiac
                                                                    ti->name.length);
 
             LLVMValueRef llvm_kind_val = LLVMConstInt(LLVM_Type::Type_Info_Kind, ti->kind, false);
+            LLVMValueRef llvm_flag_val = LLVMConstInt(LLVM_Type::Type_Info_Flag, ti->flags, false);
             LLVMValueRef llvm_byte_size_val = LLVMConstInt(LLVM_Type::u64, ti->byte_size, false);
 
             LLVMValueRef llvm_info_val = LLVMConstNull(LLVM_Type::Type_Info_Info_Union);
@@ -530,12 +539,16 @@ namespace Zodiac
             {
                 llvm_info_val = llvm_emit_function_info(builder, ti);
             }
+            else if (ti->kind == STATIC_ARRAY)
+            {
+                llvm_info_val = llvm_emit_static_array_info(builder, ti);
+            }
             else
             {
                 assert(ti->kind == BASE);
             }
 
-            LLVMValueRef ti_mem_vals[] = { llvm_kind_val, llvm_name_val,
+            LLVMValueRef ti_mem_vals[] = { llvm_kind_val, llvm_flag_val, llvm_name_val,
                                            llvm_byte_size_val, llvm_info_val };
             unsigned ti_mem_count = STATIC_ARRAY_LENGTH(ti_mem_vals);
             LLVMValueRef llvm_ti = llvm_ti = LLVMConstStruct(ti_mem_vals, ti_mem_count, false);
@@ -603,6 +616,12 @@ namespace Zodiac
                 case FUNCTION:
                 {
                     global_var_type = LLVM_Type::_instance_Type_Info_Function;
+                    break;
+                }
+
+                case STATIC_ARRAY:
+                {
+                    global_var_type = LLVM_Type::_instance_Type_Info_Static_Array;
                     break;
                 }
 
@@ -748,7 +767,7 @@ namespace Zodiac
 
 
         AST_Type* zir_ti_type = Builtin::type_Type_Info;
-        AST_Declaration* ti_info_decl = zir_ti_type->aggregate_type.member_declarations[3];
+        AST_Declaration* ti_info_decl = zir_ti_type->aggregate_type.member_declarations[4];
         AST_Type* zir_ti_info_type = ti_info_decl->mutable_decl.type;
         AST_Declaration* enum_info_decl = zir_ti_info_type->aggregate_type.member_declarations[2];
         AST_Type* zir_enum_info_type = enum_info_decl->mutable_decl.type;
@@ -781,7 +800,7 @@ namespace Zodiac
         unsigned mem_count = STATIC_ARRAY_LENGTH(mem_vals);
 
         AST_Type* zir_ti_type = Builtin::type_Type_Info;
-        AST_Declaration* ti_info_decl = zir_ti_type->aggregate_type.member_declarations[3];
+        AST_Declaration* ti_info_decl = zir_ti_type->aggregate_type.member_declarations[4];
         AST_Type* zir_ti_info_type = ti_info_decl->mutable_decl.type;
         AST_Declaration* function_info_decl =
             zir_ti_info_type->aggregate_type.member_declarations[3];
@@ -789,6 +808,32 @@ namespace Zodiac
         LLVMTypeRef llvm_function_info_type = llvm_type_from_ast(builder, zir_function_info_type);
 
         LLVMValueRef result = LLVMConstNamedStruct(llvm_function_info_type, mem_vals, mem_count);
+        result = LLVMConstStruct(&result, 1, false);
+        return result;
+    }
+
+    LLVMValueRef llvm_emit_static_array_info(LLVM_IR_Builder* builder, Type_Info* type_info)
+    {
+        LLVMValueRef llvm_base_ti_ptr =
+            builder->registered_type_infos[type_info->static_array.base.id - 1];
+        llvm_base_ti_ptr = LLVMConstPointerCast(llvm_base_ti_ptr, LLVM_Type::ptr_to_Type_Info);
+
+        LLVMValueRef llvm_count = LLVMConstInt(LLVM_Type::u64, type_info->static_array.count,
+                                                false);
+
+        LLVMValueRef mem_vals[] = { llvm_base_ti_ptr, llvm_count };
+        unsigned mem_count = STATIC_ARRAY_LENGTH(mem_vals);
+
+        AST_Type* zir_ti_type = Builtin::type_Type_Info;
+        AST_Declaration* ti_info_decl = zir_ti_type->aggregate_type.member_declarations[4];
+        AST_Type* zir_ti_info_type = ti_info_decl->mutable_decl.type;
+        AST_Declaration* static_array_info_decl =
+            zir_ti_info_type->aggregate_type.member_declarations[4];
+        AST_Type* zir_static_array_info_type = static_array_info_decl->mutable_decl.type;
+        LLVMTypeRef llvm_static_array_info_type = llvm_type_from_ast(builder,
+                                                                     zir_static_array_info_type);
+        LLVMValueRef result = LLVMConstNamedStruct(llvm_static_array_info_type, mem_vals,
+                                                   mem_count);
         result = LLVMConstStruct(&result, 1, false);
         return result;
     }
@@ -1238,7 +1283,8 @@ namespace Zodiac
                 else assert(false);
 
                 auto bool_type = llvm_type_from_ast(builder, Builtin::type_bool);
-                result = LLVMBuildCast(builder->llvm_builder, LLVMZExt, result, bool_type, ""); llvm_assign_result(builder, zir_instruction->result, result);
+                result = LLVMBuildCast(builder->llvm_builder, LLVMZExt, result, bool_type, "");
+                llvm_assign_result(builder, zir_instruction->result, result);
                 break;
             }
 
@@ -1318,6 +1364,10 @@ namespace Zodiac
                 {
                     result = LLVMBuildFCmp(builder->llvm_builder, LLVMRealOEQ, lhs, rhs, "");
                 }
+                else if (both_pointer)
+                {
+                    result = LLVMBuildICmp(builder->llvm_builder, LLVMIntEQ, lhs, rhs, "");
+                }
                 else assert(false);
 
                 auto bool_type = llvm_type_from_ast(builder, Builtin::type_bool);
@@ -1358,10 +1408,11 @@ namespace Zodiac
 				assert(a2);
 
                 ASSERT_INT(a1);
+                ASSERT_INT(a2);
 
-                assert((a2->type->flags & AST_TYPE_FLAG_INT) ||
-                       a2->type->kind == AST_TYPE_ENUM &&
-                       a1->type == a2->type->aggregate_type.base_type);
+//                assert((a2->type->flags & AST_TYPE_FLAG_INT) ||
+//                       a2->type->kind == AST_TYPE_ENUM &&
+//                       a1->type == a2->type->aggregate_type.base_type);
 
                 LLVMValueRef lhs = llvm_emit_ir_value(builder, zir_instruction->arg1);
                 LLVMValueRef rhs = llvm_emit_ir_value(builder, zir_instruction->arg2);
@@ -1413,7 +1464,8 @@ namespace Zodiac
                 LLVMValueRef llvm_result = LLVMBuildNot(builder->llvm_builder, llvm_value, "");
 
                 auto bool_ty = llvm_type_from_ast(builder, Builtin::type_bool);
-                llvm_result = LLVMBuildCast(builder->llvm_builder, LLVMZExt, llvm_result, bool_ty,
+                llvm_result = LLVMBuildCast(builder->llvm_builder, LLVMZExt, llvm_result,
+                                            bool_ty,
                                             "");
                 llvm_assign_result(builder, r, llvm_result);
                 break;
@@ -1468,9 +1520,11 @@ namespace Zodiac
                     IR_Value* zir_arg_value = stack_peek(builder->arg_stack, peek_offset);
                     LLVMValueRef llvm_arg_value = llvm_emit_ir_value(builder, zir_arg_value);
 
-                    if (zir_arg_value->kind == IRV_ALLOCL)
+                    if (zir_arg_value->kind == IRV_ALLOCL &&
+                        zir_arg_value->type->kind != AST_TYPE_STATIC_ARRAY)
                     {
-                        llvm_arg_value = LLVMBuildLoad(builder->llvm_builder, llvm_arg_value, "");
+                        llvm_arg_value = LLVMBuildLoad(builder->llvm_builder, llvm_arg_value,
+                                                       "");
                     }
                     if (is_vararg && is_foreign && zir_arg_value->type == Builtin::type_float)
                     {
@@ -1542,7 +1596,8 @@ namespace Zodiac
 				assert(a1);
 
                 IR_Block* zir_dest_block = zir_instruction->arg1->block;
-                LLVMBasicBlockRef llvm_dest_block = llvm_block_from_zir(builder, zir_dest_block);
+                LLVMBasicBlockRef llvm_dest_block = llvm_block_from_zir(builder,
+                                                                        zir_dest_block);
                 LLVMBuildBr(builder->llvm_builder, llvm_dest_block);
                 break;
             }
@@ -1573,7 +1628,8 @@ namespace Zodiac
                     }
                 }
                 IR_Block* zir_then_block = zir_instruction->arg2->block;
-                LLVMBasicBlockRef llvm_then_block = llvm_block_from_zir(builder, zir_then_block);
+                LLVMBasicBlockRef llvm_then_block = llvm_block_from_zir(builder,
+                                                                        zir_then_block);
 
                 auto next_ziri = zir_instruction->next;
                 assert(next_ziri);
@@ -1629,7 +1685,8 @@ namespace Zodiac
 
                 if (builder->context->options.emit_debug)
                 {
-                    llvm_debug_register_function_local_variable(builder, llvm_alloca, zir_allocl);
+                    llvm_debug_register_function_local_variable(builder, llvm_alloca,
+                                                                zir_allocl);
                 }
                 break;
             }
@@ -1649,6 +1706,7 @@ namespace Zodiac
                 {
                     llvm_new_value = LLVMBuildLoad(builder->llvm_builder, llvm_new_value, "");
                 }
+
                 LLVMBuildStore(builder->llvm_builder, llvm_new_value, llvm_dest_value);
                 break;
             }
@@ -1694,7 +1752,8 @@ namespace Zodiac
 				assert(a2);
 
                 LLVMValueRef llvm_dest = llvm_emit_ir_value(builder, zir_instruction->arg1);
-                LLVMValueRef llvm_new_value = llvm_emit_ir_value(builder, zir_instruction->arg2);
+                LLVMValueRef llvm_new_value = llvm_emit_ir_value(builder,
+                                                                 zir_instruction->arg2);
 
                 if (a2->kind == IRV_ALLOCL)
                 {
@@ -1707,7 +1766,8 @@ namespace Zodiac
             case IR_OP_LOADP:
             {
                 LLVMValueRef llvm_source = llvm_emit_ir_value(builder, zir_instruction->arg1);
-                LLVMValueRef llvm_result = LLVMBuildLoad(builder->llvm_builder, llvm_source, "");
+                LLVMValueRef llvm_result = LLVMBuildLoad(builder->llvm_builder,
+                                                         llvm_source, "");
 
                 llvm_assign_result(builder, zir_instruction->result, llvm_result);
                 break;
@@ -1716,7 +1776,8 @@ namespace Zodiac
             case IR_OP_STOREG:
             {
                 LLVMValueRef llvm_dest = llvm_emit_ir_value(builder, zir_instruction->arg1);
-                LLVMValueRef llvm_new_value = llvm_emit_ir_value(builder, zir_instruction->arg2);
+                LLVMValueRef llvm_new_value = llvm_emit_ir_value(builder,
+                                                                 zir_instruction->arg2);
 
                 LLVMBuildStore(builder->llvm_builder, llvm_new_value, llvm_dest);
                 break;
@@ -1725,7 +1786,8 @@ namespace Zodiac
             case IR_OP_LOADG:
             {
                 LLVMValueRef llvm_source = llvm_emit_ir_value(builder, zir_instruction->arg1);
-                LLVMValueRef llvm_result = LLVMBuildLoad(builder->llvm_builder, llvm_source, "");
+                LLVMValueRef llvm_result = LLVMBuildLoad(builder->llvm_builder, llvm_source,
+                                                         "");
                 llvm_assign_result(builder, zir_instruction->result, llvm_result);
                 break;
             }
@@ -1777,11 +1839,19 @@ namespace Zodiac
                 assert(r->type->kind == AST_TYPE_POINTER);
                 LLVMTypeRef llvm_dest_type = llvm_type_from_ast(builder, r->type->pointer.base);
                 LLVMTypeRef llvm_pointer_dest_type = LLVMPointerType(llvm_dest_type, 0);
+
+                if (a1->kind == IRV_ARGUMENT && a1->type->kind == AST_TYPE_POINTER &&
+                        a1->type->pointer.base->kind == AST_TYPE_STATIC_ARRAY)
+                {
+                    llvm_source = LLVMBuildLoad(builder->llvm_builder, llvm_source, "");
+                }
+
                 if (a1->type->kind == AST_TYPE_STATIC_ARRAY ||
                     (a1->type->kind == AST_TYPE_POINTER &&
                      a1->type->pointer.base->kind == AST_TYPE_STATIC_ARRAY))
                 {
-                    LLVMTypeRef llvm_index_type = llvm_type_from_ast(builder, Builtin::type_u32);
+                    LLVMTypeRef llvm_index_type = llvm_type_from_ast(builder,
+                                                                     Builtin::type_u32);
                     LLVMValueRef llvm_zero = LLVMConstNull(llvm_index_type);
                     llvm_source = LLVMBuildInBoundsGEP(builder->llvm_builder, llvm_source,
                                                        &llvm_zero, 1, "");
@@ -1813,7 +1883,8 @@ namespace Zodiac
                 }
                 else
                 {
-                    assert(zir_source->kind == IRV_ALLOCL || zir_source->kind == IRV_ARGUMENT);
+                    assert(zir_source->kind == IRV_ALLOCL || zir_source->kind == IRV_ARGUMENT ||
+                           zir_source->kind == IRV_TEMPORARY);
                     assert(zir_source->type->kind == AST_TYPE_STRUCT ||
                            zir_source->type->kind == AST_TYPE_UNION);
 
@@ -1914,7 +1985,9 @@ namespace Zodiac
                 {
                     if (zir_value->type->flags & AST_TYPE_FLAG_INT)
                     {
-                        LLVMOpcode op = target_sign ? LLVMSIToFP : LLVMUIToFP;
+                        LLVMOpcode op = zir_value->type->flags & AST_TYPE_FLAG_SIGNED ?
+                            LLVMSIToFP : LLVMUIToFP;
+
                         result = LLVMBuildCast(builder->llvm_builder, op, llvm_value,
                                                llvm_dest_type, "");
                     }
@@ -1981,7 +2054,8 @@ namespace Zodiac
                 {
                     auto& pair = zir_instruction->phi_pairs[i];
                     LLVMValueRef llvm_value = pair_llvm_values[i];
-                    LLVMBasicBlockRef llvm_block = llvm_block_from_zir(builder, pair.from_block);
+                    LLVMBasicBlockRef llvm_block = llvm_block_from_zir(builder,
+                                                                       pair.from_block);
                     LLVMAddIncoming(llvm_phi, &llvm_value, &llvm_block, 1);
                 }
 
@@ -2034,13 +2108,27 @@ namespace Zodiac
                 LLVMValueRef llvm_old_value = llvm_emit_ir_value(builder, a1);
                 LLVMValueRef llvm_new_value = llvm_emit_ir_value(builder, a2);
 
-                LLVMValueRef result = LLVMBuildAtomicCmpXchg(builder->llvm_builder, llvm_pointer,
-                                                             llvm_old_value, llvm_new_value,
-                                                             LLVMAtomicOrderingMonotonic,
-                                                             LLVMAtomicOrderingMonotonic, false);
+                LLVMValueRef result =
+                    LLVMBuildAtomicCmpXchg(builder->llvm_builder, llvm_pointer, llvm_old_value,
+                                           llvm_new_value, LLVMAtomicOrderingMonotonic,
+                                           LLVMAtomicOrderingMonotonic, false);
                 result = LLVMBuildExtractValue(builder->llvm_builder, result, 1, "");
 
                 llvm_assign_result(builder, r, result);
+                break;
+            }
+
+            case IR_OP_EXTRACT_VALUE:
+            {
+                LLVMValueRef llvm_agg_value = llvm_emit_ir_value(builder, a1);
+                assert(a2->type == Builtin::type_u64);
+                uint64_t member_offset = a2->value.u64;
+
+                LLVMValueRef result = LLVMBuildExtractValue(builder->llvm_builder,
+                                                            llvm_agg_value, member_offset, "");
+
+                llvm_assign_result(builder, r, result);
+
                 break;
             }
 
@@ -2147,7 +2235,59 @@ namespace Zodiac
 
             case IRV_ARRAY_LITERAL:
             {
-                assert(false);
+                LLVMTypeRef llvm_arr_type = llvm_type_from_ast(builder, zir_value->type);
+                LLVMTypeRef llvm_base_type =
+                    llvm_type_from_ast(builder, zir_value->type->static_array.base);
+
+                if (zir_value->flags & IRV_FLAG_CONST)
+                {
+                    BUF(LLVMValueRef) arr_vals = nullptr;
+                    for (uint64_t i = 0; i < zir_value->type->static_array.count; i++)
+                    {
+                        LLVMValueRef llvm_compound_member = nullptr;
+                        if (i < BUF_LENGTH(zir_value->value.compound_values))
+                        {
+                            IR_Value* zir_arr_member = zir_value->value.compound_values[i];
+                            llvm_compound_member = llvm_emit_ir_value(builder, zir_arr_member);
+                        }
+                        else
+                        {
+                            llvm_compound_member = LLVMGetUndef(llvm_base_type);
+                        }
+
+                        assert(llvm_compound_member);
+                        BUF_PUSH(arr_vals, llvm_compound_member);
+                    }
+
+                    auto result = LLVMConstArray(llvm_base_type, arr_vals,
+                                                 BUF_LENGTH(arr_vals));
+                    return result;
+                }
+                else
+                {
+                    LLVMValueRef arr_value = LLVMConstNull(llvm_arr_type);
+
+                    for (uint64_t i = 0; i < zir_value->type->static_array.count; i++)
+                    {
+                        if (i < BUF_LENGTH(zir_value->value.compound_values))
+                        {
+                            IR_Value* zir_compound_member = zir_value->value.compound_values[i];
+                            LLVMValueRef llvm_arr_member = llvm_emit_ir_value(builder,
+                                                                            zir_compound_member);
+
+                            arr_value = LLVMBuildInsertValue(builder->llvm_builder, arr_value,
+                                                            llvm_arr_member, (unsigned)i, "");
+                        }
+                        else
+                        {
+                            LLVMValueRef undef_value = LLVMGetUndef(llvm_base_type);
+                            arr_value = LLVMBuildInsertValue(builder->llvm_builder, arr_value,
+                                                             undef_value, (unsigned)i, "");
+                        }
+                    }
+
+                    return arr_value;
+                }
                 break;
             }
 
@@ -2404,6 +2544,10 @@ namespace Zodiac
                 {
                     AST_Type* zodiac_arg_type = zir_type->function.arg_types[i];
                     LLVMTypeRef llvm_arg_type = llvm_type_from_ast(builder, zodiac_arg_type);
+                    if (zodiac_arg_type->kind == AST_TYPE_STATIC_ARRAY)
+                    {
+                        llvm_arg_type = LLVMPointerType(llvm_arg_type, 0);
+                    }
                     BUF_PUSH(llvm_arg_types, llvm_arg_type);
                 }
                 bool is_vararg = (zir_type->flags & AST_TYPE_FLAG_FUNC_VARARG);
@@ -2414,6 +2558,13 @@ namespace Zodiac
                 BUF_FREE(llvm_arg_types);
 
                 return result;
+                break;
+            }
+
+            case AST_TYPE_MRV:
+            {
+                assert(zir_type->mrv.struct_type);
+                return llvm_type_from_ast(builder, zir_type->mrv.struct_type);
                 break;
             }
 

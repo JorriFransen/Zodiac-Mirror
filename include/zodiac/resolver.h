@@ -7,7 +7,6 @@ namespace Zodiac
     enum Resolve_Error_Flag : uint64_t
     {
         RE_FLAG_NONE       = 0,
-        RE_FLAG_UNDECLARED = 1 << 0,
     };
 
     struct Resolve_Error
@@ -53,7 +52,8 @@ namespace Zodiac
     void resolver_init(Resolver* resolver, Context* context, bool is_builtin);
     void resolver_do_initial_scope_population(Resolver* resolver, AST_Module* module,
                                               AST_Scope* scope);
-    Resolve_Result resolver_resolve_module(Resolver* resolver, AST_Module* module);
+    Resolve_Result resolver_resolve_module(Resolver* resolver, AST_Module* module,
+                                           bool is_builtin);
     bool resolver_resolve_declaration(Resolver* resolver, AST_Declaration* declaration,
                                       AST_Scope* scope);
     bool resolver_resolve_struct_or_union_decl(Resolver* resolver, AST_Declaration* decl,
@@ -72,7 +72,7 @@ namespace Zodiac
     bool resolver_resolve_dot_expression(Resolver* resolver, AST_Expression* dot_expr,
                                          AST_Scope* scope);
     bool resolver_resolve_identifier(Resolver* resolver, AST_Identifier* identifier,
-                                     AST_Scope* scope);
+                                     AST_Scope* scope, bool report_undeclared = true);
     bool resolver_resolve_type_spec(Resolver* resolver, File_Pos base_fp,
                                     AST_Type_Spec* type_spec, AST_Type** type_dest,
                                     AST_Scope* scope, AST_Scope* poly_scope = nullptr);
@@ -87,6 +87,8 @@ namespace Zodiac
                                                                   AST_Declaration* declaration);
     void resolver_transform_const_expr_to_literal(Resolver* resolver, AST_Expression* expr,
                                                   AST_Scope* scope);
+    bool resolver_transform_to_any(Resolver* resolver, AST_Expression* expression,
+                                   AST_Scope* scope);
 
 
     void resolver_add_overload(Resolver* resolver, AST_Declaration* overload_decl,

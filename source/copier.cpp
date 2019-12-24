@@ -31,9 +31,11 @@ namespace Zodiac
                 auto body_block_copy = copy_statement(context, declaration->function.body_block,
                                                       arg_scope_copy, flags);
 
-                return ast_function_declaration_new(context, declaration->file_pos, ident_copy,
-                                                    args_copy, is_vararg, return_ts_copy,
-                                                    body_block_copy, arg_scope_copy);
+                return ast_function_declaration_new(context, declaration->file_pos,
+                                                    declaration->scope,
+                                                    ident_copy, args_copy, is_vararg,
+                                                    return_ts_copy, body_block_copy,
+                                                    arg_scope_copy);
                 break;
             }
 
@@ -50,9 +52,9 @@ namespace Zodiac
                 auto init_expr_copy = copy_expression(context,
                                                       declaration->mutable_decl.init_expression,
                                                       flags);
-                return ast_mutable_declaration_new(context, declaration->file_pos, ident_copy,
-                                                   type_spec_copy, init_expr_copy,
-                                                   declaration->location);
+                return ast_mutable_declaration_new(context, declaration->file_pos,
+                                                   ident_copy, type_spec_copy,
+                                                   init_expr_copy, declaration->location);
                 break;
             }
 
@@ -256,7 +258,15 @@ namespace Zodiac
 
             case AST_STMT_WHILE:
             {
-                assert(false);
+                auto cond_copy = copy_expression(context, statement->while_stmt.cond_expr, flags);
+                assert(statement->while_stmt.body_stmt->kind == AST_STMT_BLOCK);
+                auto scope_copy = copy_scope(context,
+                                             statement->while_stmt.scope, flags);
+                scope_copy->parent = parent_scope;
+                auto body_copy = copy_statement(context, statement->while_stmt.body_stmt,
+                                                scope_copy, flags);
+                return ast_while_statement_new(context, statement->file_pos, scope_copy,
+                                               cond_copy, body_copy);
                 break;
             }
 
@@ -284,7 +294,7 @@ namespace Zodiac
 
             case AST_STMT_BREAK:
             {
-                assert(false);
+                return ast_break_statement_new(context, statement->file_pos);
                 break;
             }
 
@@ -426,19 +436,29 @@ namespace Zodiac
 
             case AST_EXPR_FLOAT_LITERAL:
             {
-                assert(false);
+                return ast_float_literal_expression_new(context, expression->file_pos,
+                                                        expression->float_literal.r64,
+                                                        expression->float_literal.r32);
                 break;
             }
 
             case AST_EXPR_CHAR_LITERAL:
             {
-                assert(false);
+                return ast_character_literal_expression_new(context, expression->file_pos,
+                                                            expression->character_literal.c);
                 break;
             }
 
             case AST_EXPR_COMPOUND_LITERAL:
             {
-                assert(false);
+                BUF(AST_Expression*) exprs_copy = nullptr;
+                auto exprs = expression->compound_literal.expressions;
+                for (uint64_t i = 0; i < BUF_LENGTH(exprs); i++)
+                {
+                    BUF_PUSH(exprs_copy, copy_expression(context, exprs[i], flags));
+                }
+                return ast_compound_literal_expression_new(context, expression->file_pos,
+                                                           exprs_copy);
                 break;
             }
 
@@ -461,8 +481,14 @@ namespace Zodiac
             case AST_EXPR_CAST:
             {
                 auto ts_copy = copy_type_spec(context, expression->cast_expr.type_spec, flags);
+                if (!ts_copy)
+                {
+                    assert(expression->type);
+                    ts_copy = ast_type_spec_from_type_new(context, expression->file_pos, expression->type);
+                }
                 auto expr_copy = copy_expression(context, expression->cast_expr.expr, flags);
-                return ast_cast_expression_new(context, expression->file_pos, ts_copy, expr_copy);
+                auto result = ast_cast_expression_new(context, expression->file_pos, ts_copy, expr_copy);
+                return result;
                 break;
             }
 
@@ -482,10 +508,16 @@ namespace Zodiac
             }
 
             case AST_EXPR_POST_INCREMENT:
-            case AST_EXPR_POST_DECREMENT:
             {
                 auto base_copy = copy_expression(context, expression->base_expression, flags);
                 return ast_post_increment_expression_new(context, expression->file_pos, base_copy);
+                break;
+            }
+
+            case AST_EXPR_POST_DECREMENT:
+            {
+                auto base_copy = copy_expression(context, expression->base_expression, flags);
+                return ast_post_decrement_expression_new(context, expression->file_pos, base_copy);
                 break;
             }
 
@@ -540,7 +572,11 @@ namespace Zodiac
 
             case AST_TYPE_SPEC_STATIC_ARRAY:
             {
-                assert(false);
+                auto count_copy = copy_expression(context, type_spec->static_array.count_expr,
+                                                  flags);
+                auto base_copy = copy_type_spec(context, type_spec->static_array.base, flags);
+                result = ast_type_spec_static_array_new(context, type_spec->file_pos, count_copy,
+                                                        base_copy);
                 break;
             }
 
@@ -552,7 +588,8 @@ namespace Zodiac
 
             case AST_TYPE_SPEC_TYPEOF:
             {
-                assert(false);
+                auto expr_copy = copy_expression(context, type_spec->typeof_expr.expr, flags);
+                return ast_type_spec_typeof_new(context, type_spec->file_pos, expr_copy);
                 break;
             }
 

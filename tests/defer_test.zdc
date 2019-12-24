@@ -2,74 +2,129 @@
 _std :: import std;
 using _std;
 
+_printer :: import print;
+using _printer;
+
 main :: () -> int
 {
     _c.open_std_handles();
 
     defer_test1(1);
-    print(" ");
     defer_test1(2);
-    print(" ");
     defer_test1(3);
-    print(" ");
 
     defer_test2(1);
-    print(" ");
 
-    defer print("main defer 1");
-    defer print("main defer 2");
-    defer print("main defer 3");
+    defer print("main defer 1\n");
+    defer print("main defer 2\n");
+    defer print("main defer 3\n");
 
     // defer defer print("nested defer");
     // defer { print("abc"); return -1; }
     // defer while (true) break;
+
+    test_defer_return_value();
+
+    test_defer_break_while();
 
     return 0;
 }
 
 defer_test1 :: (arg: int)
 {
-    defer print("beginning of defer_test()");
+    defer print("beginning of defer_test()\n");
 
     if (arg == 1)
     {
-        defer print("deferred arg = 1");
+        defer print("deferred arg = 1\n");
         print("arg is 1");
         return;
     }
     else if (arg == 2)
     {
-        defer print("Arg is 2");
+        defer print("Arg is 2\n");
     }
 
-    defer print("end of defer_test()");
+    defer print("end of defer_test()\n");
 }
 
 defer_test2 :: (arg: int)
 {
-    defer print("calling defer test2");
+    defer print("calling defer test2\n");
 
     assert(arg >= 0);
 
     while (arg >= 0)
     {
-        defer print(arg);
+        defer print("%\n", arg);
 
         arg = arg - 1;
     }
 
     while (true)
     {
-        defer print(arg);
-        defer _c.printf("%d\n", arg);
+        defer print("%\n", arg);
+        defer print("%\n", arg);
 
         arg -= 1;
         if (arg < 0)
         {
-            defer print("defer in break block");
+            defer print("defer in break block\n");
             break;
         }
     }
 
-    defer print("end of defer_test2");
+    defer print("end of defer_test2\n");
+}
+
+test_defer_return_value :: ()
+{
+    _c.printf("Calling _test_defer_return_value(%d)\n", 42);
+    value := _test_defer_return_value(42);
+    _c.printf("returned value: %d\n", value);
+    assert(value == 42);
+}
+
+_test_defer_return_value :: (value: int) -> int
+{
+    mem : *int = (:*int)_c.malloc((:u64)sizeof(int));
+    defer _c.free(mem);
+
+    <mem = value;
+
+    return print_and_return_value(mem);
+}
+
+print_and_return_value :: (ptr: *int) -> int
+{
+    assert(ptr);
+    _c.printf("Value: %d\n", <ptr);
+    return <ptr;
+}
+
+test_defer_break_while :: ()
+{
+    ITERATION_COUNT :: 5;
+    defer_counter := 0;
+    loop_counter := 0;
+
+    defer defer_counter++;
+
+    while (true)
+    {
+        print("loop_counter: %\n", loop_counter);
+        loop_counter++;
+
+        defer defer_counter++;
+
+        if (loop_counter >= ITERATION_COUNT)
+            break;
+    }
+
+    print("defer_counter: %\n", defer_counter);
+    print("loop_counter: %\n", loop_counter);
+
+    assert(loop_counter == ITERATION_COUNT);
+    assert(defer_counter == ITERATION_COUNT);
+
 }

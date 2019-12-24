@@ -10,9 +10,6 @@ stderr : *FILE = null;
 PLATFORM_WINDOWS :: false;
 PLATFORM_LINUX   :: false;
 
-#foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
-#foreign exit :: (status: s32) -> void;
-
 static_if (PLATFORM_WINDOWS)
 {
     print_stack_trace :: ()
@@ -45,6 +42,119 @@ else
 {
     static_assert(false);
 }
+
+
+Type_Info_Kind : u64 : enum
+{
+    INVALID;
+    BASE;
+    POINTER;
+    STRUCT;
+    UNION;
+    ENUM;
+    FUNCTION;
+    STATIC_ARRAY;
+}
+
+Type_Info_Flags : u64 : enum
+{
+    NONE    :: 0;
+    INT     :: 1;
+    FLOAT   :: 2;
+    SIGNED  :: 4;
+}
+
+Type_Info :: struct
+{
+    kind      : Type_Info_Kind;
+    flags     : Type_Info_Flags;
+    name      : String;
+    byte_size : u64;
+
+    union
+    {
+        base  : *Type_Info;
+
+        aggregate :: struct
+        {
+            count : u64;
+            first : *Type_Info_Aggregate_Member;
+        }
+
+        enum_info :: struct
+        {
+            enum_base    : *Type_Info;
+            member_count : u64;
+            first        : *Type_Info_Enum_Member;
+        }
+
+        function :: struct
+        {
+            return_type : *Type_Info;
+            arg_count   : u64;
+            first_arg   : *Type_Info_Aggregate_Member;
+        }
+
+        static_array :: struct
+        {
+            base : *Type_Info;
+            count : u64;
+        }
+    }
+}
+
+Type_Info_Aggregate_Member :: struct
+{
+    name : String;
+    type : *Type_Info;
+}
+
+Type_Info_Enum_Member :: struct
+{
+    name  : String;
+    value : u64;
+    type  : *Type_Info;
+}
+
+Any :: struct
+{
+    type_info : *Type_Info;
+    value     : *void;
+}
+
+string_length :: (c_str: *u8) -> s64
+{
+    if (!c_str) return 0;
+
+    length := 0;
+    i : u64 = 0;
+
+    while (c_str[i] != 0)
+    {
+        i += 1;
+        length += 1;
+    }
+
+    return length;
+}
+
+Array_Ref :: struct(T)
+{
+    data  : *T;
+    count : s64;
+
+    #overload[] array_ref_index;
+}
+
+array_ref_index :: (array_ref: Array_Ref($T), index: s64) -> T
+{
+    return array_ref.data[index];
+}
+
+Array_Ref_of_Any :: typedef Array_Ref(Any);
+
+#foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
+#foreign exit :: (status: s32) -> void;
 
 _builtin_open_std_handles :: () -> void
 {
@@ -82,3 +192,18 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
     }
 }
 
+String :: struct
+{
+    data   : *u8;
+    length : s64;
+
+    #overload[] string_index;
+}
+
+
+string_index :: (str: String, index: s64) -> u8
+{
+    default_assert_handler(index < str.length, #FUNC_NAME, #FILE_NAME, #LINE_NO);
+
+    return str.data[index];
+}

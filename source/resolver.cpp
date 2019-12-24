@@ -7,6 +7,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "polymorph.h"
+#include "copier.h"
 
 #include <stdarg.h>
 #include <inttypes.h>
@@ -43,7 +44,8 @@ namespace Zodiac
 
     }
 
-    Resolve_Result resolver_resolve_module(Resolver* resolver, AST_Module* module)
+    Resolve_Result resolver_resolve_module(Resolver* resolver, AST_Module* module,
+                                           bool is_builtin)
     {
         assert(resolver);
         assert(module);
@@ -51,6 +53,31 @@ namespace Zodiac
         auto old_module = resolver->module;
 
         resolver->module = module;
+
+        if (!is_builtin)
+        {
+            File_Pos gen_fp = { "<auto_generated>" };
+            AST_Identifier* builtin_import_decl_ident = ast_identifier_new(resolver->context,
+                                                                           "__builtin__",
+                                                                           gen_fp);
+            AST_Identifier* builtin_module_name_ident = ast_identifier_new(resolver->context,
+                                                                           "builtin", gen_fp);
+            AST_Declaration* builtin_import_decl =
+                ast_import_declaration_new(resolver->context,
+                                           gen_fp,
+                                           builtin_import_decl_ident,
+                                           builtin_module_name_ident);
+
+            AST_Declaration* builtin_using_decl =
+                ast_using_declaration_new(resolver->context,
+                                          gen_fp,
+                                          builtin_import_decl_ident,
+                                          AST_DECL_LOC_GLOBAL);
+
+
+            BUF_PUSH(module->global_declarations, builtin_import_decl);
+            BUF_PUSH(module->global_declarations, builtin_using_decl);
+        }
 
         resolver_do_initial_scope_population(resolver, module, module->module_scope);
 
@@ -76,7 +103,7 @@ namespace Zodiac
                 bool platform_linux = false;
                 bool platform_windows = false;
 
-#ifdef WIN32 
+#ifdef WIN32
                 platform_windows = true;
 #elif defined __linux__
                 platform_linux = true;
@@ -264,6 +291,7 @@ namespace Zodiac
                     break;
                 }
 
+                // @TODO: @CLEANUP: remove .locals
                 assert(declaration->function.locals == nullptr);
                 bool arg_result = true;
                 for (uint64_t i = 0; i < BUF_LENGTH(declaration->function.args); i++)
@@ -298,7 +326,7 @@ namespace Zodiac
                     result &= resolver_resolve_type_spec(resolver,
                                                          ts->file_pos, ts,
                                                          &declaration->function.return_type,
-                                                         return_type_scope, scope);
+                                                         scope, return_type_scope);
                     if (!result) break;
                 }
 
@@ -368,6 +396,12 @@ namespace Zodiac
                     result &=
                         resolver_resolve_expression(resolver, init_expr, scope, specified_type);
 
+                    if (result && Builtin::type_Any && specified_type == Builtin::type_Any &&
+                            init_expr->type != Builtin::type_Any)
+                    {
+                        result &= resolver_transform_to_any(resolver, init_expr, scope);
+                    }
+
                     if (result)
                     {
                         if (declaration->location == AST_DECL_LOC_GLOBAL)
@@ -392,6 +426,11 @@ namespace Zodiac
                                 mem_free(expected_str);
 
                             }
+                        }
+                        else if (init_expr->type->kind == AST_TYPE_MRV)
+                        {
+                            assert(BUF_LENGTH(init_expr->type->mrv.types));
+                            declaration->mutable_decl.type = init_expr->type->mrv.types[0];
                         }
                         else
                         {
@@ -453,7 +492,7 @@ namespace Zodiac
             {
                 auto ts = declaration->typedef_decl.type_spec;
                 result &= resolver_resolve_type_spec(resolver, ts->file_pos, ts,
-                                                     &declaration->typedef_decl.type, scope);
+                                                     &declaration->typedef_decl.type, scope, scope);
                 break;
             }
 
@@ -805,6 +844,62 @@ namespace Zodiac
                 break;
             }
 
+            case AST_DECL_LIST:
+            {
+                AST_Expression* lvalue_list = declaration->list.list_expression;
+                AST_Expression* init_expr = declaration->list.init_expression;
+
+                assert(lvalue_list->kind == AST_EXPR_EXPRESSION_LIST);
+                assert(init_expr->kind == AST_EXPR_CALL);
+
+                result &= resolver_resolve_expression(resolver, init_expr, scope);
+                if (!result) break;
+
+                AST_Type* mrv_type = init_expr->type;
+                assert(mrv_type->kind == AST_TYPE_MRV);
+
+                assert(BUF_LENGTH(lvalue_list->list.expressions) ==
+                       BUF_LENGTH(mrv_type->mrv.types));
+
+                for (uint64_t i = 0; i < BUF_LENGTH(mrv_type->mrv.types); i++)
+                {
+                    AST_Expression* lvalue_expr = lvalue_list->list.expressions[i];
+                    if (lvalue_expr->kind != AST_EXPR_IGNORED_VALUE)
+                    {
+                        AST_Identifier* lvalue_ident = lvalue_expr->identifier;
+                        AST_Type* type = mrv_type->mrv.types[i];
+                        AST_Type_Spec* type_spec = ast_type_spec_from_type_new(resolver->context,
+                                                                               lvalue_expr->file_pos,
+                                                                               type);
+                        AST_Declaration* decl = ast_mutable_declaration_new(resolver->context,
+                                                                            lvalue_expr->file_pos,
+                                                                            lvalue_ident,
+                                                                            type_spec,
+                                                                            nullptr,
+                                                                            declaration->location);
+                        assert(decl);
+
+                        BUF_PUSH(declaration->list.declarations, decl);
+
+                        bool decl_res = resolver_resolve_declaration(resolver, decl, scope);
+                        result &= decl_res;
+                        if (decl_res)
+                        {
+                            result &= resolver_resolve_expression(resolver, lvalue_expr, scope);
+                        }
+                    }
+                    else if (mrv_type->mrv.directives[i])
+                    {
+                        resolver_report_error(resolver, lvalue_expr->file_pos,
+                                              "This returned value has the '#required' directive, so it is not allowed to be ignored");
+                        result = false;
+                        break;
+                    }
+                }
+
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -873,7 +968,7 @@ namespace Zodiac
                 if (member_ts->kind == AST_TYPE_SPEC_POINTER)
                 {
                     total_bit_size += Builtin::pointer_size;
-                    biggest_bit_size = MAX(biggest_bit_size, Builtin::pointer_size);
+                    biggest_bit_size = _MAX(biggest_bit_size, Builtin::pointer_size);
 
                     Aggregate_Member_To_Resolve m = { member_decl, agg_scope };
                     if (is_nested)
@@ -894,7 +989,7 @@ namespace Zodiac
                     {
                         AST_Type* member_type = member_decl->mutable_decl.type;
                         total_bit_size += member_type->bit_size;
-                        biggest_bit_size = MAX(biggest_bit_size, member_type->bit_size);
+                        biggest_bit_size = _MAX(biggest_bit_size, member_type->bit_size);
                     }
                     else
                     {
@@ -923,7 +1018,7 @@ namespace Zodiac
                     AST_Type* member_type = member_decl->aggregate_type.type;
                     assert(member_type);
                     total_bit_size += member_type->bit_size;
-                    biggest_bit_size = MAX(biggest_bit_size, member_type->bit_size);
+                    biggest_bit_size = _MAX(biggest_bit_size, member_type->bit_size);
                 }
             }
         }
@@ -972,6 +1067,14 @@ namespace Zodiac
                 resolver_replace_aggregate_declaration_with_mutable(resolver, member_to_replace,
                                                                     agg_scope);
             }
+        }
+
+        auto type = decl->aggregate_type.type;
+        for (uint64_t i = 0; i < BUF_LENGTH(type->overloads); i++)
+        {
+            AST_Identifier* overload_ident = type->overloads[i].identifier;
+            result &= resolver_resolve_identifier(resolver, overload_ident, scope);
+            if (result) assert(overload_ident->declaration);
         }
 
         BUF_FREE(members_to_resolve.members);
@@ -1110,42 +1213,80 @@ namespace Zodiac
             {
                 result &= resolver_resolve_expression(resolver, statement->call_expression,
                                                       scope);
+                AST_Type* ret_type = statement->call_expression->type;
+
+                if (ret_type && ret_type->kind == AST_TYPE_MRV)
+                {
+                    for (uint64_t i = 0; i < BUF_LENGTH(ret_type->mrv.directives); i++)
+                    {
+                        AST_Directive* directive = ret_type->mrv.directives[i];
+                        if (directive)
+                        {
+                            assert(directive->kind == AST_DIREC_REQUIRED);
+                            resolver_report_error(resolver, statement->file_pos,
+                                                  "Returned value at index %d has the '#required' directive, but it's value is not assigned", i);
+                            result = false;
+                            break;
+                        }
+                    }
+                }
                 break;
             }
 
             case AST_STMT_ASSIGN:
             {
-                result &= resolver_resolve_expression(resolver,
-                                                      statement->assign.lvalue_expression, scope);
-                AST_Type* suggested_type = nullptr;
-                if (result)
+                auto lvalue = statement->assign.lvalue_expression;
+                lvalue->flags |= AST_EXPR_FLAG_LVALUE;
+                auto expr = statement->assign.expression;
+
+                if (lvalue->kind == AST_EXPR_EXPRESSION_LIST)
                 {
-                    suggested_type = statement->assign.lvalue_expression->type;
-                    result &= resolver_resolve_expression(resolver, statement->assign.expression,
-                                                          scope, suggested_type);
+                    assert(expr->kind == AST_EXPR_CALL);
+                    result &= resolver_resolve_expression(resolver, expr, scope);
+                    if (!result) return false;
+                    assert(expr->type->kind == AST_TYPE_MRV);
+
+                    result &= resolver_resolve_expression(resolver, lvalue, scope, expr->type);
                 }
+                else
+                {
+                    result &= resolver_resolve_expression(resolver, lvalue, scope);
+                    AST_Type* suggested_type = nullptr;
+                    if (result)
+                    {
+                        suggested_type = statement->assign.lvalue_expression->type;
+                        result &= resolver_resolve_expression(resolver,
+                                                              statement->assign.expression,
+                                                              scope, suggested_type);
+
+                        if (result && Builtin::type_Any &&
+                            suggested_type == Builtin::type_Any &&
+                            statement->assign.expression->type != Builtin::type_Any)
+                        {
+                            result &= resolver_transform_to_any(resolver,
+                                                                statement->assign.expression,
+                                                                scope);
+                        }
+                    }
+                }
+
 
                 if (!result) break;
 
                 bool types_match =
-                    resolver_check_assign_types(resolver,
-                                                statement->assign.lvalue_expression->type,
+                    resolver_check_assign_types(resolver, lvalue->type,
                                                 statement->assign.expression->type);
 
-                auto lvalue_expr = statement->assign.lvalue_expression;
                 auto assign_type = statement->assign.expression->type;
-				if (types_match && lvalue_expr->type != assign_type &&
-                    lvalue_expr->type->flags & AST_TYPE_FLAG_INT)
+				if (types_match && lvalue->type != assign_type &&
+                    lvalue->type->flags & AST_TYPE_FLAG_INT)
 				{
 					resolver_transform_to_cast_expression(resolver, statement->assign.expression,
-                                                          lvalue_expr->type);
+                                                          lvalue->type);
 				}
 
                 if (!types_match)
                 {
-                    auto lvalue = statement->assign.lvalue_expression;
-                    auto expr = statement->assign.expression;
-
                     if ((lvalue->type->flags & AST_TYPE_FLAG_FLOAT) &&
                         (expr->type->flags & AST_TYPE_FLAG_INT))
                     {
@@ -1186,10 +1327,47 @@ namespace Zodiac
                         suggested_type = current_func->function.inferred_return_type;
                     }
 
-                    result &= resolver_resolve_expression(resolver, statement->return_expression,
-                                                          scope, suggested_type);
+                    bool expr_resolved = false;
 
-                    if (result && suggested_type)
+                    if (suggested_type)
+                    {
+                        bool mrv_expected = suggested_type->kind == AST_TYPE_MRV;
+                        auto ret_expr = statement->return_expression;
+                        bool ret_expr_is_list = ret_expr->kind == AST_EXPR_EXPRESSION_LIST;
+                        bool ret_expr_is_mrv_type = false;
+
+                        if (!ret_expr_is_list)
+                        {
+                            result &= resolver_resolve_expression(resolver, ret_expr, scope,
+                                                                  suggested_type);
+                            if (result)
+                            {
+                                assert(ret_expr->type);
+                                ret_expr_is_mrv_type = ret_expr->type->kind == AST_TYPE_MRV;
+                                expr_resolved = true;
+                            }
+                        }
+
+                        if (mrv_expected && !(ret_expr_is_list || ret_expr_is_mrv_type))
+                        {
+                            resolver_report_error(
+                                resolver, statement->file_pos,
+                                "Returning one value, expected %d",
+                                BUF_LENGTH(suggested_type->mrv.types));
+
+                            return false;
+                        }
+                    }
+
+                    if (!expr_resolved)
+                    {
+                        result &= resolver_resolve_expression(resolver,
+                                                              statement->return_expression,
+                                                              scope, suggested_type);
+                    }
+
+                    if (!result) return false;
+                    else if (result && suggested_type)
                     {
                         auto ret_match = resolver_check_assign_types(resolver,
                                                     suggested_type,
@@ -1231,6 +1409,7 @@ namespace Zodiac
 
                 assert(assert_expr->type == Builtin::type_bool ||
                        assert_expr->type->kind == AST_TYPE_POINTER ||
+                       assert_expr->type->kind == AST_TYPE_ENUM ||
                        (assert_expr->type->flags & AST_TYPE_FLAG_INT));
                 break;
             }
@@ -1249,7 +1428,9 @@ namespace Zodiac
                 if (!result) return false;
                 assert(if_expr->type == Builtin::type_bool ||
                        if_expr->type->kind == AST_TYPE_POINTER ||
-                       (if_expr->type->flags & AST_TYPE_FLAG_INT));
+                       (if_expr->type->flags & AST_TYPE_FLAG_INT) ||
+                       if_expr->type->kind == AST_TYPE_ENUM);
+
                 result &= resolver_resolve_statement(resolver, statement->if_stmt.then_statement,
                                                      scope);
                 if (!result) return false;
@@ -1328,7 +1509,8 @@ namespace Zodiac
             {
                 assert(resolver->current_break_context);
                 assert(resolver->current_break_context->kind == AST_STMT_WHILE ||
-                       resolver->current_break_context->kind == AST_STMT_FOR);
+                       resolver->current_break_context->kind == AST_STMT_FOR ||
+                       resolver->current_break_context->kind == AST_STMT_SWITCH);
                 break;
             }
 
@@ -1577,9 +1759,15 @@ namespace Zodiac
                 auto arg_expr_count = BUF_LENGTH(expression->call.arg_expressions);
                 auto arg_decl_count = BUF_LENGTH(func_type->function.arg_types);
 
-                if (func_decl->flags & AST_DECL_FLAG_FUNC_VARARG)
+                bool is_foreign = func_decl->flags & AST_DECL_FLAG_FOREIGN;
+                bool is_vararg = func_decl->flags & AST_DECL_FLAG_FUNC_VARARG;
+
+                if (is_vararg)
                 {
-                    assert(arg_expr_count >= arg_decl_count);
+                    if (is_foreign)
+                        assert(arg_expr_count >= arg_decl_count);
+                    else
+                        assert(arg_expr_count >= arg_decl_count - 1);
                 }
                 else
                 {
@@ -1593,6 +1781,9 @@ namespace Zodiac
                     }
                 }
 
+                bool varargs_started = false;
+                BUF(AST_Expression*) vararg_exprs = nullptr;
+
                 for (uint64_t i = 0; i < arg_expr_count; i++)
                 {
                     AST_Expression* arg_expr = expression->call.arg_expressions[i];
@@ -1602,6 +1793,14 @@ namespace Zodiac
                     if (i < arg_decl_count)
                     {
                         arg_type = func_type->function.arg_types[i];
+
+                        if (is_vararg &&
+                            i == arg_decl_count - 1 &&
+                            arg_type == Builtin::type_Array_Ref_of_Any)
+                        {
+                            assert(!varargs_started);
+                            varargs_started = true;
+                        }
                     }
 
                     if (is_overload)
@@ -1609,10 +1808,28 @@ namespace Zodiac
                         arg_expr->flags &= ~AST_EXPR_FLAG_RESOLVED;
                     }
 
-                    result &= resolver_resolve_expression(resolver, arg_expr, scope, arg_type);
+                    if (varargs_started)
+                    {
+                        result &= resolver_resolve_expression(resolver, arg_expr, scope);
+                        if (result) BUF_PUSH(vararg_exprs, arg_expr);
+                    }
+                    else
+                    {
+                        if (arg_type && arg_type == Builtin::type_Any)
+                        {
+                            result &= resolver_resolve_expression(resolver, arg_expr, scope);
+                            if (result) result &= resolver_transform_to_any(resolver, arg_expr,
+                                                                            scope);
+                        }
+                        else
+                        {
+                            result &= resolver_resolve_expression(resolver, arg_expr, scope,
+                                                                arg_type);
+                        }
+                    }
                     if (!result) break;
 
-                    if (arg_type)
+                    if (arg_type && !varargs_started)
                     {
                         bool valid_conversion = resolver_check_assign_types(resolver, arg_type,
                                                                             arg_expr->type);
@@ -1643,6 +1860,84 @@ namespace Zodiac
                     }
                 }
 
+                if (result && varargs_started)
+                {
+                    // Replace the first vararg with the arrayref of any
+
+                    BUF(AST_Expression*) _vararg_exprs = nullptr;
+                    for (uint64_t i = 0; i < BUF_LENGTH(vararg_exprs); i++)
+                    {
+                        AST_Expression* expr = nullptr;
+                        if (i == 0)
+                        {
+                            expr = copy_expression(resolver->context, vararg_exprs[i]);
+                            result &= resolver_resolve_expression(resolver, expr, scope);
+                        }
+                        else
+                        {
+                            expr = vararg_exprs[i];
+                        }
+                        assert(expr);
+                        result &= resolver_transform_to_any(resolver, expr, scope);
+                        BUF_PUSH(_vararg_exprs, expr);
+                    }
+
+                    AST_Expression* varargs_array_lit =
+                        ast_compound_literal_expression_new(resolver->context,
+                                                            vararg_exprs[0]->file_pos,
+                                                            _vararg_exprs);
+                    AST_Type* array_type =
+                        ast_find_or_create_array_type(resolver->context, Builtin::type_Any,
+                                                      BUF_LENGTH(vararg_exprs));
+                    result &= resolver_resolve_expression(resolver, varargs_array_lit, scope,
+                                                          array_type);
+
+                    varargs_array_lit =
+                        ast_make_lvalue_expression_new(resolver->context,
+                                                       varargs_array_lit->file_pos,
+                                                       varargs_array_lit);
+
+                    BUF(AST_Expression*) array_ref_members = nullptr;
+
+                    AST_Expression* zero_lit =
+                        ast_integer_literal_expression_new(resolver->context,
+                                                           varargs_array_lit->file_pos,
+                                                           0);
+                   AST_Expression* array_ref_data =
+                       ast_unary_expression_new(resolver->context, varargs_array_lit->file_pos,
+                                                AST_UNOP_ADDROF, varargs_array_lit);
+                   AST_Type_Spec* ptr_to_any_ts =
+                       ast_type_spec_from_type_new(resolver->context,
+                                                   varargs_array_lit->file_pos,
+                                                   Builtin::type_pointer_to_Any);
+                   array_ref_data = ast_cast_expression_new(resolver->context,
+                                                            varargs_array_lit->file_pos,
+                                                            ptr_to_any_ts, array_ref_data);
+                   result &= resolver_resolve_expression(resolver, array_ref_data, scope);
+                   BUF_PUSH(array_ref_members, array_ref_data);
+
+                    AST_Expression* array_ref_count =
+                        ast_integer_literal_expression_new(resolver->context,
+                                                           varargs_array_lit->file_pos,
+                                                           array_type->static_array.count);
+                    result &= resolver_resolve_expression(resolver, array_ref_count, scope);
+                    BUF_PUSH(array_ref_members, array_ref_count);
+
+                    AST_Expression* array_ref_expr =
+                        ast_compound_literal_expression_new(resolver->context,
+                                                            varargs_array_lit->file_pos,
+                                                            array_ref_members);
+                    result &= resolver_resolve_expression(resolver, array_ref_expr, scope,
+                                                          Builtin::type_Array_Ref_of_Any);
+
+                    *(vararg_exprs[0]) = *array_ref_expr;
+                    vararg_exprs[0]->flags |= AST_EXPR_FLAG_FIRST_VARARG;
+
+                    // BUF_FREE(_vararg_exprs);
+                    BUF_FREE(vararg_exprs);
+                    // BUF_FREE(array_ref_members);
+                }
+
                 assert(func_type->function.return_type);
                 expression->type = func_type->function.return_type;
 
@@ -1662,25 +1957,37 @@ namespace Zodiac
                 {
                     points_to_import_decl = true;
                 }
+                else if (decl->kind == AST_DECL_FUNC)
+                {
+                    expression->flags |= AST_EXPR_FLAG_LVALUE;
+                }
                 else if (decl->kind == AST_DECL_FUNC_OVERLOAD)
                 {
                     points_to_overload_decl = true;
                 }
-
-                if (decl->kind == AST_DECL_CONSTANT_VAR)
+                else if (decl->kind == AST_DECL_CONSTANT_VAR)
                 {
                     expression->flags |= AST_EXPR_FLAG_CONST;
+                }
+                else if (decl->kind == AST_DECL_MUTABLE)
+                {
+                    expression->flags |= AST_EXPR_FLAG_LVALUE;
                 }
 
                 expression->type = resolver_get_declaration_type(decl);
 
-                if (!points_to_import_decl && suggested_type && suggested_type != expression->type &&
+                if (!points_to_import_decl && suggested_type &&
+                    suggested_type != expression->type &&
                     resolver_check_assign_types(resolver, suggested_type, expression->type))
                 {
                     if (suggested_type == Builtin::type_String &&
                         expression->type == Builtin::type_pointer_to_u8)
                     {
                         resolver_convert_to_builtin_string(resolver, expression);
+                    }
+                    else if (suggested_type == Builtin::type_Any)
+                    {
+                        result &= resolver_transform_to_any(resolver, expression, scope);
                     }
                     else
                     {
@@ -1778,6 +2085,12 @@ namespace Zodiac
 
             case AST_EXPR_UNARY:
             {
+                if (expression->unary.op == AST_UNOP_ADDROF &&
+                        expression->unary.operand->kind == AST_EXPR_SUBSCRIPT)
+                {
+                    expression->unary.operand->flags |= AST_EXPR_FLAG_LVALUE;
+                }
+
                 result &= resolver_resolve_expression(resolver, expression->unary.operand,
                                                       scope, suggested_type);
                 if (!result) break;
@@ -1818,8 +2131,17 @@ namespace Zodiac
 
                     case AST_UNOP_ADDROF:
                     {
-                        expression->type = ast_find_or_create_pointer_type(resolver->context,
-                                                                           operand_type);
+                        if (!(expression->unary.operand->flags & AST_EXPR_FLAG_LVALUE))
+                        {
+                            resolver_report_error(resolver, expression->file_pos,
+                                                  "Attempting to take the addres of a non lvalue");
+                            result = false;
+                        }
+                        else
+                        {
+                            expression->type = ast_find_or_create_pointer_type(resolver->context,
+                                                                               operand_type);
+                        }
                         break;
                     }
 
@@ -1882,16 +2204,16 @@ namespace Zodiac
 
 				if (result && (expression->cast_expr.expr->flags & AST_EXPR_FLAG_CONST))
 				{
-					expression->flags |= AST_EXPR_FLAG_CONST;	
+					expression->flags |= AST_EXPR_FLAG_CONST;
 				}
                 break;
             }
 
             case AST_EXPR_SUBSCRIPT:
             {
+                AST_Expression* base_expr = expression->subscript.base_expression;
                 result &=
-                    resolver_resolve_expression(resolver, expression->subscript.base_expression,
-                                                scope);
+                    resolver_resolve_expression(resolver, base_expr, scope);
                 if (!result) break;
 
                 result &= resolver_resolve_expression(resolver,
@@ -1900,35 +2222,44 @@ namespace Zodiac
 
                 if (!result) break;
 
-                AST_Type* base_type = expression->subscript.base_expression->type;
+                AST_Type* base_type = base_expr->type;
                 AST_Type* index_type = expression->subscript.index_expression->type;
 
                 AST_Identifier* index_overload_ident = find_overload(base_type,
                                                                      AST_OVERLOAD_OP_INDEX);
+                AST_Identifier* index_lvalue_overload_ident =
+                    find_overload(base_type, AST_OVERLOAD_OP_INDEX_LVALUE);
 
                 if (!(base_type->kind == AST_TYPE_STATIC_ARRAY ||
                        base_type->kind == AST_TYPE_POINTER ||
                       index_overload_ident))
                 {
                     resolver_report_error(resolver, expression->file_pos,
-                                         "Base type of subscript expression is not of pointer or array type\n\tand no suitable overloads where found");
+                                         "Base type of subscript expression is not of pointer or array type, and no suitable overloads where found");
                     return false;
                 }
 
-                if (index_overload_ident && (base_type->kind == AST_TYPE_STRUCT ||
-                                             base_type->kind == AST_TYPE_UNION))
+                if ((index_overload_ident || index_lvalue_overload_ident) &&
+                    (base_type->kind == AST_TYPE_STRUCT || base_type->kind == AST_TYPE_UNION))
                 {
-                    auto lvalue_expr = expression->subscript.base_expression;
+                    bool is_lvalue = false;
+
+                    if (expression->flags & AST_EXPR_FLAG_LVALUE)
+                    {
+                        assert(index_lvalue_overload_ident);
+                        index_overload_ident = index_lvalue_overload_ident;
+                        is_lvalue = true;
+                    }
 
                     result &= resolver_resolve_identifier(resolver, index_overload_ident, scope);
                     if (!result) break;
 
                     auto index_expr = expression->subscript.index_expression;
                     auto overload_ident_expr = ast_ident_expression_new(resolver->context,
-                                                                        lvalue_expr->file_pos,
+                                                                        base_expr->file_pos,
                                                                         index_overload_ident);
                     BUF(AST_Expression*) args = nullptr;
-                    BUF_PUSH(args, lvalue_expr);
+                    BUF_PUSH(args, base_expr);
                     BUF_PUSH(args, index_expr);
                     auto call_expression = ast_call_expression_new(resolver->context,
                                                                    expression->file_pos,
@@ -1969,6 +2300,7 @@ namespace Zodiac
                     assert(callee_decl->flags & AST_DECL_FLAG_RESOLVED);
 
                     expression->type = callee_decl->function.return_type;
+                    if (is_lvalue) expression->type = expression->type->pointer.base;
                     expression->subscript.call_expression = call_expression;
 
                 }
@@ -1993,10 +2325,23 @@ namespace Zodiac
             {
                  result &= resolver_resolve_dot_expression(resolver, expression, scope);
 
-                if (result && expression->dot.declaration->kind == AST_DECL_FUNC_OVERLOAD)
-                {
-                    points_to_overload_decl = true;
+                 if (result)
+                 {
+                     auto decl = expression->dot.declaration;
+                     if (decl->kind == AST_DECL_FUNC)
+                     {
+                         expression->flags |= AST_EXPR_FLAG_LVALUE;
+                     }
+                     else if (decl->kind == AST_DECL_FUNC_OVERLOAD)
+                     {
+                        points_to_overload_decl = true;
+                     }
+                     else if (decl->kind == AST_DECL_MUTABLE)
+                     {
+                         expression->flags |= AST_EXPR_FLAG_LVALUE;
+                     }
                 }
+
                 break;
             }
 
@@ -2025,6 +2370,7 @@ namespace Zodiac
             case AST_EXPR_CHAR_LITERAL:
             {
                 expression->type = Builtin::type_u8;
+                expression->flags |= AST_EXPR_FLAG_CONST;
                 break;
             }
 
@@ -2044,9 +2390,17 @@ namespace Zodiac
 
             case AST_EXPR_COMPOUND_LITERAL:
             {
+                if (!suggested_type && expression->type &&
+                    expression->type->kind == AST_TYPE_STRUCT)
+                {
+                    // assert(false);
+                    suggested_type = expression->type;
+                }
                 assert(suggested_type);
 
                 bool all_members_const = true;
+
+                // expression->flags |= AST_EXPR_FLAG_LVALUE;
 
                 if (suggested_type->kind == AST_TYPE_STRUCT)
                 {
@@ -2105,7 +2459,7 @@ namespace Zodiac
                 }
                 else if (suggested_type->kind == AST_TYPE_STATIC_ARRAY)
                 {
-                    assert(suggested_type->static_array.count ==
+                    assert(suggested_type->static_array.count >=
                            BUF_LENGTH(expression->compound_literal.expressions));
 
                     for (uint64_t i = 0; i < BUF_LENGTH(expression->compound_literal.expressions);
@@ -2115,7 +2469,8 @@ namespace Zodiac
                         AST_Type* suggested_member_type = nullptr;
                         if (suggested_type && suggested_type->kind == AST_TYPE_STRUCT)
                         {
-                            auto member_decls = suggested_type->aggregate_type.member_declarations;
+                            auto member_decls =
+                                suggested_type->aggregate_type.member_declarations;
                             assert(i < BUF_LENGTH(member_decls));
                             AST_Declaration* member_decl = member_decls[i];
 
@@ -2133,8 +2488,31 @@ namespace Zodiac
 
                         if (result)
                         {
-                            assert(member_expr->type == suggested_member_type);
-                            expression->type = suggested_type;
+                            if (member_expr->type != suggested_member_type &&
+                                suggested_member_type == Builtin::type_Any)
+                            {
+                                resolver_transform_to_any(resolver, member_expr, scope);
+                                assert(member_expr->type == Builtin::type_Any);
+                            }
+                            else
+                            {
+                                assert(member_expr->type == suggested_member_type);
+                            }
+
+                            if (!(member_expr->flags & AST_EXPR_FLAG_CONST))
+                            {
+                                all_members_const = false;
+                            }
+                        }
+                    }
+
+                    if (result)
+                    {
+                        expression->type = suggested_type;
+
+                        if (all_members_const)
+                        {
+                            expression->flags |= AST_EXPR_FLAG_CONST;
                         }
                     }
                 }
@@ -2187,6 +2565,95 @@ namespace Zodiac
                     maybe_register_type_info(resolver->context,
                                               expression->get_type_info_expr.type);
                 }
+                break;
+            }
+
+            case AST_EXPR_EXPRESSION_LIST:
+            {
+                assert(suggested_type);
+                assert(suggested_type->kind == AST_TYPE_MRV);
+                assert(BUF_LENGTH(suggested_type->mrv.types) ==
+                        BUF_LENGTH(expression->list.expressions));
+
+                for (uint64_t i = 0; i < BUF_LENGTH(expression->list.expressions); i++)
+                {
+                    auto expr = expression->list.expressions[i];
+
+                    if (expr->kind == AST_EXPR_COMPOUND_LITERAL &&
+                        !(suggested_type->kind == AST_TYPE_STRUCT ||
+                          suggested_type->kind == AST_TYPE_UNION ||
+                          suggested_type->kind == AST_TYPE_MRV))
+                    {
+                        auto exp_type_str = ast_type_to_string(suggested_type->mrv.types[i]);
+
+                        resolver_report_error(resolver, expr->file_pos,
+                                              "Cannot use an aggregate type when expecting '%s'",
+                                              exp_type_str);
+
+                        mem_free(exp_type_str);
+
+                        result = false;
+                        break;
+                    }
+
+                    if (!result) break;
+
+                    result &= resolver_resolve_expression(resolver, expr, scope,
+                                                          suggested_type->mrv.types[i]);
+
+                    if (!result) break;
+
+                    bool types_match = resolver_check_assign_types(resolver, suggested_type->mrv.types[i],
+                                                                   expr->type);
+                    if (!types_match)
+                    {
+                        auto got_str = ast_type_to_string(expr->type);
+                        auto exp_str = ast_type_to_string(suggested_type->mrv.types[i]);
+
+                        resolver_report_error(resolver, expr->file_pos,
+                                              "Mismatching types in assignnment:\n\tgot: %s\n\texpected: %s\n",
+                                              got_str, exp_str);
+
+                        mem_free(got_str);
+                        mem_free(exp_str);
+                        result = false;
+                    }
+
+                    if (expr->kind == AST_EXPR_IGNORED_VALUE &&
+                        (suggested_type->mrv.directives &&
+                         suggested_type->mrv.directives[i] &&
+                         (suggested_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED)))
+                    {
+                        resolver_report_error(resolver, expr->file_pos,
+                                              "This returned value has the '#required' directive, so it is not allowed to be ignored");
+                        result = false;
+                        break;
+                    }
+                }
+
+                if (result) expression->type = suggested_type;
+                break;
+            }
+
+            case AST_EXPR_IGNORED_VALUE:
+            {
+                assert(suggested_type);
+                expression->type = suggested_type;
+                break;
+            }
+
+            case AST_EXPR_MAKE_LVALUE:
+            {
+                expression->type = expression->make_lvalue.expression->type;
+                break;
+            }
+
+            case AST_EXPR_FUNC_NAME:
+            {
+                Atom func_name = resolver->current_func_decl->identifier->atom;
+                ast_string_literal_expression_new(resolver->context, expression,
+                                                  expression->file_pos, func_name);
+                result &= resolver_resolve_expression(resolver, expression, scope);
                 break;
             }
 
@@ -2323,14 +2790,28 @@ namespace Zodiac
 				{
 					resolver_transform_to_cast_expression(resolver, lhs, rhs->type);
 				}
-				else assert(false);
+                else
+                {
+                    auto lhs_str = ast_type_to_string(lhs->type);
+                    auto rhs_str = ast_type_to_string(rhs->type);
+                    resolver_report_error(resolver, expression->file_pos, "Mismathing integer types in binary expression\n\tlhs: %s\n\trhs: %s",
+                                          lhs_str, rhs_str);
+                    mem_free(lhs_str);
+                    mem_free(rhs_str);
+                    return false;
+                }
+            }
+            else if (lhs->type == Builtin::type_pointer_to_void &&
+                     rhs->type->kind == AST_TYPE_POINTER)
+            {
+                resolver_transform_to_cast_expression(resolver, rhs, lhs->type);
             }
             else
             {
                 auto lhs_str = ast_type_to_string(lhs->type);
                 auto rhs_str = ast_type_to_string(rhs->type);
                 resolver_report_error(resolver, expression->file_pos,
-                                      "Mismatching types in binary expression:\n\tLeft size: %s\n\tRight size: %s",
+                                      "Mismatching types in binary expression:\n\tLeft side: %s\n\tRight side: %s",
                                       lhs_str, rhs_str);
                 mem_free(lhs_str);
                 mem_free(rhs_str);
@@ -2503,7 +2984,7 @@ namespace Zodiac
                     return false;
                 }
             }
-            else assert(false);
+            else return false;
         }
         else if (base_decl->kind == AST_DECL_IMPORT)
         {
@@ -2570,7 +3051,7 @@ namespace Zodiac
     }
 
     bool resolver_resolve_identifier(Resolver* resolver, AST_Identifier* identifier,
-                                     AST_Scope* scope)
+                                     AST_Scope* scope, bool report_undeclared/*=true*/)
     {
         assert(resolver);
         assert(identifier);
@@ -2584,9 +3065,10 @@ namespace Zodiac
         AST_Declaration* decl = find_declaration(resolver->context, scope, identifier);
         if (!decl)
         {
-            resolver_report_error(resolver, identifier->file_pos,
-                                  "Reference to undeclared identifier: %s",
-                                  identifier->atom.data);
+            if (report_undeclared)
+                resolver_report_error(resolver, identifier->file_pos,
+                                      "Reference to undeclared identifier: %s",
+                                      identifier->atom.data);
             return false;
         }
 
@@ -2624,7 +3106,21 @@ namespace Zodiac
             case AST_TYPE_SPEC_IDENT:
             {
                 AST_Identifier* ident = type_spec->identifier.identifier;
-                result &= resolver_resolve_identifier(resolver, ident, scope);
+                bool poly_res = true;
+                if (poly_scope)
+                {
+                    poly_res &= resolver_resolve_identifier(resolver, ident, poly_scope, false);
+                }
+                else
+                {
+                    result &= resolver_resolve_identifier(resolver, ident, scope);
+                }
+                if (!poly_res)
+                {
+                    result &= resolver_resolve_identifier(resolver, ident, scope);
+                }
+                // assert(poly_res);
+
                 if (!result) break;
 
                 assert(ident->declaration);
@@ -2812,6 +3308,57 @@ namespace Zodiac
                 break;
             }
 
+            case AST_TYPE_SPEC_MRV:
+            {
+                BUF(AST_Type*) mrv_types = nullptr;
+                for (uint64_t i = 0; i < BUF_LENGTH(type_spec->mrv.specs); i++)
+                {
+                    AST_Type* mrv_type = nullptr;
+                    bool mrv_res = resolver_resolve_type_spec(resolver, type_spec->file_pos,
+                                                              type_spec->mrv.specs[i],
+                                                              &mrv_type, scope, poly_scope);
+                    if (mrv_res)
+                    {
+                        assert(mrv_type);
+                        BUF_PUSH(mrv_types, mrv_type);
+                    }
+
+                    result &= mrv_res;
+                }
+
+                if (result)
+                {
+                    if (BUF_LENGTH(mrv_types) == 1)
+                    {
+                        *type_dest = mrv_types[0];
+                    }
+                    else
+                    {
+                        *type_dest = ast_find_or_create_mrv_type(resolver->context, mrv_types,
+                                                                 type_spec->mrv.directives,
+                                                                 scope);
+                        assert(*type_dest);
+                        AST_Type* struct_type = (*type_dest)->mrv.struct_type;
+                        auto member_decls = struct_type->aggregate_type.member_declarations;
+                        for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
+                        {
+                            result &= resolver_resolve_declaration(resolver, member_decls[i],
+                                                                   scope);
+                        }
+                    }
+                }
+
+                BUF_FREE(mrv_types);
+                break;
+            }
+
+            case AST_TYPE_SPEC_VARARG:
+            {
+                assert(Builtin::type_Array_Ref_of_Any);
+                *type_dest = Builtin::type_Array_Ref_of_Any;
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -2893,6 +3440,7 @@ namespace Zodiac
         assert(lhs);
         assert(rhs);
 
+        if (lhs == Builtin::type_Any) return true;
         if (lhs == rhs) return true;
 
         bool lhs_integer = lhs->flags & AST_TYPE_FLAG_INT;
@@ -3022,6 +3570,51 @@ namespace Zodiac
 
     }
 
+    bool resolver_transform_to_any(Resolver* resolver, AST_Expression* expression,
+                                   AST_Scope* scope)
+    {
+        if (expression->type == Builtin::type_Any) return true;
+
+        AST_Expression* old_expr = ast_expression_new(resolver->context, expression->file_pos,
+                                                      expression->kind);
+        *old_expr = *expression;
+        assert(old_expr->type);
+
+        expression->kind = AST_EXPR_COMPOUND_LITERAL;
+        expression->type = Builtin::type_Any;
+        expression->compound_literal.expressions = nullptr;
+        expression->flags &= ~AST_EXPR_FLAG_RESOLVED;
+
+        AST_Type_Spec* type_spec = ast_type_spec_from_type_new(resolver->context,
+                                                               expression->file_pos,
+                                                               old_expr->type);
+        AST_Expression* type_info_expr = ast_get_type_info_expression_new(resolver->context,
+                                                                          expression->file_pos,
+                                                                          type_spec);
+
+        BUF_PUSH(expression->compound_literal.expressions, type_info_expr);
+
+        AST_Type_Spec* void_ptr_type_spec =
+            ast_type_spec_from_type_new(resolver->context, expression->file_pos,
+                                        Builtin::type_pointer_to_void);
+
+        if (!(old_expr->flags & AST_EXPR_FLAG_LVALUE))
+        {
+            old_expr = ast_make_lvalue_expression_new(resolver->context, old_expr->file_pos,
+                                                      old_expr);
+        }
+
+        AST_Expression* value_pointer_expr = ast_unary_expression_new(resolver->context,
+                                                                      expression->file_pos,
+                                                                      AST_UNOP_ADDROF, old_expr);
+        value_pointer_expr = ast_cast_expression_new(resolver->context, expression->file_pos,
+                                                     void_ptr_type_spec, value_pointer_expr);
+        BUF_PUSH(expression->compound_literal.expressions, value_pointer_expr);
+
+        bool res = resolver_resolve_expression(resolver, expression, scope, Builtin::type_Any);
+        return res;
+    }
+
     void resolver_add_overload(Resolver* resolver, AST_Declaration* overload_decl,
                                AST_Declaration* func_decl)
     {
@@ -3139,7 +3732,9 @@ namespace Zodiac
         else if (match_count == 0)
         {
             resolver_report_error(resolver, call_expression->file_pos,
-                                  "No suitable (polymorphic) overload was found");
+                                  "No suitable (polymorphic) overload was found for \"%s\"",
+                overload_decl->identifier->atom.data);
+            return nullptr;
         }
         else assert(match_count == 1);
 
@@ -3176,11 +3771,30 @@ namespace Zodiac
 
         assert((func_decl->flags & AST_DECL_FLAG_RESOLVED) || allow_poly_templates);
 
-        if (BUF_LENGTH(func_decl->function.args) !=
-            BUF_LENGTH(call_expression->call.arg_expressions))
+        bool is_vararg = false;
+
+        auto arg_decl_count = BUF_LENGTH(func_decl->function.args);
+        auto arg_expr_count = BUF_LENGTH(call_expression->call.arg_expressions);
+
+        if (arg_decl_count != arg_expr_count)
         {
-            *valid_match = false;
-            return UINT64_MAX;
+            if (func_decl->flags & AST_DECL_FLAG_FUNC_VARARG)
+            {
+                if (!(arg_expr_count >= arg_decl_count))
+                {
+                    *valid_match = false;
+                    return UINT64_MAX;
+                }
+                else
+                {
+                    is_vararg = true;
+                }
+            }
+            else
+            {
+                *valid_match = false;
+                return UINT64_MAX;
+            }
         }
 
         auto arg_decls = func_decl->function.args;
@@ -3195,11 +3809,13 @@ namespace Zodiac
 
             assert(arg_decl->kind == AST_DECL_MUTABLE);
             auto arg_ts = arg_decl->mutable_decl.type_spec;
-            // if (arg_ts->kind == AST_TYPE_SPEC_IDENTIFIER &&
-            //     type_spec_matches_poly_arg(resolver, func_decl, arg_ts))
-            // {
-            //     assert(false);
-            // }
+
+            if (arg_ts->kind == AST_TYPE_SPEC_VARARG)
+            {
+                *valid_match = true;
+                distance += 10;
+                break;
+            }
 
             auto poly_flags = (AST_TYPE_SPEC_POLY_FUNC_ARG |
                                AST_TYPE_SPEC_FLAG_HAS_POLY_CHILDREN |
@@ -3410,6 +4026,12 @@ namespace Zodiac
                 resolver_report_error(resolver, statement->file_pos,
                                       "Defer statement not allow in defer statement");
                     return false;
+            }
+
+            case AST_STMT_POST_INCREMENT:
+            case AST_STMT_POST_DECREMENT:
+            {
+                return true;
             }
 
             default: assert(false);
@@ -3948,7 +4570,7 @@ namespace Zodiac
         bool old_zrb_val = bool_lit_expr->bool_literal.boolean;
         zrb_decl->constant_var.init_expression->bool_literal.boolean = true;
 
-        IR_Module ir_module = ir_builder_emit_module(&ir_builder, resolver->module, false);
+        IR_Module ir_module = ir_builder_emit_module(&ir_builder, resolver->module);
         resolver_clean_module_after_emit(resolver, resolver->module);
 
         zrb_decl->constant_var.init_expression->bool_literal.boolean = old_zrb_val;

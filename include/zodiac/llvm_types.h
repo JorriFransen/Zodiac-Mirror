@@ -16,6 +16,7 @@ namespace Zodiac
         static LLVMTypeRef String;
         static LLVMTypeRef Type_Info;
         static LLVMTypeRef Type_Info_Kind;
+        static LLVMTypeRef Type_Info_Flag;
         static LLVMTypeRef Type_Info_Info_Union;
         static LLVMTypeRef Type_Info_Aggregate_Member;
         static LLVMTypeRef Type_Info_Enum_Member;
@@ -25,6 +26,7 @@ namespace Zodiac
         static LLVMTypeRef _instance_Type_Info_Aggregate;
         static LLVMTypeRef _instance_Type_Info_Enum;
         static LLVMTypeRef _instance_Type_Info_Function;
+        static LLVMTypeRef _instance_Type_Info_Static_Array;
 
         static LLVMTypeRef ptr_to_u8;
         static LLVMTypeRef ptr_to_Type_Info;

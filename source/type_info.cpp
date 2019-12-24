@@ -27,6 +27,7 @@ namespace Zodiac
 
         if (type->flags & AST_TYPE_FLAG_REGISTERING_TYPE_INFO)
         {
+            if (type->info_index != 0) return type->info_index;
             return 0; // Signal that our caller will need a placeholder
         }
 
@@ -62,16 +63,30 @@ namespace Zodiac
                 index = next_type_info_index(context);
                 type->info_index = index;
                 tid->type_infos[index].kind = BASE;
+
+                if (type->flags & AST_TYPE_FLAG_INT)
+                {
+                    tid->type_infos[index].flags |= INT;
+                }
+                if (type->flags & AST_TYPE_FLAG_FLOAT)
+                {
+                    tid->type_infos[index].flags |= FLOAT;
+                }
+                if (type->flags & AST_TYPE_FLAG_SIGNED)
+                {
+                    tid->type_infos[index].flags |= SIGNED;
+                }
                 break;
             }
 
             case AST_TYPE_POINTER:
             {
-                uint64_t base_id = maybe_register_type_info(context, type->pointer.base, false,
-                                                            placeholders);
                 index = next_type_info_index(context);
                 tid->type_infos[index].kind = POINTER;
                 type->info_index = index;
+
+                uint64_t base_id = maybe_register_type_info(context, type->pointer.base, false,
+                                                            placeholders);
 
                 if (base_id)
                 {
@@ -189,6 +204,20 @@ namespace Zodiac
                     register_aggregate_members(context, indices, nullptr);
 
                 BUF_FREE(indices);
+                break;
+            }
+
+            case AST_TYPE_STATIC_ARRAY:
+            {
+                uint64_t base_id = maybe_register_type_info(context, type->static_array.base,
+                                                            false, placeholders);
+                assert(base_id);
+                index = next_type_info_index(context);
+                tid->type_infos[index].kind = STATIC_ARRAY;
+                type->info_index = index;
+
+                tid->type_infos[index].static_array.base.id = base_id;
+                tid->type_infos[index].static_array.count = type->static_array.count;
                 break;
             }
 
@@ -377,7 +406,7 @@ namespace Zodiac
 
         if (tid->agg_count + free_required > tid->agg_cap)
         {
-            uint64_t new_cap = MAX(tid->agg_cap + free_required, tid->agg_cap * 2);
+            uint64_t new_cap = _MAX(tid->agg_cap + free_required, tid->agg_cap * 2);
             auto new_agg_members =
                 (Type_Info_Aggregate_Member*)mem_alloc(sizeof(Type_Info_Aggregate_Member) *
                                                        new_cap);
@@ -398,7 +427,7 @@ namespace Zodiac
 
         if (tid->enum_count + free_required > tid->enum_cap)
         {
-            uint64_t new_cap = MAX(tid->enum_cap + free_required, tid->enum_cap * 2);
+            uint64_t new_cap = _MAX(tid->enum_cap + free_required, tid->enum_cap * 2);
             auto new_enum_members =
                 (Type_Info_Enum_Member*)mem_alloc(sizeof(Type_Info_Enum_Member) *
                                                        new_cap);
@@ -520,6 +549,15 @@ namespace Zodiac
                     assert(mem_id < tid->agg_count);
                     type_info->function.first_arg.aggregate_member =
                         &tid->aggregate_members[mem_id];
+                    break;
+                }
+
+                case STATIC_ARRAY:
+                {
+                    auto base_id = type_info->static_array.base.id;
+                    assert(base_id < tid->type_info_count);
+                    type_info->static_array.base.type_info = &tid->type_infos[base_id];
+
                     break;
                 }
 

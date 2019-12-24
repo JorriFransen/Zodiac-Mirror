@@ -250,7 +250,14 @@ namespace Zodiac
             ident_length++;
         }
 
-        lexer_push_token(lexer, TOK_IDENTIFIER, ident_file_pos, ident_length);
+        if (ident_length == 1 && cc == '_')
+        {
+            lexer_push_token(lexer, TOK_UNDERSCORE, ident_file_pos, ident_length);
+        }
+        else
+        {
+            lexer_push_token(lexer, TOK_IDENTIFIER, ident_file_pos, ident_length);
+        }
     }
 
     static void lex_integer_or_float(Lexer* lexer)

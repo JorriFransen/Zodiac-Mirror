@@ -3,6 +3,9 @@ _c :: import c;
 
 int :: typedef s64;
 
+_printer :: import print;
+using _printer;
+
 Vec2 :: struct
 {
     x: int;
@@ -17,14 +20,15 @@ Vec3 :: struct
 
 main :: () -> int
 {
+    _c.open_std_handles();
 
     v : Vec2 = {1, 2};
     v2 : Vec2 = { 3, 4 };
     v3 : Vec3 = { {5, 6}, 7.8 };
 
-    _c.printf("v : { %d, %d }\n", v.x,  v.y);
-    _c.printf("v2: { %d, %d }\n", v2.x,  v2.y);
-    _c.printf("v3: { { %d, %d }, %f }\n", v3.xy.x, v3.xy.y, v3.z);
+    print("v : { %, % }\n", v.x,  v.y);
+    print("v2: { %, % }\n", v2.x,  v2.y);
+    print("v3: { { %, % }, % }\n", v3.xy.x, v3.xy.y, v3.z);
 
     return 0;
 }

@@ -6,6 +6,16 @@ Vec2i :: struct
     y : s64;
 }
 
+vec2i_new :: (x: s64, y: s64) -> Vec2i
+{
+    result : Vec2i = { x, y };
+    return result;
+}
+
+vec2i_new_return_literal_directly :: (x: s64, y: s64) -> Vec2i
+{
+    return { x, y };
+}
 
 main :: () -> u64
 {
@@ -26,6 +36,17 @@ main :: () -> u64
 
     assert(b.x == 48);
     assert(b.y == 94);
+
+    d := vec2i_new(42, 43);
+    _c.printf("d: %d,%d\n", d.x, d.y);
+    assert(d.x == 42);
+    assert(d.y == 43);
+
+    e := vec2i_new_return_literal_directly(44, 45);
+    _c.printf("e: %d,%d\n", e.x, e.y);
+    assert(e.x == 44);
+    assert(e.y == 45);
+
 
     return 0;
 }
