@@ -30,5 +30,7 @@ main :: () -> int
     print("v2: { %, % }\n", v2.x,  v2.y);
     print("v3: { { %, % }, % }\n", v3.xy.x, v3.xy.y, v3.z);
 
+    _c.getchar();
+
     return 0;
 }
