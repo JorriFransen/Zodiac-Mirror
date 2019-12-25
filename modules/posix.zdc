@@ -119,7 +119,7 @@ static_if (PLATFORM_LINUX)
         return status & 0177;
     }
 
-    //exit_status :: (status: int) -> int { return status >> 8; }
+    exit_status :: (status: int) -> int { return status >> 8; }
 
     #foreign read :: (fd: fd_t, buf: *void, count: s32) -> s32;
     #foreign write :: (fd: fd_t, buf: *void, count: s32) -> s32;
