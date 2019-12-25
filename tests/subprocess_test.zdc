@@ -10,16 +10,14 @@ os :: import os;
 main :: ()
 {
     open_std_handles();
+    print("Subprocess test\n");
 
     err := os.Execute_Process_Error.NONE;
     res : os.Execute_Process_Result;
 
-    print("Subprocess test\n");
-
     {
-        err, res = os.execute_process_shell("./tp", "");
+        err, res = os.execute_process_shell("tp", "");
         assert(err == os.Execute_Process_Error.NONE);
-        defer os.execute_process_result_free(*res);
         _c.printf("os.execute_process returned: %d\n", res.exit_code);
         // assert(res.exit_code == 7);
 
@@ -28,9 +26,8 @@ main :: ()
     }
 
     {
-        err, res = os.execute_process("ls", "-lah");
+        err, res = os.execute_process("fossil", "help")
         assert(err == os.Execute_Process_Error.NONE);
-        defer os.execute_process_result_free(*res);
         _c.printf("os.execute_process returned: %d\n", res.exit_code);
 
         if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
@@ -38,9 +35,9 @@ main :: ()
     }
 
     {
-        err, res = os.execute_process("echo", "Hello world!");
+        static_if(PLATFORM_LINUX) err, res = os.execute_process("echo", "Hello world!");
+        else                      err, res = os.execute_process_shell("echo", "Hello World!");
         assert(err == os.Execute_Process_Error.NONE);
-        defer os.execute_process_result_free(*res);
         _c.printf("os.execute_process returned: %d\n", res.exit_code);
 
         if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
@@ -48,9 +45,12 @@ main :: ()
     }
 
     {
-        err, res = os.execute_process("sh", "-c", ">&2 echo \"Echo to stderr!!!\"");
+        static_if (PLATFORM_LINUX)
+            err, res = os.execute_process("sh", "-c", ">&2 echo \"Echo to stderr!!!\"");
+        else
+            err, res = os.execute_process("cmd", "/c", "echo Echo to stderr!!! >&2");
+
         assert(err == os.Execute_Process_Error.NONE);
-        defer os.execute_process_result_free(*res);
         _c.printf("os.execute_process returned: %d\n", res.exit_code);
 
         if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
@@ -60,7 +60,6 @@ main :: ()
     {
         err, res = os.execute_process_shell(">&2 echo", "Echo to stderr via shell...");
         assert(err == os.Execute_Process_Error.NONE);
-        defer os.execute_process_result_free(*res);
         _c.printf("os.execute_process returned: %d\n", res.exit_code);
 
         if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);

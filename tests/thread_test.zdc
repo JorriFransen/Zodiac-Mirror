@@ -169,7 +169,7 @@ main :: ()
 }
 
 SEM_BUFFER_CAP     : s64 : 8;
-SEM_BUFFER_COUNT   : s64 : 11;
+SEM_BUFFER_COUNT   : s64 : 20;
 SEM_PRODUCER_COUNT : s64 : 10;
 SEM_CONSUMER_COUNT : s64 : 7;
 
@@ -212,7 +212,7 @@ semaphore_test :: ()
         queue_enqueue(*pc_data.empty_buffers, buffer);
     }
 
-  producers : Array(Thread) = { null, 0, 0 };
+    producers : Array(Thread) = { null, 0, 0 };
     defer array_free(*producers);
 
     for (i : s64 = 0; i < SEM_PRODUCER_COUNT; i++)
@@ -221,7 +221,7 @@ semaphore_test :: ()
         array_add(*producers, pt);
     }
 
-  consumers : Array(Thread) = { null, 0, 0 };
+    consumers : Array(Thread) = { null, 0, 0 };
     defer array_free(*consumers);
     for (i : s64 = 0; i < SEM_CONSUMER_COUNT; i++)
     {
@@ -230,17 +230,22 @@ semaphore_test :: ()
     }
 
     while (produced_count < SEM_PRODUCE_MAX) { std.sleep(1); }
-
     assert(pc_done == 0);
     while (!compare_and_swap(*pc_done, 0, 1)) {}
+    assert(pc_done == 1);
+
     for (i : s64 = 0; i < producers.count; i++)
     {
+        // print("Joining producer: %\n", i);
         os.join_thread(producers[i]);
     }
+    print("Joined % producers\n", producers.count);
+
     for (i : s64 = 0; i < consumers.count; i++)
     {
         os.join_thread(consumers[i]);
     }
+    print("Joined % consumers\n", consumers.count);
 
     print("produced_count %\n", produced_count);
 
@@ -263,30 +268,45 @@ semaphore_test :: ()
 
 produce :: (thread: *Thread) -> *void
 {
-    while (!compare_and_swap(*pc_done, 1, 1) && produced_count < SEM_PRODUCE_MAX)
+    while (!compare_and_swap(*pc_done, 1, 1))
     {
         while (!compare_and_swap(*produced_count, produced_count, produced_count + 1)) {}
+        if (produced_count > SEM_PRODUCE_MAX)
+        {
+            while (!compare_and_swap(*produced_count, produced_count, produced_count - 1)) {}
+            break;
+        }
 
         semaphore_wait(*sem_buf_empty);
 
+        // print("Waiting for sem_lock (dequeue)\n");
         semaphore_wait(*sem_lock);
         pc_data := (:*PC_Data)thread.user_data;
         buffer := queue_dequeue(*pc_data.empty_buffers);
-        print("Producing in buffer: %\n", buffer);
+        // print("starting producer, produced count: %\n", produced_count);
+        // print("Producing in buffer: %\n", buffer);
         semaphore_signal(*sem_lock);
 
         for (i : s64 = 0; i < SEM_BUFFER_CAP; i++)
         {
             buffer[i] = (:u64)(i * i);
-            std.sleep(5);
+            static_if (PLATFORM_WINDOWS)
+            {
+                std.sleep(50);
+            }
+            else
+            {
+                std.sleep(5);
+            }
         }
+
+        // print("\tFilled buffer: %\n", buffer);
 
         semaphore_wait(*sem_lock);
         queue_enqueue(*pc_data.full_buffers, buffer);
         semaphore_signal(*sem_lock);
 
         semaphore_signal(*sem_buf_full);
-
     }
 
     return null;
@@ -307,10 +327,11 @@ consume :: (thread: *Thread) -> *void
         print("=========================================\n");
         for (i : s64 = 0; i < SEM_BUFFER_CAP; i++)
         {
-            print("buffer[%lu]: %\n", i, buffer[i]);
+            print("buffer[%]: %\n", i, buffer[i]);
             assert(buffer[i] == (:u64)(i * i));
         }
         print("=========================================\n\n");
+        // print("consumed buffer: %\n\n", buffer);
         mutex_unlock(*print_lock);
 
         semaphore_wait(*sem_lock);
@@ -318,6 +339,7 @@ consume :: (thread: *Thread) -> *void
         semaphore_signal(*sem_lock);
 
         semaphore_signal(*sem_buf_empty);
+
     }
 
     return null;

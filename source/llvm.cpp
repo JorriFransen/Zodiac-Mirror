@@ -142,6 +142,13 @@ namespace Zodiac
                     LLVMDisposeMessage(llvm_module_string);
                 }
                 // assert(false);
+
+                auto flag = "CodeView";
+                auto flag_len = strlen(flag);
+                auto flag_val = LLVMConstInt(LLVM_Type::u32, 1, false);
+                auto flag_md = LLVMValueAsMetadata(flag_val);
+                LLVMAddModuleFlag(builder->llvm_module, LLVMModuleFlagBehavior::LLVMModuleFlagBehaviorWarning, "CodeView",
+                                  flag_len, flag_md);
             }
 
             // auto _module = (llvm::Module*)module;
@@ -169,13 +176,14 @@ namespace Zodiac
             LLVMInitializeNativeAsmPrinter();
 
             auto target_triple = LLVMGetDefaultTargetTriple();
-            // printf("Target triple: %s\n", target_triple);
+            LLVMSetTarget(builder->llvm_module, target_triple);
             LLVMTargetRef llvm_target = nullptr;
             bool target_result = LLVMGetTargetFromTriple(target_triple, &llvm_target, &error);
             if (target_result)
                 fprintf(stderr, "%s\n", error);
             LLVMDisposeMessage(error);
             error = nullptr;
+
 
             auto cpu = "generic";
             auto features = "";
