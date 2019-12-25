@@ -1070,11 +1070,14 @@ namespace Zodiac
         }
 
         auto type = decl->aggregate_type.type;
-        for (uint64_t i = 0; i < BUF_LENGTH(type->overloads); i++)
+        if (result)
         {
-            AST_Identifier* overload_ident = type->overloads[i].identifier;
-            result &= resolver_resolve_identifier(resolver, overload_ident, scope);
-            if (result) assert(overload_ident->declaration);
+            for (uint64_t i = 0; i < BUF_LENGTH(type->overloads); i++)
+            {
+                AST_Identifier* overload_ident = type->overloads[i].identifier;
+                result &= resolver_resolve_identifier(resolver, overload_ident, scope);
+                if (result) assert(overload_ident->declaration);
+            }
         }
 
         BUF_FREE(members_to_resolve.members);
