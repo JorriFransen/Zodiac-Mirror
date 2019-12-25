@@ -104,20 +104,64 @@ static_if (PLATFORM_LINUX)
 
     #foreign realpath :: (path: *u8, resolved_path: *u8) -> *u8;
 
-    WEXITSTATUS :: (status: u32) -> u32
-    {
-        return status >> 8;
-    }
-
-    WIFEXITED :: (status: u32) -> u32
-    {
-        return (:u32)(_WSTATUS(status) == 0);
-    }
-
-    _WSTATUS :: (status: u32) -> u32
+    _WSTATUS :: (status: s32) -> s32
     {
         return status & 0177;
     }
+
+    WEXITSTATUS :: (status: s32) -> s32
+    {
+        return (status & 65280) >> 8;
+    }
+
+    WIFEXITED :: (status: s32) -> s32
+    {
+        return (:s32)(WTERMSIG(status) == 0);
+    }
+
+    WIFSIGNALED :: (status: s32) -> s32
+    {
+        return (:s32)((((:s8)(((status & 127) + 1))) >> 1) > 1);
+    }
+
+    WTERMSIG :: (status: s32) -> s32
+    {
+        return status & 127;
+    }
+
+    SIGHUP :: 1;
+    SIGINT :: 2;
+    SIGQUIT :: 3;
+    SIGILL :: 4;
+    SIGTRAP :: 5;
+    SIGABRT :: 6;
+    SIGBUS :: 7;
+    SIGFPE :: 8;
+    SIGKILL :: 9;
+    SIGUSR1 :: 10;
+    SIGSEGV :: 11;
+    SIGUSR2 :: 12;
+    SIGPIPE :: 13;
+    SIGALRM :: 14;
+    SIGTERM :: 15;
+    SIGSTKFLT :: 16;
+    SIGCHLD :: 17;
+    SIGCONT :: 18;
+    SIGSTOP :: 19;
+    SIGTSTP :: 20;
+    SIGTTIN :: 21;
+    SIGTTOU :: 22;
+    SIGURG :: 23;
+    SIGXCPU :: 24;
+    SIGXFSZ :: 25;
+    SIGVTALRM :: 26;
+    SIGPROF :: 27;
+    SIGWINCH :: 28;
+    SIGIO :: 29;
+    SIGPWR :: 30;
+    SIGSYS :: 31;
+    SIGRTMIN :: 34;
+    SIGRTMAX :: 64;
 
     exit_status :: (status: int) -> int { return status >> 8; }
 
@@ -130,7 +174,7 @@ static_if (PLATFORM_LINUX)
     #foreign execl :: (path: *u8, arg: *u8, ...) -> s32;
     #foreign execv :: (path: *u8, args: **u8) -> s32;
     #foreign execvp :: (path: *u8, args: **u8) -> s32;
-    #foreign wait :: (stat_loc: *u32) -> pid_t;
+    #foreign wait :: (stat_loc: *s32) -> pid_t;
     #foreign _exit :: (status: int) -> void;
     #foreign getpid :: () -> pid_t;
 }

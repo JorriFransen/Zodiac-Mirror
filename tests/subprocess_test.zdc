@@ -10,7 +10,6 @@ os :: import os;
 main :: ()
 {
     open_std_handles();
-
     print("Subprocess test\n");
 
     err := os.Execute_Process_Error.NONE;
@@ -46,9 +45,11 @@ main :: ()
     }
 
     {
-        static_if (PLATFORM_LINUX) err, res = os.execute_process("sh", "-c", ">&2 echo \"Echo to stderr!!!\"");
-        else                       err, res = os.execute_process("cmd", "/c",
-                                                                "echo Echo to stderr!!! >&2");
+        static_if (PLATFORM_LINUX)
+            err, res = os.execute_process("sh", "-c", ">&2 echo \"Echo to stderr!!!\"");
+        else
+            err, res = os.execute_process("cmd", "/c", "echo Echo to stderr!!! >&2");
+
         assert(err == os.Execute_Process_Error.NONE);
         _c.printf("os.execute_process returned: %d\n", res.exit_code);
 

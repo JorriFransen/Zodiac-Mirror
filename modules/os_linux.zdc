@@ -315,6 +315,12 @@ Execute_Process_Result :: struct
     stderr    : String;
 }
 
+execute_process_result_free :: (exec_prog_res: *Execute_Process_Result)
+{
+    _c.free(exec_prog_res.stdout.data);
+    _c.free(exec_prog_res.stderr.data);
+}
+
 execute_process :: (command: String, args: ...) ->
     Execute_Process_Error #required,
     Execute_Process_Result
@@ -402,12 +408,19 @@ _execute_process :: (command: String, args: Array_Ref(*u8)) ->
         pipe_close_write(*out);
         pipe_close_write(*err);
 
-        status : u32 = 0;
+        status : s32 = 0;
         wait_res := posix.wait(*status);
         assert(wait_res == pid);
-        assert(posix.WIFEXITED(status));
-
-        result.exit_code = posix.WEXITSTATUS(status);
+        if (posix.WIFEXITED(status))
+        {
+            result.exit_code = (:u32)posix.WEXITSTATUS(status);
+        }
+        else if (posix.WIFSIGNALED(status))
+        {
+            term_sig := posix.WTERMSIG(status);
+            assert(false);
+        }
+        else assert(false);
 
         io_err := IO_Error.NONE;
 
