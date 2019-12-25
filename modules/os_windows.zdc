@@ -608,9 +608,9 @@ _execute_process :: (exe_name: String, args: Array_Ref(*u8)) ->
     _c.memset(*startup_info, 0, sizeof(STARTUPINFOA));
     startup_info.cb = (:DWORD)sizeof(STARTUPINFOA);
     startup_info.dwFlags |= STARTF_USESTDHANDLES;
-    startup_info.hStdInput = stdin_read_handle; 
-    startup_info.hStdOutput = stdout_write_handle;
-    startup_info.hStdError = stderr_write_handle;
+    // startup_info.hStdInput = stdin_read_handle; 
+    // startup_info.hStdOutput = stdout_write_handle;
+    // startup_info.hStdError = stderr_write_handle;
 
     sb := string_builder.create(512);
     defer string_builder.free(*sb);
@@ -636,9 +636,6 @@ _execute_process :: (exe_name: String, args: Array_Ref(*u8)) ->
         }
         assert(false);
     }
-
-    wait_ret := WaitForSingleObject(process_info.hProcess, INFINITE);
-    assert(wait_ret == WAIT_OBJECT_0);
 
     res_sb := string_builder.create(1024);
     defer string_builder.free(*res_sb);
@@ -688,7 +685,11 @@ _execute_process :: (exe_name: String, args: Array_Ref(*u8)) ->
 
     result.stderr = string_builder.copy_to_string(*res_sb);
 
+    wait_ret := WaitForSingleObject(process_info.hProcess, INFINITE);
+    assert(wait_ret == WAIT_OBJECT_0);
+
     exit_code : DWORD;
+
     exit_code_res := GetExitCodeProcess(process_info.hProcess, *exit_code);
     assert(exit_code_res);
 
@@ -730,4 +731,10 @@ execute_process_shell :: (command: String, args: ...) ->
     array_add(*_array, command_str.data);
 
     return _execute_process("cmd", make_array_ref(_array));
+}
+
+execute_process_result_free :: (exec_prog_res: *Execute_Process_Result)
+{
+    _c.free(exec_prog_res.stdout.data);
+    _c.free(exec_prog_res.stderr.data);
 }
