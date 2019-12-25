@@ -83,8 +83,7 @@ namespace Zodiac
 
         for (uint64_t i = 0; i < BUF_LENGTH(module->global_declarations); i++)
         {
-            auto decl = module->global_declarations[i];
-            if (decl->kind == AST_DECL_USING)
+            auto decl = module->global_declarations[i]; if (decl->kind == AST_DECL_USING)
             {
                 resolver_resolve_declaration(resolver, decl, module->module_scope);
             }
@@ -431,6 +430,9 @@ namespace Zodiac
                         {
                             assert(BUF_LENGTH(init_expr->type->mrv.types));
                             declaration->mutable_decl.type = init_expr->type->mrv.types[0];
+
+                            resolver_report_warning(resolver, declaration->file_pos,
+                                                    "Implicityly ignoring multiple return values");
                         }
                         else
                         {
@@ -858,43 +860,58 @@ namespace Zodiac
                 AST_Type* mrv_type = init_expr->type;
                 assert(mrv_type->kind == AST_TYPE_MRV);
 
-                assert(BUF_LENGTH(lvalue_list->list.expressions) ==
-                       BUF_LENGTH(mrv_type->mrv.types));
+                auto lvalue_count = BUF_LENGTH(lvalue_list->list.expressions);
+                auto mrv_type_count = BUF_LENGTH(mrv_type->mrv.types);
 
-                for (uint64_t i = 0; i < BUF_LENGTH(mrv_type->mrv.types); i++)
+                assert(lvalue_count <= mrv_type_count);
+
+                for (uint64_t i = 0; i < mrv_type_count; i++)
                 {
-                    AST_Expression* lvalue_expr = lvalue_list->list.expressions[i];
-                    if (lvalue_expr->kind != AST_EXPR_IGNORED_VALUE)
+                    if (i < lvalue_count)
                     {
-                        AST_Identifier* lvalue_ident = lvalue_expr->identifier;
-                        AST_Type* type = mrv_type->mrv.types[i];
-                        AST_Type_Spec* type_spec = ast_type_spec_from_type_new(resolver->context,
-                                                                               lvalue_expr->file_pos,
-                                                                               type);
-                        AST_Declaration* decl = ast_mutable_declaration_new(resolver->context,
-                                                                            lvalue_expr->file_pos,
-                                                                            lvalue_ident,
-                                                                            type_spec,
-                                                                            nullptr,
-                                                                            declaration->location);
-                        assert(decl);
-
-                        BUF_PUSH(declaration->list.declarations, decl);
-
-                        bool decl_res = resolver_resolve_declaration(resolver, decl, scope);
-                        result &= decl_res;
-                        if (decl_res)
+                        AST_Expression* lvalue_expr = lvalue_list->list.expressions[i];
+                        if (lvalue_expr->kind != AST_EXPR_IGNORED_VALUE)
                         {
-                            result &= resolver_resolve_expression(resolver, lvalue_expr, scope);
+                            AST_Identifier* lvalue_ident = lvalue_expr->identifier;
+                            AST_Type* type = mrv_type->mrv.types[i];
+                            AST_Type_Spec* type_spec =
+                                ast_type_spec_from_type_new(resolver->context,
+                                                            lvalue_expr->file_pos,
+                                                            type);
+                            AST_Declaration* decl =
+                                ast_mutable_declaration_new(resolver->context,
+                                                            lvalue_expr->file_pos,
+                                                            lvalue_ident,
+                                                            type_spec,
+                                                            nullptr,
+                                                            declaration->location);
+                            assert(decl);
+
+                            BUF_PUSH(declaration->list.declarations, decl);
+
+                            bool decl_res = resolver_resolve_declaration(resolver, decl, scope);
+                            result &= decl_res;
+                            if (decl_res)
+                            {
+                                result &= resolver_resolve_expression(resolver, lvalue_expr,
+                                                                      scope);
+                            }
+                        }
+                        else if (mrv_type->mrv.directives[i])
+                        {
+                            resolver_report_error(resolver, lvalue_expr->file_pos,
+                                                "This returned value has the '#required' directive, so it is not allowed to be ignored");
+                            result = false;
+                            break;
                         }
                     }
-                    else if (mrv_type->mrv.directives[i])
-                    {
-                        resolver_report_error(resolver, lvalue_expr->file_pos,
-                                              "This returned value has the '#required' directive, so it is not allowed to be ignored");
-                        result = false;
-                        break;
-                    }
+                }
+
+                if (lvalue_count < mrv_type_count)
+                {
+                    resolver_report_warning(resolver, declaration->file_pos,
+                                            "Implicitly ignoring multiple return values after index: %d",
+                                            lvalue_count - 1);
                 }
 
                 break;
@@ -2572,10 +2589,13 @@ namespace Zodiac
             {
                 assert(suggested_type);
                 assert(suggested_type->kind == AST_TYPE_MRV);
-                assert(BUF_LENGTH(suggested_type->mrv.types) ==
-                        BUF_LENGTH(expression->list.expressions));
 
-                for (uint64_t i = 0; i < BUF_LENGTH(expression->list.expressions); i++)
+                auto list_expr_count = BUF_LENGTH(expression->list.expressions);
+                auto mrv_type_count = BUF_LENGTH(suggested_type->mrv.types);
+                assert(mrv_type_count >= list_expr_count);
+
+
+                for (uint64_t i = 0; i < list_expr_count; i++)
                 {
                     auto expr = expression->list.expressions[i];
 
@@ -2603,7 +2623,8 @@ namespace Zodiac
 
                     if (!result) break;
 
-                    bool types_match = resolver_check_assign_types(resolver, suggested_type->mrv.types[i],
+                    bool types_match = resolver_check_assign_types(resolver,
+                                                                   suggested_type->mrv.types[i],
                                                                    expr->type);
                     if (!types_match)
                     {
@@ -2629,6 +2650,13 @@ namespace Zodiac
                         result = false;
                         break;
                     }
+                }
+
+                if (list_expr_count < mrv_type_count)
+                {
+                    resolver_report_warning(resolver, expression->file_pos,
+                                            "Implicitly ignoring multiple return values after index: %d",
+                                            list_expr_count - 1);
                 }
 
                 if (result) expression->type = suggested_type;
@@ -4278,7 +4306,18 @@ namespace Zodiac
     {
         assert(rr);
 
-        return BUF_LENGTH(rr->errors) != 0;
+        auto err_count = BUF_LENGTH(rr->errors);
+        if (err_count == 0) return false;
+
+        for (uint64_t i = 0; i < err_count; i++)
+        {
+            if (!(rr->errors[i].flags & RE_FLAG_WARNING))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void resolve_result_report_errors(Resolve_Result* rr)
@@ -4289,9 +4328,19 @@ namespace Zodiac
         {
             Resolve_Error error = rr->errors[i];
 
-            fprintf(stderr, "%s:%" PRIu64 ":%" PRIu64 ": %s\n", error.file_pos.file_name,
-                    error.file_pos.line, error.file_pos.line_relative_char_pos,
-                    error.message);
+            fprintf(stderr, "%s:%" PRIu64 ":%" PRIu64 ": ", error.file_pos.file_name,
+                    error.file_pos.line, error.file_pos.line_relative_char_pos);
+
+            if (error.flags & RE_FLAG_WARNING)
+            {
+                fprintf(stderr, "Warning: ");
+            }
+            else
+            {
+                fprintf(stderr, "Error: ");
+            }
+
+            fprintf(stderr, "%s\n", error.message);
         }
     }
 
@@ -4804,7 +4853,9 @@ namespace Zodiac
         const size_t print_buf_size = 2048;
         static char print_buf[print_buf_size];
 
-        vsprintf(print_buf, format, args);
+        auto pr = vsprintf(print_buf, format, args);
+        assert(pr >= 0);
+        assert(pr < print_buf_size);
 
         auto message_length = strlen(print_buf);
         char* message = (char*)mem_alloc(message_length + 1);
@@ -4837,5 +4888,33 @@ namespace Zodiac
         va_end(args);
 
         return result;
+    }
+
+    void resolver_report_warning(Resolver* resolver, File_Pos file_pos, const char* format, ...)
+    {
+        va_list args;
+        va_start(args, format);
+        resolver_report_warning(resolver, file_pos, format, args);
+        va_end(args);
+    }
+
+    void resolver_report_warning(Resolver* resolver, File_Pos file_pos, const char* format,
+                                 va_list args)
+    {
+        const size_t print_buf_size = 2048;
+        static char print_buf[print_buf_size];
+
+        auto pr = vsprintf(print_buf, format, args);
+        assert(pr >= 0);
+        assert(pr < print_buf_size);
+
+        auto message_length = strlen(print_buf);
+        char* message = (char*)mem_alloc(message_length + 1);
+        assert(message);
+        memcpy(message, print_buf, message_length);
+        message[message_length] = '\0';
+
+        Resolve_Error error = { RE_FLAG_WARNING, message, file_pos };
+        BUF_PUSH(resolver->result.errors, error);
     }
 }
