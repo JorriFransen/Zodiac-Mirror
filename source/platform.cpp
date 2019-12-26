@@ -161,6 +161,7 @@ namespace Zodiac
 			if (!result) break;
 		}
 
+		assert(candidates);
 		auto highest_version_index = _find_best_version(candidates);
 
 		auto _tools_dir = string_append(base_dir, "\\");

@@ -42,8 +42,8 @@ namespace Zodiac
                                       LLVMValueRef llvm_func_value)
     {
         Function* func = (Function*)llvm_func_value;
-        unsigned line_number = zir_func->file_pos.line;
-        unsigned scope_line = zir_func->body_scope->line;
+        unsigned line_number = (unsigned)zir_func->file_pos.line;
+        unsigned scope_line = (unsigned)zir_func->body_scope->line;
         // unsigned scope_line = zir_func->first_block->first_instruction->origin.line;
         // printf("zir_func->body_scope->line = %d\n", zir_func->body_scope->line);
 
@@ -91,14 +91,14 @@ namespace Zodiac
 
         DIScope* scope = stack_top(di->scope_stack);
         DIType* param_type = llvm_debug_get_type(di, zir_arg->type);
-        unsigned line = zir_arg->argument.file_pos.line;
+        unsigned line = (unsigned)zir_arg->argument.file_pos.line;
 
         DILocalVariable* di_var = di->builder->createParameterVariable(scope,
                                                                        zir_arg->argument.name,
                                                                        arg_no, di->current_file,
                                                                        line, param_type, true);
 
-        unsigned col = zir_arg->argument.file_pos.line_relative_char_pos;
+        unsigned col = (unsigned)zir_arg->argument.file_pos.line_relative_char_pos;
         llvm::Value* llvm_alloca = unwrap(_llvm_alloca);
         auto llvm_builder = unwrap(zir_builder->llvm_builder);
 
@@ -116,8 +116,8 @@ namespace Zodiac
 
         DIScope* scope = stack_top(di->scope_stack);
         DIFile* file = di->current_file;
-        unsigned line = zir_allocl->allocl.file_pos.line;
-        unsigned col = zir_allocl->allocl.file_pos.line_relative_char_pos;
+        unsigned line = (unsigned)zir_allocl->allocl.file_pos.line;
+        unsigned col = (unsigned)zir_allocl->allocl.file_pos.line_relative_char_pos;
         DIType* var_type = llvm_debug_get_type(di, zir_allocl->type);
 
         auto llvm_alloca = (llvm::Value*)_llvm_alloca;
@@ -133,7 +133,7 @@ namespace Zodiac
     void llvm_debug_register_global(Debug_Info* di, LLVMValueRef _llvm_global,
                                     IR_Value* zir_global)
     {
-        unsigned line = zir_global->global.file_pos.line;
+        unsigned line = (unsigned)zir_global->global.file_pos.line;
         DIType* di_type = llvm_debug_get_type(di, zir_global->type);
 
         DIGlobalVariableExpression* di_var_expr = di->builder->createGlobalVariableExpression(
@@ -183,7 +183,7 @@ namespace Zodiac
                                  uint64_t col)
     {
         auto llvm_ir_builder = llvm::unwrap(ir_builder->llvm_builder);
-        llvm_ir_builder->SetCurrentDebugLocation(DebugLoc::get(line, col, scope));
+        llvm_ir_builder->SetCurrentDebugLocation(DebugLoc::get((unsigned)line, (unsigned)col, scope));
     }
 
     void llvm_debug_unset_location(LLVM_IR_Builder* zir_builder)
@@ -320,7 +320,7 @@ namespace Zodiac
                 else
                 {
                     result = di->builder->createPointerType(base_type, ast_type->bit_size,
-                                                            ast_type->bit_size);
+                                                            (uint32_t)ast_type->bit_size);
                 }
                 break;
             }
@@ -330,7 +330,7 @@ namespace Zodiac
                 AST_Type* base_type = ast_type->static_array.base;
                 DIType* di_base_type = llvm_debug_get_type(di, base_type);
                 result = di->builder->createArrayType(ast_type->static_array.count,
-                                                      base_type->bit_size, di_base_type, nullptr);
+                                                      (uint32_t)base_type->bit_size, di_base_type, nullptr);
                 break;
             }
 
@@ -343,7 +343,7 @@ namespace Zodiac
 
             case AST_TYPE_ENUM:
             {
-                unsigned line = ast_type->aggregate_type.scope->line;
+                unsigned line = (unsigned)ast_type->aggregate_type.scope->line;
 
                 BUF(Metadata*) members = nullptr;
 
@@ -423,7 +423,7 @@ namespace Zodiac
             AST_Declaration* member_decl = member_decls[i];
             AST_Type* ast_member_type = member_decl->mutable_decl.type;
 
-            unsigned mem_line = member_decl->file_pos.line;
+            unsigned mem_line = (unsigned)member_decl->file_pos.line;
             const char* name = nullptr;
             if (member_decl->identifier) name = member_decl->identifier->atom.data;
 
@@ -439,7 +439,7 @@ namespace Zodiac
 
         DIType* result = nullptr;
 
-        unsigned line = ast_type->aggregate_type.scope->line;
+        unsigned line = (unsigned)ast_type->aggregate_type.scope->line;
 
         ArrayRef<Metadata*> _elements(members, BUF_LENGTH(members));
         DINodeArray elements = di->builder->getOrCreateArray(_elements);
@@ -470,7 +470,7 @@ namespace Zodiac
         unsigned tag = dwarf::DW_TAG_structure_type;
         if (ast_type->kind == AST_TYPE_UNION) tag = dwarf::DW_TAG_union_type;
 
-        unsigned line = ast_type->aggregate_type.scope->line;
+        unsigned line = (unsigned)ast_type->aggregate_type.scope->line;
 
         DIType* di_type = di->builder->createReplaceableCompositeType(tag,
                                                                       ast_type->name,

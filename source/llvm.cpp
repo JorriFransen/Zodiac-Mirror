@@ -968,7 +968,7 @@ namespace Zodiac
 
                 if (builder->context->options.emit_debug)
                     llvm_debug_register_function_parameter(builder, llvm_arg_alloca, zir_arg,
-                                                           i + 1);
+                                                           (unsigned)i + 1);
             }
 
             if (builder->context->options.emit_debug)
@@ -2133,7 +2133,7 @@ namespace Zodiac
                 uint64_t member_offset = a2->value.u64;
 
                 LLVMValueRef result = LLVMBuildExtractValue(builder->llvm_builder,
-                                                            llvm_agg_value, member_offset, "");
+                                                            llvm_agg_value, (unsigned)member_offset, "");
 
                 llvm_assign_result(builder, r, result);
 
@@ -2268,7 +2268,7 @@ namespace Zodiac
                     }
 
                     auto result = LLVMConstArray(llvm_base_type, arr_vals,
-                                                 BUF_LENGTH(arr_vals));
+                                                 (unsigned)BUF_LENGTH(arr_vals));
                     return result;
                 }
                 else

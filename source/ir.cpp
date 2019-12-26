@@ -4377,7 +4377,7 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(list_expr->list.expressions); i++)
         {
             auto expr = list_expr->list.expressions[i];
-            is_const &= expr->flags & AST_EXPR_FLAG_CONST;
+            is_const &= (bool)(expr->flags & AST_EXPR_FLAG_CONST);
 
             IR_Value* mem_value = ir_builder_emit_expression(ir_builder, expr);
             BUF_PUSH(member_values, mem_value);

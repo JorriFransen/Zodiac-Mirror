@@ -372,7 +372,7 @@ namespace Zodiac
             {
                 // @TODO: Better error handling for this (errors in ir and ir runner in general)
                 fprintf(stderr, "Failed to load foreign symbol: %s\n", foreign_name.data);
-                fprintf(stderr, "Declared here: %s:%u:%u\n", ff.file_pos.file_name, ff.file_pos.line,
+                fprintf(stderr, "Declared here: %s:%" PRIu64 ":%" PRIu64"\n", ff.file_pos.file_name, ff.file_pos.line,
 						ff.file_pos.line_relative_char_pos);
                 assert(false);
             }

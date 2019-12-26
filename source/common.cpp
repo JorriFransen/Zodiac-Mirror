@@ -606,10 +606,14 @@ uint64_t hash_string(const char* string, uint64_t string_length)
 	assert(string);
 	assert(string_length > 0);
 
+#ifdef __linux__
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wimplicitly-unsigned-literal"
+#endif
 	uint64_t hash = 14695981039346656037;
+#ifdef __linux__
     #pragma clang diagnostic pop
+#endif
 
 	for (uint64_t i = 0; i < string_length; i++)
 	{

@@ -236,10 +236,14 @@ namespace Zodiac
             return 0;
         }
 
+#ifdef __linux
         #pragma clang diagnostic push
         #pragma clang diagnostic ignored "-Wimplicitly-unsigned-literal"
+#endif
 		uint64_t hash = 14695981039346656037;
+#ifdef __linux
         #pragma clang diagnostic pop
+#endif
 
 		for (uint64_t i = 0; i < string_length; i++)
 		{
