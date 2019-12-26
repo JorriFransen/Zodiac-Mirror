@@ -642,23 +642,20 @@ _execute_process :: (exe_name: String, args: Array_Ref(*u8)) ->
     defer string_builder.free(*stdout_sb);
     defer string_builder.free(*stderr_sb);
 
-    READ_BUF_LEN :: 1024;
-    read_buf : [READ_BUF_LEN]u8;
+    while (true) {
+        proc_wait_res := WaitForSingleObject(process_info.hProcess, 5);
 
-    running := true;
-    while (running)
-    {
         _read_available(stdout_read_handle, *stdout_sb);
         _read_available(stderr_read_handle, *stderr_sb);
 
-        proc_wait_res := WaitForSingleObject(process_info.hProcess, 0);
         if (proc_wait_res == WAIT_OBJECT_0) {
             break;
+        } else if (proc_wait_res == WAIT_TIMEOUT) {
+            // Keep looping
         }
-    }
+        else assert(false);
 
-    _read_available(stdout_read_handle, *stdout_sb);
-    _read_available(stderr_read_handle, *stderr_sb);
+    }
 
     result.stdout = string_builder.copy_to_string(*stdout_sb);
     result.stderr = string_builder.copy_to_string(*stderr_sb);
