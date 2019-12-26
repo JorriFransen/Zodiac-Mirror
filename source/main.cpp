@@ -48,7 +48,6 @@ int main(int argc, char** argv)
     //printf("sizeof(STARTUPINFOA): %d\n", sizeof(STARTUPINFOA));
     //printf("sizeof(OVERLAPPED): %d\n", sizeof(OVERLAPPED));
 
-
     Options options;
 	if (!zodiac_parse_options(&options, argc, argv))
 	{

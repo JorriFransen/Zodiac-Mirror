@@ -637,58 +637,34 @@ _execute_process :: (exe_name: String, args: Array_Ref(*u8)) ->
         assert(false);
     }
 
-    wait_ret := WaitForSingleObject(process_info.hProcess, INFINITE);
-    assert(wait_ret == WAIT_OBJECT_0);
-
-    res_sb := string_builder.create(1024);
-    defer string_builder.free(*res_sb);
+    stdout_sb := string_builder.create(1024);
+    stderr_sb := string_builder.create(1024);
+    defer string_builder.free(*stdout_sb);
+    defer string_builder.free(*stderr_sb);
 
     READ_BUF_LEN :: 1024;
     read_buf : [READ_BUF_LEN]u8;
 
-    while (true) {
-        bytes_available : DWORD;
-        peek_res := PeekNamedPipe(stdout_read_handle, null, 0, null, *bytes_available, null);
-        assert(peek_res);
+    running := true;
+    while (running)
+    {
+        _read_available(stdout_read_handle, *stdout_sb);
+        _read_available(stderr_read_handle, *stderr_sb);
 
-        if (bytes_available <= 0) break;
-
-        read : DWORD;
-        read_res := ReadFile(stdout_read_handle, *(read_buf[0]), (:DWORD)READ_BUF_LEN, *read, null);
-        assert(read_res);
-
-        if (read > 0)
-        {
-            string_builder.append(*res_sb, *(read_buf[0]), read);
+        proc_wait_res := WaitForSingleObject(process_info.hProcess, 0);
+        if (proc_wait_res == WAIT_OBJECT_0) {
+            break;
         }
-        else break;
     }
 
-    result.stdout = string_builder.copy_to_string(*res_sb);
+    _read_available(stdout_read_handle, *stdout_sb);
+    _read_available(stderr_read_handle, *stderr_sb);
 
-    string_builder.reset(*res_sb);
-
-    while (true) {
-        bytes_available : DWORD;
-        peek_res := PeekNamedPipe(stderr_read_handle, null, 0, null, *bytes_available, null);
-        assert(peek_res);
-
-        if (bytes_available <= 0) break;
-
-        read : DWORD;
-        read_res := ReadFile(stderr_read_handle, *(read_buf[0]), (:DWORD)READ_BUF_LEN, *read, null);
-        assert(read_res);
-
-        if (read > 0)
-        {
-            string_builder.append(*res_sb, *(read_buf[0]), read);
-        }
-        else break;
-    }
-
-    result.stderr = string_builder.copy_to_string(*res_sb);
+    result.stdout = string_builder.copy_to_string(*stdout_sb);
+    result.stderr = string_builder.copy_to_string(*stderr_sb);
 
     exit_code : DWORD;
+
     exit_code_res := GetExitCodeProcess(process_info.hProcess, *exit_code);
     assert(exit_code_res);
 
@@ -700,6 +676,38 @@ _execute_process :: (exe_name: String, args: Array_Ref(*u8)) ->
     result.exit_code = exit_code;
     return Execute_Process_Error.NONE, result;
 
+}
+
+_read_available :: (r_handle: HANDLE, sb: *string_builder.String_Builder) 
+{
+    READ_BUF_LEN :: 1024;
+    read_buf : [READ_BUF_LEN]u8;
+
+    reading := true;
+    while (reading) {
+        bytes_available : DWORD;
+        peek_res := PeekNamedPipe(r_handle, null, 0, null, *bytes_available, null);
+        assert(peek_res);
+
+        if (bytes_available <= 0) 
+        {
+            reading = false;
+            break;
+        }
+
+        read : DWORD;
+        read_res := ReadFile(r_handle, *(read_buf[0]), (:DWORD)READ_BUF_LEN, *read, null);
+        assert(read_res);
+
+        if (read > 0)
+        {
+            string_builder.append(sb, *(read_buf[0]), read);
+        }
+        else 
+        {
+            reading = false;
+        }
+    }
 }
 
 execute_process_shell :: (command: String, args: ...) ->
@@ -730,4 +738,10 @@ execute_process_shell :: (command: String, args: ...) ->
     array_add(*_array, command_str.data);
 
     return _execute_process("cmd", make_array_ref(_array));
+}
+
+execute_process_result_free :: (exec_prog_res: *Execute_Process_Result)
+{
+    _c.free(exec_prog_res.stdout.data);
+    _c.free(exec_prog_res.stderr.data);
 }

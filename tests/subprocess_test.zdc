@@ -21,8 +21,8 @@ main :: ()
         _c.printf("os.execute_process returned: %d\n", res.exit_code);
         // assert(res.exit_code == 7);
 
-        print("\nstdout: \n%\n", res.stdout.data);
-        print("stderr: \n%\n", res.stderr.data);
+        if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
+        if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);
     }
 
     {

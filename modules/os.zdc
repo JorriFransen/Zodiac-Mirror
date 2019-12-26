@@ -166,10 +166,6 @@ join_thread :: (thread: Thread) -> *void
     }
     else
     {
-//         ret_val : *void = null;
-//         success := pthread.pthread_join((:pthread.pthread_t)thread_handle, *ret_val);
-//         assert(success == 0);
-
         return os_specific._join_thread(thread);
     }
 }
