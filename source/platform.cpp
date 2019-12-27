@@ -194,6 +194,7 @@ namespace Zodiac
             return "/lib/x86_64-linux-gnu/";
 
         assert(false);
+        return nullptr;
     }
 
     const char* find_linux_gcc_lib_path()
@@ -206,6 +207,7 @@ namespace Zodiac
             return "/usr/lib/gcc/x86_64-linux-gnu/7/";
 
         assert(false);
+        return nullptr;
     }
 
 #endif
