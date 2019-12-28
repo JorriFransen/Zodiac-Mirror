@@ -129,6 +129,7 @@ namespace Zodiac
             {
                 global->value.pointer = mem_alloc(global->type->bit_size / 8);
             }
+            //else if (global->type->kind == AST_TYPE_STRUCT) assert(false);
         }
 
 		for (uint64_t i = 0; i < BUF_LENGTH(module->imported_modules); i++)
@@ -143,9 +144,10 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(module->globals); i++)
         {
             IR_Value* global = module->globals[i];
-            if (global->type->kind == AST_TYPE_STRUCT)
+            if (global->type->kind == AST_TYPE_STRUCT && global->value.pointer)
             {
                 mem_free(global->value.pointer);
+                global->value.pointer = nullptr;
             }
         }
 

@@ -3,7 +3,11 @@ _c :: import c;
 std :: import std;
 using std;
 
-os_linux :: import os_linux;
+static_if (PLATFORM_LINUX) {
+    os_linux :: import os_linux;
+} else static_if (PLATFORM_WINDOWS) {
+    os_windows :: import os_windows;
+}
 
 string_builder :: import string_builder;
 
@@ -130,8 +134,10 @@ static_if (PLATFORM_LINUX)
 }
 else static_if (PLATFORM_WINDOWS)
 {
-    _read_available :: (r_handle: HANDLE, sb: *string_builder.String_Builder)
+    _read_available :: (r_handle: os_windows.HANDLE, sb: *string_builder.String_Builder)
     {
+        using os_windows;
+
         READ_BUF_LEN :: 1024;
         read_buf : [READ_BUF_LEN]u8;
 
@@ -162,6 +168,8 @@ else static_if (PLATFORM_WINDOWS)
         Execute_Process_Error #required,
         Execute_Process_Result
     {
+        using os_windows;
+
         result : Execute_Process_Result = { 1, { null, 0 }, { null, 0 } };
 
         CMD_PATH_BUF_LEN :: 4096;

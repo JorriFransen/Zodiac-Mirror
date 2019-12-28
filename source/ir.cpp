@@ -4418,6 +4418,7 @@ namespace Zodiac
         result->kind = kind;
         result->type = type;
         result->flags = 0;
+        result->value.pointer = nullptr;
 
         if (kind == IRV_TEMPORARY)
         {
@@ -4485,6 +4486,7 @@ namespace Zodiac
         result->global.name = name;
         result->global.init_value = init_value;
         result->global.file_pos = file_pos;
+        result->value.pointer = nullptr;
 
         result->global.index = BUF_LENGTH(ir_builder->context->global_table);
         Global_Variable global_var = { &ir_builder->result, result };
