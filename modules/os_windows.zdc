@@ -233,7 +233,7 @@ SYSTEM_INFO :: struct
 SECURITY_ATTRIBUTES :: struct
 {
     nLength : DWORD;
-    ____padding____ : u32; // @TODO: @FIXME: Alignment should fix this.... 
+    ____padding____ : u32; // @TODO: @FIXME: Alignment should fix this....
     lpSecurityDescriptor: LPVOID;
     bInheritHandle: BOOL;
 }
@@ -241,7 +241,7 @@ SECURITY_ATTRIBUTES :: struct
 STARTUPINFOA :: struct
 {
     cb: DWORD;
-    ____padding____ : u32; // @TODO: @FIXME: Alignment should fix this.... 
+    ____padding____ : u32; // @TODO: @FIXME: Alignment should fix this....
     lpReserved: LPSTR;
     lpDesktop: LPSTR;
     lpTitle: LPSTR;
@@ -255,7 +255,7 @@ STARTUPINFOA :: struct
     dwFlags: DWORD;
     wShowWindow: WORD;
     cbReserved2: WORD;
-    ____padding____2 : u32; // @TODO: @FIXME: Alignment should fix this.... 
+    ____padding____2 : u32; // @TODO: @FIXME: Alignment should fix this....
     pReserved2: LPBYTE;
     hStdInput: HANDLE;
     hStdOutput: HANDLE;
@@ -500,23 +500,6 @@ _join_thread :: (thread: Thread) -> *void
     return (:*void) ret_val;
 }
 
-Execute_Process_Error :: enum
-{
-    NONE;
-    PIPE_CREATE_FAILED;
-    PIPE_READ_FAILED;
-    FORK_FAILED;
-    UNEXPECTED;
-}
-
-// @TODO: This should be in os_generic (in os.zdc ideally, but we can't do circular imports)
-Execute_Process_Result :: struct
-{
-    exit_code : u32;
-    stdout    : String;
-    stderr    : String;
-}
-
 execute_process :: (exe_name: String, args: ...) ->
     Execute_Process_Error #required,
     Execute_Process_Result
@@ -705,40 +688,4 @@ _read_available :: (r_handle: HANDLE, sb: *string_builder.String_Builder)
             reading = false;
         }
     }
-}
-
-execute_process_shell :: (command: String, args: ...) ->
-    Execute_Process_Error #required,
-    Execute_Process_Result
-{
-    sb := string_builder.create(256);
-    defer string_builder.free(*sb);
-
-    _array : Array(*u8) = { null, 0, 0 };
-    defer array_free(*_array);
-
-    string_builder.append(*sb, command.data);
-    string_builder.append(*sb, " ");
-
-    for (i := 0; i < args.count; i++)
-    {
-        any := args[i];
-        assert(any.type_info == get_type_info(*u8));
-        _arg := <((:**u8)any.value);
-        string_builder.append(*sb, _arg);
-    }
-
-    command_str := string_builder.copy_to_string(*sb);
-    defer _c.free(command_str.data);
-
-    array_add(*_array, "/c ");
-    array_add(*_array, command_str.data);
-
-    return _execute_process("cmd", make_array_ref(_array));
-}
-
-execute_process_result_free :: (exec_prog_res: *Execute_Process_Result)
-{
-    _c.free(exec_prog_res.stdout.data);
-    _c.free(exec_prog_res.stderr.data);
 }

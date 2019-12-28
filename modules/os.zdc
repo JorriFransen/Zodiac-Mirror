@@ -10,6 +10,9 @@ using _og;
 _thread :: import thread;
 using _thread;
 
+process :: import process;
+using process;
+
 static_if (PLATFORM_WINDOWS)
 {
     os_specific :: import os_windows;
@@ -169,4 +172,3 @@ join_thread :: (thread: Thread) -> *void
         return os_specific._join_thread(thread);
     }
 }
-
