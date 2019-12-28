@@ -331,9 +331,9 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
     {
         // _c.printf("running command: '%s'\n", command.data);
 
-        err, res := os.execute_process_shell(exe_name, command.data);
-        assert(err == os.Execute_Process_Error.NONE);
-        defer os.execute_process_result_free(*res);
+        err, res := os.process.execute_shell(exe_name, command.data);
+        assert(err == os.process.Execute_Error.NONE);
+        defer os.process.execute_result_free(*res);
         exit_code = res.exit_code;
 
         append(output_sb, res.stderr);

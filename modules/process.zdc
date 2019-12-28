@@ -11,7 +11,7 @@ static_if (PLATFORM_LINUX) {
 
 string_builder :: import string_builder;
 
-Execute_Process_Error :: enum
+Execute_Error :: enum
 {
     NONE;
     PIPE_CREATE_FAILED;
@@ -20,14 +20,14 @@ Execute_Process_Error :: enum
     UNEXPECTED;
 }
 
-Execute_Process_Result :: struct
+Execute_Result :: struct
 {
     exit_code : u32;
     stdout    : String;
     stderr    : String;
 }
 
-execute_process_result_free :: (exec_prog_res: *Execute_Process_Result)
+execute_result_free :: (exec_prog_res: *Execute_Result)
 {
     _c.free(exec_prog_res.stdout.data);
     _c.free(exec_prog_res.stderr.data);
@@ -36,8 +36,8 @@ execute_process_result_free :: (exec_prog_res: *Execute_Process_Result)
 static_if (PLATFORM_LINUX)
 {
     _execute_process :: (command: String, args: Array_Ref(*u8)) ->
-        Execute_Process_Error #required,
-        Execute_Process_Result
+        Execute_Error #required,
+        Execute_Result
     {
         using os_linux;
 
@@ -46,9 +46,9 @@ static_if (PLATFORM_LINUX)
         out      : Pipe;
         err      : Pipe;
 
-        using Execute_Process_Error;
+        using Execute_Error;
 
-        result : Execute_Process_Result;
+        result : Execute_Result;
         result.exit_code = 0;
         result.stdout = { null, 0 };
 
@@ -165,12 +165,12 @@ else static_if (PLATFORM_WINDOWS)
     }
 
     _execute_process :: (exe_name: String, args: Array_Ref(*u8)) ->
-        Execute_Process_Error #required,
-        Execute_Process_Result
+        Execute_Error #required,
+        Execute_Result
     {
         using os_windows;
 
-        result : Execute_Process_Result = { 1, { null, 0 }, { null, 0 } };
+        result : Execute_Result = { 1, { null, 0 }, { null, 0 } };
 
         CMD_PATH_BUF_LEN :: 4096;
         cmd_path : [CMD_PATH_BUF_LEN]u8;
@@ -305,14 +305,14 @@ else static_if (PLATFORM_WINDOWS)
         assert(close_res);
 
         result.exit_code = exit_code;
-        return Execute_Process_Error.NONE, result;
+        return Execute_Error.NONE, result;
 
     }
 }
 
-execute_process :: (command: String, args: ...) ->
-    Execute_Process_Error #required,
-    Execute_Process_Result
+execute :: (command: String, args: ...) ->
+    Execute_Error #required,
+    Execute_Result
 {
     _args: Array(*u8) = { null, 0, 0 };
     defer array_free(*_args);
@@ -327,8 +327,8 @@ execute_process :: (command: String, args: ...) ->
 }
 
 _execute_process_shell :: (command: String, args: Array_Ref(*u8)) ->
-    Execute_Process_Error #required,
-    Execute_Process_Result
+    Execute_Error #required,
+    Execute_Result
 {
     sb := string_builder.create(256);
     defer string_builder.free(*sb);
@@ -362,9 +362,9 @@ _execute_process_shell :: (command: String, args: Array_Ref(*u8)) ->
     return _execute_process(shell_cmd, make_array_ref(_array));
 }
 
-execute_process_shell :: (command: String, args: ...) ->
-    Execute_Process_Error #required,
-    Execute_Process_Result
+execute_shell :: (command: String, args: ...) ->
+    Execute_Error #required,
+    Execute_Result
 {
     _args : Array(*u8) = { null, 0, 0 };
     defer array_free(*_args);

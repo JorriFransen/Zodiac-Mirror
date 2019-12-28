@@ -120,6 +120,7 @@ namespace Zodiac
         AST_EXPR_FLAG_INTEGER_LITERAL = (1 << 5),
         AST_EXPR_FLAG_LVALUE          = (1 << 6),
         AST_EXPR_FLAG_FIRST_VARARG    = (1 << 7),
+        AST_EXPR_FLAG_IMPORT          = (1 << 8),
     };
 
     enum AST_Builtin_Function

@@ -6,19 +6,21 @@ _printer :: import print;
 using _printer;
 
 os :: import os;
+process :: os.process;
 
 main :: ()
 {
     open_std_handles();
     print("Subprocess test\n");
 
-    err := os.Execute_Process_Error.NONE;
-    res : os.Execute_Process_Result;
+    err := process.Execute_Error.NONE;
+    res : process.Execute_Result;
 
     {
-        err, res = os.execute_process_shell("tp", "");
-        assert(err == os.Execute_Process_Error.NONE);
-        _c.printf("os.execute_process returned: %d\n", res.exit_code);
+        err, res = process.execute_shell("tp", "");
+        assert(err == process.Execute_Error.NONE);
+        defer process.execute_result_free(*res);
+        _c.printf("process.execute_process returned: %d\n", res.exit_code);
         // assert(res.exit_code == 7);
 
         if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
@@ -26,19 +28,21 @@ main :: ()
     }
 
     {
-        err, res = os.execute_process("fossil", "help")
-        assert(err == os.Execute_Process_Error.NONE);
-        _c.printf("os.execute_process returned: %d\n", res.exit_code);
+        err, res = process.execute("fossil", "help")
+        assert(err == process.Execute_Error.NONE);
+        defer process.execute_result_free(*res);
+        _c.printf("process.execute_process returned: %d\n", res.exit_code);
 
         if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
         if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);
     }
 
     {
-        static_if(PLATFORM_LINUX) err, res = os.execute_process("echo", "Hello world!");
-        else                      err, res = os.execute_process_shell("echo", "Hello World!");
-        assert(err == os.Execute_Process_Error.NONE);
-        _c.printf("os.execute_process returned: %d\n", res.exit_code);
+        static_if(PLATFORM_LINUX) err, res = process.execute("echo", "Hello world!");
+        else                      err, res = process.execute_shell("echo", "Hello World!");
+        assert(err == process.Execute_Error.NONE);
+        defer process.execute_result_free(*res);
+        _c.printf("process.execute_process returned: %d\n", res.exit_code);
 
         if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
         if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);
@@ -46,21 +50,23 @@ main :: ()
 
     {
         static_if (PLATFORM_LINUX)
-            err, res = os.execute_process("sh", "-c", ">&2 echo \"Echo to stderr!!!\"");
+            err, res = process.execute("sh", "-c", ">&2 echo \"Echo to stderr!!!\"");
         else
-            err, res = os.execute_process("cmd", "/c", "echo Echo to stderr!!! >&2");
+            err, res = process.execute("cmd", "/c", "echo Echo to stderr!!! >&2");
 
-        assert(err == os.Execute_Process_Error.NONE);
-        _c.printf("os.execute_process returned: %d\n", res.exit_code);
+        assert(err == process.Execute_Error.NONE);
+        defer process.execute_result_free(*res);
+        _c.printf("process.execute_process returned: %d\n", res.exit_code);
 
         if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
         if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);
     }
 
     {
-        err, res = os.execute_process_shell(">&2 echo", "Echo to stderr via shell...");
-        assert(err == os.Execute_Process_Error.NONE);
-        _c.printf("os.execute_process returned: %d\n", res.exit_code);
+        err, res = process.execute_shell(">&2 echo", "Echo to stderr via shell...");
+        assert(err == process.Execute_Error.NONE);
+        defer process.execute_result_free(*res);
+        _c.printf("process.execute_process returned: %d\n", res.exit_code);
 
         if (res.stdout.length) print("\nSTDOUT: \n%\n", res.stdout.data);
         if (res.stderr.length) print("\nSTDERR: \n%\n", res.stderr.data);

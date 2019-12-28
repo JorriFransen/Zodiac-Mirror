@@ -318,12 +318,16 @@ namespace Zodiac
 
             case AST_DECL_CONSTANT_VAR:
             {
-                IR_Value* value = ir_builder_emit_global(ir_builder, global_decl);
-                value->flags |= IRV_FLAG_CONST;
-                ir_builder_push_value_and_decl(ir_builder, value, global_decl);
-                IR_Global_Constant gc = { global_decl->identifier->atom.data,
-                                          value->global.init_value };
-                BUF_PUSH(ir_builder->result.global_constants, gc);
+                if (!(global_decl->constant_var.init_expression &&
+                      (global_decl->constant_var.init_expression->flags & AST_EXPR_FLAG_IMPORT)))
+                {
+                    IR_Value* value = ir_builder_emit_global(ir_builder, global_decl);
+                    value->flags |= IRV_FLAG_CONST;
+                    ir_builder_push_value_and_decl(ir_builder, value, global_decl);
+                    IR_Global_Constant gc = { global_decl->identifier->atom.data,
+                                  value->global.init_value };
+                    BUF_PUSH(ir_builder->result.global_constants, gc);
+                }
                 break;
             }
 

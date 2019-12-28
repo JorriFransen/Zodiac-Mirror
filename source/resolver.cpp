@@ -1988,6 +1988,11 @@ namespace Zodiac
                 else if (decl->kind == AST_DECL_CONSTANT_VAR)
                 {
                     expression->flags |= AST_EXPR_FLAG_CONST;
+                    if (decl->constant_var.init_expression->flags & AST_EXPR_FLAG_IMPORT)
+                    {
+                        expression->flags |= AST_EXPR_FLAG_IMPORT;
+                        points_to_import_decl = true;
+                    }
                 }
                 else if (decl->kind == AST_DECL_MUTABLE)
                 {
@@ -2359,6 +2364,12 @@ namespace Zodiac
                      else if (decl->kind == AST_DECL_MUTABLE)
                      {
                          expression->flags |= AST_EXPR_FLAG_LVALUE;
+                     }
+                     else if (decl->kind == AST_DECL_IMPORT)
+                     {
+                         expression->flags |= AST_EXPR_FLAG_CONST;
+                         expression->flags |= AST_EXPR_FLAG_IMPORT;
+                         points_to_import_decl = true;
                      }
                 }
 
@@ -3017,12 +3028,34 @@ namespace Zodiac
             }
             else return false;
         }
-        else if (base_decl->kind == AST_DECL_IMPORT)
+        else if (base_decl->kind == AST_DECL_IMPORT ||
+                 (base_decl->kind == AST_DECL_CONSTANT_VAR &&
+                  (base_decl->constant_var.init_expression->flags & AST_EXPR_FLAG_IMPORT)))
         {
-            assert(base_decl->import.module);
+            AST_Module* ast_module = nullptr;
 
-            AST_Module* ast_module = base_decl->import.module;
+            if (base_decl->kind == AST_DECL_IMPORT)
+            {
+                assert(base_decl->import.module);
+                ast_module = base_decl->import.module;
+            }
+            else
+            {
+                assert(base_decl->kind == AST_DECL_CONSTANT_VAR);
+                AST_Expression* init_expr = base_decl->constant_var.init_expression;
+                if (init_expr->kind == AST_EXPR_DOT)
+                {
+                    AST_Declaration* import_decl = init_expr->dot.declaration;
+                    assert(import_decl->kind == AST_DECL_IMPORT);
+                    ast_module = import_decl->import.module;
+                }
+                else
+                {
+                    assert(false);
+                }
+            }
 
+            assert(ast_module);
             result &= resolver_resolve_expression(resolver, member_expr,
                                                   ast_module->module_scope);
 
@@ -3071,7 +3104,8 @@ namespace Zodiac
             dot_expr->type = member_expr->type;
             assert(dot_expr->type ||
                    (dot_expr->dot.declaration &&
-                    dot_expr->dot.declaration->kind == AST_DECL_FUNC_OVERLOAD));
+                    (dot_expr->dot.declaration->kind == AST_DECL_FUNC_OVERLOAD ||
+                     dot_expr->dot.declaration->kind == AST_DECL_IMPORT)));
             if (member_expr->flags & AST_EXPR_FLAG_CONST)
             {
                 dot_expr->flags |= AST_EXPR_FLAG_CONST;
@@ -3286,9 +3320,27 @@ namespace Zodiac
                 {
                     assert(module_ident->declaration);
                     auto module_decl = module_ident->declaration;
-                    assert(module_decl->kind == AST_DECL_IMPORT);
-                    assert(module_decl->import.module);
-                    auto module = module_decl->import.module;
+                    AST_Module* module = nullptr;
+                    if (module_decl->kind == AST_DECL_IMPORT)
+                    {
+                        assert(module_decl->import.module);
+                        module = module_decl->import.module;
+                    }
+                    else
+                    {
+                        assert(module_decl->kind == AST_DECL_CONSTANT_VAR);
+                        AST_Expression* init_expr = module_decl->constant_var.init_expression;
+                        assert(init_expr->flags & AST_EXPR_FLAG_IMPORT);
+                        if (init_expr->kind == AST_EXPR_DOT)
+                        {
+                            AST_Declaration* import_decl = init_expr->dot.declaration;
+                            assert(import_decl->kind == AST_DECL_IMPORT);
+                            module = import_decl->import.module;
+                        }
+                        else assert(false);
+                    }
+
+                    assert(module);
 
                     AST_Type* result_type = nullptr;
                     result &= resolver_resolve_type_spec(resolver,
@@ -3433,8 +3485,16 @@ namespace Zodiac
 
             case AST_DECL_CONSTANT_VAR:
             {
-                assert(decl->constant_var.type);
-                return decl->constant_var.type;
+                if (decl->constant_var.type)
+                {
+                    return decl->constant_var.type;
+                }
+                else
+                {
+                    assert(decl->constant_var.init_expression);
+                    assert(decl->constant_var.init_expression->flags & AST_EXPR_FLAG_IMPORT);
+                    return nullptr;
+                }
             }
 
             case AST_DECL_AGGREGATE_TYPE:
