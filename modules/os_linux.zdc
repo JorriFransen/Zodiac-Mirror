@@ -119,7 +119,7 @@ alloc_aligned :: (alignment: s64, size: s64) -> *void
     return mem;
 }
 
-free_aligned :: (ptr: *void) 
+free_aligned :: (ptr: *void)
 {
     _c.free(ptr);
 }
