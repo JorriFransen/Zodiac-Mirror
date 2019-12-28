@@ -20,19 +20,35 @@ namespace Zodiac
 
         string_builder_append(sb, function->name);
         string_builder_append(sb, "(");
+        bool is_sret = false;
         for (uint64_t i = 0; i < BUF_LENGTH(function->arguments); i++)
         {
-            if (i > 0)
+            if (i == 0)
+            {
+                if (function->arguments[i]->flags & IRV_FLAG_SRET_ARG)
+                {
+                    is_sret = true;
+                }
+            }
+            else if (i > 0)
             {
                 string_builder_append(sb, ", ");
             }
+
             ir_print_value(function->arguments[i], sb);
             string_builder_append(sb, ":(");
             ir_print_type(function->arguments[i]->type, sb);
             string_builder_append(sb, ")");
         }
         string_builder_append(sb, ") -> ");
-        ir_print_type(function->type->function.return_type, sb);
+        if (is_sret)
+        {
+            string_builder_append(sb, "void");
+        }
+        else
+        {
+            ir_print_type(function->type->function.return_type, sb);
+        }
         string_builder_append(sb, "\n");
 
         if (!is_foreign)

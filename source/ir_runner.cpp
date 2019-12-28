@@ -1155,12 +1155,17 @@ namespace Zodiac
                 assert(iri->arg1->kind == IRV_FUNCTION);
                 assert(iri->arg2);
                 assert(iri->arg2->kind == IRV_INT_LITERAL);
-                assert(iri->result);
-                assert(iri->result->kind == IRV_TEMPORARY);
 
                 IR_Function* function = iri->arg1->function;
+                auto ret_type = function->type->function.return_type;
                 auto num_args = iri->arg2->value.s64;
-                IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
+                IR_Value* result_value = nullptr;
+                if (ret_type != Builtin::type_void && ret_type->kind != AST_TYPE_STRUCT)
+                {
+                    assert(iri->result);
+                    assert(iri->result->kind == IRV_TEMPORARY);
+                    result_value = ir_runner_get_local_temporary(runner, iri->result);
+                }
                 IR_Stack_Frame* callee_stack_frame = ir_runner_call_function(runner, iri->origin,
                                                                              function,
                                                                              num_args,
@@ -2280,8 +2285,14 @@ namespace Zodiac
 
         if (function->type->function.return_type)
         {
-            assert(return_value);
-            result->return_value = return_value;
+            if (return_value)
+            {
+                result->return_value = return_value;
+            }
+            else
+            {
+                assert(function->type->function.return_type->kind == AST_TYPE_STRUCT);
+            }
         }
 
         return result;
