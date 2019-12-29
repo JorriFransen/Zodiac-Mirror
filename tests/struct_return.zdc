@@ -1,14 +1,31 @@
 
+//// Roadmap
+//
+// * Sret attribute in llvm
+// * Inalloca attribute in llvm
+// * Dont emit alloca for sret arg in llvm
+// * Multiple returns
+// * Copy elision for assignments and declarations
+// * Copy elision for returns
+// * Check if varargs still work correctly
+// * Check if overloaded and poly functions still work correctly
+//
+//
+
 _c :: import c;
 
-main :: ()
+main :: () -> int
 {
+    _builtin_open_std_handles();
     // vec2_0();
 
     // v := vec2_0();
 
     v : Vec2;
-    v = vec2_0();
+    // v = vec2_0();
+    v = make_vec2(4, 5);
+
+    _c.printf("v: %d, %d\n", v.x, v.y);
 
     return 0;
 }

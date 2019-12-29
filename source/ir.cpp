@@ -487,7 +487,9 @@ namespace Zodiac
                                                         decl->function.type,
                                                         body_scope);
 
-        if (return_type && return_type->kind == AST_TYPE_STRUCT)
+        if (return_type &&
+            (return_type->kind == AST_TYPE_STRUCT ||
+             return_type->kind == AST_TYPE_MRV))
         {
             AST_Type* pointer_to_ret_type = ast_find_or_create_pointer_type(ir_builder->context,
                                                                             return_type);
@@ -952,6 +954,10 @@ namespace Zodiac
             }
 
             IR_Value* ret_value = ir_builder_emit_expression(ir_builder, expr);
+            if (ret_value->kind == IRV_ALLOCL)
+            {
+                ret_value = ir_builder_emit_load(ir_builder, ret_value, expr->file_pos);
+            }
 
             auto fp = statement->file_pos;
             for (uint64_t i = 0; i < BUF_LENGTH(lvalues); i++)

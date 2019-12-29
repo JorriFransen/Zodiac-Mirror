@@ -1556,7 +1556,14 @@ namespace Zodiac
             return base_type->pointer_to;
         }
 
-        AST_Type* pointer_type = ast_type_pointer_new(context, base_type);
+        AST_Type* _base_type = base_type;
+        if (base_type->kind == AST_TYPE_MRV)
+        {
+            _base_type = base_type->mrv.struct_type;
+            assert(_base_type);
+        }
+
+        AST_Type* pointer_type = ast_type_pointer_new(context, _base_type);
         base_type->pointer_to = pointer_type;
         return pointer_type;
     }

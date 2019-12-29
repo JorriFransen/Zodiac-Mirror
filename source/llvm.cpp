@@ -960,6 +960,7 @@ namespace Zodiac
                                                             zir_arg->argument.name);
                 LLVMValueRef llvm_arg_value = LLVMGetParam(llvm_func_value,
                                                         (unsigned)zir_arg->argument.index);
+                assert(llvm_arg_value);
                 LLVMBuildStore(builder->llvm_builder, llvm_arg_value, llvm_arg_alloca);
                 llvm_assign_result(builder, zir_arg, llvm_arg_alloca);
 
@@ -985,11 +986,6 @@ namespace Zodiac
                 zir_block = zir_block->next;
             }
         }
-        else
-        {
-            // assert(false);
-        }
-
 
         BUF_FREE(llvm_ir_function.blocks);
 
@@ -1551,7 +1547,12 @@ namespace Zodiac
                                                                llvm_func_value, args,
                                                                (unsigned)arg_count, "");
 
-                llvm_assign_result(builder, zir_instruction->result, llvm_result_value);
+                if (zir_instruction->result)
+                {
+                    assert(llvm_result_value);
+                    llvm_assign_result(builder, zir_instruction->result, llvm_result_value);
+                }
+
                 BUF_FREE(args);
 
                 break;
@@ -2406,6 +2407,7 @@ namespace Zodiac
     void llvm_assign_result(LLVM_IR_Builder* builder, IR_Value* zir_value,
                             LLVMValueRef llvm_value)
     {
+        assert(zir_value);
         for (uint64_t i = 0; i < BUF_LENGTH(builder->assigned_values); i++)
         {
             LLVM_Assigned_Value& av = builder->assigned_values[i];
@@ -2545,9 +2547,16 @@ namespace Zodiac
 
             case AST_TYPE_FUNCTION:
             {
+                BUF(LLVMTypeRef) llvm_arg_types = nullptr;
                 LLVMTypeRef llvm_return_type = llvm_type_from_ast(builder,
                                                                   zir_type->function.return_type);
-                BUF(LLVMTypeRef) llvm_arg_types = nullptr;
+                if (zir_type->function.return_type->kind == AST_TYPE_STRUCT)
+                {
+                    LLVMTypeRef llvm_pointer_to_return_type = LLVMPointerType(llvm_return_type, 0);
+                    BUF_PUSH(llvm_arg_types, llvm_pointer_to_return_type);
+                    llvm_return_type = llvm_type_from_ast(builder, Builtin::type_void);
+                }
+
                 for (uint64_t i = 0; i < BUF_LENGTH(zir_type->function.arg_types); i++)
                 {
                     AST_Type* zodiac_arg_type = zir_type->function.arg_types[i];
