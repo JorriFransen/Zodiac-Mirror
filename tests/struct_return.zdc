@@ -17,15 +17,11 @@ _c :: import c;
 main :: () -> int
 {
     _builtin_open_std_handles();
-    // vec2_0();
 
-    // v := vec2_0();
+    v1 : Vec2;
+    v1 = make_vec2(4, 5);
 
-    v : Vec2;
-    // v = vec2_0();
-    v = make_vec2(4, 5);
-
-    _c.printf("v: %d, %d\n", v.x, v.y);
+    _c.printf("v1: %d, %d\n", v1.x, v1.y);
 
     return 0;
 }

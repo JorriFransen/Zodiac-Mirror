@@ -2291,7 +2291,9 @@ namespace Zodiac
             }
             else
             {
-                assert(function->type->function.return_type->kind == AST_TYPE_STRUCT);
+                auto func_ret_type = function->type->function.return_type;
+                assert(func_ret_type == Builtin::type_void ||
+                       func_ret_type->kind == AST_TYPE_STRUCT);
             }
         }
 
