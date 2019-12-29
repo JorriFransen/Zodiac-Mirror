@@ -487,9 +487,7 @@ namespace Zodiac
                                                         decl->function.type,
                                                         body_scope);
 
-        if (return_type &&
-            (return_type->kind == AST_TYPE_STRUCT ||
-             return_type->kind == AST_TYPE_MRV))
+        if (return_type && (ast_type_is_aggregate(return_type)))
         {
             AST_Type* pointer_to_ret_type = ast_find_or_create_pointer_type(ir_builder->context,
                                                                             return_type);
@@ -604,6 +602,7 @@ namespace Zodiac
                     File_Pos init_fp = decl->list.init_expression->file_pos;
                     IR_Value* mrv_struct = ir_builder_emit_expression(ir_builder,
                                                                       decl->list.init_expression);
+                    // mrv_struct = ir_builder_emit_load(ir_builder, mrv_struct, decl->file_pos);
 
                     AST_Expression* list_expr = decl->list.list_expression;
                     uint64_t decl_idx = 0;
@@ -642,10 +641,21 @@ namespace Zodiac
                 IR_Value* return_value = nullptr;
                 if (statement->return_expression)
                 {
-                    if (statement->return_expression->type->kind == AST_TYPE_STRUCT)
+                    auto ret_type = statement->return_expression->type;
+                    if (ast_type_is_aggregate(ret_type))
                     {
-                        IR_Value* sret_value =
-                            ir_builder_emit_expression(ir_builder, statement->return_expression);
+                        IR_Value* sret_value = nullptr;
+                        if (ret_type->kind == AST_TYPE_MRV)
+                        {
+                            sret_value = ir_builder_emit_mrv(ir_builder,
+                                                             statement->return_expression);
+                        }
+                        else
+                        {
+                            sret_value = ir_builder_emit_expression(ir_builder,
+                                                                    statement->return_expression);
+                        }
+
                         IR_Value* sret_pointer =
                             ir_builder_emit_load(ir_builder,
                                                  ir_builder->current_function->arguments[0],
@@ -2722,13 +2732,16 @@ namespace Zodiac
     IR_Value* ir_builder_emit_extract_value(IR_Builder* ir_builder, IR_Value* aggregate_val,
                                             uint64_t member_idx, File_Pos origin)
     {
-        assert(aggregate_val->kind == IRV_TEMPORARY);
-        assert(aggregate_val->type->kind == AST_TYPE_STRUCT ||
-               aggregate_val->type->kind == AST_TYPE_UNION);
+        // assert(aggregate_val->kind == IRV_TEMPORARY);
+        assert(ast_type_is_aggregate(aggregate_val->type));
 
         AST_Type* agg_type = aggregate_val->type;
-        assert(agg_type->kind == AST_TYPE_STRUCT ||
-               agg_type->kind == AST_TYPE_UNION);
+        assert(ast_type_is_aggregate(agg_type));
+        if (agg_type->kind == AST_TYPE_MRV)
+        {
+            agg_type = agg_type->mrv.struct_type;
+            assert(agg_type);
+        }
 
         assert(member_idx < BUF_LENGTH(agg_type->aggregate_type.member_declarations));
 
@@ -3152,8 +3165,6 @@ namespace Zodiac
     void ir_builder_emit_return(IR_Builder* ir_builder, IR_Value* ret_val, File_Pos origin)
     {
         assert(ir_builder);
-
-        // TODO: Check return type agains current functions return type
 
         IR_Instruction* iri = ir_instruction_new(ir_builder, origin, IR_OP_RETURN, ret_val,
                                                 nullptr, nullptr);
@@ -4446,6 +4457,7 @@ namespace Zodiac
     {
         AST_Type* mrv_type = ir_builder->current_function->type->function.return_type;
         assert(mrv_type->kind == AST_TYPE_MRV);
+        assert(list_expr->kind == AST_EXPR_EXPRESSION_LIST);
 
         BUF(IR_Value*) member_values = nullptr;
         bool is_const = true;

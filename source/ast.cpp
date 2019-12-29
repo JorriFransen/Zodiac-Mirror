@@ -1996,7 +1996,7 @@ namespace Zodiac
                 }
                 string_builder_append(string_builder, " }");
 
-                string_builder_appendf(string_builder, " (%p)", type);
+                // string_builder_appendf(string_builder, " (%p)", type);
                 break;
             }
 
@@ -2021,5 +2021,14 @@ namespace Zodiac
             default:
                 return false;
         }
+    }
+
+    bool ast_type_is_aggregate(AST_Type* type)
+    {
+        assert(type);
+
+        return type->kind == AST_TYPE_STRUCT ||
+               type->kind == AST_TYPE_UNION ||
+               type->kind == AST_TYPE_MRV;
     }
 }

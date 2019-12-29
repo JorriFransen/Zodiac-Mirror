@@ -1160,7 +1160,7 @@ namespace Zodiac
                 auto ret_type = function->type->function.return_type;
                 auto num_args = iri->arg2->value.s64;
                 IR_Value* result_value = nullptr;
-                if (ret_type != Builtin::type_void && ret_type->kind != AST_TYPE_STRUCT)
+                if (ret_type != Builtin::type_void && !ast_type_is_aggregate(ret_type))
                 {
                     assert(iri->result);
                     assert(iri->result->kind == IRV_TEMPORARY);
@@ -1460,6 +1460,7 @@ namespace Zodiac
             {
                 IR_Value* source_value = ir_runner_get_local_temporary(runner, iri->arg1);
                 IR_Value* dest_value = ir_runner_get_local_temporary(runner, iri->result);
+
 
                 // dest_value->value.s64 = source_value->value.s64;
                 dest_value->value = source_value->value;
@@ -2166,6 +2167,9 @@ namespace Zodiac
                 assert(idx_value->type == Builtin::type_u64);
 
                 AST_Type* aggregate_type = iri->arg1->type;
+                assert(ast_type_is_aggregate(aggregate_type));
+                if (aggregate_type->kind == AST_TYPE_MRV)
+                    aggregate_type = aggregate_type->mrv.struct_type;
 
                 uint64_t member_offset = 0;
                 uint64_t member_index = idx_value->value.u64;
@@ -2207,6 +2211,7 @@ namespace Zodiac
                 }
                 else
                 {
+                    assert(false);
                     memcpy(&dest_value->value, member_ptr, result_type->bit_size / 8);
                 }
 
@@ -2260,8 +2265,7 @@ namespace Zodiac
                                                                 array_byte_size);
             }
             else if (code_temp->kind == IRV_ALLOCL &&
-                     (code_temp->type->kind == AST_TYPE_STRUCT ||
-                      code_temp->type->kind == AST_TYPE_UNION))
+                     (ast_type_is_aggregate(code_temp->type)))
             {
                 AST_Type* struct_type = code_temp->type;
                 uint64_t struct_byte_size = struct_type->bit_size / 8;
@@ -2270,8 +2274,7 @@ namespace Zodiac
                                                                   struct_byte_size);
             }
             else if (code_temp->kind == IRV_TEMPORARY &&
-                     (code_temp->type->kind == AST_TYPE_STRUCT ||
-                      code_temp->type->kind == AST_TYPE_UNION))
+                     (ast_type_is_aggregate(code_temp->type)))
             {
                 AST_Type* struct_type = code_temp->type;
                 uint64_t struct_byte_size = struct_type->bit_size / 8;
@@ -2293,7 +2296,7 @@ namespace Zodiac
             {
                 auto func_ret_type = function->type->function.return_type;
                 assert(func_ret_type == Builtin::type_void ||
-                       func_ret_type->kind == AST_TYPE_STRUCT);
+                       ast_type_is_aggregate(func_ret_type));
             }
         }
 
