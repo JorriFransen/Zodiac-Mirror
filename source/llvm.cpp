@@ -2133,8 +2133,19 @@ namespace Zodiac
                 assert(a2->type == Builtin::type_u64);
                 uint64_t member_offset = a2->value.u64;
 
+                LLVMTypeRef agg_type = LLVMTypeOf(llvm_agg_value);
+                if (LLVMGetTypeKind(agg_type) == LLVMPointerTypeKind)
+                {
+                    llvm_agg_value = LLVMBuildLoad(builder->llvm_builder, llvm_agg_value, "");
+                }
+
+                // printf("Builtind extract value for: %s\n", LLVMPrintValueToString(llvm_agg_value));
+                // printf("\tType: %s\n", LLVMPrintTypeToString(LLVMTypeOf(llvm_agg_value)));
+                // printf("\t%s\n", LLVMPrintTypeToString(LLVMGetElementType(LLVMTypeOf(llvm_agg_value))));
+
                 LLVMValueRef result = LLVMBuildExtractValue(builder->llvm_builder,
-                                                            llvm_agg_value, (unsigned)member_offset, "");
+                                    llvm_agg_value,
+                                    (unsigned)member_offset, "");
 
                 llvm_assign_result(builder, r, result);
 
@@ -2550,7 +2561,7 @@ namespace Zodiac
                 BUF(LLVMTypeRef) llvm_arg_types = nullptr;
                 LLVMTypeRef llvm_return_type = llvm_type_from_ast(builder,
                                                                   zir_type->function.return_type);
-                if (zir_type->function.return_type->kind == AST_TYPE_STRUCT)
+                if (ast_type_is_aggregate((zir_type->function.return_type)))
                 {
                     LLVMTypeRef llvm_pointer_to_return_type = LLVMPointerType(llvm_return_type, 0);
                     BUF_PUSH(llvm_arg_types, llvm_pointer_to_return_type);

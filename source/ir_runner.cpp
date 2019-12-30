@@ -1677,11 +1677,7 @@ namespace Zodiac
                 IR_Value* dest = ir_runner_get_local_temporary(runner, iri->result);
                 IR_Value* source = ir_runner_get_local_temporary(runner, iri->arg1);
 
-                if (iri->arg1->type->kind == AST_TYPE_STRUCT)
-                {
-                    dest->value.pointer = source->value.pointer;
-                }
-                else if (iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY)
+                if (ast_type_is_aggregate((iri->arg1->type)))
                 {
                     dest->value.pointer = source->value.pointer;
                 }

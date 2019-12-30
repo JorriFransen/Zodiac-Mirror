@@ -16,18 +16,22 @@ _c :: import c;
 
 main :: () -> int
 {
-    // _builtin_open_std_handles();
+    _builtin_open_std_handles();
 
-    // v1 : Vec2;
-    // v1 = make_vec2(4, 5);
+    vec2_0();
+    v1 : Vec2;
+    v1 = make_vec2(4, 5);
 
-    // _c.printf("v1: %d, %d\n", v1.x, v1.y);
+    _c.printf("v1: %d, %d\n", v1.x, v1.y);
 
     // maybe_make_v2();
-    // v2, v_int := maybe_make_v2();
+    v2, v_int := maybe_make_v2();
+    _c.printf("v2.x: %d, v2.y: %d, v_int: %d\n", v2.x, v2.y, v_int);
 
     a : int; b : int;
-    a, b = ret_3_4();
+    a, b = ret_34_56();
+
+    _c.printf("a, b: %d, %d\n", a, b);
 
     return 0;
 }
@@ -53,6 +57,6 @@ maybe_make_v2 :: () -> Vec2, int
     return { 12, 34 }, 56;
 }
 
-ret_3_4 :: () -> int, int { return 3, 4; }
+ret_34_56 :: () -> int, int { return 34, 56; }
 
 
