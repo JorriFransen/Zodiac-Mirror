@@ -1193,28 +1193,34 @@ namespace Zodiac
 
                 void* foreign_symbol = runner->loaded_foreign_symbols[foreign_index];
 
-                assert(iri->result);
-                IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
-                assert(result_value);
-                if (iri->result->type->flags & AST_TYPE_FLAG_INT)
+                assert(iri->result || func->function->type->function.return_type == Builtin::type_void);
+
+                IR_Value* result_value = nullptr;
+                if (iri->result) result_value = ir_runner_get_local_temporary(runner, iri->result);
+
+                if (!iri->result || iri->result->type == Builtin::type_void)
                 {
+                    dcCallVoid(runner->dyn_vm, foreign_symbol);
+                }
+                else if (iri->result->type->flags & AST_TYPE_FLAG_INT)
+                {
+                    assert(result_value);
                     result_value->value.s64 = dcCallInt(runner->dyn_vm, foreign_symbol);
                 }
                 else if (iri->result->type->kind == AST_TYPE_POINTER)
                 {
+                    assert(result_value);
                     result_value->value.pointer = (uint8_t*)dcCallPointer(runner->dyn_vm,
                                                                          foreign_symbol);
                 }
-                else if (iri->result->type == Builtin::type_void)
-                {
-                    dcCallVoid(runner->dyn_vm, foreign_symbol);
-                }
                 else if (iri->result->type == Builtin::type_double)
                 {
+                    assert(result_value);
                     result_value->value.r64 = dcCallDouble(runner->dyn_vm, foreign_symbol);
                 }
                 else if (iri->result->type == Builtin::type_float)
                 {
+                    assert(result_value);
                     result_value->value.r32 = dcCallFloat(runner->dyn_vm, foreign_symbol);
                 }
                 else assert(false);
@@ -1930,6 +1936,12 @@ namespace Zodiac
                 else if (iri->arg1->type->kind == AST_TYPE_STATIC_ARRAY &&
                          iri->result->type->kind == AST_TYPE_POINTER)
                 {
+                    dest->value.pointer = source->value.pointer;
+                }
+                else if (iri->arg1->type->kind == AST_TYPE_MRV &&
+                         iri->result->type->kind == AST_TYPE_STRUCT)
+                {
+                    assert(iri->arg1->type->mrv.struct_type == iri->result->type);
                     dest->value.pointer = source->value.pointer;
                 }
                 else assert(false);

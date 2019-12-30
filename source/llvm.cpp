@@ -1962,6 +1962,7 @@ namespace Zodiac
                 bool is_pointer = target_ast_type->kind == AST_TYPE_POINTER;
                 bool target_sign = target_ast_type->flags & AST_TYPE_FLAG_SIGNED;
                 bool is_enum = target_ast_type->kind == AST_TYPE_ENUM;
+                bool is_struct = target_ast_type->kind == AST_TYPE_STRUCT;
 
                 IR_Value* zir_value = zir_instruction->arg1;
                 LLVMValueRef llvm_value = llvm_emit_ir_value(builder, zir_value);
@@ -2030,6 +2031,15 @@ namespace Zodiac
                         result = LLVMBuildPointerCast(builder->llvm_builder, llvm_value,
                                                       llvm_dest_type, "");
                     }
+                }
+                else if (is_struct)
+                {
+                    if (zir_value->type->kind == AST_TYPE_MRV)
+                    {
+                        assert(zir_value->type->mrv.struct_type = target_ast_type);
+                        result = llvm_value;
+                    }
+                    else assert(false);
                 }
                 else
                 {

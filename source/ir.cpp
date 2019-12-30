@@ -645,7 +645,7 @@ namespace Zodiac
                     if (ast_type_is_aggregate(ret_type))
                     {
                         IR_Value* sret_value = nullptr;
-                        if (ret_type->kind == AST_TYPE_MRV)
+                        if (statement->return_expression->kind == AST_EXPR_EXPRESSION_LIST)
                         {
                             sret_value = ir_builder_emit_mrv(ir_builder,
                                                              statement->return_expression);
@@ -654,6 +654,19 @@ namespace Zodiac
                         {
                             sret_value = ir_builder_emit_expression(ir_builder,
                                                                     statement->return_expression);
+                        }
+
+                        if (sret_value->type->kind == AST_TYPE_MRV)
+                        {
+                            assert(sret_value->type->mrv.struct_type);
+                            if (sret_value->kind == IRV_ALLOCL)
+                            {
+                                sret_value = ir_builder_emit_load(ir_builder, sret_value,
+                                                                  statement->return_expression->file_pos);
+                            }
+                            sret_value = ir_builder_emit_cast(ir_builder, sret_value,
+                                              sret_value->type->mrv.struct_type,
+                                              statement->return_expression->file_pos);
                         }
 
                         IR_Value* sret_pointer =

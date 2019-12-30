@@ -1,12 +1,11 @@
 
 //// Roadmap
 //
+// * Check if varargs still work correctly
 // * Inalloca attribute in llvm
 // * Dont emit alloca for sret arg in llvm
-// * Multiple returns
 // * Copy elision for assignments and declarations
 // * Copy elision for returns
-// * Check if varargs still work correctly
 // * Check if overloaded and poly functions still work correctly
 //
 //
@@ -17,7 +16,7 @@ main :: () -> int
 {
     _builtin_open_std_handles();
 
-    vec2_0();
+    // v1 := vec2_0();
     v1 : Vec2;
     v1 = make_vec2(4, 5);
 
@@ -29,6 +28,12 @@ main :: () -> int
 
     a : int; b : int;
     a, b = ret_34_56();
+
+    c: int; d: int;
+    c, d = indirect_mrv();
+
+    assert(a == c);
+    assert(b == d);
 
     _c.printf("a, b: %d, %d\n", a, b);
 
@@ -43,7 +48,7 @@ Vec2 :: struct
 
 vec2_0 :: () -> Vec2
 {
-    return { 0, 0 };
+    return make_vec2(0, 0);
 }
 
 make_vec2 :: (x: int, y: int) -> Vec2
@@ -57,5 +62,10 @@ maybe_make_v2 :: () -> Vec2, int
 }
 
 ret_34_56 :: () -> int, int { return 34, 56; }
-
+indirect_mrv :: () -> int, int
+{
+    // a, b := ret_34_56();
+    // return a, b;
+    return ret_34_56();
+}
 
