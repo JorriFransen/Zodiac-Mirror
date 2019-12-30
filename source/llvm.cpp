@@ -904,6 +904,18 @@ namespace Zodiac
             LLVMSetLinkage(llvm_func_value, LLVMExternalLinkage);
         }
 
+        if (zir_func->arguments && zir_func->arguments[0]->flags & IRV_FLAG_SRET_ARG)
+        {
+            auto attr_name = "sret";
+            unsigned attr_kind = LLVMGetEnumAttributeKindForName(attr_name, strlen(attr_name));
+            assert(attr_kind);
+            LLVMAttributeRef sret_attr = LLVMCreateEnumAttribute(LLVMGetGlobalContext(),
+                                                                 attr_kind, 1);
+
+
+            LLVMAddAttributeAtIndex(llvm_func_value, 1, sret_attr);
+        }
+
         if (builder->context->options.emit_debug &&
             !(zir_func->flags & IR_FUNC_FLAG_FOREIGN))
         {
@@ -2138,10 +2150,6 @@ namespace Zodiac
                 {
                     llvm_agg_value = LLVMBuildLoad(builder->llvm_builder, llvm_agg_value, "");
                 }
-
-                // printf("Builtind extract value for: %s\n", LLVMPrintValueToString(llvm_agg_value));
-                // printf("\tType: %s\n", LLVMPrintTypeToString(LLVMTypeOf(llvm_agg_value)));
-                // printf("\t%s\n", LLVMPrintTypeToString(LLVMGetElementType(LLVMTypeOf(llvm_agg_value))));
 
                 LLVMValueRef result = LLVMBuildExtractValue(builder->llvm_builder,
                                     llvm_agg_value,

@@ -1,7 +1,6 @@
 
 //// Roadmap
 //
-// * Sret attribute in llvm
 // * Inalloca attribute in llvm
 // * Dont emit alloca for sret arg in llvm
 // * Multiple returns
