@@ -432,7 +432,7 @@ namespace Zodiac
                             declaration->mutable_decl.type = init_expr->type->mrv.types[0];
 
                             resolver_report_warning(resolver, declaration->file_pos,
-                                                    "Implicityly ignoring multiple return values");
+                                                    "Implicitly ignoring multiple return values");
                         }
                         else
                         {
