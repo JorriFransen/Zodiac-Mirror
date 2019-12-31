@@ -1467,6 +1467,7 @@ namespace Zodiac
                         arg_count++;
                     }
 
+                    bool emitted_vararg = false;
                     for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
                     {
                         arg_count++;
@@ -1499,8 +1500,30 @@ namespace Zodiac
 
                         if (arg_expr->flags & AST_EXPR_FLAG_FIRST_VARARG)
                         {
+                            emitted_vararg = true;
                             break;
                         }
+                    }
+
+                    if ((callee_decl->flags & AST_DECL_FLAG_FUNC_VARARG) &&
+                        !(callee_value->function->flags & IR_FUNC_FLAG_FOREIGN) &&
+                        !emitted_vararg)
+                    {
+                        IR_Value* null_ptr_to_any = ir_null_literal(
+                            ir_builder,
+                            Builtin::type_pointer_to_Any);
+                        IR_Value* zero_literal = ir_integer_literal(ir_builder,
+                                                                    Builtin::type_s64, 0);
+                        BUF(IR_Value*) array_ref_members = nullptr;
+                        BUF_PUSH(array_ref_members, null_ptr_to_any);
+                        BUF_PUSH(array_ref_members, zero_literal);
+
+                        IR_Value* empty_varargs = ir_aggregate_literal(
+                            ir_builder, Builtin::type_Array_Ref_of_Any, array_ref_members, true);
+
+                        ir_builder_emit_call_arg(ir_builder, empty_varargs, expression->file_pos,
+                                                 false);
+                        arg_count++;
                     }
 
                     IR_Value* num_args_lit = ir_integer_literal(ir_builder, Builtin::type_s64,

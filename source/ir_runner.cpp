@@ -1408,26 +1408,10 @@ namespace Zodiac
                 if (dest_value->type->kind == AST_TYPE_STATIC_ARRAY)
                 {
                     assert(iri->arg1->kind == IRV_ALLOCL);
-                    // assert(iri->arg2->kind == IRV_ALLOCL);
                     assert(iri->arg1->type == iri->arg2->type);
 
                     AST_Type* array_type = iri->arg1->type;
-
-                    if (iri->arg2->kind == IRV_ALLOCL)
-                    {
-                        assert(false); // Not sure if this path is still used...
-
-                        auto byte_count = array_type->static_array.count *
-                            (array_type->static_array.base->bit_size / 8);
-
-                        memcpy(dest_value->value.pointer, source_value->value.pointer,
-                            byte_count);
-                    }
-                    else if (iri->arg2->kind == IRV_ARRAY_LITERAL)
-                    {
-                        ir_runner_store_array_literal(runner, array_type, iri->arg1, iri->arg2);
-                    }
-                    else assert(false);
+                    ir_runner_store_array_literal(runner, array_type, iri->arg1, iri->arg2);
                 }
                 else if (dest_value->type->kind == AST_TYPE_STRUCT)
                 {

@@ -16,56 +16,100 @@ main :: () -> int
 {
     _builtin_open_std_handles();
 
-    // v1 := vec2_0();
-    v1 : Vec2;
-    v1 = make_vec2(4, 5);
-
-    _c.printf("v1: %d, %d\n", v1.x, v1.y);
-
-    // maybe_make_v2();
-    v2, v_int := maybe_make_v2();
-    _c.printf("v2.x: %d, v2.y: %d, v_int: %d\n", v2.x, v2.y, v_int);
-
-    a : int; b : int;
-    a, b = ret_34_56();
-
-    c: int; d: int;
-    c, d = indirect_mrv();
-
-    assert(a == c);
-    assert(b == d);
-
-    _c.printf("a, b: %d, %d\n", a, b);
+    varargs();
+    // basics();
+    // mrvs();
 
     return 0;
 }
 
-Vec2 :: struct
+// basics :: ()
+// {
+//     _c.printf("\nBasics\n");
+//     v0 := vec2_0();
+
+//     v1 : Vec2;
+//     v1 = make_vec2(4, 5);
+
+//     _c.printf("v0: %d, %d\n", v0.x, v0.y);
+//     _c.printf("v1: %d, %d\n", v1.x, v1.y);
+// }
+
+varargs :: ()
 {
-    x: int;
-    y: int;
+    // _c.printf("\nVarargs\n");
+    print_ints(1);
+    varargs_local_x : int;
+    _c.printf("*varargs_local_x: %p\n", *varargs_local_x);
+    print_ints(42, 4); //, 2, 4, 5);
 }
 
-vec2_0 :: () -> Vec2
+print_ints :: (first: int, args: ...)
 {
-    return make_vec2(0, 0);
+    _c.printf("first: %d\n", first);
+    _c.printf("args.count: %d\n", args.count);
+    _c.printf("args.data: %p\n", args.data);
+
+    if (args.count) {
+        _c.printf("args { ");
+
+        for (i := 0; i < args.count; i++) {
+
+            if (i > 0) _c.printf(", "); any := args.data[i];
+            assert(any.type_info == get_type_info(int));
+            intptr := (:*int)any.value;
+            _c.printf("%d", <intptr);
+        }
+
+        _c.printf(" }\n\n");
+    }
 }
 
-make_vec2 :: (x: int, y: int) -> Vec2
-{
-    return { x, y };
-}
+// mrvs :: ()
+// {
+//     _c.printf("\nMRVS\n");
+//     // maybe_make_v2();
+//     v2, v_int := maybe_make_v2();
+//     _c.printf("v2.x: %d, v2.y: %d, v_int: %d\n", v2.x, v2.y, v_int);
 
-maybe_make_v2 :: () -> Vec2, int
-{
-    return { 12, 34 }, 56;
-}
+//     a : int; b : int;
+//     a, b = ret_34_56();
 
-ret_34_56 :: () -> int, int { return 34, 56; }
-indirect_mrv :: () -> int, int
-{
-    // a, b := ret_34_56();
-    // return a, b;
-    return ret_34_56();
-}
+//     c: int; d: int;
+//     c, d = indirect_mrv();
+
+//     assert(a == c);
+//     assert(b == d);
+
+//     _c.printf("a, b: %d, %d\n", a, b);
+// }
+
+// Vec2 :: struct
+// {
+//     x: int;
+//     y: int;
+// }
+
+// vec2_0 :: () -> Vec2
+// {
+//     return make_vec2(0, 0);
+// }
+
+// make_vec2 :: (x: int, y: int) -> Vec2
+// {
+//     return { x, y };
+// }
+
+// maybe_make_v2 :: () -> Vec2, int
+// {
+//     return { 12, 34 }, 56;
+// }
+
+// ret_34_56 :: () -> int, int { return 34, 56; }
+// indirect_mrv :: () -> int, int
+// {
+//     // a, b := ret_34_56();
+//     // return a, b;
+//     return ret_34_56();
+// }
 
