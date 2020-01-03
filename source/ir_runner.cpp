@@ -2193,6 +2193,7 @@ namespace Zodiac
                     memcpy(dest_value->value.pointer, member_ptr, result_type->bit_size / 8);
                 }
                 else if (result_type->kind == AST_TYPE_BASE ||
+                         result_type->kind == AST_TYPE_ENUM ||
                          result_type->kind == AST_TYPE_POINTER)
                 {
                     memcpy(&dest_value->value, member_ptr, result_type->bit_size / 8);
