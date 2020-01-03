@@ -258,8 +258,20 @@ namespace Zodiac
             {
                 File_Pos fp;
                 fp.file_name = "<generated return>";
-                IR_Value* ret_value = ir_builder_emit_zero_literal(ir_builder,
-                                                                decl->function.return_type);
+
+                auto ret_type = decl->function.return_type;
+                IR_Value* ret_value = ir_builder_emit_zero_literal(ir_builder, ret_type);
+
+                if (ret_type->kind == AST_TYPE_MRV)
+                {
+                    IR_Value* sret_ptr =
+                        ir_builder_emit_load(ir_builder,
+                                             ir_builder->current_function->arguments[0],
+                                             fp);
+                    ir_builder_emit_store(ir_builder, sret_ptr, ret_value, fp);
+                    ret_value = nullptr;
+                }
+
                 ir_builder_emit_return(ir_builder, ret_value, fp);
             }
 
@@ -564,13 +576,12 @@ namespace Zodiac
                         IR_Value* init_value = ir_builder_emit_expression(ir_builder, init_expr);
                         AST_Type* init_type = init_value->type;
 
-                        if (init_type->kind == AST_TYPE_STRUCT &&
-                            (init_type->flags & AST_TYPE_FLAG_FROM_MRV))
+                        if (init_type->kind == AST_TYPE_MRV)
                         {
                             IR_Value* mrv_value = init_value;
-                            assert(BUF_LENGTH(init_type->aggregate_type.member_declarations));
-                            auto member_decls = init_type->aggregate_type.member_declarations;
-                            assert(member_decls[0]->mutable_decl.type == allocl->type);
+                            assert(BUF_LENGTH(init_type->mrv.types));
+                            auto member_types = init_type->mrv.types;
+                            assert(member_types[0] == allocl->type);
                             auto init_fp = init_expr->file_pos;
 
                             init_value = ir_builder_emit_extract_value(ir_builder, mrv_value,
@@ -661,8 +672,9 @@ namespace Zodiac
                             assert(sret_value->type->mrv.struct_type);
                             if (sret_value->kind == IRV_ALLOCL)
                             {
-                                sret_value = ir_builder_emit_load(ir_builder, sret_value,
-                                                                  statement->return_expression->file_pos);
+                                sret_value =
+                                    ir_builder_emit_load(ir_builder, sret_value,
+                                                         statement->return_expression->file_pos);
                             }
                             sret_value = ir_builder_emit_cast(ir_builder, sret_value,
                                               sret_value->type->mrv.struct_type,

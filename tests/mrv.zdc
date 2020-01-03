@@ -57,7 +57,7 @@ required_assign :: ()
     assert(err != null);
     printf("\n");
 
-    // This is not allowed
+    //This is not allowed
     // _, result = do_stuff(1);
     // do_stuff(2);
     // _, result2 := do_stuff(3);
@@ -205,6 +205,7 @@ multiple_returns_and_lvalue_lists :: ()
     assert(implicit_x == 0);
     assert(implicit_y == 0);
 
+    // NOT ALLOWED
     // w_float: float;
     // w_vec: Vec2;
     // w_float, w_vec = wrong_order();
@@ -220,6 +221,7 @@ multiple_returns_and_lvalue_lists :: ()
     assert(r_vec.x == 5);
     assert(r_vec.y == 6);
 
+    // NOT ALLOWED
     // r_vec, r_float = right_order();
 }
 
