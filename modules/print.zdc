@@ -51,29 +51,23 @@ print :: (fmt: *u8, v: ...)
 
     va_idx := 0;
 
-    for (i : s64 = 0; i < fmt_length; i++)
-    {
-        if (fmt[i] == '%')
-        {
-            if (length)
-            {
+    for (i : s64 = 0; i < fmt_length; i++) {
+
+        if (fmt[i] == '%') {
+            if (length) {
                 print_cstr_a(*array, start, length);
                 length = 0;
             }
-
             start = *(fmt[i + 1]);
             assert(va_idx < v.count);
             print_a(*array, v[va_idx]);
             va_idx++;
-        }
-        else
-        {
+        } else {
             length++;
         }
     }
 
-    if (length)
-    {
+    if (length) {
         print_cstr_a(*array, start, length);
     }
 

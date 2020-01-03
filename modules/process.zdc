@@ -110,6 +110,7 @@ static_if (PLATFORM_LINUX)
                 result.exit_code = (:u32)posix.WEXITSTATUS(status);
             } else if (posix.WIFSIGNALED(status)) {
                 term_sig := posix.WTERMSIG(status);
+                // _c.printf("Term_sig: %d\n", term_sig);
                 assert(false);
             } else assert(false);
 

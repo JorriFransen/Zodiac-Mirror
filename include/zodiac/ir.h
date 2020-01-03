@@ -33,6 +33,7 @@ namespace Zodiac
     {
         IRV_FLAG_ASSIGNED = 0x01,
         IRV_FLAG_CONST    = 0x02,
+        IRV_FLAG_SRET_ARG = 0x04,
     };
 
     struct IR_Value

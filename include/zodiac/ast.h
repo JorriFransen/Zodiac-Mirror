@@ -1018,4 +1018,6 @@ namespace Zodiac
     void ast_type_to_string(AST_Type* type, String_Builder* string_builder);
 
     bool is_cmp_op(AST_Binop_Kind binop);
+
+    bool ast_type_is_aggregate(AST_Type* type);
 }

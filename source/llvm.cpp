@@ -904,6 +904,18 @@ namespace Zodiac
             LLVMSetLinkage(llvm_func_value, LLVMExternalLinkage);
         }
 
+        if (zir_func->arguments && zir_func->arguments[0]->flags & IRV_FLAG_SRET_ARG)
+        {
+            auto attr_name = "sret";
+            unsigned attr_kind = LLVMGetEnumAttributeKindForName(attr_name, strlen(attr_name));
+            assert(attr_kind);
+            LLVMAttributeRef sret_attr = LLVMCreateEnumAttribute(LLVMGetGlobalContext(),
+                                                                 attr_kind, 1);
+
+
+            LLVMAddAttributeAtIndex(llvm_func_value, 1, sret_attr);
+        }
+
         if (builder->context->options.emit_debug &&
             !(zir_func->flags & IR_FUNC_FLAG_FOREIGN))
         {
@@ -960,6 +972,7 @@ namespace Zodiac
                                                             zir_arg->argument.name);
                 LLVMValueRef llvm_arg_value = LLVMGetParam(llvm_func_value,
                                                         (unsigned)zir_arg->argument.index);
+                assert(llvm_arg_value);
                 LLVMBuildStore(builder->llvm_builder, llvm_arg_value, llvm_arg_alloca);
                 llvm_assign_result(builder, zir_arg, llvm_arg_alloca);
 
@@ -985,11 +998,6 @@ namespace Zodiac
                 zir_block = zir_block->next;
             }
         }
-        else
-        {
-            // assert(false);
-        }
-
 
         BUF_FREE(llvm_ir_function.blocks);
 
@@ -1551,7 +1559,12 @@ namespace Zodiac
                                                                llvm_func_value, args,
                                                                (unsigned)arg_count, "");
 
-                llvm_assign_result(builder, zir_instruction->result, llvm_result_value);
+                if (zir_instruction->result)
+                {
+                    assert(llvm_result_value);
+                    llvm_assign_result(builder, zir_instruction->result, llvm_result_value);
+                }
+
                 BUF_FREE(args);
 
                 break;
@@ -1949,6 +1962,7 @@ namespace Zodiac
                 bool is_pointer = target_ast_type->kind == AST_TYPE_POINTER;
                 bool target_sign = target_ast_type->flags & AST_TYPE_FLAG_SIGNED;
                 bool is_enum = target_ast_type->kind == AST_TYPE_ENUM;
+                bool is_struct = target_ast_type->kind == AST_TYPE_STRUCT;
 
                 IR_Value* zir_value = zir_instruction->arg1;
                 LLVMValueRef llvm_value = llvm_emit_ir_value(builder, zir_value);
@@ -2017,6 +2031,15 @@ namespace Zodiac
                         result = LLVMBuildPointerCast(builder->llvm_builder, llvm_value,
                                                       llvm_dest_type, "");
                     }
+                }
+                else if (is_struct)
+                {
+                    if (zir_value->type->kind == AST_TYPE_MRV)
+                    {
+                        assert(zir_value->type->mrv.struct_type = target_ast_type);
+                        result = llvm_value;
+                    }
+                    else assert(false);
                 }
                 else
                 {
@@ -2132,8 +2155,15 @@ namespace Zodiac
                 assert(a2->type == Builtin::type_u64);
                 uint64_t member_offset = a2->value.u64;
 
+                LLVMTypeRef agg_type = LLVMTypeOf(llvm_agg_value);
+                if (LLVMGetTypeKind(agg_type) == LLVMPointerTypeKind)
+                {
+                    llvm_agg_value = LLVMBuildLoad(builder->llvm_builder, llvm_agg_value, "");
+                }
+
                 LLVMValueRef result = LLVMBuildExtractValue(builder->llvm_builder,
-                                                            llvm_agg_value, (unsigned)member_offset, "");
+                                    llvm_agg_value,
+                                    (unsigned)member_offset, "");
 
                 llvm_assign_result(builder, r, result);
 
@@ -2406,6 +2436,7 @@ namespace Zodiac
     void llvm_assign_result(LLVM_IR_Builder* builder, IR_Value* zir_value,
                             LLVMValueRef llvm_value)
     {
+        assert(zir_value);
         for (uint64_t i = 0; i < BUF_LENGTH(builder->assigned_values); i++)
         {
             LLVM_Assigned_Value& av = builder->assigned_values[i];
@@ -2545,9 +2576,16 @@ namespace Zodiac
 
             case AST_TYPE_FUNCTION:
             {
+                BUF(LLVMTypeRef) llvm_arg_types = nullptr;
                 LLVMTypeRef llvm_return_type = llvm_type_from_ast(builder,
                                                                   zir_type->function.return_type);
-                BUF(LLVMTypeRef) llvm_arg_types = nullptr;
+                if (ast_type_is_aggregate((zir_type->function.return_type)))
+                {
+                    LLVMTypeRef llvm_pointer_to_return_type = LLVMPointerType(llvm_return_type, 0);
+                    BUF_PUSH(llvm_arg_types, llvm_pointer_to_return_type);
+                    llvm_return_type = llvm_type_from_ast(builder, Builtin::type_void);
+                }
+
                 for (uint64_t i = 0; i < BUF_LENGTH(zir_type->function.arg_types); i++)
                 {
                     AST_Type* zodiac_arg_type = zir_type->function.arg_types[i];

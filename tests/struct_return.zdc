@@ -1,0 +1,120 @@
+
+//// Roadmap
+//
+// * Inalloca attribute in llvm
+// * Dont emit alloca for sret arg in llvm
+// * Copy elision for assignments and declarations
+// * Copy elision for returns
+// * Check if overloaded and poly functions still work correctly
+//
+//
+
+_c :: import c;
+
+main :: () -> int
+{
+    _builtin_open_std_handles();
+
+    varargs();
+    basics();
+    mrvs();
+
+    return 0;
+}
+
+basics :: ()
+{
+    _c.printf("\nBasics\n");
+    v0 := vec2_0();
+
+    v1 : Vec2;
+    v1 = make_vec2(4, 5);
+
+    _c.printf("v0: %d, %d\n", v0.x, v0.y);
+    _c.printf("v1: %d, %d\n", v1.x, v1.y);
+}
+
+varargs :: ()
+{
+    _c.printf("\nVarargs\n");
+
+    r1 := print_and_sum_ints(1);
+    assert(r1 == 1);
+
+    r2 := print_and_sum_ints(42, 4, 2, 4, 5);
+    assert(r2 == 57);
+}
+
+print_and_sum_ints :: (first: int, args: ...)
+{
+    _c.printf("first: %d\n", first);
+
+    sum := first;
+
+    if (args.count) {
+        _c.printf("args { ");
+
+        for (i := 0; i < args.count; i++) {
+
+            if (i > 0) _c.printf(", "); any := args.data[i];
+            assert(any.type_info == get_type_info(int));
+            intptr := (:*int)any.value;
+            _c.printf("%d", <intptr);
+
+            sum += <intptr;
+        }
+
+        _c.printf(" }\n\n");
+    }
+
+    return sum;
+}
+
+mrvs :: ()
+{
+    _c.printf("\nMRVS\n");
+    // maybe_make_v2();
+    v2, v_int := maybe_make_v2();
+    _c.printf("v2.x: %d, v2.y: %d, v_int: %d\n", v2.x, v2.y, v_int);
+
+    a : int; b : int;
+    a, b = ret_34_56();
+
+    c: int; d: int;
+    c, d = indirect_mrv();
+
+    assert(a == c);
+    assert(b == d);
+
+    _c.printf("a, b: %d, %d\n", a, b);
+}
+
+Vec2 :: struct
+{
+    x: int;
+    y: int;
+}
+
+vec2_0 :: () -> Vec2
+{
+    return make_vec2(0, 0);
+}
+
+make_vec2 :: (x: int, y: int) -> Vec2
+{
+    return { x, y };
+}
+
+maybe_make_v2 :: () -> Vec2, int
+{
+    return { 12, 34 }, 56;
+}
+
+ret_34_56 :: () -> int, int { return 34, 56; }
+indirect_mrv :: () -> int, int
+{
+    // a, b := ret_34_56();
+    // return a, b;
+    return ret_34_56();
+}
+
