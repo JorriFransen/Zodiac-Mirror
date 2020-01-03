@@ -1683,6 +1683,12 @@ namespace Zodiac
                             all_const = false;
                         }
 
+                        if (member_value->kind == IRV_ALLOCL)
+                        {
+                            member_value = ir_builder_emit_load(ir_builder, member_value,
+                                                                member_expression->file_pos);
+                        }
+
                         BUF_PUSH(compound_values, member_value);
                     }
 
@@ -4405,6 +4411,15 @@ namespace Zodiac
     IR_Value* ir_aggregate_literal(IR_Builder* ir_builder, AST_Type* aggregate_type,
                                 BUF(IR_Value*) member_values, bool is_const)
     {
+
+        for (uint64_t i = 0; i < BUF_LENGTH(member_values); i++)
+        {
+            auto mv = member_values[i];
+            assert(mv->kind != IRV_ALLOCL);
+            assert(mv->kind != IRV_ARGUMENT);
+            assert(mv->kind != IRV_GLOBAL);
+        }
+
         IR_Value* result = ir_value_new(ir_builder, IRV_AGGREGATE_LITERAL, aggregate_type);
         result->value.compound_values = member_values;
         result->flags |= IRV_FLAG_ASSIGNED;
