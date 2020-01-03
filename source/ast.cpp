@@ -2029,6 +2029,7 @@ namespace Zodiac
 
         return type->kind == AST_TYPE_STRUCT ||
                type->kind == AST_TYPE_UNION ||
-               type->kind == AST_TYPE_MRV;
+               type->kind == AST_TYPE_MRV ||
+               type->kind == AST_TYPE_STATIC_ARRAY;
     }
 }

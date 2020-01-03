@@ -2407,6 +2407,11 @@ namespace Zodiac
             case AST_TYPE_POINTER:
             {
                 memcpy(dest_pointer, &temp->value.pointer, byte_size);
+//                assert(type->bit_size == 64);
+//                assert(temp->type->bit_size == 64);
+
+//                uint64_t* _dst_ptr = (uint64_t*)dest_pointer;
+//                *_dst_ptr = (uint64_t)temp->value.pointer;
                 break;
             }
 
