@@ -1236,11 +1236,24 @@ namespace Zodiac
 
                 dcMode(runner->dyn_vm, DC_CALL_C_DEFAULT);
 
-                assert(iri->result);
-                IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
-                assert(result_value);
+                AST_Type* func_type = ptr_val->type->pointer.base;
+                assert(func_type->kind == AST_TYPE_FUNCTION);
+                AST_Type* ret_type = func_type->function.return_type;
 
-                if (iri->result->type->flags & AST_TYPE_FLAG_INT)
+                assert(iri->result || ret_type == Builtin::type_void);
+                IR_Value* result_value = nullptr;
+                if (iri->result)
+                {
+                    result_value = ir_runner_get_local_temporary(runner, iri->result);
+                    assert(result_value);
+                }
+
+                if (!iri->result ||
+                    iri->result->type->flags & AST_TYPE_FLAG_VOID)
+                {
+                    dcCallVoid(runner->dyn_vm, ptr_val->value.pointer);
+                }
+                else if (iri->result->type->flags & AST_TYPE_FLAG_INT)
                 {
                     result_value->value.s64 = dcCallInt(runner->dyn_vm, ptr_val->value.pointer);
                 }
@@ -1248,10 +1261,6 @@ namespace Zodiac
                 {
                     result_value->value.pointer = (uint8_t*)dcCallPointer(runner->dyn_vm,
                                                                          ptr_val->value.pointer);
-                }
-                else if (iri->result->type->flags & AST_TYPE_FLAG_VOID)
-                {
-                    dcCallVoid(runner->dyn_vm, ptr_val->value.pointer);
                 }
                 else assert(false);
                 dcReset(runner->dyn_vm);
