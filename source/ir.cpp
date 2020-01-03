@@ -262,7 +262,7 @@ namespace Zodiac
                 auto ret_type = decl->function.return_type;
                 IR_Value* ret_value = ir_builder_emit_zero_literal(ir_builder, ret_type);
 
-                if (ret_type->kind == AST_TYPE_MRV)
+                if (ast_type_is_aggregate(ret_type))
                 {
                     IR_Value* sret_ptr =
                         ir_builder_emit_load(ir_builder,
