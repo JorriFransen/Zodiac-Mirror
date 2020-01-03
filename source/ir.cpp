@@ -4515,6 +4515,10 @@ namespace Zodiac
             is_const &= (bool)(expr->flags & AST_EXPR_FLAG_CONST);
 
             IR_Value* mem_value = ir_builder_emit_expression(ir_builder, expr);
+
+            if (mem_value->kind == IRV_ALLOCL)
+                mem_value = ir_builder_emit_load(ir_builder, mem_value, expr->file_pos);
+
             BUF_PUSH(member_values, mem_value);
         }
 
