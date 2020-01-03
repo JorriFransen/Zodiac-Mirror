@@ -1,7 +1,6 @@
 
 //// Roadmap
 //
-// * Check if varargs still work correctly
 // * Inalloca attribute in llvm
 // * Dont emit alloca for sret arg in llvm
 // * Copy elision for assignments and declarations
@@ -38,15 +37,19 @@ basics :: ()
 varargs :: ()
 {
     _c.printf("\nVarargs\n");
-    print_ints(1);
-    print_ints(42, 4, 2, 4, 5);
+
+    r1 := print_and_sum_ints(1);
+    assert(r1 == 1);
+
+    r2 := print_and_sum_ints(42, 4, 2, 4, 5);
+    assert(r2 == 57);
 }
 
-print_ints :: (first: int, args: ...)
+print_and_sum_ints :: (first: int, args: ...)
 {
     _c.printf("first: %d\n", first);
-    _c.printf("args.count: %d\n", args.count);
-    _c.printf("args.data: %p\n", args.data);
+
+    sum := first;
 
     if (args.count) {
         _c.printf("args { ");
@@ -57,10 +60,14 @@ print_ints :: (first: int, args: ...)
             assert(any.type_info == get_type_info(int));
             intptr := (:*int)any.value;
             _c.printf("%d", <intptr);
+
+            sum += <intptr;
         }
 
         _c.printf(" }\n\n");
     }
+
+    return sum;
 }
 
 mrvs :: ()
