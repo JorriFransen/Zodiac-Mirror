@@ -12,8 +12,8 @@ main :: ()
     // assert(false);
     // test_stringabc : String = "test string";
 
-    null_ptr : *int = null;
-    <null_ptr = 4;
+ //   null_ptr : *int = null;
+ //   <null_ptr = 4;
 
     print("Print test with auto converted string literal\n");
 
