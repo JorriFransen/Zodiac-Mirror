@@ -1009,6 +1009,11 @@ namespace Zodiac
             IR_Value* lvalue = ir_builder_emit_lvalue(ir_builder, lvalue_expr);
             IR_Value* new_value = ir_builder_emit_expression(ir_builder,
                                                              statement->assign.expression);
+            if (new_value->kind == IRV_ALLOCL)
+            {
+                new_value = ir_builder_emit_load(ir_builder, new_value,
+                                                 statement->assign.expression->file_pos);
+            }
             ir_builder_emit_store(ir_builder, lvalue, new_value, statement->file_pos);
         }
     }
