@@ -273,10 +273,18 @@ namespace Zodiac
         {
             return (uint32_t)expression->integer_literal.u64;
         }
+        else if (type == Builtin::type_s32)
+        {
+            return (int32_t)expression->integer_literal.u64;
+        }
 		else if (type == Builtin::type_u16)
 		{
 			return (uint16_t)expression->integer_literal.u64;
 		}
+        else if (type == Builtin::type_s16)
+        {
+            return (int16_t)expression->integer_literal.u64;
+        }
 
         assert(false);
 		return 0;
