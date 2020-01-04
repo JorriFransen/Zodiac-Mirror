@@ -910,9 +910,7 @@ namespace Zodiac
             unsigned attr_kind = LLVMGetEnumAttributeKindForName(attr_name, strlen(attr_name));
             assert(attr_kind);
             LLVMAttributeRef sret_attr = LLVMCreateEnumAttribute(LLVMGetGlobalContext(),
-                                                                 attr_kind, 1);
-
-
+                                                                 attr_kind, 0);
             LLVMAddAttributeAtIndex(llvm_func_value, 1, sret_attr);
         }
 
