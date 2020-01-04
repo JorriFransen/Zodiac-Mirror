@@ -426,10 +426,14 @@ namespace Zodiac
 
                             }
                         }
-                        else if (init_expr->type->kind == AST_TYPE_MRV)
+                        else if (ast_type_is_mrv(init_expr->type))
                         {
-                            assert(BUF_LENGTH(init_expr->type->mrv.types));
-                            declaration->mutable_decl.type = init_expr->type->mrv.types[0];
+                            auto agg_type = init_expr->type;
+                            assert(BUF_LENGTH(agg_type->aggregate_type.member_declarations));
+                            auto first_mrv_mem_decl = agg_type->aggregate_type.member_declarations[0];
+                            assert(first_mrv_mem_decl);
+                            assert(first_mrv_mem_decl->kind == AST_DECL_MUTABLE);
+                            declaration->mutable_decl.type = first_mrv_mem_decl->mutable_decl.type;
 
                             resolver_report_warning(resolver, declaration->file_pos,
                                                     "Implicitly ignoring multiple return values");
@@ -858,11 +862,10 @@ namespace Zodiac
                 if (!result) break;
 
                 AST_Type* mrv_type = init_expr->type;
-                assert(mrv_type->kind == AST_TYPE_MRV);
+                assert(ast_type_is_mrv(mrv_type));
 
                 auto lvalue_count = BUF_LENGTH(lvalue_list->list.expressions);
-                auto mrv_type_count = BUF_LENGTH(mrv_type->mrv.types);
-
+                auto mrv_type_count = BUF_LENGTH(mrv_type->aggregate_type.member_declarations);
                 assert(lvalue_count <= mrv_type_count);
 
                 for (uint64_t i = 0; i < mrv_type_count; i++)
@@ -870,10 +873,12 @@ namespace Zodiac
                     if (i < lvalue_count)
                     {
                         AST_Expression* lvalue_expr = lvalue_list->list.expressions[i];
+                        auto mrv_mem_decl = mrv_type->aggregate_type.member_declarations[i];
+
                         if (lvalue_expr->kind != AST_EXPR_IGNORED_VALUE)
                         {
                             AST_Identifier* lvalue_ident = lvalue_expr->identifier;
-                            AST_Type* type = mrv_type->mrv.types[i];
+                            AST_Type* type = mrv_mem_decl->mutable_decl.type;
                             AST_Type_Spec* type_spec =
                                 ast_type_spec_from_type_new(resolver->context,
                                                             lvalue_expr->file_pos,
@@ -897,7 +902,7 @@ namespace Zodiac
                                                                       scope);
                             }
                         }
-                        else if (mrv_type->mrv.directives[i])
+                        else if (mrv_mem_decl->flags & AST_DECL_FLAG_REQUIRED_MRV)
                         {
                             resolver_report_error(resolver, lvalue_expr->file_pos,
                                                 "This returned value has the '#required' directive, so it is not allowed to be ignored");
@@ -1235,14 +1240,16 @@ namespace Zodiac
                                                       scope);
                 AST_Type* ret_type = statement->call_expression->type;
 
-                if (ret_type && ret_type->kind == AST_TYPE_MRV)
+                if (ret_type && ast_type_is_mrv(ret_type))
                 {
-                    for (uint64_t i = 0; i < BUF_LENGTH(ret_type->mrv.directives); i++)
+                    auto mem_decls = ret_type->aggregate_type.member_declarations;
+                    for (uint64_t i = 0; i < BUF_LENGTH(mem_decls); i++)
                     {
-                        AST_Directive* directive = ret_type->mrv.directives[i];
-                        if (directive)
+                        AST_Declaration* mrv_mem_decl = mem_decls[i];
+                        assert(mrv_mem_decl->kind == AST_DECL_MUTABLE);
+
+                        if (mrv_mem_decl->flags & AST_DECL_FLAG_REQUIRED_MRV)
                         {
-                            assert(directive->kind == AST_DIREC_REQUIRED);
                             resolver_report_error(resolver, statement->file_pos,
                                                   "Returned value at index %d has the '#required' directive, but it's value is not assigned", i);
                             result = false;
@@ -1264,7 +1271,7 @@ namespace Zodiac
                     assert(expr->kind == AST_EXPR_CALL);
                     result &= resolver_resolve_expression(resolver, expr, scope);
                     if (!result) return false;
-                    assert(expr->type->kind == AST_TYPE_MRV);
+                    assert(ast_type_is_mrv(expr->type));
 
                     result &= resolver_resolve_expression(resolver, lvalue, scope, expr->type);
                 }
@@ -1351,7 +1358,7 @@ namespace Zodiac
 
                     if (suggested_type)
                     {
-                        bool mrv_expected = suggested_type->kind == AST_TYPE_MRV;
+                        bool mrv_expected = ast_type_is_mrv(suggested_type);
                         auto ret_expr = statement->return_expression;
                         bool ret_expr_is_list = ret_expr->kind == AST_EXPR_EXPRESSION_LIST;
                         bool ret_expr_is_mrv_type = false;
@@ -1363,7 +1370,7 @@ namespace Zodiac
                             if (result)
                             {
                                 assert(ret_expr->type);
-                                ret_expr_is_mrv_type = ret_expr->type->kind == AST_TYPE_MRV;
+                                ret_expr_is_mrv_type = ast_type_is_mrv(ret_expr->type);
                                 expr_resolved = true;
                             }
                         }
@@ -1373,7 +1380,7 @@ namespace Zodiac
                             resolver_report_error(
                                 resolver, statement->file_pos,
                                 "Returning one value, expected %d",
-                                BUF_LENGTH(suggested_type->mrv.types));
+                                BUF_LENGTH(suggested_type->aggregate_type.member_declarations));
 
                             return false;
                         }
@@ -2602,10 +2609,11 @@ namespace Zodiac
             case AST_EXPR_EXPRESSION_LIST:
             {
                 assert(suggested_type);
-                assert(suggested_type->kind == AST_TYPE_MRV);
+                assert(ast_type_is_mrv(suggested_type));
 
                 auto list_expr_count = BUF_LENGTH(expression->list.expressions);
-                auto mrv_type_count = BUF_LENGTH(suggested_type->mrv.types);
+                auto mrv_mem_decls = suggested_type->aggregate_type.member_declarations;
+                auto mrv_type_count = BUF_LENGTH(mrv_mem_decls);
                 assert(mrv_type_count >= list_expr_count);
 
 
@@ -2613,37 +2621,34 @@ namespace Zodiac
                 {
                     auto expr = expression->list.expressions[i];
 
-                    if (expr->kind == AST_EXPR_COMPOUND_LITERAL &&
-                        !(suggested_type->kind == AST_TYPE_STRUCT ||
-                          suggested_type->kind == AST_TYPE_UNION ||
-                          suggested_type->kind == AST_TYPE_MRV))
-                    {
-                        auto exp_type_str = ast_type_to_string(suggested_type->mrv.types[i]);
+                    // if (expr->kind == AST_EXPR_COMPOUND_LITERAL &&
+                    //     !(ast_type_is_aggregate(suggested_type)))
+                    // {
+                    //     auto exp_type_str = ast_type_to_string(suggested_type->mrv.types[i]);
 
-                        resolver_report_error(resolver, expr->file_pos,
-                                              "Cannot use an aggregate type when expecting '%s'",
-                                              exp_type_str);
+                    //     resolver_report_error(resolver, expr->file_pos,
+                    //                           "Cannot use an aggregate type when expecting '%s'",
+                    //                           exp_type_str);
 
-                        mem_free(exp_type_str);
+                    //     mem_free(exp_type_str);
 
-                        result = false;
-                        break;
-                    }
+                    //     result = false;
+                    //     break;
+                    // }
+
+                    // if (!result) break;
+
+                    AST_Declaration* mrv_mem_decl = mrv_mem_decls[i];
+                    AST_Type* mrv_mem_type = mrv_mem_decls[i]->mutable_decl.type;
+                    result &= resolver_resolve_expression(resolver, expr, scope, mrv_mem_type);
 
                     if (!result) break;
 
-                    result &= resolver_resolve_expression(resolver, expr, scope,
-                                                          suggested_type->mrv.types[i]);
-
-                    if (!result) break;
-
-                    bool types_match = resolver_check_assign_types(resolver,
-                                                                   suggested_type->mrv.types[i],
-                                                                   expr->type);
+                    bool types_match = resolver_check_assign_types(resolver, mrv_mem_type, expr->type);
                     if (!types_match)
                     {
                         auto got_str = ast_type_to_string(expr->type);
-                        auto exp_str = ast_type_to_string(suggested_type->mrv.types[i]);
+                        auto exp_str = ast_type_to_string(mrv_mem_type);
 
                         resolver_report_error(resolver, expr->file_pos,
                                               "Mismatching types in assignnment:\n\tgot: %s\n\texpected: %s\n",
@@ -2655,9 +2660,10 @@ namespace Zodiac
                     }
 
                     if (expr->kind == AST_EXPR_IGNORED_VALUE &&
-                        (suggested_type->mrv.directives &&
-                         suggested_type->mrv.directives[i] &&
-                         (suggested_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED)))
+                        mrv_mem_decl->flags & AST_DECL_FLAG_REQUIRED_MRV)
+                        // (suggested_type->mrv.directives &&
+                        //  suggested_type->mrv.directives[i] &&
+                        //  (suggested_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED)))
                     {
                         resolver_report_error(resolver, expr->file_pos,
                                               "This returned value has the '#required' directive, so it is not allowed to be ignored");

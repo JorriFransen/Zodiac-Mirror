@@ -1931,12 +1931,6 @@ namespace Zodiac
                 {
                     dest->value.pointer = source->value.pointer;
                 }
-                else if (iri->arg1->type->kind == AST_TYPE_MRV &&
-                         iri->result->type->kind == AST_TYPE_STRUCT)
-                {
-                    assert(iri->arg1->type->mrv.struct_type == iri->result->type);
-                    dest->value.pointer = source->value.pointer;
-                }
                 else assert(false);
 
                 break;
@@ -2169,8 +2163,6 @@ namespace Zodiac
 
                 AST_Type* aggregate_type = iri->arg1->type;
                 assert(ast_type_is_aggregate(aggregate_type));
-                if (aggregate_type->kind == AST_TYPE_MRV)
-                    aggregate_type = aggregate_type->mrv.struct_type;
 
                 uint64_t member_offset = 0;
                 uint64_t member_index = idx_value->value.u64;
