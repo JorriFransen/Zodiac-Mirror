@@ -854,8 +854,16 @@ namespace Zodiac
             }
             else
             {
-                decl = parse_declaration(parser, lvalue_expr->identifier, scope, false,
-                                         nullptr);
+                if (lvalue_expr->kind == AST_EXPR_IDENTIFIER)
+                {
+                    decl = parse_declaration(parser, lvalue_expr->identifier, scope, false,
+                                 nullptr);
+                }
+                else
+                {
+                    parser_report_error(parser, ft.file_pos, "Expected identifier got a dot expression");
+                    return nullptr;
+                }
             }
 
             if (!decl)

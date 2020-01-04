@@ -386,6 +386,7 @@ run_test :: (mode: Test_Mode, tf: Test_File, longest_name_length: u64,
 
         if ((mode == RUNNING_BYTECODE || mode == RUNNING_LLVM) &&
             (:bool)(tf.flags & Test_File_Flag.DONT_RUN)) {
+
             os.set_terminal_color(Terminal_Color.GREEN, true);
             _c.printf(" SKIPPED\n");
             os.reset_terminal_state();
