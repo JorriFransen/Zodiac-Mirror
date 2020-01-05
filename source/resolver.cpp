@@ -2621,24 +2621,6 @@ namespace Zodiac
                 {
                     auto expr = expression->list.expressions[i];
 
-                    // :removing_mrv_type
-                    // if (expr->kind == AST_EXPR_COMPOUND_LITERAL &&
-                    //     !(ast_type_is_aggregate(suggested_type)))
-                    // {
-                    //     auto exp_type_str = ast_type_to_string(suggested_type->mrv.types[i]);
-
-                    //     resolver_report_error(resolver, expr->file_pos,
-                    //                           "Cannot use an aggregate type when expecting '%s'",
-                    //                           exp_type_str);
-
-                    //     mem_free(exp_type_str);
-
-                    //     result = false;
-                    //     break;
-                    // }
-
-                    // if (!result) break;
-
                     AST_Declaration* mrv_mem_decl = mrv_mem_decls[i];
                     AST_Type* mrv_mem_type = mrv_mem_decls[i]->mutable_decl.type;
                     result &= resolver_resolve_expression(resolver, expr, scope, mrv_mem_type);
@@ -2664,10 +2646,6 @@ namespace Zodiac
 
                     if (expr->kind == AST_EXPR_IGNORED_VALUE &&
                         mrv_mem_decl->flags & AST_DECL_FLAG_REQUIRED_MRV)
-                        // :removing_mrv_type
-                        // (suggested_type->mrv.directives &&
-                        //  suggested_type->mrv.directives[i] &&
-                        //  (suggested_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED)))
                     {
                         resolver_report_error(resolver, expr->file_pos,
                                               "This returned value has the '#required' directive, so it is not allowed to be ignored");

@@ -2030,17 +2030,6 @@ namespace Zodiac
                                                       llvm_dest_type, "");
                     }
                 }
-                else if (is_struct)
-                {
-                    // :removing_mrv_type
-                    assert(false);
-                    // if (zir_value->type->kind == AST_TYPE_MRV)
-                    // {
-                    //     assert(zir_value->type->mrv.struct_type = target_ast_type);
-                    //     result = llvm_value;
-                    // }
-                    // else assert(false);
-                }
                 else
                 {
                     assert(false);
