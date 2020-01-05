@@ -100,6 +100,8 @@ namespace Zodiac
         uint64_t type_count = 0;
         Type_Info_Data type_info_data = {};
 
+        BUF(AST_Type*) mrv_types = nullptr;
+
         BUF(Compiled_Module) compiled_modules = nullptr;
         BUF(Compiled_Module) modules_with_errors = nullptr;
         BUF(Foreign_Function) foreign_table = nullptr;

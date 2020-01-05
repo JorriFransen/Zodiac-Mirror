@@ -1125,37 +1125,6 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types,
-                               BUF(AST_Directive*) directives, AST_Scope* scope)
-    {
-        uint64_t bit_size = 0;
-
-        for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++) bit_size += mrv_types[i]->bit_size;
-        AST_Type* result = ast_type_new(context, AST_TYPE_MRV, AST_TYPE_FLAG_NONE, nullptr, bit_size);
-        result->mrv.types = mrv_types;
-
-        File_Pos gen_fp = {};
-        gen_fp.file_name = "<generated>";
-
-        BUF(AST_Declaration*) member_decls = nullptr;
-        for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
-        {
-            AST_Type_Spec* type_spec = ast_type_spec_from_type_new(context, gen_fp, mrv_types[i]);
-            AST_Declaration* mem_decl =
-                ast_mutable_declaration_new(context, gen_fp, nullptr, type_spec, nullptr,
-                                            AST_DECL_LOC_AGGREGATE_MEMBER);
-            BUF_PUSH(member_decls, mem_decl);
-        }
-
-        assert(directives);
-        result->mrv.directives = directives;
-        result->mrv.struct_type = ast_type_struct_new(context, member_decls, "mrv", bit_size,
-                                                      scope, nullptr);
-        result->mrv.struct_type->flags |= AST_TYPE_FLAG_FROM_MRV;
-
-        return result;
-    }
-
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos, AST_Type_Spec_Kind kind)
     {
         assert(context);
@@ -1556,14 +1525,7 @@ namespace Zodiac
             return base_type->pointer_to;
         }
 
-        AST_Type* _base_type = base_type;
-        if (base_type->kind == AST_TYPE_MRV)
-        {
-            _base_type = base_type->mrv.struct_type;
-            assert(_base_type);
-        }
-
-        AST_Type* pointer_type = ast_type_pointer_new(context, _base_type);
+        AST_Type* pointer_type = ast_type_pointer_new(context, base_type);
         base_type->pointer_to = pointer_type;
         return pointer_type;
     }
@@ -1680,98 +1642,61 @@ namespace Zodiac
 
 	}
 
-    AST_Type* ast_find_or_create_mrv_type(Context* context, BUF(AST_Type*) mrv_types,
-                                          BUF(AST_Directive*) directives, AST_Scope* scope)
+    AST_Type* ast_find_or_create_mrv_struct_type(Context* context, BUF(AST_Type*) member_types,
+                                                 AST_Scope* scope, File_Pos instance_fp)
     {
-        uint64_t hash = get_mrv_type_hash(mrv_types);
-        uint64_t hash_index = hash & (context->type_count - 1);
+        assert(member_types);
 
-        uint64_t iterations = 0;
-        bool found_slot = false;
-        while (iterations < context->type_count)
+        for (uint64_t i = 0; i < BUF_LENGTH(context->mrv_types); i++)
         {
-            AST_Type* ex_type = context->type_hash[hash_index];
+            AST_Type* ex_type = context->mrv_types[i];
+            assert(ex_type->kind == AST_TYPE_STRUCT);
+            assert(ex_type->flags & AST_TYPE_FLAG_MRV);
 
-            if (ex_type && ex_type->kind == AST_TYPE_MRV)
+            auto ex_mem_decls = ex_type->aggregate_type.member_declarations;
+            auto ex_mem_count = BUF_LENGTH(ex_mem_decls);
+            auto new_mem_count = BUF_LENGTH(member_types);
+
+            if (ex_mem_count == new_mem_count)
             {
-                bool len_match = BUF_LENGTH(mrv_types) == BUF_LENGTH(ex_type->mrv.types);
-                bool direc_match = BUF_LENGTH(directives) == BUF_LENGTH(ex_type->mrv.directives);
-
-                if (len_match && direc_match)
+                bool match = true;
+                for (uint64_t mem_idx = 0; mem_idx < ex_mem_count; mem_idx++)
                 {
-                    bool match = true;
-                    for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
-                    {
-                        if (mrv_types[i] != ex_type->mrv.types[i])
-                        {
-                            match = false;
-                            break;
-                        }
-                    }
+                    AST_Declaration* ex_mem_decl = ex_mem_decls[mem_idx];
+                    assert(ex_mem_decl->kind == AST_DECL_MUTABLE);
 
-                    for (uint64_t i = 0; i < BUF_LENGTH(directives); i++)
+                    if (ex_mem_decl->mutable_decl.type != member_types[mem_idx])
                     {
-                        if (directives[i] != ex_type->mrv.directives[i])
-                        {
-                            // We allow null directives because it's a parallel array, and not
-                            //  all types have directives
-                            if (ex_type->mrv.directives[i])
-                            {
-                                if (!(directives[i]->kind == AST_DIREC_REQUIRED &&
-                                      ex_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED))
-                                {
-                                    match = false;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (match)
-                    {
-                        return ex_type;
+                        match = false;
+                        break;
                     }
                 }
-            }
-            else if (!ex_type)
-            {
-                found_slot = true;
-                break;
-            }
 
-            iterations++;
-            hash_index++;
-            if (hash_index >= context->type_count)
-            {
-                hash_index = 0;
+                if (match) return ex_type;
             }
         }
 
-        if (found_slot)
+        BUF(AST_Declaration*) member_decls = nullptr;
+        uint64_t bit_size = 0;
+        for (uint64_t i = 0; i < BUF_LENGTH(member_types); i++)
         {
-            BUF(AST_Type*) mrv_types_copy = nullptr;
+            AST_Type_Spec* member_ts = ast_type_spec_from_type_new(
+                context, instance_fp, member_types[i]);
 
-            for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
-                BUF_PUSH(mrv_types_copy, mrv_types[i]);
+            AST_Declaration* member_decl = ast_mutable_declaration_new(
+                context, instance_fp, nullptr, member_ts, nullptr,
+                AST_DECL_LOC_AGGREGATE_MEMBER);
 
-            BUF(AST_Directive*) directives_copy = nullptr;
-
-            for (uint64_t i = 0; i < BUF_LENGTH(directives); i++)
-            {
-                BUF_PUSH(directives_copy, directives[i]);
-            }
-
-            AST_Type* result = ast_type_mrv_new(context, mrv_types_copy, directives_copy, scope);
-            context->type_hash[hash_index] = result;
-            return result;
+            BUF_PUSH(member_decls, member_decl);
+            bit_size += member_types[i]->bit_size;
         }
-        else
-        {
-            ast_grow_type_hash(context);
-            auto result = ast_find_or_create_mrv_type(context, mrv_types, directives, scope);
-            assert(result->kind == AST_TYPE_MRV);
-            return result;
-        }
+        AST_Type* mrv_type = ast_type_struct_new(context, member_decls, "mrv", bit_size,
+                                                 scope, nullptr);
+        assert(mrv_type);
+        mrv_type->flags |= AST_TYPE_FLAG_MRV;
+
+        BUF_PUSH(context->mrv_types, mrv_type);
+        return mrv_type;
     }
 
     uint64_t get_function_type_hash(bool is_vararg, BUF(AST_Type*) arg_types,
@@ -1783,19 +1708,6 @@ namespace Zodiac
             hash = hash_mix(hash, hash_pointer(arg_types[i]));
         }
         hash = hash_mix(hash, is_vararg);
-
-        return hash;
-    }
-
-    uint64_t get_mrv_type_hash(BUF(AST_Type*) mrv_types)
-    {
-        assert(BUF_LENGTH(mrv_types));
-
-        uint64_t hash = hash_string("mrv");
-        for (uint64_t i = 0; i < BUF_LENGTH(mrv_types); i++)
-        {
-            hash = hash_mix(hash, hash_pointer(mrv_types[i]));
-        }
 
         return hash;
     }
@@ -1986,20 +1898,6 @@ namespace Zodiac
                 break;
             }
 
-            case AST_TYPE_MRV:
-            {
-                string_builder_append(string_builder, "mrv { ");
-                for (uint64_t i = 0; i < BUF_LENGTH(type->mrv.types); i++)
-                {
-                    if (i > 0) string_builder_append(string_builder, ", ");
-                    ast_type_to_string(type->mrv.types[i], string_builder);
-                }
-                string_builder_append(string_builder, " }");
-
-                // string_builder_appendf(string_builder, " (%p)", type);
-                break;
-            }
-
             default: assert(false);
         }
     }
@@ -2029,7 +1927,14 @@ namespace Zodiac
 
         return type->kind == AST_TYPE_STRUCT ||
                type->kind == AST_TYPE_UNION ||
-               type->kind == AST_TYPE_MRV ||
                type->kind == AST_TYPE_STATIC_ARRAY;
+    }
+
+    bool ast_type_is_mrv(AST_Type* type)
+    {
+        assert(type);
+
+        return type->kind == AST_TYPE_STRUCT &&
+               type->flags & AST_TYPE_FLAG_MRV;
     }
 }

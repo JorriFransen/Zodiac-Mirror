@@ -30,6 +30,8 @@ namespace Zodiac
         context->type_count = 256;
         context->type_info_data = {};
 
+        context->mrv_types = nullptr;
+
         context_init_keywords(context);
         init_builtin_types(context);
         init_builtin_decls(context);

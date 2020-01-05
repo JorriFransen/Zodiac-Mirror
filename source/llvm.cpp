@@ -2030,15 +2030,6 @@ namespace Zodiac
                                                       llvm_dest_type, "");
                     }
                 }
-                else if (is_struct)
-                {
-                    if (zir_value->type->kind == AST_TYPE_MRV)
-                    {
-                        assert(zir_value->type->mrv.struct_type = target_ast_type);
-                        result = llvm_value;
-                    }
-                    else assert(false);
-                }
                 else
                 {
                     assert(false);
@@ -2602,13 +2593,6 @@ namespace Zodiac
                 BUF_FREE(llvm_arg_types);
 
                 return result;
-                break;
-            }
-
-            case AST_TYPE_MRV:
-            {
-                assert(zir_type->mrv.struct_type);
-                return llvm_type_from_ast(builder, zir_type->mrv.struct_type);
                 break;
             }
 

@@ -550,7 +550,7 @@ namespace Zodiac
     }
 
     void ir_builder_emit_statement(IR_Builder* ir_builder, AST_Statement* statement,
-                                AST_Scope* scope, IR_Value* break_block)
+                                   AST_Scope* scope, IR_Value* break_block)
     {
         assert(ir_builder);
         assert(statement);
@@ -576,12 +576,13 @@ namespace Zodiac
                         IR_Value* init_value = ir_builder_emit_expression(ir_builder, init_expr);
                         AST_Type* init_type = init_value->type;
 
-                        if (init_type->kind == AST_TYPE_MRV)
+                        if (ast_type_is_mrv(init_type))
                         {
                             IR_Value* mrv_value = init_value;
-                            assert(BUF_LENGTH(init_type->mrv.types));
-                            auto member_types = init_type->mrv.types;
-                            assert(member_types[0] == allocl->type);
+                            assert(BUF_LENGTH(init_type->aggregate_type.member_declarations));
+                            auto member_decls = init_type->aggregate_type.member_declarations;
+                            assert(member_decls[0]->kind == AST_DECL_MUTABLE);
+                            assert(member_decls[0]->mutable_decl.type == allocl->type);
                             auto init_fp = init_expr->file_pos;
 
                             init_value = ir_builder_emit_extract_value(ir_builder, mrv_value,
@@ -609,7 +610,7 @@ namespace Zodiac
                 }
                 else if (decl->kind == AST_DECL_LIST)
                 {
-                    AST_Type* mrv_struct_type = decl->list.init_expression->type->mrv.struct_type;
+                    AST_Type* mrv_struct_type = decl->list.init_expression->type;
                     File_Pos init_fp = decl->list.init_expression->file_pos;
                     IR_Value* mrv_struct = ir_builder_emit_expression(ir_builder,
                                                                       decl->list.init_expression);
@@ -667,18 +668,18 @@ namespace Zodiac
                                                                     statement->return_expression);
                         }
 
-                        if (sret_value->type->kind == AST_TYPE_MRV)
+                        if (ast_type_is_mrv(sret_value->type))
                         {
-                            assert(sret_value->type->mrv.struct_type);
                             if (sret_value->kind == IRV_ALLOCL)
                             {
                                 sret_value =
                                     ir_builder_emit_load(ir_builder, sret_value,
                                                          statement->return_expression->file_pos);
                             }
-                            sret_value = ir_builder_emit_cast(ir_builder, sret_value,
-                                              sret_value->type->mrv.struct_type,
-                                              statement->return_expression->file_pos);
+                            // :revoving_mrv_type
+                            // sret_value = ir_builder_emit_cast(
+                            //     ir_builder, sret_value, sret_value->type,
+                            //     statement->return_expression->file_pos);
                         }
 
                         IR_Value* sret_pointer =
@@ -966,7 +967,7 @@ namespace Zodiac
         if (lvalue_expr->kind == AST_EXPR_EXPRESSION_LIST)
         {
             assert(expr->kind == AST_EXPR_CALL);
-            assert(expr->type->kind == AST_TYPE_MRV);
+            assert(ast_type_is_mrv(expr->type));
 
             BUF(IR_Value*) lvalues = nullptr;
             for (uint64_t i = 0; i < BUF_LENGTH(lvalue_expr->list.expressions); i++)
@@ -2754,11 +2755,6 @@ return result_value;
 
         AST_Type* agg_type = aggregate_val->type;
         assert(ast_type_is_aggregate(agg_type));
-        if (agg_type->kind == AST_TYPE_MRV)
-        {
-            agg_type = agg_type->mrv.struct_type;
-            assert(agg_type);
-        }
 
         assert(member_idx < BUF_LENGTH(agg_type->aggregate_type.member_declarations));
 
@@ -3445,7 +3441,6 @@ return result_value;
             assert(function->type);
 
             auto ret_type = function->type->function.return_type;
-            if (ret_type->kind == AST_TYPE_MRV) ret_type = ret_type->mrv.struct_type;
 
             IR_Value* result_value = nullptr;
             if (ret_type != Builtin::type_void && ret_type->kind != AST_TYPE_STRUCT)
@@ -4241,10 +4236,6 @@ return result_value;
         {
             return ir_builder_emit_zero_literal(ir_builder, type->aggregate_type.base_type);
         }
-        else if (type->kind == AST_TYPE_MRV)
-        {
-            return ir_builder_emit_zero_literal(ir_builder, type->mrv.struct_type);
-        }
         else assert(false);
 
         assert(false);
@@ -4441,7 +4432,7 @@ return result_value;
     IR_Value* ir_builder_emit_mrv(IR_Builder* ir_builder, AST_Expression* list_expr)
     {
         AST_Type* mrv_type = ir_builder->current_function->type->function.return_type;
-        assert(mrv_type->kind == AST_TYPE_MRV);
+        assert(ast_type_is_mrv(mrv_type));
         assert(list_expr->kind == AST_EXPR_EXPRESSION_LIST);
 
         BUF(IR_Value*) member_values = nullptr;
@@ -4459,8 +4450,7 @@ return result_value;
             BUF_PUSH(member_values, mem_value);
         }
 
-        return ir_aggregate_literal(ir_builder, mrv_type->mrv.struct_type, member_values,
-                                    is_const);
+        return ir_aggregate_literal(ir_builder, mrv_type, member_values, is_const);
     }
 
     IR_Function* ir_function_new(IR_Builder* ir_builder, File_Pos file_pos, const char* name,
