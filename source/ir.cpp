@@ -676,8 +676,10 @@ namespace Zodiac
                                     ir_builder_emit_load(ir_builder, sret_value,
                                                          statement->return_expression->file_pos);
                             }
-                            sret_value = ir_builder_emit_cast(ir_builder, sret_value, sret_value->type,
-                                                              statement->return_expression->file_pos);
+                            // :revoving_mrv_type
+                            // sret_value = ir_builder_emit_cast(
+                            //     ir_builder, sret_value, sret_value->type,
+                            //     statement->return_expression->file_pos);
                         }
 
                         IR_Value* sret_pointer =

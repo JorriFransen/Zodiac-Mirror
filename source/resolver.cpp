@@ -2621,6 +2621,7 @@ namespace Zodiac
                 {
                     auto expr = expression->list.expressions[i];
 
+                    // :removing_mrv_type
                     // if (expr->kind == AST_EXPR_COMPOUND_LITERAL &&
                     //     !(ast_type_is_aggregate(suggested_type)))
                     // {
@@ -2644,6 +2645,8 @@ namespace Zodiac
 
                     if (!result) break;
 
+                    assert(mrv_mem_type);
+                    assert(expr->type);
                     bool types_match = resolver_check_assign_types(resolver, mrv_mem_type, expr->type);
                     if (!types_match)
                     {
@@ -2661,6 +2664,7 @@ namespace Zodiac
 
                     if (expr->kind == AST_EXPR_IGNORED_VALUE &&
                         mrv_mem_decl->flags & AST_DECL_FLAG_REQUIRED_MRV)
+                        // :removing_mrv_type
                         // (suggested_type->mrv.directives &&
                         //  suggested_type->mrv.directives[i] &&
                         //  (suggested_type->mrv.directives[i]->kind == AST_DIREC_REQUIRED)))
@@ -3390,7 +3394,7 @@ namespace Zodiac
                 // Transform this type spec in to a regular identifier, so it will not
                 //  match as poly later, since this is a specified poly instance
                 //
-                auto ident_temp = type_spec->poly_func_arg.identifier; // Probably not necessary
+                auto ident_temp = type_spec->poly_func_arg.identifier;
                 type_spec->kind = AST_TYPE_SPEC_IDENT;
                 type_spec->identifier.identifier = ident_temp;
                 type_spec->identifier.arg_type_specs = nullptr;
@@ -3423,12 +3427,12 @@ namespace Zodiac
                     }
                     else
                     {
-                        *type_dest = ast_find_or_create_mrv_type(resolver->context, mrv_types,
-                                                                 type_spec->mrv.directives,
-                                                                 scope);
-                        assert(*type_dest);
-                        AST_Type* struct_type = (*type_dest)->mrv.struct_type;
-                        auto member_decls = struct_type->aggregate_type.member_declarations;
+                        *type_dest = ast_find_or_create_mrv_struct_type(resolver->context,
+                                                                        mrv_types, scope,
+                                                                        type_spec->file_pos);
+                        assert(type_dest);
+
+                        auto member_decls = (*type_dest)->aggregate_type.member_declarations;
                         for (uint64_t i = 0; i < BUF_LENGTH(member_decls); i++)
                         {
                             result &= resolver_resolve_declaration(resolver, member_decls[i],

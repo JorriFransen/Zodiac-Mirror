@@ -998,6 +998,8 @@ namespace Zodiac
 	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
                                                BUF(AST_Type*) arg_types,
 		                                       AST_Type* return_type);
+    AST_Type* ast_find_or_create_mrv_struct_type(Context* context, BUF(AST_Type*) member_types,
+                                                 AST_Scope* scope, File_Pos instance_fp);
 
     uint64_t get_function_type_hash(bool is_varag, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type);

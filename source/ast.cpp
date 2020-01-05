@@ -1642,6 +1642,63 @@ namespace Zodiac
 
 	}
 
+    AST_Type* ast_find_or_create_mrv_struct_type(Context* context, BUF(AST_Type*) member_types,
+                                                 AST_Scope* scope, File_Pos instance_fp)
+    {
+        assert(member_types);
+
+        for (uint64_t i = 0; i < BUF_LENGTH(context->mrv_types); i++)
+        {
+            AST_Type* ex_type = context->mrv_types[i];
+            assert(ex_type->kind == AST_TYPE_STRUCT);
+            assert(ex_type->flags & AST_TYPE_FLAG_MRV);
+
+            auto ex_mem_decls = ex_type->aggregate_type.member_declarations;
+            auto ex_mem_count = BUF_LENGTH(ex_mem_decls);
+            auto new_mem_count = BUF_LENGTH(member_types);
+
+            if (ex_mem_count == new_mem_count)
+            {
+                bool match = true;
+                for (uint64_t mem_idx = 0; mem_idx < ex_mem_count; mem_idx++)
+                {
+                    AST_Declaration* ex_mem_decl = ex_mem_decls[mem_idx];
+                    assert(ex_mem_decl->kind == AST_DECL_MUTABLE);
+
+                    if (ex_mem_decl->mutable_decl.type != member_types[mem_idx])
+                    {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match) return ex_type;
+            }
+        }
+
+        BUF(AST_Declaration*) member_decls = nullptr;
+        uint64_t bit_size = 0;
+        for (uint64_t i = 0; i < BUF_LENGTH(member_types); i++)
+        {
+            AST_Type_Spec* member_ts = ast_type_spec_from_type_new(
+                context, instance_fp, member_types[i]);
+
+            AST_Declaration* member_decl = ast_mutable_declaration_new(
+                context, instance_fp, nullptr, member_ts, nullptr,
+                AST_DECL_LOC_AGGREGATE_MEMBER);
+
+            BUF_PUSH(member_decls, member_decl);
+            bit_size += member_types[i]->bit_size;
+        }
+        AST_Type* mrv_type = ast_type_struct_new(context, member_decls, "mrv", bit_size,
+                                                 scope, nullptr);
+        assert(mrv_type);
+        mrv_type->flags |= AST_TYPE_FLAG_MRV;
+
+        BUF_PUSH(context->mrv_types, mrv_type);
+        return mrv_type;
+    }
+
     uint64_t get_function_type_hash(bool is_vararg, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type)
     {

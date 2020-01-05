@@ -390,12 +390,6 @@ namespace Zodiac
                 break;
             }
 
-            case AST_TYPE_MRV:
-            {
-                return llvm_debug_get_type(di, ast_type->mrv.struct_type);
-                break;
-            }
-
             default: assert(false);
         }
 
