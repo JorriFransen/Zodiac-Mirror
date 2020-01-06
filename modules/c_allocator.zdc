@@ -1,0 +1,69 @@
+
+std :: import std;
+_c :: import c;
+
+__printer :: import print;
+using __printer;
+
+_c_allocate :: (allocator_data: *void, mode: Allocation_Mode, size: s64, old_size: s64,
+                alignment: s64, old_ptr: *void) -> *void
+{
+    using Allocation_Mode;
+
+    assert(alignment == 0 || std.is_power_of_two(alignment));
+    assert(alignment <= size);
+    assert(alignment <= 16);
+
+    switch (mode)
+    {
+        case ALLOCATE:
+        {
+            assert(!old_ptr);
+            assert(!old_size);
+
+            result_ptr := _c.malloc((:u64)size);
+            assert(std.is_aligned(result_ptr, alignment));
+
+            return result_ptr;
+        }
+
+        case RESIZE:
+        {
+            assert(old_ptr);
+            assert(size);
+            assert(old_size);
+
+            new_ptr := _c.realloc(old_ptr, (:u64)size);
+            assert(std.is_aligned(new_ptr, alignment));
+
+            return new_ptr;
+        }
+
+        case FREE:
+        {
+            assert(old_ptr);
+            _c.free(old_ptr);
+        }
+
+        case FREE_ALL:
+        {
+            assert(false); // Not supported
+        }
+
+        default: assert(false);
+    }
+}
+
+__global__ : Allocator;
+__global_initialized__ := false;
+
+
+get :: () {
+    if (!__global_initialized__)
+    {
+        __global__ = { *_c_allocate, null };
+        __global_initialized__ = true;
+    }
+
+    return *__global__;
+}

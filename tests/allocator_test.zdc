@@ -26,15 +26,15 @@ main :: ()
     ptr2 := alloc(ca, 4096 * 3, 0);
     ptr3 := alloc(ca, 4096, 0);
 
-    _free(ca, ptr1);
+    _free(ca, ptr1, 0);
 
     for (i := 0; i < 5; i++)
     {
         print("int_ptr[%] = %\n", i, int_ptr[i]);
     }
 
-    _free(ptr2);
-    _free(ptr3);
+    _free(ca, ptr2, 0);
+    _free(ca, ptr3, 0);
 
     return 0;
 }
