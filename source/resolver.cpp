@@ -2920,6 +2920,7 @@ namespace Zodiac
         assert(member_expr->kind == AST_EXPR_IDENTIFIER);
 
         AST_Declaration* base_decl = nullptr;
+        bool is_lvalue = false;
         if (base_expr->kind == AST_EXPR_IDENTIFIER)
         {
             base_decl = base_expr->identifier->declaration;
@@ -2928,12 +2929,25 @@ namespace Zodiac
         {
             base_decl = base_expr->dot.declaration;
         }
-        else assert(false);
-        assert(base_decl);
-
-        if (base_decl->kind == AST_DECL_MUTABLE)
+        else if (base_expr->kind == AST_EXPR_SUBSCRIPT)
         {
-            AST_Type* base_type = resolver_get_declaration_type(base_decl);
+            // return resolver_resolve_lvalue_dot_expression(resolver, base_expr, member_expr,
+            //                                               scope);
+
+            AST_Type* base_type = base_expr->type;
+            if (base_type->kind == AST_TYPE_STRUCT || base_type->kind == AST_TYPE_UNION)
+            {
+                is_lvalue = true;
+            }
+            else assert(false);
+        }
+        else assert(false);
+        assert(base_decl || is_lvalue);
+
+        if (is_lvalue || base_decl->kind == AST_DECL_MUTABLE)
+        {
+            AST_Type* base_type = is_lvalue ? base_expr->type :
+                resolver_get_declaration_type(base_decl);
 
             if (base_type->kind == AST_TYPE_POINTER &&
                 base_type->pointer.base->kind == AST_TYPE_STRUCT) {

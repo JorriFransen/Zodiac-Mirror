@@ -152,8 +152,7 @@ _print_type_info :: (info: *Type_Info, recurse: bool, indent: u64)
                 for (i : u64 = 0; i < info.aggregate.count; i++)
                 {
                     if (i > 0) print(", ");
-                    ag_mem := info.aggregate.first[i];
-                    _print_type_info(ag_mem.type, false, 0);
+                    _print_type_info(info.aggregate.first[i].type, false, 0);
                 }
                 print(")");
             }

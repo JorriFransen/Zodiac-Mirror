@@ -1974,6 +1974,13 @@ namespace Zodiac
                 aggregate_type = base_value->type;
                 base_decl = base_expression->dot.declaration;
             }
+            else if (base_expression->kind == AST_EXPR_SUBSCRIPT)
+            {
+                aggregate_type = base_expression->type;
+                base_decl = expression->dot.declaration;
+                base_value = ir_builder_emit_lvalue(ir_builder, base_expression);
+            }
+            else assert(false);
 
             while (aggregate_type->kind == AST_TYPE_POINTER)
             {
