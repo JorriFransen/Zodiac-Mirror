@@ -5,62 +5,23 @@ using _c;
 _printer :: import print;
 using _printer;
 
-My_Struct :: struct
+
+Vec2 :: struct
 {
-    sa : [5]int;
+    x: int;
+    y: int;
 }
 
 main :: ()
 {
-    open_std_handles();
+    _c.open_std_handles();
 
-    sa : [4]int = { 1, 2, 3 };
-    sa[3] = 999;
-    sa = { 4, 5, 6 };
-    assert(sa[3] == 999);
-    c := get_char();
-    sa = { 3, 4, c };
+    print("Scratch test\n");
 
-    for (i := 0; i < array_length(sa); i++)
-    {
-        print("sa[%]: %\n", i, sa[i]);
-    }
+    v : Vec2 = { 123, 456 };
+    print("v.x: %, v.y: %\n", v.x, v.y);
 
-    ms : My_Struct;
-    ms.sa = { 1, 2, 3, 4, 5 };
-    ms.sa = { get_char(), get_char(), 555 };
-
-
-    for (i := 0; i < array_length(ms.sa); i++)
-    {
-        print("ms.sa[%]: %\n", i, ms.sa[i]);
-    }
-
-
-    print("\n");
-    take_arg_addr(42, 1234);
+    // v.y := 6;
 
     return 0;
-}
-
-take_arg_addr :: (x: int, y: int)
-{
-    print("take_arg_addr(x=%, y=%)\n", x, y);
-    print("\t*x=0x%\n", *x);
-    print("\t*y=0x%\n", *y);
-    print("\t<(*x)=%\n", <(*x));
-    print("\t<(*y)=%\n", <(*y));
-}
-
-last_char : int = 97;
-
-get_char :: () -> int
-{
-    // c := _c.getchar();
-    // while (_c.getchar() != (:int)('\n')) { }
-    // return c;
-
-    c := last_char;
-    last_char++;
-    return c;
 }

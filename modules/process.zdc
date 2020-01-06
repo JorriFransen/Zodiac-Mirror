@@ -5,6 +5,7 @@ using std;
 
 static_if (PLATFORM_LINUX) {
     os_linux :: import os_linux;
+    posix :: import posix;
 } else static_if (PLATFORM_WINDOWS) {
     os_windows :: import os_windows;
 }
@@ -17,6 +18,10 @@ Execute_Error :: enum
     PIPE_CREATE_FAILED;
     PIPE_READ_FAILED;
     FORK_FAILED;
+
+    PROCESS_ABORTED;
+    PROCESS_SEGFAULT;
+
     UNEXPECTED;
 }
 
@@ -29,8 +34,11 @@ Execute_Result :: struct
 
 execute_result_free :: (exec_prog_res: *Execute_Result)
 {
-    _c.free(exec_prog_res.stdout.data);
-    _c.free(exec_prog_res.stderr.data);
+    if (exec_prog_res.stdout.data)
+        _c.free(exec_prog_res.stdout.data);
+
+    if (exec_prog_res.stderr.data)
+        _c.free(exec_prog_res.stderr.data);
 }
 
 static_if (PLATFORM_LINUX)
@@ -106,12 +114,16 @@ static_if (PLATFORM_LINUX)
             status : s32 = 0;
             wait_res := posix.wait(*status);
             assert(wait_res == pid);
+
+            proc_err := Execute_Error.NONE;
+
             if (posix.WIFEXITED(status)) {
                 result.exit_code = (:u32)posix.WEXITSTATUS(status);
             } else if (posix.WIFSIGNALED(status)) {
                 term_sig := posix.WTERMSIG(status);
                 // _c.printf("Term_sig: %d\n", term_sig);
-                assert(false);
+                // assert(false);
+                proc_err = term_sig_to_execute_error(term_sig);
             } else assert(false);
 
             io_err := IO_Error.NONE;
@@ -122,7 +134,7 @@ static_if (PLATFORM_LINUX)
             io_err, result.stderr = pipe_read(*err);
             if (io_err != IO_Error.NONE) return PIPE_READ_FAILED, result;
 
-            return NONE, result;
+            return proc_err, result;
         } else {
             assert(false);
             return FORK_FAILED, result;
@@ -132,6 +144,22 @@ static_if (PLATFORM_LINUX)
         return UNEXPECTED, result;
     }
 
+    term_sig_to_execute_error :: (sig: s32) -> Execute_Error
+    {
+        switch (sig) {
+
+            case posix.Signal.SIGABRT:
+                return Execute_Error.PROCESS_ABORTED;
+
+            case posix.Signal.SIGSEGV:
+                return Execute_Error.PROCESS_SEGFAULT;
+
+            default: {
+                _c.fprintf(_c.stderr, "Unhandled signal: %d\n", sig);
+                assert(false);
+            }
+        }
+    }
 }
 else static_if (PLATFORM_WINDOWS)
 {

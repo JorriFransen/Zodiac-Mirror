@@ -443,6 +443,7 @@ namespace Zodiac
         AST_DECL_FLAG_INSERT_GENERATED          = (1 << 10),
         AST_DECL_FLAG_REPLACED_NESTED_AGGREGATE = (1 << 11),
         AST_DECL_FLAG_BUILTIN                   = (1 << 12),
+        AST_DECL_FLAG_REQUIRED_MRV              = (1 << 13),
     };
 
     enum AST_Declaration_Location
@@ -567,7 +568,6 @@ namespace Zodiac
         AST_TYPE_UNION,
         AST_TYPE_ENUM,
         AST_TYPE_FUNCTION,
-        AST_TYPE_MRV,
     };
 
     typedef uint64_t AST_Type_Flags;
@@ -581,7 +581,7 @@ namespace Zodiac
         AST_TYPE_FLAG_FUNC_VARARG            = (1 << 4),
         AST_TYPE_FLAG_REGISTERING_TYPE_INFO  = (1 << 5),
         AST_TYPE_FLAG_REGISTERED_TYPE_INFO   = (1 << 6),
-        AST_TYPE_FLAG_FROM_MRV               = (1 << 7),
+        AST_TYPE_FLAG_MRV                    = (1 << 7),
     };
 
     struct AST_Type
@@ -629,12 +629,6 @@ namespace Zodiac
                 AST_Type* return_type;
             } function;
 
-            struct
-            {
-                BUF(AST_Type*) types;
-                BUF(AST_Directive*) directives;
-                AST_Type* struct_type;
-            } mrv;
         };
     };
 
@@ -955,8 +949,6 @@ namespace Zodiac
                                 const char* name, AST_Type* base_type, AST_Scope* scope);
     AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type);
-    AST_Type* ast_type_mrv_new(Context* context, BUF(AST_Type*) mrv_types,
-                               BUF(AST_Directive*) directives, AST_Scope* scope);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos,
                                      AST_Type_Spec_Kind kind);
@@ -1006,12 +998,11 @@ namespace Zodiac
 	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
                                                BUF(AST_Type*) arg_types,
 		                                       AST_Type* return_type);
-    AST_Type* ast_find_or_create_mrv_type(Context* context, BUF(AST_Type*) mrv_types,
-                                          BUF(AST_Directive*) directives, AST_Scope* scope);
+    AST_Type* ast_find_or_create_mrv_struct_type(Context* context, BUF(AST_Type*) member_types,
+                                                 AST_Scope* scope, File_Pos instance_fp);
 
     uint64_t get_function_type_hash(bool is_varag, BUF(AST_Type*) arg_types,
                                     AST_Type* return_type);
-    uint64_t get_mrv_type_hash(BUF(AST_Type*) mrv_types);
 
     void ast_grow_type_hash(Context* context);
     const char* ast_type_to_string(AST_Type* type);
@@ -1020,4 +1011,5 @@ namespace Zodiac
     bool is_cmp_op(AST_Binop_Kind binop);
 
     bool ast_type_is_aggregate(AST_Type* type);
+    bool ast_type_is_mrv(AST_Type* type);
 }
