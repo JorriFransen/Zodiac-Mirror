@@ -103,9 +103,16 @@ main :: () -> int
     print_type_info("typeof(*print_type_info)", get_type_info(typeof(*print_type_info)));
     print_type_info("typeof(_print_type_info)", get_type_info(typeof(_print_type_info)));
     // print_type_info("typeof(print)", get_type_info(typeof(print)));
+    print_type_info("typeof(return_two_ints)", get_type_info(typeof(return_two_ints)));
+
+    print_type_info("typeof(simple_func)", get_type_info(typeof(simple_func)));
 
     return 0;
 }
+
+simple_func :: () -> void {}
+
+return_two_ints :: () -> int, int { }
 
 print_type_info :: (name: *u8, info: *Type_Info)
 {

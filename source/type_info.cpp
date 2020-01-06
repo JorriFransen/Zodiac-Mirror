@@ -201,7 +201,8 @@ namespace Zodiac
                 tid->type_infos[index].function.arg_count = BUF_LENGTH(type->function.arg_types);
 
                 tid->type_infos[index].function.first_arg.id =
-                    register_aggregate_members(context, indices, nullptr);
+                    BUF_LENGTH(type->function.arg_types) ?
+                    register_aggregate_members(context, indices, nullptr) : 0;
 
                 BUF_FREE(indices);
                 break;
