@@ -143,12 +143,16 @@ namespace Zodiac
                 }
                 // assert(false);
 
+                #if _WIN32
+
                 auto flag = "CodeView";
                 auto flag_len = strlen(flag);
                 auto flag_val = LLVMConstInt(LLVM_Type::u32, 1, false);
                 auto flag_md = LLVMValueAsMetadata(flag_val);
-                LLVMAddModuleFlag(builder->llvm_module, LLVMModuleFlagBehavior::LLVMModuleFlagBehaviorWarning, "CodeView",
-                                  flag_len, flag_md);
+                LLVMAddModuleFlag(builder->llvm_module,
+                                  LLVMModuleFlagBehavior::LLVMModuleFlagBehaviorWarning,
+                                  "CodeView", flag_len, flag_md);
+                #endif
             }
 
             // auto _module = (llvm::Module*)module;
@@ -276,8 +280,6 @@ namespace Zodiac
         string_builder_append(&sb, " ");
         mem_free(exe_file_name);
 		string_builder_append(&sb, " 2>&1");
-		// string_builder_append(&sb, " /usr/lib64/gcc/x86_64-pc-linux-gnu/9.2.0/crtendS.o /usr/lib64/crtn.o ");
-
 
 
 		const char* link_cmd = string_builder_to_string(&sb);
