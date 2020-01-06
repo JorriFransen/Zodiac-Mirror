@@ -57,7 +57,7 @@ required_assign :: ()
     assert(err != null);
     printf("\n");
 
-    //This is not allowed
+    // This is not allowed
     // _, result = do_stuff(1);
     // do_stuff(2);
     // _, result2 := do_stuff(3);
