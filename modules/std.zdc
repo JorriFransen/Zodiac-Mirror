@@ -114,6 +114,24 @@ string_new :: (str: String) -> String
     return string_new(str.data, str.length);
 }
 
+string_create :: (allocator: *Allocator, c_str: *u8, length: s64) -> String
+{
+    result : String = {
+        (:*u8)alloc(allocator, length + 1, 8),
+        length
+    };
+
+    _c.memcpy(result.data, c_str, (:u64)length);
+    result.data[length] = '\0';
+
+    return result;
+}
+
+string_create :: (allocator: *Allocator, str: String) -> String
+{
+    return string_create(allocator, str.data, str.length);
+}
+
 string_equal :: (a: String, b: String) -> bool
 {
     if (a.length != b.length) return false;

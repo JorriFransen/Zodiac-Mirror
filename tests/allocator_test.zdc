@@ -1,6 +1,8 @@
 
 _c :: import c;
 
+std :: import std;
+
 c_allocator :: import c_allocator;
 
 _printer :: import print;
@@ -36,5 +38,32 @@ main :: ()
     _free(ca, ptr2, 0);
     _free(ca, ptr3, 0);
 
+    print("sizeof(Message): %\n", sizeof(Message));
+
     return 0;
+}
+
+
+Message :: struct
+{
+    id        : u64;
+    sender_id : u64;
+    message   : String;
+}
+
+__next_message_id : u64 = 0;
+
+message_create :: (ca: *Allocator, sender_id: u64, str: String) -> *Message
+{
+    // result := alloc_type(ca, Message);
+    result : *Message;
+
+    result.id = __next_message_id;
+    __next_message_id += 1;
+
+    result.sender_id = sender_id;
+
+    result.message = std.string_create(ca, str);
+
+    return result;
 }

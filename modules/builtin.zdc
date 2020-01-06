@@ -232,6 +232,15 @@ alloc :: (allocator: *Allocator, size: s64, alignment: s64) -> *void
     return allocator.allocate(allocator.data, Allocation_Mode.ALLOCATE, size, 0, alignment, null);
 }
 
+// alloc_type :: (allocator: *Allocator, $T: Type) -> *T
+// {
+//     size :: sizeof(T);
+//     alignment := 8;
+//     if (size < alignment) alignment = size;
+// 
+//     return alloc(allocator, size, alignment);
+// }
+
 _free :: (allocator: *Allocator, ptr: *void, size: s64)
 {
     allocator.allocate(allocator.data, Allocation_Mode.FREE, size, size, 0, ptr);
