@@ -676,10 +676,6 @@ namespace Zodiac
                                     ir_builder_emit_load(ir_builder, sret_value,
                                                          statement->return_expression->file_pos);
                             }
-                            // :revoving_mrv_type
-                            // sret_value = ir_builder_emit_cast(
-                            //     ir_builder, sret_value, sret_value->type,
-                            //     statement->return_expression->file_pos);
                         }
 
                         IR_Value* sret_pointer =
@@ -1558,10 +1554,19 @@ namespace Zodiac
                     assert(callee_decl->mutable_decl.type->pointer.base->kind ==
                         AST_TYPE_FUNCTION);
 
-                    IR_Value* callee_value = ir_builder_value_for_declaration(ir_builder,
-                                                                            callee_decl);
-                    IR_Value* func_ptr_value = ir_builder_emit_load(ir_builder, callee_value,
-                                                                    expression->file_pos);
+                    IR_Value* func_ptr_value = nullptr;
+                    if (callee_decl->location == AST_DECL_LOC_AGGREGATE_MEMBER)
+                    {
+                        func_ptr_value = ir_builder_emit_expression(ir_builder, expression->call.ident_expression);
+                    }
+                    else
+                    {
+                        IR_Value* callee_value = ir_builder_value_for_declaration(ir_builder,
+                                                    callee_decl);
+                        func_ptr_value = ir_builder_emit_load(ir_builder, callee_value,
+                                                expression->file_pos);
+                    }
+                    assert(func_ptr_value);
 
                     AST_Type* func_type = callee_decl->mutable_decl.type->pointer.base;
 

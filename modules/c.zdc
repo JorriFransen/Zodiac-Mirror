@@ -46,6 +46,7 @@ _stderr : *FILE = null;
 #foreign strlen :: (str: *u8) -> u64;
 
 #foreign malloc :: (size: u64) -> *void;
+#foreign realloc :: (ptr: *void, size: u64) -> *void;
 #foreign free   :: (mem: *void);
 #foreign memcpy :: (dest: *void, source: *void, count: u64) -> *void;
 #foreign memset :: (ptr: *void, value: int, num: int) -> *void;

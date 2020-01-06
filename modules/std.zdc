@@ -74,6 +74,16 @@ align_forward_b :: (ptr: *u8, align: u64) -> *u8
     return (:*u8)addr;
 }
 
+is_aligned :: (ptr: *void, _align: s64) -> bool
+{
+    if (_align == 0) return true;
+    else assert(_align > 0);
+
+    align := (:u64)_align;
+
+    return (((:u64)ptr) & (align - 1)) == 0;
+}
+
 string_ref :: (c_str: *u8, length: s64) -> String
 {
     return { c_str, length };

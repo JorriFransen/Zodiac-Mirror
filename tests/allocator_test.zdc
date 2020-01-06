@@ -1,0 +1,40 @@
+
+_c :: import c;
+
+c_allocator :: import c_allocator;
+
+_printer :: import print;
+using _printer;
+
+main :: ()
+{
+    _builtin_open_std_handles();
+
+    ca := c_allocator.get();
+
+    ptr := alloc(ca, sizeof(int) * 5, sizeof(int));
+    assert(ptr);
+    defer _free(ca, ptr, 0);
+
+    int_ptr := (:*int)ptr;
+    for (i := 0; i < 5; i++)
+    {
+        int_ptr[i] = (i + 1) * 3;
+    }
+
+    ptr1 := alloc(ca, 1024, 0);
+    ptr2 := alloc(ca, 4096 * 3, 0);
+    ptr3 := alloc(ca, 4096, 0);
+
+    // _free(ca, ptr1);
+
+    for (i := 0; i < 5; i++)
+    {
+        print("int_ptr[%] = %\n", i, int_ptr[i]);
+    }
+
+    // _free(ptr2);
+    // _free(ptr3);
+
+    return 0;
+}

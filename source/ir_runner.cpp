@@ -642,6 +642,8 @@ namespace Zodiac
         for (uint64_t i = 0; i < BUF_LENGTH(arg_types); i++)
         {
             AST_Type* arg_type = arg_types[i];
+            if (arg_type->kind == AST_TYPE_ENUM) arg_type = arg_type->aggregate_type.base_type;
+            assert(arg_type);
 
             IR_Value arg_value = {};
             arg_value.kind = IRV_TEMPORARY;
@@ -654,15 +656,11 @@ namespace Zodiac
             }
             else if (arg_type->flags & AST_TYPE_FLAG_INT)
             {
-                if (arg_type->flags & AST_TYPE_FLAG_SIGNED)
-                {
                     if (arg_type->bit_size == 64)
                     {
                         arg_value.value.u64 = dcbArgLongLong(args);
                     }
                     else assert(false);
-                }
-                else assert(false);
             }
             else if (arg_type->flags & AST_TYPE_FLAG_FLOAT)
             {
@@ -678,6 +676,10 @@ namespace Zodiac
         assert(!(return_type->kind == AST_TYPE_STRUCT));
         assert(!(return_type->kind == AST_TYPE_STATIC_ARRAY));
 
+        auto old_dvm = dcb_data->runner->dyn_vm;
+        dcb_data->runner->dyn_vm = dcNewCallVM(MB(4));
+        dcReset(dcb_data->runner->dyn_vm);
+
         IR_Value return_value = {};
         File_Pos call_site;
         call_site.file_name = "<dcb_handler>";
@@ -687,6 +689,9 @@ namespace Zodiac
                                                               BUF_LENGTH(arg_types),
                                                               &return_value);
 
+        dcFree(dcb_data->runner->dyn_vm);
+        dcb_data->runner->dyn_vm = old_dvm;
+
         if (return_type->flags & AST_TYPE_FLAG_INT)
         {
             assert(false);
@@ -695,8 +700,10 @@ namespace Zodiac
         {
             return 'v';
         }
-        else if (return_type == Builtin::type_pointer_to_void)
+        else if (return_type->kind == AST_TYPE_POINTER)
         {
+            // assert(return_value.value.pointer);
+            result->p = return_value.value.pointer;
             return 'p';
         }
         else assert(false);
@@ -2377,17 +2384,26 @@ namespace Zodiac
         else if (dest_value->type->kind == AST_TYPE_STRUCT)
         {
 			assert(dest_value->kind == IRV_GLOBAL);
-			assert(source_value->kind == IRV_TEMPORARY || source_value->kind == IRV_ALLOCL);
 
-			assert(dest_value->type->kind == AST_TYPE_STRUCT);
-			assert(source_value->type->kind == AST_TYPE_STRUCT);
+            if (source_value->kind == IRV_AGGREGATE_LITERAL)
+            {
+                ir_runner_store_aggregate_literal(ir_runner, source_value->type,
+                                                  (uint8_t*)dest_value->value.pointer, source_value);
+            }
+            else
+            {
+                assert(source_value->kind == IRV_TEMPORARY || source_value->kind == IRV_ALLOCL);
 
-			AST_Type* struct_type = dest_value->type;
-			uint64_t struct_byte_size = struct_type->bit_size / 8;
-			assert(struct_byte_size);
+                assert(dest_value->type->kind == AST_TYPE_STRUCT);
+                assert(source_value->type->kind == AST_TYPE_STRUCT);
 
-			//dest_value = ir_runner_get_local_temporary(ir_runner, dest_value);
-			memcpy(dest_value->value.pointer, source_value->value.pointer, struct_byte_size);
+                AST_Type* struct_type = dest_value->type;
+                uint64_t struct_byte_size = struct_type->bit_size / 8;
+                assert(struct_byte_size);
+
+                //dest_value = ir_runner_get_local_temporary(ir_runner, dest_value);
+                memcpy(dest_value->value.pointer, source_value->value.pointer, struct_byte_size);
+            }
         }
         else
         {
@@ -2636,16 +2652,16 @@ namespace Zodiac
             IR_Function* ir_func = frame->function;
             const char* function_name = _get_function_name(ir_func);
 
-            fprintf(stderr, "  %s (%s:%" PRIu64 ":%" PRIu64 ")\n", function_name,
-                    ir_func->file_pos.file_name, ir_func->file_pos.line,
-                    ir_func->file_pos.line_relative_char_pos);
+            // fprintf(stderr, "  %s (%s:%" PRIu64 ":%" PRIu64 ")\n", function_name,
+            //         ir_func->file_pos.file_name, ir_func->file_pos.line,
+            //         ir_func->file_pos.line_relative_char_pos);
 
             if (i < stack_count(ir_runner->call_stack) - 1)
             {
                 File_Pos call_site = frame->call_site;
                 IR_Function* ir_func_from = stack_peek(ir_runner->call_stack, i + 1)->function;
                 const char* from_name = _get_function_name(ir_func_from);
-                fprintf(stderr, "   From: %s (%s:%" PRIu64 ":%" PRIu64 ")\n", from_name, call_site.file_name,
+                fprintf(stderr, "   %s (%s:%" PRIu64 ":%" PRIu64 ")\n", from_name, call_site.file_name,
                         call_site.line, call_site.line_relative_char_pos);
             }
         }
@@ -2687,8 +2703,9 @@ namespace Zodiac
                 return 'p';
 
             case AST_TYPE_BASE:
+            case AST_TYPE_ENUM:
             {
-                if (type->flags & AST_TYPE_FLAG_INT)
+                if (type->flags & AST_TYPE_FLAG_INT || type->kind == AST_TYPE_ENUM)
                 {
                     char c;
                     switch (type->bit_size)

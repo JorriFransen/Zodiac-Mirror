@@ -1,4 +1,5 @@
 
+
 int :: typedef s64;
 
 FILE :: typedef *void;
@@ -155,7 +156,8 @@ array_ref_index :: (array_ref: Array_Ref($T), index: s64) -> T
 Array_Ref_of_Any :: typedef Array_Ref(Any);
 
 #foreign fprintf :: (file: *FILE, format: *u8, ...) -> int;
-#foreign exit :: (status: s32) -> void;
+#foreign abort :: () -> void;
+// #foreign exit :: (status: s32) -> void;
 
 _builtin_open_std_handles :: () -> void
 {
@@ -177,6 +179,7 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
     }
 
     // _c.fprintf(_c._stderr, "\n\n");
+    // _stderr := fdopen(2, "w");
     fprintf(stderr, "Assertion failed in function %s : %s:%d\n", function_name,
                 file_name, line);
 
@@ -187,9 +190,7 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
     else
     {
         print_stack_trace();
-        exit(-1);
-        // nptr : *int = null;
-        // <nptr = 1;
+        abort();
     }
 }
 
@@ -207,4 +208,31 @@ string_index :: (str: String, index: s64) -> u8
     default_assert_handler(index < str.length, #FUNC_NAME, #FILE_NAME, #LINE_NO);
 
     return str.data[index];
+}
+
+Allocation_Mode :: enum
+{
+    ALLOCATE;
+    RESIZE;
+    FREE;
+    FREE_ALL;
+}
+
+Allocator_Func :: typedef *(allocator_data: *void, mode: Allocation_Mode, size: s64,
+                            old_size: s64, alignment: s64, old_ptr: *void) -> *void;
+
+Allocator :: struct
+{
+    allocate : Allocator_Func;
+    data     : *void;
+}
+
+alloc :: (allocator: *Allocator, size: s64, alignment: s64) -> *void
+{
+    return allocator.allocate(allocator.data, Allocation_Mode.ALLOCATE, size, 0, alignment, null);
+}
+
+_free :: (allocator: *Allocator, ptr: *void, size: s64)
+{
+    allocator.allocate(allocator.data, Allocation_Mode.FREE, size, size, 0, ptr);
 }
