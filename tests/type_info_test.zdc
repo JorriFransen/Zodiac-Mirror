@@ -146,7 +146,18 @@ _print_type_info :: (info: *Type_Info, recurse: bool, indent: u64)
 
         case STRUCT, UNION:
         {
-            if (info.kind == Type_Info_Kind.STRUCT)
+            if (info.flags & Type_Info_Flags.MRV)
+            {
+                print("(");
+                for (i : u64 = 0; i < info.aggregate.count; i++)
+                {
+                    if (i > 0) print(", ");
+                    ag_mem := info.aggregate.first[i];
+                    _print_type_info(ag_mem.type, false, 0);
+                }
+                print(")");
+            }
+            else if (info.kind == Type_Info_Kind.STRUCT)
             {
                 if (info.name.data)
                     print("% :: struct", info.name.data);

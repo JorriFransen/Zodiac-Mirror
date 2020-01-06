@@ -62,6 +62,7 @@ Type_Info_Flags : u64 : enum
     INT     :: 1;
     FLOAT   :: 2;
     SIGNED  :: 4;
+    MRV     :: 8;
 }
 
 Type_Info :: struct

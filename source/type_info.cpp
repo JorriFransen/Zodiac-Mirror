@@ -145,6 +145,11 @@ namespace Zodiac
                     tid->type_infos[index].kind = UNION;
                 }
 
+                if (type->flags & AST_TYPE_FLAG_MRV)
+                {
+                    tid->type_infos[index].flags |= MRV;
+                }
+
                 tid->type_infos[index].aggregate.count = BUF_LENGTH(indices);
                 tid->type_infos[index].aggregate.first.id =
                     register_aggregate_members(context, indices, aggregate_members);

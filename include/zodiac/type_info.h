@@ -23,6 +23,7 @@ namespace Zodiac
         INT    = 1,
         FLOAT  = 2,
         SIGNED = 4,
+        MRV    = 8,
     };
 
     struct Type_Info;
