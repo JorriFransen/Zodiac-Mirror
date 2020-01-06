@@ -3415,6 +3415,11 @@ namespace Zodiac
                         {
                             result &= resolver_resolve_declaration(resolver, member_decls[i],
                                                                    scope);
+                            if (result && type_spec->mrv.directives[i])
+                            {
+                                assert(type_spec->mrv.directives[i]->kind == AST_DIREC_REQUIRED);
+                                member_decls[i]->flags |= AST_DECL_FLAG_REQUIRED_MRV;
+                            }
                         }
                     }
                 }
