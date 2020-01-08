@@ -120,10 +120,13 @@ Type_Info_Enum_Member :: struct
 
 type_info :: (type: Type) -> *Type_Info
 {
-    base_ptr : *Type_Info = get_type_info_base_ptr();
-    return *base_ptr[(:u64)type];
+    static_if (ZODIAC_RUNNING_BYTECODE) {
+        base_ptr : *Type_Info = get_type_info_base_ptr();
+        return *base_ptr[(:u64)type];
+    } else {
+        default_assert_handler(false, #FUNC_NAME, #FILE_NAME, #LINE_NO);
+    }
 }
-
 
 Any :: struct
 {

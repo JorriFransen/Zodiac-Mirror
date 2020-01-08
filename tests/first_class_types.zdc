@@ -35,7 +35,13 @@ print_type_id :: (type: Type)
 
 print_type_name :: (type: Type)
 {
-    ti := type_info(type);
-    print("%\n", ti.name.data);
+    static_if (ZODIAC_RUNNING_BYTECODE) {
+        ti := type_info(type);
+        print("%\n", ti.name.data);
+    } else {
+        print("type_info with first class type as argument in not yet supported in llvm, id: %\n",
+              (:int)type);
+    }
+
 }
 
