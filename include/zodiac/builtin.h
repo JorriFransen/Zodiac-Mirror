@@ -35,6 +35,7 @@ namespace Zodiac
         static AST_Type* type_Any;
         static AST_Type* type_pointer_to_Any;
         static AST_Type* type_Array_Ref_of_Any;
+        static AST_Type* type_Type;
 
         static uint64_t pointer_size;
 

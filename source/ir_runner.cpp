@@ -2158,6 +2158,15 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_GET_TYPE_INFO_BASE_PTR:
+            {
+                IR_Value* result_value = ir_runner_get_local_temporary(runner, iri->result);
+
+                Type_Info_Data* tid = &runner->type_info_data;
+                result_value->value.pointer = tid->type_infos;
+                break;
+            }
+
             case IR_OP_EXTRACT_VALUE:
             {
                 IR_Value* aggregate_value = ir_runner_get_local_temporary(runner, iri->arg1);

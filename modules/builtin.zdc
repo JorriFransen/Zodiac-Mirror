@@ -118,6 +118,13 @@ Type_Info_Enum_Member :: struct
     type  : *Type_Info;
 }
 
+type_info :: (type: Type) -> *Type_Info
+{
+    base_ptr : *Type_Info = get_type_info_base_ptr();
+    return *base_ptr[(:u64)type];
+}
+
+
 Any :: struct
 {
     type_info : *Type_Info;

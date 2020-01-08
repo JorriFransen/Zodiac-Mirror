@@ -1,0 +1,41 @@
+_c :: import c;
+__printer :: import print;
+using __printer;
+
+main :: ()
+{
+    _c.open_std_handles();
+
+    print("First class types test\n");
+
+    print_type_id(int);
+    print_type_id(s64);
+    print_type_id(u64);
+    print_type_id(String);
+    print_type_id(float);
+    print_type_id(Any);
+
+    print("\n");
+
+    print_type_name(int);
+    print_type_name(s64);
+    print_type_name(u64);
+    print_type_name(String);
+    print_type_name(float);
+    print_type_name(Any);
+
+    return 0;
+}
+
+print_type_id :: (type: Type)
+{
+    id := (:int)type;
+    print("id: %\n", id);
+}
+
+print_type_name :: (type: Type)
+{
+    ti := type_info(type);
+    print("%\n", ti.name.data);
+}
+

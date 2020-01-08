@@ -448,8 +448,10 @@ namespace Zodiac
         DEFINE_KW("using", TOK_KW_USING);
         DEFINE_KW("sizeof", TOK_KW_SIZEOF);
         DEFINE_KW("get_type_info", TOK_KW_GET_TYPE_INFO);
+        DEFINE_KW("get_type_info_base_ptr", TOK_KW_GET_TYPE_INFO_BASE_PTR);
         DEFINE_KW("typeof", TOK_KW_TYPEOF);
         DEFINE_KW("defer", TOK_KW_DEFER);
+        DEFINE_KW("Type", TOK_KW_TYPE);
     }
 
 #undef DEFINE_KW

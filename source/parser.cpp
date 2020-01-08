@@ -1441,6 +1441,10 @@ namespace Zodiac
             {
                 result = parse_get_type_info_expression(parser, scope);
             }
+            else if (is_token(parser, TOK_KW_GET_TYPE_INFO_BASE_PTR))
+            {
+                result = parse_get_type_info_base_ptr_expression(parser, scope);
+            }
             else if (match_token(parser, TOK_POUND))
             {
                 return parse_directive_expression(parser, scope);
@@ -1724,6 +1728,17 @@ namespace Zodiac
         return ast_get_type_info_expression_new(parser->context, ft.file_pos, type_spec);
     }
 
+    static AST_Expression* parse_get_type_info_base_ptr_expression(Parser* parser,
+                                                                   AST_Scope* scope)
+    {
+        auto ft = current_token(parser);
+
+        expect_token(parser, TOK_KW_GET_TYPE_INFO_BASE_PTR);
+        expect_token(parser, TOK_LPAREN);
+        expect_token(parser, TOK_RPAREN);
+        return ast_get_type_info_base_ptr_expression_new(parser->context, ft.file_pos);
+    }
+
     static AST_Expression* parse_directive_expression(Parser* parser, AST_Scope* scope)
     {
         auto context = parser->context;
@@ -1879,6 +1894,10 @@ namespace Zodiac
         else if (parser->allow_vararg_type_specs && match_token(parser, TOK_ELLIPSIS))
         {
             return ast_type_spec_vararg_new(parser->context, ft.file_pos);
+        }
+        else if (match_token(parser, TOK_KW_TYPE))
+        {
+            return ast_type_spec_type_new(parser->context, ft.file_pos);
         }
         else
         {

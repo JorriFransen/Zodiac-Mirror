@@ -30,6 +30,7 @@ namespace Zodiac
     AST_Type* Builtin::type_Any = nullptr;
     AST_Type* Builtin::type_pointer_to_Any = nullptr;
     AST_Type* Builtin::type_Array_Ref_of_Any = nullptr;
+    AST_Type* Builtin::type_Type = nullptr;
 
     uint64_t Builtin::pointer_size = 0;
 
@@ -84,6 +85,8 @@ namespace Zodiac
 
         Builtin::type_float = register_builtin_type(context, AST_TYPE_FLAG_FLOAT, 32, "float");
         Builtin::type_double = register_builtin_type(context, AST_TYPE_FLAG_FLOAT, 64, "double");
+
+        Builtin::type_Type = register_builtin_type(context, unsigned_int_flags, 64, "Type");
 
         Builtin::pointer_size = 64;
 

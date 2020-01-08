@@ -575,6 +575,7 @@ namespace Zodiac
                     {
                         IR_Value* init_value = ir_builder_emit_expression(ir_builder, init_expr);
                         AST_Type* init_type = init_value->type;
+                        assert(init_type);
 
                         if (ast_type_is_mrv(init_type))
                         {
@@ -1166,6 +1167,17 @@ namespace Zodiac
     {
         assert(ir_builder);
         assert(expression);
+
+        if ((expression->kind == AST_EXPR_IDENTIFIER &&
+            expression->flags & AST_EXPR_FLAG_TYPE) ||
+                expression->kind == AST_EXPR_TYPE)
+        {
+            uint64_t id_value = expression->type_expr_type->info_index;
+            assert(id_value);
+
+            IR_Value* result = ir_integer_literal(ir_builder, Builtin::type_Type, id_value);
+            return result;
+        }
 
         switch (expression->kind)
         {
@@ -1780,6 +1792,14 @@ namespace Zodiac
 
                 return ir_builder_emit_get_type_info(ir_builder, type->info_index,
                                                     expression->file_pos);
+                break;
+            }
+
+            case AST_EXPR_GET_TYPE_INFO_BASE_PTR:
+            {
+                assert(expression->type);
+                return ir_builder_emit_get_type_info_base_ptr(ir_builder, expression->file_pos,
+                                                              expression->type);
                 break;
             }
 
@@ -4423,6 +4443,21 @@ return result_value;
 
         return result_value;
     }
+
+    IR_Value* ir_builder_emit_get_type_info_base_ptr(IR_Builder* ir_builder, File_Pos file_pos,
+                                                     AST_Type* type_info_ptr_type)
+    {
+        assert(type_info_ptr_type);
+
+        IR_Value* result_value = ir_value_new(ir_builder, IRV_TEMPORARY, type_info_ptr_type);
+        IR_Instruction* iri = ir_instruction_new(ir_builder, file_pos,
+                                                 IR_OP_GET_TYPE_INFO_BASE_PTR,
+                                                 nullptr, nullptr, result_value);
+        ir_builder_emit_instruction(ir_builder, iri);
+
+        return result_value;
+    }
+
 
     void phi_node_add_incoming(IR_Value* phi_value, IR_Block* block, IR_Value* value)
     {

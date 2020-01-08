@@ -64,12 +64,14 @@ namespace Zodiac
 		AST_EXPR_CAST,
         AST_EXPR_SIZEOF,
         AST_EXPR_GET_TYPE_INFO,
+        AST_EXPR_GET_TYPE_INFO_BASE_PTR,
         AST_EXPR_POST_INCREMENT,
         AST_EXPR_POST_DECREMENT,
         AST_EXPR_EXPRESSION_LIST,
         AST_EXPR_IGNORED_VALUE,
         AST_EXPR_MAKE_LVALUE,
         AST_EXPR_FUNC_NAME,
+        AST_EXPR_TYPE,
     };
 
     enum AST_Binop_Kind
@@ -121,6 +123,7 @@ namespace Zodiac
         AST_EXPR_FLAG_LVALUE          = (1 << 6),
         AST_EXPR_FLAG_FIRST_VARARG    = (1 << 7),
         AST_EXPR_FLAG_IMPORT          = (1 << 8),
+        AST_EXPR_FLAG_TYPE            = (1 << 9),
     };
 
     enum AST_Builtin_Function
@@ -143,6 +146,7 @@ namespace Zodiac
         {
             AST_Identifier* identifier;
             AST_Expression* base_expression;
+            AST_Type* type_expr_type;
 
             struct
             {
@@ -644,6 +648,7 @@ namespace Zodiac
         AST_TYPE_SPEC_POLY_FUNC_ARG,
         AST_TYPE_SPEC_MRV,
         AST_TYPE_SPEC_VARARG,
+        AST_TYPE_SPEC_TYPE,
     };
 
     typedef uint64_t _AST_Type_Spec_Flags_;
@@ -798,6 +803,7 @@ namespace Zodiac
                                               AST_Type_Spec* type_spec);
     AST_Expression* ast_get_type_info_expression_new(Context* context, File_Pos file_pos,
                                                      AST_Type_Spec* type_spec);
+    AST_Expression* ast_get_type_info_base_ptr_expression_new(Context* context, File_Pos file_pos);
     AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos,
                                            AST_Expression* base_expr,
                                            AST_Expression* member_expr);
@@ -977,6 +983,7 @@ namespace Zodiac
                                          BUF(AST_Type_Spec*) specs,
                                          BUF(AST_Directive*) directives);
     AST_Type_Spec* ast_type_spec_vararg_new(Context* context, File_Pos file_pos);
+    AST_Type_Spec* ast_type_spec_type_new(Context* context, File_Pos file_pos);
 
 	AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
 		                     bool is_module_scope, uint64_t line);
@@ -1012,4 +1019,6 @@ namespace Zodiac
 
     bool ast_type_is_aggregate(AST_Type* type);
     bool ast_type_is_mrv(AST_Type* type);
+
+    bool  ast_decl_is_type_decl(AST_Declaration* decl);
 }

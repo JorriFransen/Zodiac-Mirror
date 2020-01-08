@@ -278,6 +278,12 @@ namespace Zodiac
         return result;
     }
 
+    AST_Expression* ast_get_type_info_base_ptr_expression_new(Context* context, File_Pos file_pos)
+    {
+        auto result = ast_expression_new(context, file_pos, AST_EXPR_GET_TYPE_INFO_BASE_PTR);
+        return result;
+    }
+
     AST_Expression* ast_dot_expression_new(Context* context, File_Pos file_pos,
                                            AST_Expression* base_expr,
                                            AST_Expression* member_expr)
@@ -1319,6 +1325,12 @@ namespace Zodiac
         return result;
     }
 
+    AST_Type_Spec* ast_type_spec_type_new(Context* context, File_Pos file_pos)
+    {
+        AST_Type_Spec* result = ast_type_spec_new(context, file_pos, AST_TYPE_SPEC_TYPE);
+        return result;
+    }
+
     AST_Scope* ast_scope_new(Context* context, AST_Scope* parent_scope, AST_Module* module,
 		                     bool is_module_scope, uint64_t line)
 
@@ -1936,5 +1948,11 @@ namespace Zodiac
 
         return type->kind == AST_TYPE_STRUCT &&
                type->flags & AST_TYPE_FLAG_MRV;
+    }
+
+    bool  ast_decl_is_type_decl(AST_Declaration* decl)
+    {
+        return decl->kind == AST_DECL_TYPEDEF || decl->kind == AST_DECL_AGGREGATE_TYPE ||
+                decl->kind == AST_DECL_TYPE;
     }
 }

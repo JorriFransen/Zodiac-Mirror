@@ -2005,12 +2005,17 @@ namespace Zodiac
                 {
                     expression->flags |= AST_EXPR_FLAG_LVALUE;
                 }
+                else if (ast_decl_is_type_decl(decl))
+                {
+                    expression->flags |= AST_EXPR_FLAG_TYPE;
+                }
 
                 expression->type = resolver_get_declaration_type(decl);
 
                 if (!points_to_import_decl && suggested_type &&
                     suggested_type != expression->type &&
-                    resolver_check_assign_types(resolver, suggested_type, expression->type))
+                    resolver_check_assign_types(resolver, suggested_type, expression->type) &&
+                    !(expression->flags & AST_EXPR_FLAG_TYPE))
                 {
                     if (suggested_type == Builtin::type_String &&
                         expression->type == Builtin::type_pointer_to_u8)
@@ -2021,11 +2026,25 @@ namespace Zodiac
                     {
                         result &= resolver_transform_to_any(resolver, expression, scope);
                     }
+                    else if (suggested_type == Builtin::type_Type)
+                    {
+                        // Do nothing
+                    }
                     else
                     {
                         resolver_transform_to_cast_expression(resolver, expression,
                                                               suggested_type);
                     }
+                }
+                else if (!points_to_import_decl && suggested_type == Builtin::type_Type &&
+                         suggested_type != expression->type)
+                {
+                    assert(expression->flags & AST_EXPR_FLAG_TYPE);
+                    auto expr_type = expression->type;
+                    maybe_register_type_info(resolver->context, expr_type);
+                    expression->type = Builtin::type_Type;
+                    expression->kind = AST_EXPR_TYPE;
+                    expression->type_expr_type = expr_type;
                 }
 
                 break;
@@ -2603,6 +2622,26 @@ namespace Zodiac
                     maybe_register_type_info(resolver->context,
                                               expression->get_type_info_expr.type);
                 }
+                break;
+            }
+
+            case AST_EXPR_GET_TYPE_INFO_BASE_PTR:
+            {
+                AST_Type* type = Builtin::type_pointer_to_Type_Info;
+
+                // Workaround because we use this in builtin.zdc
+                if (!type)
+                {
+                    assert(suggested_type);
+                    assert(suggested_type->kind == AST_TYPE_POINTER);
+                    assert(suggested_type->pointer.base->kind == AST_TYPE_STRUCT);
+
+                    type = suggested_type;
+                }
+
+                assert(type);
+
+                expression->type = type;
                 break;
             }
 
@@ -3446,6 +3485,12 @@ namespace Zodiac
             {
                 assert(Builtin::type_Array_Ref_of_Any);
                 *type_dest = Builtin::type_Array_Ref_of_Any;
+                break;
+            }
+
+            case AST_TYPE_SPEC_TYPE:
+            {
+                *type_dest = Builtin::type_Type;
                 break;
             }
 
@@ -4490,7 +4535,8 @@ namespace Zodiac
                 BUF_PUSH(decl->function_overload.poly_templates, original);
             }
 
-            if (redecl)
+            if (redecl &&
+                redecl->scope->module == scope->module)
             {
                 if (decl->kind == AST_DECL_FUNC && redecl->kind == AST_DECL_FUNC)
                 {
