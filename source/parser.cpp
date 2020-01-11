@@ -286,6 +286,13 @@ namespace Zodiac
                 }
                 else
                 {
+                    bool is_value_poly = false;
+                    if (match_token(parser, TOK_DOLLAR))
+                    {
+                        is_value_poly = true;
+                        is_poly = true;
+                    }
+
                     parser->allow_vararg_type_specs = true;
                     AST_Declaration* decl = parse_declaration(parser, argument_scope, false,
                                                               nullptr, AST_DECL_LOC_ARGUMENT);
@@ -294,6 +301,11 @@ namespace Zodiac
                     if (!decl)
                     {
                         return nullptr;
+                    }
+
+                    if (is_value_poly)
+                    {
+                        decl->flags |= AST_DECL_FLAG_FUNC_VALUE_POLY;
                     }
 
                     assert(decl->kind == AST_DECL_MUTABLE);

@@ -444,10 +444,11 @@ namespace Zodiac
         AST_DECL_FLAG_FUNC_POLY                 = (1 <<  7),
         AST_DECL_FLAG_FUNC_POLY_TEMPLATE        = (1 <<  8),
         AST_DECL_FLAG_FUNC_POLY_TEMPLATE_ERROR  = (1 <<  9),
-        AST_DECL_FLAG_INSERT_GENERATED          = (1 << 10),
-        AST_DECL_FLAG_REPLACED_NESTED_AGGREGATE = (1 << 11),
-        AST_DECL_FLAG_BUILTIN                   = (1 << 12),
-        AST_DECL_FLAG_REQUIRED_MRV              = (1 << 13),
+        AST_DECL_FLAG_FUNC_VALUE_POLY           = (1 << 10),
+        AST_DECL_FLAG_INSERT_GENERATED          = (1 << 11),
+        AST_DECL_FLAG_REPLACED_NESTED_AGGREGATE = (1 << 12),
+        AST_DECL_FLAG_BUILTIN                   = (1 << 13),
+        AST_DECL_FLAG_REQUIRED_MRV              = (1 << 14),
     };
 
     enum AST_Declaration_Location

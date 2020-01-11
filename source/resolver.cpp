@@ -3986,6 +3986,41 @@ namespace Zodiac
                 }
                 continue;
             }
+            else if (allow_poly_templates && (arg_decl->flags & AST_DECL_FLAG_FUNC_VALUE_POLY))
+            {
+                assert(arg_expr->flags & AST_EXPR_FLAG_CONST);
+
+                if (!(arg_expr->flags & AST_EXPR_FLAG_RESOLVED))
+                {
+                    bool arg_res = resolver_resolve_expression(resolver, arg_expr, call_scope);
+                    if (!arg_res)
+                    {
+                        *valid_match = false;
+                        return UINT64_MAX;
+                    }
+                }
+                AST_Type* arg_decl_type = nullptr;
+                auto arg_decl_type_res =
+                    resolver_resolve_type_spec(resolver, arg_decl->file_pos,
+                                               arg_decl->mutable_decl.type_spec,
+                                               &arg_decl_type, call_scope);
+                assert(arg_decl_type_res);
+
+                if (arg_expr->type == arg_decl_type)
+                {
+                    continue;
+                }
+                else assert(false);
+                // distance += get_poly_overload_match_distance(resolver, arg_ts, arg_expr->type,
+                //                                              &success);
+                // if (!success)
+                // {
+                //     *valid_match = false;
+                //     break;
+                // }
+                // continue;
+            }
+
             bool arg_result = resolver_resolve_declaration(resolver, arg_decl,
                                                            func_decl->function.argument_scope);
             AST_Type* suggested_type = nullptr;

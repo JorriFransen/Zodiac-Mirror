@@ -1,0 +1,27 @@
+
+_c :: import c;
+std :: import std;
+
+__printer :: import print;
+using __printer;
+
+main :: ()
+{
+    _c.open_std_handles();
+
+    print("Value poly test\n");
+
+    value_poly_test_simple(1);
+    value_poly_test_simple(2);
+    value_poly_test_simple(42);
+    value_poly_test_simple(43);
+
+    return 0;
+}
+
+
+value_poly_test_simple :: ($value: int)
+{
+    print("value_poly_test_simple(%)\n", value);
+
+}

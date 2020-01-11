@@ -14,13 +14,20 @@ namespace Zodiac
         {
             case AST_DECL_FUNC:
             {
-                auto ident_copy = copy_identifier(context, declaration->identifier, flags);
                 BUF(AST_Declaration*) args_copy = nullptr;
+
                 for (uint64_t i = 0; i < BUF_LENGTH(declaration->function.args); i++)
                 {
-                    auto arg_copy = copy_declaration(context, declaration->function.args[i],
-                                                     flags);
-                    BUF_PUSH(args_copy, arg_copy);
+                    auto arg = declaration->function.args[i];
+                    if (arg->flags & AST_DECL_FLAG_FUNC_VALUE_POLY)
+                    {
+                    }
+                    else
+                    {
+                        auto arg_copy = copy_declaration(context, arg,
+                                                         flags);
+                        BUF_PUSH(args_copy, arg_copy);
+                    }
                 }
                 bool is_vararg = (declaration->flags & AST_DECL_FLAG_FUNC_VARARG);
                 auto return_ts_copy = copy_type_spec(context,
@@ -52,9 +59,19 @@ namespace Zodiac
                 auto init_expr_copy = copy_expression(context,
                                                       declaration->mutable_decl.init_expression,
                                                       flags);
-                return ast_mutable_declaration_new(context, declaration->file_pos,
+                auto result = ast_mutable_declaration_new(context, declaration->file_pos,
                                                    ident_copy, type_spec_copy,
                                                    init_expr_copy, declaration->location);
+                if (!(flags & COPY_FLAG_DONT_COPY_POLY))
+                {
+                    auto allowed_flags = (AST_DECL_FLAG_RESOLVED | AST_DECL_FLAG_FUNC_VALUE_POLY);
+                    assert(declaration->flags == 0 ||
+                           (declaration->flags | allowed_flags) == allowed_flags);
+                    result->flags = (declaration->flags | allowed_flags);
+                    result->flags &= ~AST_DECL_FLAG_RESOLVED;
+                }
+
+                return result;
                 break;
             }
 
