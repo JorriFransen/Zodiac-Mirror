@@ -132,17 +132,10 @@ namespace Zodiac
         instance->flags |= AST_DECL_FLAG_FUNC_POLY;
         assert(!(instance->flags & AST_DECL_FLAG_FUNC_POLY_TEMPLATE));
 
-        BUF(AST_Declaration*) value_poly_decls =
-            collect_and_remove_value_poly_args_from_call(resolver, call_expression, best_match);
-
         insert_poly_scope(resolver, instance->function.argument_scope, instance, call_expression,
                           scope);
 
-        if (value_poly_decls)
-        {
-            insert_value_poly_decls_as_constants(resolver, value_poly_decls,
-                                                 instance->function.argument_scope);
-        }
+        convert_value_poly_args(resolver, instance, call_expression);
 
         bool res = resolver_resolve_declaration(resolver, instance, scope);
 
@@ -553,37 +546,32 @@ namespace Zodiac
         return false;
     }
 
-    BUF(AST_Declaration*)
-    collect_and_remove_value_poly_args_from_call(Resolver* resolver,
-                                                 AST_Expression* call_expression,
-                                                 AST_Declaration* poly_func_decl)
+    void convert_value_poly_args(Resolver* resolver, AST_Declaration* func_decl,
+                                 AST_Expression* call_expr)
     {
-        assert(poly_func_decl->kind == AST_DECL_FUNC);
+        assert(func_decl->kind == AST_DECL_FUNC);
+        assert(call_expr->kind == AST_EXPR_CALL);
 
-        auto call_args = call_expression->call.arg_expressions;
-        auto decl_args = poly_func_decl->function.args;
+        auto arg_decls = func_decl->function.args;
+        auto arg_exprs = call_expr->call.arg_expressions;
 
-        auto call_arg_count = BUF_LENGTH(call_args);
-        auto decl_arg_count = BUF_LENGTH(decl_args);
-        assert(call_arg_count == decl_arg_count);
+        auto arg_decl_count = BUF_LENGTH(arg_decls);
+        auto arg_expr_count = BUF_LENGTH(arg_exprs);
 
-        for (uint64_t i = 0; i < decl_arg_count; i++)
+        assert(arg_decl_count == arg_expr_count);
+
+        for (uint64_t i = 0; i < arg_decl_count; i++)
         {
-            auto arg_decl = decl_args[i];
-            if (arg_decl->flags & AST_DECL_FLAG_FUNC_VALUE_POLY)
+            auto arg_decl = arg_decls[i];
+            auto arg_expr = arg_exprs[i];
+
+            assert(arg_decl->kind == AST_DECL_MUTABLE);
+            if ((arg_decl->flags & AST_DECL_FLAG_FUNC_VALUE_POLY) ==
+                AST_DECL_FLAG_FUNC_VALUE_POLY)
             {
+                assert(arg_expr->flags & AST_EXPR_FLAG_CONST);
                 assert(false);
             }
         }
-
-        return nullptr;
-
-    }
-
-    void insert_value_poly_decls_as_constants(Resolver* resolver,
-                                              BUF(AST_Declaration*) value_poly_decls,
-                                              AST_Scope* scope)
-    {
-        assert(false);
     }
 }

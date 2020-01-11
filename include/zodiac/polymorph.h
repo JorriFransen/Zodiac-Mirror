@@ -62,11 +62,6 @@ namespace Zodiac
     void match_poly_func_arg_idents(Poly_Func_Arg_Idents* pfi, AST_Type_Spec* arg_ts);
     bool is_poly_func_arg_match(Poly_Func_Arg_Idents* pfi, AST_Identifier* ident);
 
-    BUF(AST_Declaration*)
-    collect_and_remove_value_poly_args_from_call(Resolver* resolver,
-                                                 AST_Expression* call_expression,
-                                                 AST_Declaration* poly_func_decl);
-    void insert_value_poly_decls_as_constants(Resolver* resolver,
-                                              BUF(AST_Declaration*) value_poly_decls,
-                                              AST_Scope* scope);
+    void convert_value_poly_args(Resolver* resolver, AST_Declaration* func_decl,
+                                 AST_Expression* call_expr);
 }
