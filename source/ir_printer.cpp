@@ -507,6 +507,12 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_GET_TYPE_INFO_BASE_PTR:
+            {
+                string_builder_append(sb, "GET_TYPE_INFO_BASE_PTR");
+                break;
+            }
+
             case IR_OP_EXTRACT_VALUE:
             {
                 string_builder_append(sb, "EXTRACT_VALUE ");

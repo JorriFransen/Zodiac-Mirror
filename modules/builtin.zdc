@@ -141,8 +141,7 @@ string_length :: (c_str: *u8) -> s64
     length := 0;
     i : u64 = 0;
 
-    while (c_str[i] != 0)
-    {
+    while (c_str[i] != 0) {
         i += 1;
         length += 1;
     }
@@ -178,13 +177,11 @@ _builtin_open_std_handles :: () -> void
 
 default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line: s64)
 {
-    if (value)
-    {
+    if (value) {
         return;
     }
 
-    if (!stderr)
-    {
+    if (!stderr) {
         _builtin_open_std_handles();
     }
 
@@ -193,12 +190,9 @@ default_assert_handler :: (value: bool, function_name: *u8, file_name: *u8, line
     fprintf(stderr, "Assertion failed in function %s : %s:%d\n", function_name,
                 file_name, line);
 
-    static_if (ZODIAC_RUNNING_BYTECODE)
-    {
+    static_if (ZODIAC_RUNNING_BYTECODE) {
         __assert_fail();
-    }
-    else
-    {
+    } else {
         print_stack_trace();
         abort();
     }
@@ -247,7 +241,7 @@ alloc :: (allocator: *Allocator, size: s64, alignment: s64) -> *void
 //     size :: sizeof(T);
 //     alignment := 8;
 //     if (size < alignment) alignment = size;
-// 
+//
 //     return alloc(allocator, size, alignment);
 // }
 
