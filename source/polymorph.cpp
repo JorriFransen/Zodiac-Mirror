@@ -566,7 +566,7 @@ namespace Zodiac
             auto arg_expr = arg_exprs[i];
 
             assert(arg_decl->kind == AST_DECL_MUTABLE);
-            if ((arg_decl->flags & AST_DECL_FLAG_FUNC_VALUE_POLY)
+            if ((arg_decl->flags & AST_DECL_FLAG_FUNC_VALUE_POLY))
             {
                 assert(arg_expr->flags & AST_EXPR_FLAG_CONST);
                 assert(false);
