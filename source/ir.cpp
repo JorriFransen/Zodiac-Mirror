@@ -611,7 +611,8 @@ namespace Zodiac
                 {
                     AST_Expression* init_expr = decl->constant_var.init_expression;
                     assert(init_expr->flags & AST_EXPR_FLAG_CONST);
-                    assert(init_expr->flags & AST_EXPR_FLAG_LITERAL);
+                    assert(init_expr->flags & AST_EXPR_FLAG_LITERAL ||
+                           init_expr->flags & AST_EXPR_TYPE);
                     IR_Value* constant_value = ir_builder_emit_expression(ir_builder, init_expr);
 
                     ir_builder_push_value_and_decl(ir_builder, constant_value, decl);

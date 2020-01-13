@@ -215,6 +215,13 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_SIZEOF:
+            {
+                assert(expression->sizeof_expr.type_spec->type);
+                return expression->sizeof_expr.byte_size;
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -641,6 +648,12 @@ namespace Zodiac
         {
             return false;
         }
+
+        if (a->flags & AST_EXPR_FLAG_TYPE)
+        {
+            assert(b->flags & AST_EXPR_FLAG_TYPE);
+        }
+        else if (b->flags & AST_EXPR_FLAG_TYPE) assert(false);
 
         switch (a->kind)
         {

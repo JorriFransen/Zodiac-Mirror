@@ -77,7 +77,18 @@ namespace Zodiac
 
             case AST_DECL_CONSTANT_VAR:
             {
-                assert(false);
+                auto ts_copy = copy_type_spec(context, declaration->constant_var.type_spec, flags);
+                auto init_expr_copy = copy_expression(context,
+                                                      declaration->constant_var.init_expression,
+                                                      flags);
+                auto result = ast_constant_variable_declaration_new(context, declaration->file_pos,
+                                                                    ident_copy, ts_copy,
+                                                                    init_expr_copy,
+                                                                    declaration->location);
+                result->flags = declaration->flags;
+                result->flags &= ~AST_DECL_FLAG_RESOLVED;
+
+                return result;
                 break;
             }
 

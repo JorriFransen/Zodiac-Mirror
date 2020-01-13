@@ -574,6 +574,10 @@ namespace Zodiac
 
                 arg_decl->kind = AST_DECL_CONSTANT_VAR;
                 arg_decl->constant_var.init_expression = arg_expr;
+                if (arg_expr->flags & AST_EXPR_FLAG_TYPE)
+                {
+                    arg_decl->constant_var.type = arg_expr->type;
+                }
 
                 bool arg_res = resolver_resolve_declaration(resolver, arg_decl, scope);
                 assert(arg_res);

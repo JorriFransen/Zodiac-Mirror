@@ -40,7 +40,17 @@ main :: ()
 
     print("sizeof(Message): %\n", sizeof(Message));
 
+    message_test(ca);
+
     return 0;
+}
+
+message_test :: (allocator: *Allocator)
+{
+    m0 := message_create(allocator, 0, "First message");
+    defer _free(allocator, m0, 0);
+
+    message_print(m0);
 }
 
 
@@ -55,8 +65,8 @@ __next_message_id : u64 = 0;
 
 message_create :: (ca: *Allocator, sender_id: u64, str: String) -> *Message
 {
-    // result := alloc_type(ca, Message);
-    result : *Message;
+    result := alloc_type(ca, Message);
+    // result : *Message;
 
     result.id = __next_message_id;
     __next_message_id += 1;
@@ -66,4 +76,9 @@ message_create :: (ca: *Allocator, sender_id: u64, str: String) -> *Message
     result.message = std.string_create(ca, str);
 
     return result;
+}
+
+message_print :: (msg: *Message)
+{
+    print("%: (from: %): '%'\n", msg.id, msg.sender_id, msg.message.data);
 }

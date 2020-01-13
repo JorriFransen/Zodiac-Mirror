@@ -317,7 +317,8 @@ namespace Zodiac
                     AST_Scope* return_type_scope = scope;
                     if (declaration->flags & AST_DECL_FLAG_FUNC_POLY)
                     {
-                        return_type_scope = declaration->function.argument_scope->parent;
+                        return_type_scope = declaration->function.argument_scope;
+                        // return_type_scope = declaration->function.argument_scope->parent;
                         assert(return_type_scope != scope);
                     }
 
@@ -472,9 +473,19 @@ namespace Zodiac
                 if (declaration->constant_var.type_spec)
                 {
                     auto ts = declaration->constant_var.type_spec;
+                    AST_Type* result_type = nullptr;
                     result &= resolver_resolve_type_spec(resolver,
                                                          ts->file_pos, ts,
-                                                         &declaration->constant_var.type, scope);
+                                                         &result_type, scope);
+
+                    if (declaration->constant_var.type)
+                    {
+                    }
+                    else
+                    {
+                        declaration->constant_var.type = result_type;
+                    }
+
                     if (!result) break;
                 }
 
@@ -2457,6 +2468,7 @@ namespace Zodiac
                 assert(type);
                 expression->sizeof_expr.byte_size = type->bit_size / 8;
                 expression->type = Builtin::type_s64;
+                expression->flags |= AST_EXPR_FLAG_CONST;
                 break;
             }
 
