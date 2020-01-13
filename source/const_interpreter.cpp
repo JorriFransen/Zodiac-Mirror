@@ -631,4 +631,33 @@ namespace Zodiac
         assert(false);
 		return 0;
     }
+
+    bool const_expression_value_equal(AST_Expression* a, AST_Expression* b)
+    {
+        assert(a->type);
+        assert(b->type);
+
+        if (a->type != b->type)
+        {
+            return false;
+        }
+
+        switch (a->kind)
+        {
+            case AST_EXPR_INTEGER_LITERAL:
+            {
+                if (a->kind == b->kind)
+                {
+                    return a->integer_literal.u64 == b->integer_literal.u64;
+                }
+                else assert(false);
+                break;
+            }
+
+            default: assert(false);
+        }
+
+        assert(false);
+        return false;
+    }
 }

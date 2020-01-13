@@ -3950,6 +3950,27 @@ namespace Zodiac
             AST_Declaration* arg_decl = arg_decls[i];
             AST_Expression* arg_expr = arg_exprs[i];
 
+            if (arg_decl->kind == AST_DECL_CONSTANT_VAR)
+            {
+                assert(arg_decl->flags & AST_DECL_FLAG_FUNC_VALUE_POLY);
+                assert(arg_decl->kind == AST_DECL_CONSTANT_VAR);
+                assert(arg_expr->flags & AST_EXPR_FLAG_CONST);
+
+                bool arg_expr_res = resolver_resolve_expression(resolver, arg_expr, call_scope);
+                assert(arg_expr_res);
+
+                if (const_expression_value_equal(arg_decl->constant_var.init_expression,
+                                                 arg_expr))
+                {
+                    continue;
+                }
+                else
+                {
+                    *valid_match = false;
+                    break;
+                }
+            }
+
             assert(arg_decl->kind == AST_DECL_MUTABLE);
             auto arg_ts = arg_decl->mutable_decl.type_spec;
 

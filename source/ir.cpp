@@ -518,19 +518,29 @@ namespace Zodiac
             for (uint64_t i = 0; i < BUF_LENGTH(decl->function.args); i++)
             {
                 AST_Declaration* arg_decl = decl->function.args[i];
-                assert(arg_decl->kind == AST_DECL_MUTABLE);
-                assert(arg_decl->location == AST_DECL_LOC_ARGUMENT);
-
-                AST_Identifier* arg_ident = arg_decl->identifier;
-                AST_Type* arg_type = arg_decl->mutable_decl.type;
-                if (arg_type->kind == AST_TYPE_STATIC_ARRAY)
+                if (arg_decl->kind == AST_DECL_MUTABLE)
                 {
-                    arg_type = ast_find_or_create_pointer_type(ir_builder->context, arg_type);
+                    assert(arg_decl->location == AST_DECL_LOC_ARGUMENT);
+
+                    AST_Identifier* arg_ident = arg_decl->identifier;
+                    AST_Type* arg_type = arg_decl->mutable_decl.type;
+                    if (arg_type->kind == AST_TYPE_STATIC_ARRAY)
+                    {
+                        arg_type = ast_find_or_create_pointer_type(ir_builder->context, arg_type);
+                    }
+                    IR_Value* arg_value = ir_builder_emit_function_arg(ir_builder,
+                                                                    arg_ident->atom.data,
+                                                                    arg_type, arg_ident->file_pos);
+                    ir_builder_push_value_and_decl(ir_builder, arg_value, arg_decl);
                 }
-                IR_Value* arg_value = ir_builder_emit_function_arg(ir_builder,
-                                                                arg_ident->atom.data,
-                                                                arg_type, arg_ident->file_pos);
-                ir_builder_push_value_and_decl(ir_builder, arg_value, arg_decl);
+                else if (arg_decl->kind == AST_DECL_CONSTANT_VAR)
+                {
+                    IR_Value* arg_value =
+                        ir_builder_emit_expression(ir_builder,
+                                                   arg_decl->constant_var.init_expression);
+                    ir_builder_push_value_and_decl(ir_builder, arg_value, arg_decl);
+                }
+                else assert(false);
             }
         }
         else

@@ -135,7 +135,8 @@ namespace Zodiac
         insert_poly_scope(resolver, instance->function.argument_scope, instance, call_expression,
                           scope);
 
-        convert_value_poly_args(resolver, instance, call_expression);
+        convert_value_poly_args(resolver, instance, call_expression,
+                                instance->function.argument_scope);
 
         bool res = resolver_resolve_declaration(resolver, instance, scope);
 
@@ -547,7 +548,7 @@ namespace Zodiac
     }
 
     void convert_value_poly_args(Resolver* resolver, AST_Declaration* func_decl,
-                                 AST_Expression* call_expr)
+                                 AST_Expression* call_expr, AST_Scope* scope)
     {
         assert(func_decl->kind == AST_DECL_FUNC);
         assert(call_expr->kind == AST_EXPR_CALL);
@@ -569,7 +570,14 @@ namespace Zodiac
             if ((arg_decl->flags & AST_DECL_FLAG_FUNC_VALUE_POLY))
             {
                 assert(arg_expr->flags & AST_EXPR_FLAG_CONST);
-                assert(false);
+
+                arg_decl->kind = AST_DECL_CONSTANT_VAR;
+                arg_decl->constant_var.init_expression = arg_expr;
+
+                bool arg_res = resolver_resolve_declaration(resolver, arg_decl, scope);
+                assert(arg_res);
+                resolver_push_declaration_to_scope(resolver, arg_decl, scope);
+
             }
         }
     }
