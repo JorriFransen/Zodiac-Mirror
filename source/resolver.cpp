@@ -2022,6 +2022,7 @@ namespace Zodiac
                 else if (ast_decl_is_type_decl(decl))
                 {
                     expression->flags |= AST_EXPR_FLAG_TYPE;
+                    expression->flags |= AST_EXPR_FLAG_CONST;
                 }
 
                 expression->type = resolver_get_declaration_type(decl);
@@ -2737,6 +2738,12 @@ namespace Zodiac
                 ast_string_literal_expression_new(resolver->context, expression,
                                                   expression->file_pos, func_name);
                 result &= resolver_resolve_expression(resolver, expression, scope);
+                break;
+            }
+
+            case AST_EXPR_TYPE:
+            {
+                assert(expression->type_expr_type);
                 break;
             }
 
@@ -3972,10 +3979,12 @@ namespace Zodiac
             {
                 assert(arg_decl->flags & AST_DECL_FLAG_FUNC_VALUE_POLY);
                 assert(arg_decl->kind == AST_DECL_CONSTANT_VAR);
-                assert(arg_expr->flags & AST_EXPR_FLAG_CONST);
 
-                bool arg_expr_res = resolver_resolve_expression(resolver, arg_expr, call_scope);
-                assert(arg_expr_res);
+                bool arg_res = resolver_resolve_expression(resolver, arg_expr, call_scope,
+                                                           arg_decl->constant_var.type);
+                assert(arg_res);
+
+                assert(arg_expr->flags & AST_EXPR_FLAG_CONST);
 
                 if (const_expression_value_equal(arg_decl->constant_var.init_expression,
                                                  arg_expr))
@@ -4027,8 +4036,6 @@ namespace Zodiac
             }
             else if (allow_poly_templates && (arg_decl->flags & AST_DECL_FLAG_FUNC_VALUE_POLY))
             {
-                assert(arg_expr->flags & AST_EXPR_FLAG_CONST);
-
                 if (!(arg_expr->flags & AST_EXPR_FLAG_RESOLVED))
                 {
                     bool arg_res = resolver_resolve_expression(resolver, arg_expr, call_scope);
@@ -4037,13 +4044,22 @@ namespace Zodiac
                         *valid_match = false;
                         return UINT64_MAX;
                     }
+
+                    assert(arg_expr->flags & AST_EXPR_FLAG_CONST);
                 }
+
                 AST_Type* arg_decl_type = nullptr;
                 auto arg_decl_type_res =
                     resolver_resolve_type_spec(resolver, arg_decl->file_pos,
                                                arg_decl->mutable_decl.type_spec,
                                                &arg_decl_type, call_scope);
                 assert(arg_decl_type_res);
+
+                if (arg_expr->flags & AST_EXPR_FLAG_TYPE)
+                {
+                    assert(arg_decl_type == Builtin::type_Type);
+                    continue;
+                }
 
                 if (arg_expr->type == arg_decl_type)
                 {

@@ -241,7 +241,7 @@ alloc :: (allocator: *Allocator, size: s64, alignment: s64) -> *void
 //     size :: sizeof(T);
 //     alignment := 8;
 //     if (size < alignment) alignment = size;
-//
+
 //     return alloc(allocator, size, alignment);
 // }
 

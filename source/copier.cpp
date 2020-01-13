@@ -634,6 +634,12 @@ namespace Zodiac
                 break;
             }
 
+            case AST_TYPE_SPEC_TYPE:
+            {
+                return ast_type_spec_type_new(context, type_spec->file_pos);
+                break;
+            }
+
             default: assert(false);
         }
 

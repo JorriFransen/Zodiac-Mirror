@@ -654,6 +654,15 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_TYPE:
+            {
+                if (a->kind == b->kind)
+                {
+                    return a->type_expr_type == b->type_expr_type;
+                }
+                else assert(false);
+            }
+
             default: assert(false);
         }
 

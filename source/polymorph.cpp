@@ -523,6 +523,7 @@ namespace Zodiac
             }
 
             case AST_TYPE_SPEC_POLY_FUNC_ARG:
+            case AST_TYPE_SPEC_TYPE:
             {
                 break;
             }

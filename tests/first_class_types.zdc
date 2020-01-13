@@ -17,6 +17,16 @@ main :: ()
 
     print("\n");
 
+    poly_print_type_id(int);
+    poly_print_type_id(s64);
+    poly_print_type_id(u64);
+    poly_print_type_id(String);
+    poly_print_type_id(float);
+    poly_print_type_id(Any);
+
+    print("\n");
+
+    print_type_name(int);
     print_type_name(int);
     print_type_name(s64);
     print_type_name(u64);
@@ -28,6 +38,12 @@ main :: ()
 }
 
 print_type_id :: (type: Type)
+{
+    id := (:int)type;
+    print("id: %\n", id);
+}
+
+poly_print_type_id :: ($type: Type)
 {
     id := (:int)type;
     print("id: %\n", id);
