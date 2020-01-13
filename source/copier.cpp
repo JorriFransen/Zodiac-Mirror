@@ -67,7 +67,7 @@ namespace Zodiac
                     auto allowed_flags = (AST_DECL_FLAG_RESOLVED | AST_DECL_FLAG_FUNC_VALUE_POLY);
                     assert(declaration->flags == 0 ||
                            (declaration->flags | allowed_flags) == allowed_flags);
-                    result->flags = (declaration->flags | allowed_flags);
+                    result->flags = (declaration->flags & allowed_flags);
                     result->flags &= ~AST_DECL_FLAG_RESOLVED;
                 // }
 

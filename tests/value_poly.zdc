@@ -12,7 +12,7 @@ main :: ()
     print("Value poly test\n");
 
     value_poly_test_simple(1);
-    value_poly_test_simple(1);
+    // value_poly_test_simple(1);
     // value_poly_test_simple(2);
     // value_poly_test_simple(42);
     // value_poly_test_simple(43);
