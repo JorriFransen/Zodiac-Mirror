@@ -1114,7 +1114,8 @@ namespace Zodiac
         return result;
     }
 
-    AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
+    AST_Type* ast_type_function_new(Context* context, bool is_vararg,
+                                    BUF(AST_Function_Arg_Type*) arg_types,
                                     AST_Type* return_type)
     {
         assert(context);
@@ -1127,6 +1128,16 @@ namespace Zodiac
         }
         result->function.arg_types = arg_types;
         result->function.return_type = return_type;
+
+        return result;
+    }
+
+    AST_Function_Arg_Type* ast_type_function_arg_new(Context* context, AST_Type* type,
+                                                     AST_Function_Arg_Type_Flags flags)
+    {
+        AST_Function_Arg_Type* result = arena_alloc(context->arena, AST_Function_Arg_Type);
+        result->type = type;
+        result->flags = flags;
 
         return result;
     }
@@ -1580,7 +1591,7 @@ namespace Zodiac
     }
 
 	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
-                                               BUF(AST_Type*) arg_types,
+                                               BUF(AST_Function_Arg_Type*) arg_types,
                                                AST_Type* return_type)
 	{
 		assert(context);
@@ -1610,10 +1621,14 @@ namespace Zodiac
                     bool a_match = true;
                     for (uint64_t ai = 0; ai < a_count; ai++)
                     {
-                        AST_Type* ex_arg_type = ex_type->function.arg_types[ai];
-                        AST_Type* new_arg_type = arg_types[ai];
+                        AST_Type* ex_arg_type = ex_type->function.arg_types[ai]->type;
+                        AST_Type* new_arg_type = arg_types[ai]->type;
 
-                        if (ex_arg_type != new_arg_type)
+                        auto ex_arg_flags = ex_type->function.arg_types[ai]->flags;
+                        auto new_arg_flags = arg_types[ai]->flags;
+
+                        if (ex_arg_type != new_arg_type ||
+                            ex_arg_flags != new_arg_flags)
                         {
                             a_match = false;
                             break;
@@ -1711,7 +1726,25 @@ namespace Zodiac
         return mrv_type;
     }
 
-    uint64_t get_function_type_hash(bool is_vararg, BUF(AST_Type*) arg_types,
+    AST_Function_Arg_Type*
+    ast_find_or_create_function_arg_type(Context* context, AST_Type* type,
+                                         AST_Function_Arg_Type_Flags flags)
+    {
+        for (uint64_t i = 0; i < BUF_LENGTH(context->function_arg_types); i++)
+        {
+            auto ex_type = context->function_arg_types[i];
+            if (ex_type->type == type && ex_type->flags == flags)
+            {
+                return ex_type;
+            }
+        }
+
+        auto result = ast_type_function_arg_new(context, type, flags);
+        BUF_PUSH(context->function_arg_types, result);
+        return result;
+    }
+
+    uint64_t get_function_type_hash(bool is_vararg, BUF(AST_Function_Arg_Type*) arg_types,
                                     AST_Type* return_type)
     {
         uint64_t hash = hash_pointer(return_type);
@@ -1901,7 +1934,7 @@ namespace Zodiac
                     {
                         string_builder_append(string_builder, ", ");
                     }
-                    AST_Type* arg_type = type->function.arg_types[i];
+                    AST_Type* arg_type = type->function.arg_types[i]->type;
                     ast_type_to_string(arg_type, string_builder);
                 }
 

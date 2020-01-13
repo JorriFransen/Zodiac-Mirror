@@ -589,6 +589,19 @@ namespace Zodiac
         AST_TYPE_FLAG_MRV                    = (1 << 7),
     };
 
+    typedef uint64_t AST_Function_Arg_Type_Flags;
+    enum _AST_FUNCTION_ARG_TYPE_FLAG_TYPE_ : AST_Function_Arg_Type_Flags
+    {
+        AST_FUNC_ARG_TYPE_FLAG_NONE       = 0,
+        AST_FUNC_ARG_TYPE_FLAG_VALUE_POLY = (1 << 0),
+    };
+
+    struct AST_Function_Arg_Type
+    {
+        AST_Type* type = nullptr;
+        AST_Function_Arg_Type_Flags flags = AST_FUNC_ARG_TYPE_FLAG_NONE;
+    };
+
     struct AST_Type
     {
         AST_Type_Kind kind;
@@ -630,7 +643,7 @@ namespace Zodiac
 
             struct
             {
-                BUF(AST_Type*) arg_types;
+                BUF(AST_Function_Arg_Type*) arg_types;
                 AST_Type* return_type;
             } function;
 
@@ -954,8 +967,11 @@ namespace Zodiac
                                  BUF(AST_Overload_Directive) overloads);
     AST_Type* ast_type_enum_new(Context* context, BUF(AST_Declaration*) member_decls,
                                 const char* name, AST_Type* base_type, AST_Scope* scope);
-    AST_Type* ast_type_function_new(Context* context, bool is_vararg, BUF(AST_Type*) arg_types,
+    AST_Type* ast_type_function_new(Context* context, bool is_vararg,
+                                    BUF(AST_Function_Arg_Type*) arg_types,
                                     AST_Type* return_type);
+    AST_Function_Arg_Type* ast_type_function_arg_new(Context* context, AST_Type* type,
+                                                     AST_Function_Arg_Type_Flags flags);
 
     AST_Type_Spec* ast_type_spec_new(Context* context, File_Pos file_pos,
                                      AST_Type_Spec_Kind kind);
@@ -1004,12 +1020,15 @@ namespace Zodiac
     AST_Type* ast_find_or_create_array_type(Context* context, AST_Type* base_type,
                                             uint64_t count);
 	AST_Type* ast_find_or_create_function_type(Context* context, bool is_vararg,
-                                               BUF(AST_Type*) arg_types,
+                                               BUF(AST_Function_Arg_Type*) arg_types,
 		                                       AST_Type* return_type);
     AST_Type* ast_find_or_create_mrv_struct_type(Context* context, BUF(AST_Type*) member_types,
                                                  AST_Scope* scope, File_Pos instance_fp);
+    AST_Function_Arg_Type*
+    ast_find_or_create_function_arg_type(Context* context, AST_Type* type,
+                                         AST_Function_Arg_Type_Flags flags);
 
-    uint64_t get_function_type_hash(bool is_varag, BUF(AST_Type*) arg_types,
+    uint64_t get_function_type_hash(bool is_varag, BUF(AST_Function_Arg_Type*) arg_types,
                                     AST_Type* return_type);
 
     void ast_grow_type_hash(Context* context);

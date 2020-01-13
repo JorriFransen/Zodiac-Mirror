@@ -2572,14 +2572,21 @@ namespace Zodiac
                                                                   zir_type->function.return_type);
                 if (ast_type_is_aggregate((zir_type->function.return_type)))
                 {
-                    LLVMTypeRef llvm_pointer_to_return_type = LLVMPointerType(llvm_return_type, 0);
+                    LLVMTypeRef llvm_pointer_to_return_type = LLVMPointerType(llvm_return_type,
+                                                                              0);
                     BUF_PUSH(llvm_arg_types, llvm_pointer_to_return_type);
                     llvm_return_type = llvm_type_from_ast(builder, Builtin::type_void);
                 }
 
                 for (uint64_t i = 0; i < BUF_LENGTH(zir_type->function.arg_types); i++)
                 {
-                    AST_Type* zodiac_arg_type = zir_type->function.arg_types[i];
+                    auto fa_type = zir_type->function.arg_types[i];
+                    if (fa_type->flags & AST_FUNC_ARG_TYPE_FLAG_VALUE_POLY)
+                    {
+                        continue;
+                    }
+
+                    AST_Type* zodiac_arg_type = fa_type->type;
                     LLVMTypeRef llvm_arg_type = llvm_type_from_ast(builder, zodiac_arg_type);
                     if (zodiac_arg_type->kind == AST_TYPE_STATIC_ARRAY)
                     {

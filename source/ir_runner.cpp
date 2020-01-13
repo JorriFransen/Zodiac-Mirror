@@ -641,7 +641,7 @@ namespace Zodiac
         auto arg_types = func_value->function->type->function.arg_types;
         for (uint64_t i = 0; i < BUF_LENGTH(arg_types); i++)
         {
-            AST_Type* arg_type = arg_types[i];
+            AST_Type* arg_type = arg_types[i]->type;
             if (arg_type->kind == AST_TYPE_ENUM) arg_type = arg_type->aggregate_type.base_type;
             assert(arg_type);
 
@@ -2687,7 +2687,8 @@ namespace Zodiac
                 BUF(char) signature = nullptr;
                 for (uint64_t i = 0; i < BUF_LENGTH(type->function.arg_types); i++)
                 {
-                    BUF_PUSH(signature, get_dcb_signature_char(type->function.arg_types[i]));
+                    BUF_PUSH(signature,
+                             get_dcb_signature_char(type->function.arg_types[i]->type));
                 }
                 BUF_PUSH(signature, ')');
                 BUF_PUSH(signature, get_dcb_signature_char(type->function.return_type));

@@ -17,6 +17,7 @@ namespace Zodiac
     struct AST_Type;
     struct AST_Declaration;
 	struct AST_Scope;
+    struct AST_Function_Arg_Type;
 
     struct IR_Module;
     struct IR_Value;
@@ -101,6 +102,7 @@ namespace Zodiac
         Type_Info_Data type_info_data = {};
 
         BUF(AST_Type*) mrv_types = nullptr;
+        BUF(AST_Function_Arg_Type*) function_arg_types = nullptr;
 
         BUF(Compiled_Module) compiled_modules = nullptr;
         BUF(Compiled_Module) modules_with_errors = nullptr;

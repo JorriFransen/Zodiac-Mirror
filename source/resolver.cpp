@@ -359,12 +359,26 @@ namespace Zodiac
                 {
                     is_vararg = true;
                 }
-                BUF(AST_Type*) arg_types = nullptr;
+                BUF(AST_Function_Arg_Type*) arg_types = nullptr;
                 for (uint64_t i = 0; i < BUF_LENGTH(declaration->function.args); i++)
                 {
                     AST_Declaration* arg_decl = declaration->function.args[i];
                     AST_Type* type = resolver_get_declaration_type(arg_decl);
-                    BUF_PUSH(arg_types, type);
+                    AST_Function_Arg_Type* fa_type = nullptr;
+                    if (arg_decl->kind != AST_DECL_CONSTANT_VAR)
+                    {
+                        fa_type = ast_find_or_create_function_arg_type(
+                            resolver->context, type, AST_FUNC_ARG_TYPE_FLAG_NONE);
+                    }
+                    else
+                    {
+                        assert(arg_decl->flags & AST_DECL_FLAG_FUNC_VALUE_POLY);
+                        fa_type = ast_find_or_create_function_arg_type(
+                            resolver->context, type, AST_FUNC_ARG_TYPE_FLAG_VALUE_POLY);
+                    }
+
+                    assert(fa_type);
+                    BUF_PUSH(arg_types, fa_type);
                 }
                 AST_Type* return_type = declaration->function.return_type;
                 assert(return_type);
@@ -1819,7 +1833,7 @@ namespace Zodiac
 
                     if (i < arg_decl_count)
                     {
-                        arg_type = func_type->function.arg_types[i];
+                        arg_type = func_type->function.arg_types[i]->type;
 
                         if (is_vararg &&
                             i == arg_decl_count - 1 &&
@@ -3304,7 +3318,7 @@ namespace Zodiac
 
             case AST_TYPE_SPEC_FUNCTION:
             {
-                BUF(AST_Type*) arg_types = nullptr;
+                BUF(AST_Function_Arg_Type*) arg_types = nullptr;
                 AST_Scope* arg_scope = type_spec->function.arg_scope;
 
                 assert(arg_scope);
@@ -3322,7 +3336,11 @@ namespace Zodiac
                     }
 
                     assert(arg_decl->kind == AST_DECL_MUTABLE);
-                    BUF_PUSH(arg_types, arg_decl->mutable_decl.type);
+                    auto fa_type =
+                        ast_find_or_create_function_arg_type(resolver->context,
+                                                             arg_decl->mutable_decl.type,
+                                                             AST_FUNC_ARG_TYPE_FLAG_NONE);
+                    BUF_PUSH(arg_types, fa_type);
                 }
 
                 AST_Type* return_type = nullptr;
@@ -4959,7 +4977,7 @@ namespace Zodiac
         }
 
         bool is_vararg = false;
-        BUF(AST_Type*) arg_types = nullptr;
+        BUF(AST_Function_Arg_Type*) arg_types = nullptr;
         AST_Type* return_type = Builtin::type_void;
 
         bool result = true;
@@ -4978,7 +4996,11 @@ namespace Zodiac
             assert(arg_decl->kind == AST_DECL_MUTABLE);
             assert(arg_decl->mutable_decl.type);
 
-            BUF_PUSH(arg_types, arg_decl->mutable_decl.type);
+            auto fa_type =
+                ast_find_or_create_function_arg_type(resolver->context,
+                                                     arg_decl->mutable_decl.type,
+                                                     AST_FUNC_ARG_TYPE_FLAG_NONE);
+            BUF_PUSH(arg_types, fa_type);
         }
 
         if (!result) return nullptr;

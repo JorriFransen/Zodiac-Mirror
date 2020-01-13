@@ -260,7 +260,7 @@ namespace Zodiac
 
                 for (uint64_t i = 0; i < BUF_LENGTH(ast_type->function.arg_types); i++)
                 {
-                    AST_Type* arg_type = ast_type->function.arg_types[i];
+                    AST_Type* arg_type = ast_type->function.arg_types[i]->type;
                     BUF_PUSH(_param_types, llvm_debug_get_type(di, arg_type));
                 }
 
@@ -518,7 +518,7 @@ namespace Zodiac
         {
             auto& rt = di->registered_types[i];
             assert(rt.ast_type != ast_type);
-            assert(rt.di_type != di_type);
+            // assert(rt.di_type != di_type);
         }
 
         Registered_Debug_Type rdt = { ast_type, di_type, flags };

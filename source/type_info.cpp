@@ -186,7 +186,7 @@ namespace Zodiac
 
                 for (uint64_t i = 0; i < BUF_LENGTH(type->function.arg_types); i++)
                 {
-                    AST_Type* arg_type = type->function.arg_types[i];
+                    AST_Type* arg_type = type->function.arg_types[i]->type;
                     uint64_t arg_id = maybe_register_type_info(context, arg_type, false,
                                                                placeholders);
                     assert(arg_id);

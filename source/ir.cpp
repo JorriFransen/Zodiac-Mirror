@@ -1501,33 +1501,43 @@ namespace Zodiac
                     bool emitted_vararg = false;
                     for (uint64_t i = 0; i < BUF_LENGTH(expression->call.arg_expressions); i++)
                     {
-                        arg_count++;
                         bool is_vararg = false;
 
                         AST_Expression* arg_expr = expression->call.arg_expressions[i];
+                        AST_Declaration* arg_decl = callee_decl->function.args[i];
 
-                        IR_Value* arg_value = nullptr;
-
-                        if (i >= BUF_LENGTH(func_type->function.arg_types))
+                        if (arg_decl && arg_decl->kind == AST_DECL_CONSTANT_VAR)
                         {
-                            assert(func_type->flags & AST_TYPE_FLAG_FUNC_VARARG);
-                            is_vararg = true;
-                        }
-
-                        if (i < BUF_LENGTH(func_type->function.arg_types) &&
-                            func_type->function.arg_types[i]->kind == AST_TYPE_STATIC_ARRAY)
-                        {
-                            arg_value = ir_builder_emit_lvalue(ir_builder, arg_expr);
+                            assert(arg_decl->flags & AST_DECL_FLAG_FUNC_VALUE_POLY);
+                            // Do nothing
                         }
                         else
                         {
-                            arg_value = ir_builder_emit_expression(ir_builder, arg_expr);
+                            arg_count++;
+                            IR_Value* arg_value = nullptr;
+
+                            if (i >= BUF_LENGTH(func_type->function.arg_types))
+                            {
+                                assert(func_type->flags & AST_TYPE_FLAG_FUNC_VARARG);
+                                is_vararg = true;
+                            }
+
+                            if (i < BUF_LENGTH(func_type->function.arg_types) &&
+                                (func_type->function.arg_types[i]->type->kind ==
+                                 AST_TYPE_STATIC_ARRAY))
+                            {
+                                arg_value = ir_builder_emit_lvalue(ir_builder, arg_expr);
+                            }
+                            else
+                            {
+                                arg_value = ir_builder_emit_expression(ir_builder, arg_expr);
+                            }
+
+                            assert(arg_value);
+
+                            ir_builder_emit_call_arg(ir_builder, arg_value, arg_expr->file_pos,
+                                                    is_vararg);
                         }
-
-                        assert(arg_value);
-
-                        ir_builder_emit_call_arg(ir_builder, arg_value, arg_expr->file_pos,
-                                                is_vararg);
 
                         if (arg_expr->flags & AST_EXPR_FLAG_FIRST_VARARG)
                         {
