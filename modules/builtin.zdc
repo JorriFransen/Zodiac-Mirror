@@ -239,11 +239,13 @@ alloc :: (allocator: *Allocator, size: s64, alignment: s64) -> *void
 alloc_type :: (allocator: *Allocator, $T: Type) -> *T
 {
     size :: sizeof(T);
+
     alignment := 8;
     if (size < alignment) alignment = size;
 
     return (:*T)alloc(allocator, size, alignment);
 }
+
 
 _free :: (allocator: *Allocator, ptr: *void, size: s64)
 {

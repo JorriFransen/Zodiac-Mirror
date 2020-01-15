@@ -3294,7 +3294,14 @@ namespace Zodiac
                 {
                     assert(decl->constant_var.type == Builtin::type_Type);
                     assert(decl->constant_var.init_expression->type);
-                    *type_dest = decl->constant_var.init_expression->type;
+                    AST_Type* result_type = decl->constant_var.init_expression->type;
+                    if (result_type == Builtin::type_Type)
+                    {
+                        result_type =
+                            const_interpret_type_expr(resolver,
+                                                      decl->constant_var.init_expression);
+                    }
+                    *type_dest = result_type;
                 }
                 else
                 {

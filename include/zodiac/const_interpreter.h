@@ -43,4 +43,6 @@ namespace Zodiac
     float const_interpret_float_unary_expression(AST_Expression* expression, AST_Scope* scope);
 
     bool const_expression_value_equal(Resolver* resolver, AST_Expression* a, AST_Expression* b);
+
+    AST_Type* const_interpret_type_expr(Resolver* resolver, AST_Expression* expr);
 }

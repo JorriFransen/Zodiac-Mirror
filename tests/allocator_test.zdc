@@ -42,7 +42,30 @@ main :: ()
 
     message_test(ca);
 
+    temp_test();
+
     return 0;
+}
+
+temp_allocator :: import temp_allocator;
+
+temp_test :: ()
+{
+    ta := temp_allocator.create(128, false, false);
+
+    for (i := 0; i < 128; i++)
+    {
+        alloc_type(ta, u8);
+    }
+
+    temp_allocator.clear((:*temp_allocator.Temp_Allocator)ta);
+
+    for (i := 0; i < 128; i++)
+    {
+        alloc_type(ta, u8);
+    }
+
+    // alloc_type(ta, u8);
 }
 
 message_test :: (allocator: *Allocator)
@@ -52,7 +75,6 @@ message_test :: (allocator: *Allocator)
 
     message_print(m0);
 }
-
 
 Message :: struct
 {
@@ -66,7 +88,6 @@ __next_message_id : u64 = 0;
 message_create :: (ca: *Allocator, sender_id: u64, str: String) -> *Message
 {
     result := alloc_type(ca, Message);
-    // result : *Message;
 
     result.id = __next_message_id;
     __next_message_id += 1;

@@ -700,4 +700,28 @@ namespace Zodiac
         assert(false);
         return false;
     }
+
+    AST_Type* const_interpret_type_expr(Resolver* resolver, AST_Expression* expr)
+    {
+        assert(expr->flags & AST_EXPR_FLAG_TYPE);
+        assert(expr->flags & AST_EXPR_FLAG_RESOLVED);
+
+        switch (expr->kind)
+        {
+            case AST_EXPR_IDENTIFIER:
+            {
+                assert(false);
+                break;
+            }
+
+            case AST_EXPR_TYPE:
+            {
+                assert(expr->type_expr_type);
+                return expr->type_expr_type;
+                break;
+            }
+
+            default: assert(false);
+        }
+    }
 }

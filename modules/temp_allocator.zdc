@@ -1,0 +1,151 @@
+std :: import std;
+_c :: import c;
+
+Temp_Allocator :: struct
+{
+    allocator: Allocator;
+
+    auto_clear     : bool;
+    can_grow       : bool;
+    new_block_size : s64;
+
+    first_block   : *Temp_Block;
+    current_block : *Temp_Block;
+    free_blocks   : *Temp_Block;
+}
+
+Temp_Block :: struct
+{
+    memory     : *u8;
+    capacity   : s64;
+    next_index : s64;
+    next       : *Temp_Block;
+}
+
+create :: (new_block_size: s64, auto_clear: bool, can_grow: bool) -> *Allocator
+{
+    result := (:*Temp_Allocator)_c.malloc((:u64)sizeof(Temp_Allocator));
+
+    if (can_grow) assert(!auto_clear);
+    if (auto_clear) assert(!can_grow);
+
+    result.allocator.allocate = *_temp_allocate;
+    result.allocator.data = result;
+
+    result.auto_clear = auto_clear;
+    result.can_grow = can_grow;
+    result.new_block_size = new_block_size;
+
+    result.first_block = create_block(result);
+    push_block(result, result.first_block);
+    result.free_blocks = null;
+
+    return *result.allocator;
+}
+
+create_block :: (ta: *Temp_Allocator) -> *Temp_Block
+{
+    mem := (:*u8)_c.malloc((:u64)(sizeof(Temp_Block) + ta.new_block_size));
+
+    result := (:*Temp_Block)mem;
+
+    result.memory = *mem[sizeof(Temp_Block)];
+    result.capacity = ta.new_block_size;
+    result.next_index = 0;
+    result.next = null;
+
+    return result;
+}
+
+push_block :: (ta: *Temp_Allocator, tb: *Temp_Block)
+{
+    tb.next = ta.current_block;
+    ta.current_block = tb;
+}
+
+free :: (ta: *Temp_Allocator)
+{
+    assert(false);
+}
+
+_temp_allocate :: (allocator_data: *void, mode: Allocation_Mode, size: s64, old_size: s64,
+                   alignment: s64, old_ptr: *void) -> *void
+{
+    using Allocation_Mode;
+
+    ta := (:*Temp_Allocator)allocator_data;
+
+    assert(alignment == 0 || std.is_power_of_two(alignment));
+    assert(alignment <= size);
+    assert(alignment <= 16);
+
+    switch (mode)
+    {
+        case ALLOCATE:
+        {
+            assert(!old_ptr);
+            assert(!old_size);
+
+            ensure_capacity(ta, size);
+
+            cb := ta.current_block;
+            result_ptr := *cb.memory[cb.next_index];
+            cb.next_index += size;
+
+            return result_ptr;
+        }
+
+        default: assert(false);
+    }
+}
+
+ensure_capacity :: (ta: *Temp_Allocator, size: s64)
+{
+    tb := ta.current_block;
+
+    fits := (tb.capacity - tb.next_index) >= size;
+
+    if (fits) return;
+
+    if (ta.auto_clear)
+    {
+        assert(ta.new_block_size >= size);
+        clear(ta);
+        return;
+    }
+    else if (ta.can_grow)
+    {
+        grow(ta, size);
+        return;
+    }
+
+    assert(false);
+}
+
+clear :: (ta: *Temp_Allocator)
+{
+    cb := ta.current_block;
+
+    while (cb != ta.first_block)
+    {
+        next := cb.next;
+
+        cb.next_index = 0;
+        cb.next = ta.free_blocks;
+        ta.free_blocks = cb.next;
+
+        cb = next;
+    }
+
+    assert(cb == ta.first_block);
+    cb.next_index = 0;
+    ta.current_block = cb;
+}
+
+grow :: (ta: *Temp_Allocator, min_size: s64)
+{
+    while (ta.new_block_size < min_size) ta.new_block_size *= 2;
+
+    new_block := create_block(ta);
+    push_block(ta, new_block);
+}
