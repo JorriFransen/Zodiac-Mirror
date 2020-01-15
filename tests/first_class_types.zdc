@@ -23,6 +23,7 @@ main :: ()
     poly_print_type_id(String);
     poly_print_type_id(float);
     poly_print_type_id(Any);
+    poly_print_type_id(Any);
 
     print("\n");
 

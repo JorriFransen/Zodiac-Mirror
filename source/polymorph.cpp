@@ -1,6 +1,7 @@
 #include "polymorph.h"
 #include "resolver.h"
 #include "copier.h"
+#include "builtin.h"
 
 namespace Zodiac
 {
@@ -576,7 +577,8 @@ namespace Zodiac
                 arg_decl->constant_var.init_expression = arg_expr;
                 if (arg_expr->flags & AST_EXPR_FLAG_TYPE)
                 {
-                    arg_decl->constant_var.type = arg_expr->type;
+                    // arg_decl->constant_var.type = arg_expr->type;
+                    arg_decl->constant_var.type = Builtin::type_Type;
                 }
 
                 bool arg_res = resolver_resolve_declaration(resolver, arg_decl, scope);

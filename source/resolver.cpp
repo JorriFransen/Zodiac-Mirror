@@ -3289,6 +3289,13 @@ namespace Zodiac
                         result = false;
                     }
                 }
+                else if (decl->kind == AST_DECL_CONSTANT_VAR &&
+                         decl->constant_var.init_expression->flags & AST_EXPR_FLAG_TYPE)
+                {
+                    assert(decl->constant_var.type == Builtin::type_Type);
+                    assert(decl->constant_var.init_expression->type);
+                    *type_dest = decl->constant_var.init_expression->type;
+                }
                 else
                 {
                     *type_dest = resolver_get_declaration_type(decl);
@@ -3998,7 +4005,7 @@ namespace Zodiac
 
                 assert(arg_expr->flags & AST_EXPR_FLAG_CONST);
 
-                if (const_expression_value_equal(arg_decl->constant_var.init_expression,
+                if (const_expression_value_equal(resolver, arg_decl->constant_var.init_expression,
                                                  arg_expr))
                 {
                     continue;

@@ -639,7 +639,7 @@ namespace Zodiac
 		return 0;
     }
 
-    bool const_expression_value_equal(AST_Expression* a, AST_Expression* b)
+    bool const_expression_value_equal(Resolver* resolver, AST_Expression* a, AST_Expression* b)
     {
         assert(a->type);
         assert(b->type);
@@ -674,6 +674,24 @@ namespace Zodiac
                     return a->type_expr_type == b->type_expr_type;
                 }
                 else assert(false);
+            }
+
+            case AST_EXPR_IDENTIFIER:
+            {
+                if (a->kind == b->kind)
+                {
+                    assert(a->identifier->declaration);
+                    assert(b->identifier->declaration);
+
+                    auto a_decl = a->identifier->declaration;
+                    auto b_decl = b->identifier->declaration;
+
+                    return a_decl == b_decl;
+                }
+                else
+                {
+                    assert(false);
+                }
             }
 
             default: assert(false);
