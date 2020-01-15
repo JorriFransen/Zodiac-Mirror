@@ -673,7 +673,8 @@ namespace Zodiac
         }
 
         AST_Type* return_type = func_value->function->type->function.return_type;
-        assert(!(return_type->kind == AST_TYPE_STRUCT));
+        assert(!(return_type->kind == AST_TYPE_STRUCT) ||
+               return_type->flags & AST_TYPE_FLAG_MRV);
         assert(!(return_type->kind == AST_TYPE_STATIC_ARRAY));
 
         auto old_dvm = dcb_data->runner->dyn_vm;
@@ -1247,7 +1248,8 @@ namespace Zodiac
                 assert(func_type->kind == AST_TYPE_FUNCTION);
                 AST_Type* ret_type = func_type->function.return_type;
 
-                assert(iri->result || ret_type == Builtin::type_void);
+                assert(iri->result || ret_type == Builtin::type_void ||
+                       (ret_type->kind == AST_TYPE_STRUCT && ret_type->flags & AST_TYPE_FLAG_MRV));
                 IR_Value* result_value = nullptr;
                 if (iri->result)
                 {
@@ -2765,6 +2767,13 @@ namespace Zodiac
                     return 'v';
                 }
                 else assert(false);
+                break;
+            }
+
+            case AST_TYPE_STRUCT:
+            {
+                assert(type->flags & AST_TYPE_FLAG_MRV);
+                return 'p';
                 break;
             }
 

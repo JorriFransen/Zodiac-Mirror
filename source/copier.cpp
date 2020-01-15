@@ -8,7 +8,11 @@ namespace Zodiac
         assert(context);
         assert(declaration);
 
-        AST_Identifier* ident_copy = copy_identifier(context, declaration->identifier, flags);
+        AST_Identifier* ident_copy = nullptr;
+        if (declaration->identifier)
+        {
+            ident_copy = copy_identifier(context, declaration->identifier, flags);
+        }
 
         switch (declaration->kind)
         {
@@ -204,6 +208,17 @@ namespace Zodiac
             case AST_DECL_INSERT:
             {
                 assert(false);
+                break;
+            }
+
+            case AST_DECL_LIST:
+            {
+                auto list_expr_copy = copy_expression(context, declaration->list.list_expression,
+                                                      flags);
+                auto init_expr_copy = copy_expression(context, declaration->list.init_expression,
+                                                      flags);
+                return ast_list_declaration_new(context, declaration->file_pos, list_expr_copy,
+                                                init_expr_copy);
                 break;
             }
 
@@ -549,6 +564,20 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_EXPRESSION_LIST:
+            {
+                BUF(AST_Expression*) exprs_copy = nullptr;
+                for (uint64_t i = 0; i < BUF_LENGTH(expression->list.expressions); i++)
+                {
+                    auto expr_copy = copy_expression(context, expression->list.expressions[i],
+                                                     flags);
+                    BUF_PUSH(exprs_copy, expr_copy);
+                }
+                return ast_expression_list_expression_new(context, expression->file_pos,
+                                                          exprs_copy);
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -648,6 +677,29 @@ namespace Zodiac
             case AST_TYPE_SPEC_TYPE:
             {
                 return ast_type_spec_type_new(context, type_spec->file_pos);
+                break;
+            }
+
+            case AST_TYPE_SPEC_MRV:
+            {
+                BUF(AST_Type_Spec*) specs_copy = nullptr;
+                BUF(AST_Directive*) direcs_copy = nullptr;
+
+                auto spec_count = BUF_LENGTH(type_spec->mrv.specs);
+                auto direc_count = BUF_LENGTH(type_spec->mrv.directives);
+                assert(spec_count == direc_count);
+
+                for (uint64_t i = 0; i < spec_count; i++)
+                {
+                    auto spec_copy = copy_type_spec(context, type_spec->mrv.specs[i], flags);
+                    auto direc_copy = type_spec->mrv.directives[i];
+
+                    BUF_PUSH(specs_copy, spec_copy);
+                    BUF_PUSH(direcs_copy, direc_copy);
+                }
+
+                return ast_type_spec_mrv_new(context, type_spec->file_pos, specs_copy,
+                                             direcs_copy);
                 break;
             }
 

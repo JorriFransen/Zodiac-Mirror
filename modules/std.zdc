@@ -116,9 +116,9 @@ string_new :: (str: String) -> String
 
 string_create :: (allocator: *Allocator, c_str: *u8, length: s64) -> String
 {
-    result : String = {
-        (:*u8)alloc(allocator, length + 1, 8),
-        length
+    mem, err := alloc(allocator, length + 1, 8);
+    assert(err == Allocation_Error.NONE);
+    result : String = { (:*u8)mem, length
     };
 
     _c.memcpy(result.data, c_str, (:u64)length);

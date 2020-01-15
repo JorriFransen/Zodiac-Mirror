@@ -6,7 +6,7 @@ __printer :: import print;
 using __printer;
 
 _c_allocate :: (allocator_data: *void, mode: Allocation_Mode, size: s64, old_size: s64,
-                alignment: s64, old_ptr: *void) -> *void
+                alignment: s64, old_ptr: *void) -> *void, Allocation_Error
 {
     using Allocation_Mode;
 
@@ -24,7 +24,7 @@ _c_allocate :: (allocator_data: *void, mode: Allocation_Mode, size: s64, old_siz
             result_ptr := _c.malloc((:u64)size);
             assert(std.is_aligned(result_ptr, alignment));
 
-            return result_ptr;
+            return result_ptr, Allocation_Error.NONE;
         }
 
         case RESIZE:
@@ -36,7 +36,7 @@ _c_allocate :: (allocator_data: *void, mode: Allocation_Mode, size: s64, old_siz
             new_ptr := _c.realloc(old_ptr, (:u64)size);
             assert(std.is_aligned(new_ptr, alignment));
 
-            return new_ptr;
+            return new_ptr, Allocation_Error.NONE;
         }
 
         case FREE:

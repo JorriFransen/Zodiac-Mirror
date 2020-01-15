@@ -14,8 +14,9 @@ main :: ()
 
     ca := c_allocator.get();
 
-    ptr := alloc(ca, sizeof(int) * 5, sizeof(int));
+    ptr, err := alloc(ca, sizeof(int) * 5, sizeof(int));
     assert(ptr);
+    assert(err == Allocation_Error.NONE);
     defer _free(ca, ptr, 0);
 
     int_ptr := (:*int)ptr;
@@ -24,9 +25,9 @@ main :: ()
         int_ptr[i] = (i + 1) * 3;
     }
 
-    ptr1 := alloc(ca, 1024, 0);
-    ptr2 := alloc(ca, 4096 * 3, 0);
-    ptr3 := alloc(ca, 4096, 0);
+    ptr1, err1 := alloc(ca, 1024, 0);
+    ptr2, err2 := alloc(ca, 4096 * 3, 0);
+    ptr3, err3 := alloc(ca, 4096, 0);
 
     _free(ca, ptr1, 0);
 
@@ -87,7 +88,8 @@ __next_message_id : u64 = 0;
 
 message_create :: (ca: *Allocator, sender_id: u64, str: String) -> *Message
 {
-    result := alloc_type(ca, Message);
+    result, err := alloc_type(ca, Message);
+    assert(err == Allocation_Error.NONE);
 
     result.id = __next_message_id;
     __next_message_id += 1;

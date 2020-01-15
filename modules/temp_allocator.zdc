@@ -1,3 +1,5 @@
+// - Reuse blocks from the free list.
+
 std :: import std;
 _c :: import c;
 
@@ -69,7 +71,7 @@ free :: (ta: *Temp_Allocator)
 }
 
 _temp_allocate :: (allocator_data: *void, mode: Allocation_Mode, size: s64, old_size: s64,
-                   alignment: s64, old_ptr: *void) -> *void
+                   alignment: s64, old_ptr: *void) -> *void, Allocation_Error
 {
     using Allocation_Mode;
 
@@ -81,25 +83,28 @@ _temp_allocate :: (allocator_data: *void, mode: Allocation_Mode, size: s64, old_
 
     switch (mode)
     {
-        case ALLOCATE:
-        {
+        case ALLOCATE: {
+
             assert(!old_ptr);
             assert(!old_size);
 
-            ensure_capacity(ta, size);
+            if (ensure_capacity(ta, size)) {
+                cb := ta.current_block;
+                result_ptr := *cb.memory[cb.next_index];
+                cb.next_index += size;
 
-            cb := ta.current_block;
-            result_ptr := *cb.memory[cb.next_index];
-            cb.next_index += size;
+                return result_ptr, Allocation_Error.NONE;
 
-            return result_ptr;
+            } else {
+                return null, Allocation_Error.OUT_OF_MEMORY;
+            }
         }
 
         default: assert(false);
     }
 }
 
-ensure_capacity :: (ta: *Temp_Allocator, size: s64)
+ensure_capacity :: (ta: *Temp_Allocator, size: s64) -> bool
 {
     tb := ta.current_block;
 
@@ -107,14 +112,11 @@ ensure_capacity :: (ta: *Temp_Allocator, size: s64)
 
     if (fits) return;
 
-    if (ta.auto_clear)
-    {
+    if (ta.auto_clear) {
         assert(ta.new_block_size >= size);
         clear(ta);
         return;
-    }
-    else if (ta.can_grow)
-    {
+    } else if (ta.can_grow) {
         grow(ta, size);
         return;
     }
@@ -126,8 +128,7 @@ clear :: (ta: *Temp_Allocator)
 {
     cb := ta.current_block;
 
-    while (cb != ta.first_block)
-    {
+    while (cb != ta.first_block) {
         next := cb.next;
 
         cb.next_index = 0;

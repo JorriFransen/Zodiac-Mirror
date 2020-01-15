@@ -7,7 +7,6 @@
 // * Copy elision for returns
 // * Check if overloaded and poly functions still work correctly
 //
-//
 
 _c :: import c;
 

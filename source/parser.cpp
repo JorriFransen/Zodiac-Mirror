@@ -2004,7 +2004,7 @@ namespace Zodiac
 		AST_Type_Spec* return_type_spec = nullptr;
 		if (match_token(parser, TOK_RARROW))
 		{
-			return_type_spec = parse_type_spec(parser, scope);
+			return_type_spec = parse_return_type_spec(parser, scope);
 		}
 
 		return ast_type_spec_function_new(parser->context, ft.file_pos, is_vararg, arg_decls,

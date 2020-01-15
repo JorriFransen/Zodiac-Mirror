@@ -365,18 +365,16 @@ namespace Zodiac
                 {
                     AST_Declaration* arg_decl = declaration->function.args[i];
                     AST_Type* type = resolver_get_declaration_type(arg_decl);
-                    AST_Function_Arg_Type* fa_type = nullptr;
-                    if (arg_decl->kind != AST_DECL_CONSTANT_VAR)
-                    {
-                        fa_type = ast_find_or_create_function_arg_type(
-                            resolver->context, type, AST_FUNC_ARG_TYPE_FLAG_NONE);
-                    }
-                    else
+                    AST_Function_Arg_Type_Flags fa_flags = AST_FUNC_ARG_TYPE_FLAG_NONE;
+
+                    if (arg_decl->kind == AST_DECL_CONSTANT_VAR)
                     {
                         assert(arg_decl->flags & AST_DECL_FLAG_FUNC_VALUE_POLY);
-                        fa_type = ast_find_or_create_function_arg_type(
-                            resolver->context, type, AST_FUNC_ARG_TYPE_FLAG_VALUE_POLY);
+                        fa_flags |= AST_FUNC_ARG_TYPE_FLAG_VALUE_POLY;
                     }
+
+                    AST_Function_Arg_Type* fa_type = ast_find_or_create_function_arg_type(
+                        resolver->context, type, fa_flags);
 
                     assert(fa_type);
                     BUF_PUSH(arg_types, fa_type);
@@ -391,6 +389,7 @@ namespace Zodiac
             }
 
             case AST_DECL_MUTABLE:
+
             {
                 if (declaration->mutable_decl.type_spec)
                 {
@@ -1478,10 +1477,18 @@ namespace Zodiac
                 result &= resolver_resolve_expression(resolver, if_expr,
                                                       scope);
                 if (!result) return false;
-                assert(if_expr->type == Builtin::type_bool ||
+                if (!(if_expr->type == Builtin::type_bool ||
                        if_expr->type->kind == AST_TYPE_POINTER ||
                        (if_expr->type->flags & AST_TYPE_FLAG_INT) ||
-                       if_expr->type->kind == AST_TYPE_ENUM);
+                      if_expr->type->kind == AST_TYPE_ENUM))
+                {
+                    auto if_expr_type_str = ast_type_to_string(if_expr->type);
+                    resolver_report_error(
+                        resolver, if_expr->file_pos,
+                        "If expression type can not be converted to boolean: '%s'\n",
+                        if_expr_type_str);
+                    mem_free(if_expr_type_str);
+                }
 
                 result &= resolver_resolve_statement(resolver, statement->if_stmt.then_statement,
                                                      scope);
@@ -2283,6 +2290,14 @@ namespace Zodiac
 				{
 					expression->flags |= AST_EXPR_FLAG_CONST;
 				}
+                else if (result && expression->cast_expr.expr->type->flags & AST_TYPE_FLAG_MRV)
+                {
+                    auto cast_type_str = ast_type_to_string(expression->type);
+                    resolver_report_error(resolver, expression->file_pos,
+                                          "Cannot cast mrv type to: '%s'\n", cast_type_str);
+                    mem_free(cast_type_str);
+                    return false;
+                }
                 break;
             }
 

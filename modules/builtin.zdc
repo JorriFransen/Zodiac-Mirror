@@ -222,8 +222,15 @@ Allocation_Mode :: enum
     FREE_ALL;
 }
 
+Allocation_Error :: enum
+{
+    NONE;
+    OUT_OF_MEMORY;
+}
+
 Allocator_Func :: typedef *(allocator_data: *void, mode: Allocation_Mode, size: s64,
-                            old_size: s64, alignment: s64, old_ptr: *void) -> *void;
+                            old_size: s64, alignment: s64, old_ptr: *void)
+                            -> *void, Allocation_Error;
 
 Allocator :: struct
 {
@@ -231,19 +238,23 @@ Allocator :: struct
     data     : *void;
 }
 
-alloc :: (allocator: *Allocator, size: s64, alignment: s64) -> *void
+alloc :: (allocator: *Allocator, size: s64, alignment: s64) -> *void, Allocation_Error
 {
+    // ptr, err := allocator.allocate(allocator.data, Allocation_Mode.ALLOCATE, size, 0, alignment, null);
+
+    // return ptr, err;
     return allocator.allocate(allocator.data, Allocation_Mode.ALLOCATE, size, 0, alignment, null);
 }
 
-alloc_type :: (allocator: *Allocator, $T: Type) -> *T
+alloc_type :: (allocator: *Allocator, $T: Type) -> *T, Allocation_Error
 {
     size :: sizeof(T);
 
     alignment := 8;
     if (size < alignment) alignment = size;
 
-    return (:*T)alloc(allocator, size, alignment);
+    mem, err := alloc(allocator, size, alignment);
+    return (:*T)mem, err;
 }
 
 
