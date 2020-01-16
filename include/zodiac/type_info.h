@@ -134,7 +134,8 @@ namespace Zodiac
     uint64_t maybe_register_type_info(Context* context, AST_Type* type, bool root = true,
                                       BUF(Type_Info_ID_Placeholder) = nullptr);
     uint64_t next_type_info_index(Context* context);
-    void replace_type_info_placeholders(Type_Info_Data* tid, BUF(Type_Info_ID_Placeholder) placeholders);
+    void replace_type_info_placeholders(Type_Info_Data* tid,
+                                        BUF(Type_Info_ID_Placeholder) placeholders);
     void grow_type_info_data(Context* context);
     uint64_t register_aggregate_members(Context* context, BUF(uint64_t) indices,
                                         BUF(AST_Declaration*) member_decls);

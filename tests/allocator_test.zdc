@@ -52,7 +52,75 @@ temp_allocator :: import temp_allocator;
 
 temp_test :: ()
 {
+    print("\nTemp allocator...\n");
+
     temp_fixed_size();
+    temp_auto_clear();
+    temp_growable();
+
+    print("\tDone..\n");
+}
+
+temp_growable :: ()
+{
+    ta := temp_allocator.create(sizeof(int) * 2, false, true);
+    defer temp_allocator.free(ta);
+
+    _ta := (:*temp_allocator.Temp_Allocator)ta;
+
+    ip1, err1 := alloc_type(ta, int);
+    ip2, err2 := alloc_type(ta, int);
+
+    assert(err1 == Allocation_Error.NONE && err2 == Allocation_Error.NONE);
+
+    <ip1 = 1;
+    <ip2 = 2;
+
+    ip3, err3 := alloc_type(ta, int);
+    ip4, err4 := alloc_type(ta, int);
+
+    <ip3 = 3;
+    <ip4 = 4;
+
+    assert(err3 == Allocation_Error.NONE && err4 == Allocation_Error.NONE);
+
+    print("<ip1: %\n", <ip1);
+    print("<ip2: %\n", <ip2);
+    print("<ip3: %\n", <ip3);
+    print("<ip4: %\n", <ip4);
+
+    assert(<ip1 == 1);
+    assert(<ip2 == 2);
+    assert(<ip3 == 3);
+    assert(<ip4 == 4);
+}
+
+temp_auto_clear :: ()
+{
+    ta := temp_allocator.create(4, true, false);
+    defer temp_allocator.free(ta);
+
+    ptrs : [4]*u8;
+
+    for (i := 0; i < 4; i++)
+    {
+        ptr, err := alloc_type(ta, u8);
+        assert(err == Allocation_Error.NONE);
+        assert(ptr);
+
+        <ptr = (:u8)i;
+
+        ptrs[i] = ptr;
+    }
+
+    for (i := 0; i < 4; i++)
+    {
+        ptr2, err2 := alloc_type(ta, u8);
+        assert(err2 == Allocation_Error.NONE);
+        assert(<ptr2 == i);
+        assert(ptr2);
+        assert(ptrs[i] == ptr2);
+    }
 }
 
 temp_fixed_size :: ()

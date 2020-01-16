@@ -222,6 +222,14 @@ namespace Zodiac
                 break;
             }
 
+            case AST_EXPR_TYPE:
+            {
+                assert(expression->type_expr_type);
+                maybe_register_type_info(context, expression->type_expr_type);
+                return expression->type_expr_type->info_index;
+                break;
+            }
+
             default: assert(false);
         }
 
@@ -651,7 +659,8 @@ namespace Zodiac
 
         if (a->flags & AST_EXPR_FLAG_TYPE)
         {
-            assert(b->flags & AST_EXPR_FLAG_TYPE);
+            assert(b->flags & AST_EXPR_FLAG_TYPE ||
+                   b->type == Builtin::type_Type);
         }
         else if (b->flags & AST_EXPR_FLAG_TYPE) assert(false);
 
@@ -673,7 +682,29 @@ namespace Zodiac
                 {
                     return a->type_expr_type == b->type_expr_type;
                 }
-                else assert(false);
+                else
+                {
+                    assert(b->flags & AST_EXPR_FLAG_TYPE ||
+                           b->type == Builtin::type_Type);
+
+                    uint64_t a_id = a->type_expr_type->info_index;
+                    uint64_t b_id = 0;
+
+                    switch (b->kind)
+                    {
+                        case AST_EXPR_INTEGER_LITERAL:
+                        {
+                            b_id = b->integer_literal.u64;
+                            break;
+                        }
+
+                        default: assert(false);
+                    }
+
+                    assert(a_id);
+                    assert(b_id);
+                    return a_id == b_id;
+                }
             }
 
             case AST_EXPR_IDENTIFIER:

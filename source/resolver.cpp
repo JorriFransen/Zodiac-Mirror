@@ -2215,10 +2215,28 @@ namespace Zodiac
 
                     case AST_UNOP_ADDROF:
                     {
-                        if (!(expression->unary.operand->flags & AST_EXPR_FLAG_LVALUE))
+                        if (expression->unary.operand->flags & AST_EXPR_FLAG_TYPE)
                         {
-                            resolver_report_error(resolver, expression->file_pos,
-                                                  "Attempting to take the addres of a non lvalue");
+                            auto operand = expression->unary.operand;
+                            assert(operand->type == Builtin::type_Type);
+                            assert(operand->kind == AST_EXPR_TYPE);
+                            assert(operand->type_expr_type);
+
+                            auto ptr_type = ast_find_or_create_pointer_type(
+                                resolver->context, operand->type_expr_type);
+
+                            expression->kind = AST_EXPR_TYPE;
+                            expression->type = Builtin::type_Type;
+                            expression->type_expr_type = ptr_type;
+                            expression->flags |= AST_EXPR_FLAG_RESOLVED;
+
+                            inherit_const = true;
+                        }
+                        else if (!(expression->unary.operand->flags & AST_EXPR_FLAG_LVALUE))
+                        {
+                            resolver_report_error(
+                                resolver, expression->file_pos,
+                                "Attempting to take the addres of a non lvalue");
                             result = false;
                         }
                         else
