@@ -1704,7 +1704,8 @@ namespace Zodiac
 
                 llvm_assign_result(builder, zir_allocl, llvm_alloca);
 
-                if (builder->context->options.emit_debug)
+                if (builder->context->options.emit_debug &&
+                    !(zir_allocl->flags & IRV_FLAG_NO_DEBUG_INFO))
                 {
                     llvm_debug_register_function_local_variable(builder, llvm_alloca,
                                                                 zir_allocl);

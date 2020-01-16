@@ -722,12 +722,20 @@ namespace Zodiac
             {
                 auto block_scope = statement->block.scope;
                 stack_push(ir_builder->scope_stack, block_scope);
+
+                if (ir_builder->context->options.emit_debug)
+                    ir_builder_emit_scope_entry(ir_builder, block_scope);
+
                 for (uint64_t i = 0; i < BUF_LENGTH(statement->block.statements); i++)
                 {
                     AST_Statement* block_member_stmt = statement->block.statements[i];
                     ir_builder_emit_statement(ir_builder, block_member_stmt, block_scope,
                                             break_block);
                 }
+
+                if (ir_builder->context->options.emit_debug)
+                    ir_builder_emit_scope_exit(ir_builder, block_scope);
+
                 stack_pop(ir_builder->scope_stack); // Block scope
 
                 auto last_iri = ir_builder->insert_block->last_instruction;
@@ -3498,6 +3506,7 @@ return result_value;
         {
             IR_Value* allocl = ir_builder_emit_allocl(ir_builder, arg_value->type,
                                                     "compound_lit", origin);
+            allocl->flags |= IRV_FLAG_NO_DEBUG_INFO;
             ir_builder_emit_store(ir_builder, allocl, arg_value, origin);
             // arg_value = ir_builder_emit_load(ir_builder, allocl, origin);
             arg_value = allocl;

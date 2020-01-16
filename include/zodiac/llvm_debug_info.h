@@ -67,8 +67,11 @@ namespace Zodiac
                                  uint64_t col);
     void llvm_debug_unset_location(LLVM_IR_Builder* zir_builder);
 
+    void llvm_debug_enter_scope(LLVM_IR_Builder* zir_builder, AST_Scope* scope);
     void llvm_debug_enter_scope(LLVM_IR_Builder* zir_builder, IR_Function* zir_function);
+    void llvm_debug_exit_scope(LLVM_IR_Builder* zir_builder, AST_Scope* scope);
     void llvm_debug_exit_scope(LLVM_IR_Builder* zir_builder, IR_Function* zir_function);
+
 
     DIFile* llvm_debug_find_or_create_file(Debug_Info* di, const char* file_name,
                                            const char* dir_name);
@@ -82,4 +85,7 @@ namespace Zodiac
     DIType* llvm_debug_get_registered_type(Debug_Info* di, AST_Type* ast_type);
     void llvm_debug_register_type(Debug_Info* di, AST_Type* ast_type, DIType* di_type,
                                   uint64_t flasgs = RDT_FLAG_NONE);
+
+    DILexicalBlock* llvm_debug_find_or_create_scope(Debug_Info* di, AST_Scope* scope,
+                                                    DIScope* parent_scope);
 }

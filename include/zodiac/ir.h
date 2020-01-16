@@ -31,9 +31,10 @@ namespace Zodiac
 
     enum IR_Value_Flags : uint64_t
     {
-        IRV_FLAG_ASSIGNED = 0x01,
-        IRV_FLAG_CONST    = 0x02,
-        IRV_FLAG_SRET_ARG = 0x04,
+        IRV_FLAG_ASSIGNED      = 0x01,
+        IRV_FLAG_CONST         = 0x02,
+        IRV_FLAG_SRET_ARG      = 0x04,
+        IRV_FLAG_NO_DEBUG_INFO = 0x08,
     };
 
     struct IR_Value

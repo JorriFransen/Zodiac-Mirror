@@ -183,7 +183,8 @@ namespace Zodiac
                                  uint64_t col)
     {
         auto llvm_ir_builder = llvm::unwrap(ir_builder->llvm_builder);
-        llvm_ir_builder->SetCurrentDebugLocation(DebugLoc::get((unsigned)line, (unsigned)col, scope));
+        llvm_ir_builder->SetCurrentDebugLocation(DebugLoc::get((unsigned)line, (unsigned)col,
+                                                               scope));
     }
 
     void llvm_debug_unset_location(LLVM_IR_Builder* zir_builder)
@@ -195,6 +196,16 @@ namespace Zodiac
 
     }
 
+    void llvm_debug_enter_scope(LLVM_IR_Builder* zir_builder, AST_Scope* scope)
+    {
+        Debug_Info* di = zir_builder->debug_info;
+
+        auto parent_scope = stack_top(di->scope_stack);
+
+        DILexicalBlock* di_scope = llvm_debug_find_or_create_scope(di, scope, parent_scope);
+        stack_push(di->scope_stack, static_cast<DIScope*>(di_scope));
+    }
+
     void llvm_debug_enter_scope(LLVM_IR_Builder* zir_builder, IR_Function* zir_function)
     {
         Debug_Info* di = zir_builder->debug_info;
@@ -203,6 +214,12 @@ namespace Zodiac
 
         DIScope* scope = function->getSubprogram();
         stack_push(di->scope_stack, scope);
+    }
+
+    void llvm_debug_exit_scope(LLVM_IR_Builder* zir_builder, AST_Scope* scope)
+    {
+        Debug_Info* di = zir_builder->debug_info;
+        stack_pop(di->scope_stack);
     }
 
     void llvm_debug_exit_scope(LLVM_IR_Builder* zir_builder, IR_Function* zir_function)
@@ -500,10 +517,6 @@ namespace Zodiac
             {
                 assert(rt.flags & RDT_FLAG_FWD_DECL);
 
-                // auto fwd_com = (DICompositeType*)rt.di_type;
-                // auto new_com = (DICompositeType*)di_type;
-                // fwd_com->replaceElements(new_com->getElements());
-
                 TempMDNode fwd_decl(rt.di_type);
                 di->builder->replaceTemporary(std::move(fwd_decl), di_type);
                 rt.di_type = di_type;
@@ -523,5 +536,13 @@ namespace Zodiac
 
         Registered_Debug_Type rdt = { ast_type, di_type, flags };
         BUF_PUSH(di->registered_types, rdt);
+    }
+
+    DILexicalBlock* llvm_debug_find_or_create_scope(Debug_Info* di, AST_Scope* scope,
+                                                    DIScope* parent_scope)
+    {
+        DILexicalBlock* result = di->builder->createLexicalBlock(parent_scope, di->current_file,
+                                                                 scope->line, 0);
+        return result;
     }
 }

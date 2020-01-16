@@ -9,9 +9,9 @@ Temp_Allocator :: struct
     can_grow       : bool;
     new_block_size : s64;
 
-    first_block   : *Temp_Block;
-    current_block : *Temp_Block;
-    free_blocks   : *Temp_Block;
+    first_block    : *Temp_Block;
+    current_block  : *Temp_Block;
+    free_blocks    : *Temp_Block;
 }
 
 Temp_Block :: struct
@@ -41,11 +41,15 @@ create :: (new_block_size: s64, auto_clear: bool, can_grow: bool) -> *Allocator
     push_block(result, result.first_block);
     result.free_blocks = null;
 
+    // _c.printf("== Created allocator with new block size: %d\n", result.new_block_size);
+    // assert(new_block_size == result.new_block_size);
+
     return *result.allocator;
 }
 
 create_block :: (ta: *Temp_Allocator) -> *Temp_Block
 {
+    // _c.printf("== create_block() ta.new_block_size: %d\n", ta.new_block_size);
     mem := (:*u8)_c.malloc((:u64)(sizeof(Temp_Block) + ta.new_block_size));
 
     result := (:*Temp_Block)mem;
@@ -167,8 +171,7 @@ grow :: (ta: *Temp_Allocator, min_size: s64)
     fb := ta.free_blocks;
     while (fb) {
         next := fb.next;
-        if (fb.capacity >= min_size)
-        {
+        if (fb.capacity >= min_size) {
             ta.free_blocks = next;
             push_block(ta, fb);
         }

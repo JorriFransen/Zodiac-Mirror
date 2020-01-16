@@ -22,6 +22,9 @@ main :: () -> int
 {
     _c.open_std_handles();
 
+    simple_test();
+    nested_scopes();
+
     v : Vec2 = {1, 2};
     v2 : Vec2 = { 3, 4 };
     v3 : Vec3 = { {5, 6}, 7.8 };
@@ -31,4 +34,24 @@ main :: () -> int
     print("v3: { { %, % }, % }\n", v3.xy.x, v3.xy.y, v3.z);
 
     return 0;
+}
+
+nested_scopes :: ()
+{
+    level_0 := 0;
+    {
+        level_1 := 1;
+        {
+            level_3 := 3;
+            level_3f := 3.3;
+        }
+        level_1f := 1.1;
+    }
+    level_0f := 0.00009999999;
+}
+
+simple_test :: ()
+{
+    some_int := 42;
+    print("some int: %\n", some_int);
 }
