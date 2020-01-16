@@ -1651,7 +1651,6 @@ namespace Zodiac
                                                              num_args_lit, expression->file_pos);
                     if (!ret_val)
                     {
-                        assert(sret_allocl);
                         return sret_allocl;
                     }
                     else return ret_val;

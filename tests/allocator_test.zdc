@@ -52,21 +52,44 @@ temp_allocator :: import temp_allocator;
 
 temp_test :: ()
 {
+    temp_fixed_size();
+}
+
+temp_fixed_size :: ()
+{
     ta := temp_allocator.create(128, false, false);
+    defer temp_allocator.free(ta);
+
+    ptr : *u8;
+    err : Allocation_Error = Allocation_Error.NONE;
+
+    u8_val : u8 = 0;
 
     for (i := 0; i < 128; i++)
     {
-        alloc_type(ta, u8);
+        ptr, err = alloc_type(ta, u8);
+        assert(ptr);
+        assert(err == Allocation_Error.NONE);
+
+        <ptr = u8_val;
+        u8_val += 1;
     }
 
     temp_allocator.clear((:*temp_allocator.Temp_Allocator)ta);
 
     for (i := 0; i < 128; i++)
     {
-        alloc_type(ta, u8);
+        ptr, err = alloc_type(ta, u8);
+        assert(ptr);
+        assert(err == Allocation_Error.NONE);
+
+        <ptr = u8_val;
+        u8_val += 1;
     }
 
-    // alloc_type(ta, u8);
+    ptr, err = alloc_type(ta, u8);
+    assert(!ptr);
+    assert(err == Allocation_Error.OUT_OF_MEMORY);
 }
 
 message_test :: (allocator: *Allocator)

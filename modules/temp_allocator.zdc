@@ -67,7 +67,27 @@ push_block :: (ta: *Temp_Allocator, tb: *Temp_Block)
 
 free :: (ta: *Temp_Allocator)
 {
-    assert(false);
+    cb := ta.current_block;
+
+    while (cb) {
+        next := cb.next;
+        _c.free(cb);
+        cb = next;
+    }
+
+    cb = ta.free_blocks;
+    while (cb) {
+        next := cb.next;
+        _c.free(cb);
+        cb = next;
+    }
+
+    _c.free(ta);
+}
+
+free :: (allocator: *Allocator)
+{
+    free((:*Temp_Allocator)allocator);
 }
 
 _temp_allocate :: (allocator_data: *void, mode: Allocation_Mode, size: s64, old_size: s64,
@@ -110,18 +130,18 @@ ensure_capacity :: (ta: *Temp_Allocator, size: s64) -> bool
 
     fits := (tb.capacity - tb.next_index) >= size;
 
-    if (fits) return;
+    if (fits) return true;
 
     if (ta.auto_clear) {
         assert(ta.new_block_size >= size);
         clear(ta);
-        return;
+        return true;
     } else if (ta.can_grow) {
         grow(ta, size);
-        return;
+        return true;
     }
 
-    assert(false);
+    return false;
 }
 
 clear :: (ta: *Temp_Allocator)
@@ -145,6 +165,17 @@ clear :: (ta: *Temp_Allocator)
 
 grow :: (ta: *Temp_Allocator, min_size: s64)
 {
+    fb := ta.free_blocks;
+    while (fb) {
+        next := fb.next;
+        if (fb.capacity >= min_size)
+        {
+            ta.free_blocks = next;
+            push_block(ta, fb);
+        }
+        fb = next;
+    }
+
     while (ta.new_block_size < min_size) ta.new_block_size *= 2;
 
     new_block := create_block(ta);

@@ -240,9 +240,6 @@ Allocator :: struct
 
 alloc :: (allocator: *Allocator, size: s64, alignment: s64) -> *void, Allocation_Error
 {
-    // ptr, err := allocator.allocate(allocator.data, Allocation_Mode.ALLOCATE, size, 0, alignment, null);
-
-    // return ptr, err;
     return allocator.allocate(allocator.data, Allocation_Mode.ALLOCATE, size, 0, alignment, null);
 }
 

@@ -639,6 +639,25 @@ namespace Zodiac
 
 
         auto arg_types = func_value->function->type->function.arg_types;
+        uint64_t arg_count = 0;
+        AST_Type* ret_type = func_value->function->type->function.return_type;
+        if (ret_type && ret_type->kind == AST_TYPE_STRUCT)
+        {
+            assert(ret_type->pointer_to);
+
+            IR_Value arg_value = {};
+            arg_value.kind = IRV_TEMPORARY;
+            arg_value.type = ret_type->pointer_to;
+            arg_value.flags = IRV_FLAG_ASSIGNED;
+
+            arg_value.value.pointer = (uint8_t*)dcbArgPointer(args);
+
+            IR_Pushed_Arg parg = { arg_value, false };
+            stack_push(dcb_data->runner->arg_stack, parg);
+
+            arg_count++;
+        }
+
         for (uint64_t i = 0; i < BUF_LENGTH(arg_types); i++)
         {
             AST_Type* arg_type = arg_types[i]->type;
@@ -670,6 +689,8 @@ namespace Zodiac
 
             IR_Pushed_Arg parg = { arg_value, false };
             stack_push(dcb_data->runner->arg_stack, parg);
+
+            arg_count++;
         }
 
         AST_Type* return_type = func_value->function->type->function.return_type;
@@ -687,7 +708,7 @@ namespace Zodiac
         IR_Stack_Frame* stack_frame = ir_runner_call_function(dcb_data->runner,
                                                               call_site,
                                                               func_value->function,
-                                                              BUF_LENGTH(arg_types),
+                                                              arg_count,
                                                               &return_value);
 
         dcFree(dcb_data->runner->dyn_vm);
@@ -707,7 +728,11 @@ namespace Zodiac
             result->p = return_value.value.pointer;
             return 'p';
         }
-        else assert(false);
+        else if (return_type->kind == AST_TYPE_STRUCT)
+        {
+            assert(return_type->flags & AST_TYPE_FLAG_MRV);
+            return 'v';
+        }
 
         assert(false);
         return 0;
@@ -2672,8 +2697,9 @@ namespace Zodiac
                 File_Pos call_site = frame->call_site;
                 IR_Function* ir_func_from = stack_peek(ir_runner->call_stack, i + 1)->function;
                 const char* from_name = _get_function_name(ir_func_from);
-                fprintf(stderr, "   %s (%s:%" PRIu64 ":%" PRIu64 ")\n", from_name, call_site.file_name,
-                        call_site.line, call_site.line_relative_char_pos);
+                fprintf(stderr, "   %s (%s:%" PRIu64 ":%" PRIu64 ")\n", from_name,
+                        call_site.file_name, call_site.line,
+                        call_site.line_relative_char_pos);
             }
         }
     }
