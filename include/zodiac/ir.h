@@ -162,6 +162,9 @@ namespace Zodiac
         IR_OP_CREATE_THREAD,
         IR_OP_JOIN_THREAD,
         IR_OP_COMPARE_AND_SWAP,
+
+        IR_OP_SCOPE_ENTRY,
+        IR_OP_SCOPE_EXIT,
     };
 
     struct IR_Phi_Pair
@@ -494,6 +497,9 @@ namespace Zodiac
 
     IR_Value* ir_builder_emit_mrv(IR_Builder* ir_builder, AST_Expression* list_expr);
 
+    void ir_builder_emit_scope_entry(IR_Builder* ir_builder, AST_Scope* scope, File_Pos file_pos);
+    void ir_builder_emit_scope_exit(IR_Builder* ir_builder, AST_Scope* scope, File_Pos file_pos);
+
     IR_Function* ir_function_new(IR_Builder* ir_builder, File_Pos file_pos, const char* name,
                                  AST_Type* func_type, AST_Scope* body_scope);
     void phi_node_add_incoming(IR_Value* phi_value, IR_Block* block, IR_Value* value);
@@ -510,6 +516,7 @@ namespace Zodiac
                                        IR_Value* arg1, IR_Value* arg2, IR_Value* result);
 
     bool ir_instruction_is_terminator(IR_Operator op);
+    bool ir_block_ends_with_terminator(IR_Block* block);
 
     IR_Validation_Result ir_validate(IR_Builder* ir_builder);
     bool ir_validate_function(IR_Function* ir_function, IR_Validation_Result* valres);

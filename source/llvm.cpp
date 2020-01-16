@@ -2162,6 +2162,26 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_SCOPE_ENTRY:
+            {
+                if (builder->context->options.emit_debug)
+                {
+                    llvm_debug_enter_scope(builder, zir_instruction->scope);
+                    llvm_debug_update_location(builder, zir_instruction);
+                }
+                break;
+            }
+
+            case IR_OP_SCOPE_EXIT:
+            {
+                if (builder->context->options.emit_debug)
+                {
+                    llvm_debug_exit_scope(builder, zir_instruction->scope);
+                    llvm_debug_update_location(builder, zir_instruction);
+                }
+                break;
+            }
+
             default: assert(false);
         }
 

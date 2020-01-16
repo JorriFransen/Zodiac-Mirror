@@ -522,6 +522,18 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_SCOPE_ENTRY:
+            {
+                string_builder_append(sb, "SCOPE_ENTRY ");
+                break;
+            }
+
+            case IR_OP_SCOPE_EXIT:
+            {
+                string_builder_append(sb, "SCOPE_EXIT ");
+                break;
+            }
+
             default: assert(false);
 
         }

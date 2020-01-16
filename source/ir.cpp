@@ -24,7 +24,7 @@ namespace Zodiac
         ir_builder->current_function = nullptr;
         ir_builder->insert_block = nullptr;
 
-        stack_init(&ir_builder->scope_stack, 64);
+        stack_init(&ir_builder->scope_stack, 16);
 
     }
 
@@ -36,7 +36,9 @@ namespace Zodiac
         assert(ir_builder->ast_module == nullptr);
         ir_builder->ast_module = module;
 
-        stack_push(ir_builder->scope_stack, module->module_scope);
+        File_Pos module_fp = {};
+        module_fp.file_name = module->module_file_name;
+        ir_builder_emit_scope_entry(ir_builder, module->module_scope, module_fp);
 
         for (uint64_t i = 0; i < BUF_LENGTH(module->import_modules); i++)
         {
@@ -84,7 +86,7 @@ namespace Zodiac
         ir_builder->result.file_name = module->module_file_name;
         ir_builder->result.file_dir = module->module_file_dir;
 
-        stack_pop(ir_builder->scope_stack);
+        ir_builder_emit_scope_exit(ir_builder, module->module_scope, module_fp);
 
         return ir_builder->result;
     }
@@ -241,10 +243,10 @@ namespace Zodiac
 
         if (decl->function.body_block)
         {
-            stack_push(ir_builder->scope_stack, decl->function.argument_scope);
 
             ir_builder->current_function = func;
             ir_builder_set_insert_block(ir_builder, entry_block);
+            ir_builder_emit_scope_entry(ir_builder, decl->function.argument_scope, decl->file_pos);
 
             ir_builder_emit_statement(ir_builder, decl->function.body_block,
                                         decl->function.body_block->block.scope, nullptr);
@@ -254,7 +256,7 @@ namespace Zodiac
             auto last_instruction = insert_block->last_instruction;
 
             if (!last_instruction ||
-                !ir_instruction_is_terminator(last_instruction->op))
+                !ir_block_ends_with_terminator(insert_block))
             {
                 File_Pos fp;
                 fp.file_name = "<generated return>";
@@ -278,10 +280,9 @@ namespace Zodiac
             ir_builder->current_function = nullptr;
 
             ir_builder_patch_empty_block_jumps(ir_builder, func);
+            ir_builder_emit_scope_exit(ir_builder, decl->function.argument_scope, decl->file_pos);
 
             decl->function.body_generated = true;
-
-            stack_pop(ir_builder->scope_stack); // Argument scope
         }
         else
         {
@@ -721,10 +722,7 @@ namespace Zodiac
             case AST_STMT_BLOCK:
             {
                 auto block_scope = statement->block.scope;
-                stack_push(ir_builder->scope_stack, block_scope);
-
-                if (ir_builder->context->options.emit_debug)
-                    ir_builder_emit_scope_entry(ir_builder, block_scope);
+                ir_builder_emit_scope_entry(ir_builder, block_scope, statement->file_pos);
 
                 for (uint64_t i = 0; i < BUF_LENGTH(statement->block.statements); i++)
                 {
@@ -733,17 +731,13 @@ namespace Zodiac
                                             break_block);
                 }
 
-                if (ir_builder->context->options.emit_debug)
-                    ir_builder_emit_scope_exit(ir_builder, block_scope);
-
-                stack_pop(ir_builder->scope_stack); // Block scope
+                ir_builder_emit_scope_exit(ir_builder, block_scope, statement->file_pos);
 
                 auto last_iri = ir_builder->insert_block->last_instruction;
 
                 if (last_iri)
                 {
-                    if (last_iri->op == IR_OP_RETURN ||
-                        last_iri->op == IR_OP_JMP)
+                    if (ir_block_ends_with_terminator(ir_builder->insert_block))
                         break;
                 }
 
@@ -3699,8 +3693,7 @@ return result_value;
         auto last_iri = ir_builder->insert_block->last_instruction;
         if (last_iri)
         {
-            if (last_iri->op == IR_OP_RETURN ||
-                last_iri->op == IR_OP_JMP)
+            if (ir_block_ends_with_terminator(ir_builder->insert_block))
                 return;
         }
 
@@ -4540,6 +4533,35 @@ return result_value;
         BUF_PUSH(iri->phi_pairs, pair);
     }
 
+    void ir_builder_emit_scope_entry(IR_Builder* ir_builder, AST_Scope* scope, File_Pos file_pos)
+    {
+        stack_push(ir_builder->scope_stack, scope);
+
+        if (ir_builder->context->options.emit_debug && ir_builder->insert_block &&
+            stack_count(ir_builder->scope_stack) > 1)
+        {
+            IR_Instruction* iri = ir_instruction_new(ir_builder, file_pos, IR_OP_SCOPE_ENTRY,
+                                                     nullptr, nullptr, nullptr);
+            iri->scope = scope;
+            ir_builder_emit_instruction(ir_builder, iri);
+        }
+    }
+
+    void ir_builder_emit_scope_exit(IR_Builder* ir_builder, AST_Scope* scope, File_Pos file_pos)
+    {
+        auto s = stack_pop(ir_builder->scope_stack);
+        assert(s == scope);
+
+        if (ir_builder->context->options.emit_debug && ir_builder->insert_block &&
+            stack_count(ir_builder->scope_stack))
+        {
+            IR_Instruction* iri = ir_instruction_new(ir_builder, file_pos, IR_OP_SCOPE_EXIT,
+                                                     nullptr, nullptr, nullptr);
+            iri->scope = scope;
+            ir_builder_emit_instruction(ir_builder, iri);
+        }
+    }
+
     IR_Value* ir_builder_emit_mrv(IR_Builder* ir_builder, AST_Expression* list_expr)
     {
         AST_Type* mrv_type = ir_builder->current_function->type->function.return_type;
@@ -4714,6 +4736,37 @@ return result_value;
                 op == IR_OP_SWITCH);
     }
 
+    bool ir_block_ends_with_terminator(IR_Block* block)
+    {
+        if (!block->first_instruction) return false;
+        if (ir_instruction_is_terminator(block->last_instruction->op)) return true;
+
+        IR_Instruction* iri = block->first_instruction;
+        IR_Instruction* previous = nullptr;
+
+        bool found_term = false;
+        bool term_valid = true;
+
+        while (iri && term_valid)
+        {
+            if (!found_term)
+            {
+                found_term = ir_instruction_is_terminator(iri->op);
+            }
+            else
+            {
+                if (!(iri->op == IR_OP_SCOPE_ENTRY || iri->op == IR_OP_SCOPE_EXIT))
+                {
+                    term_valid = false;
+                }
+            }
+
+            iri = iri->next;
+        }
+
+        return found_term && term_valid;
+    }
+
     IR_Validation_Result ir_validate(IR_Builder* ir_builder)
     {
         assert(ir_builder);
@@ -4766,6 +4819,9 @@ return result_value;
             assert(ir_block->last_instruction);
 
             bool ends_with_term = ir_instruction_is_terminator(ir_block->last_instruction->op);
+
+            if (!ends_with_term) ends_with_term = ir_block_ends_with_terminator(ir_block);
+
             result &= ends_with_term;
 
             if (!ends_with_term)

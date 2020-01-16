@@ -2255,6 +2255,10 @@ namespace Zodiac
                 break;
             }
 
+            case IR_OP_SCOPE_ENTRY:
+            case IR_OP_SCOPE_EXIT:
+                break;
+
             default: assert(false);
         }
     }

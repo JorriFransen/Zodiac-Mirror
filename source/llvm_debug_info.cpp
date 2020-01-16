@@ -126,7 +126,7 @@ namespace Zodiac
         DILocalVariable* di_var = di->builder->createAutoVariable(scope, zir_allocl->allocl.name,
                                                                   file, line, var_type);
         di->builder->insertDeclare(llvm_alloca, di_var, di->builder->createExpression(),
-                                   DebugLoc::get(line, col, di->current_subprogram),
+                                   DebugLoc::get(line, col, scope),
                                    llvm_builder->GetInsertBlock());
     }
 
@@ -156,7 +156,10 @@ namespace Zodiac
         Function* function = (Function*)llvm_func;
         DISubprogram* sp = function->getSubprogram();
 
-        llvm_debug_set_location(ir_builder, sp, zir_func->file_pos.line,
+        auto scope = stack_top(di->scope_stack);
+        assert(scope);
+
+        llvm_debug_set_location(ir_builder, scope, zir_func->file_pos.line,
                                 zir_func->file_pos.line_relative_char_pos);
         llvm_debug_set_current_function(di, llvm_func);
     }
@@ -174,8 +177,10 @@ namespace Zodiac
     {
         Debug_Info* di = zir_builder->debug_info;
 
+        auto scope = stack_top(di->scope_stack);
+
         auto fp = iri->origin;
-        llvm_debug_set_location(zir_builder, stack_top(di->scope_stack), fp.line,
+        llvm_debug_set_location(zir_builder, scope, fp.line,
                                 fp.line_relative_char_pos);
     }
 
