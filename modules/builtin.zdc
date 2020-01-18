@@ -226,6 +226,7 @@ Allocation_Error :: enum
 {
     NONE;
     OUT_OF_MEMORY;
+    MODE_NOT_SUPPORTED;
 }
 
 Allocator_Func :: typedef *(allocator_data: *void, mode: Allocation_Mode, size: s64,

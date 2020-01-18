@@ -68,7 +68,7 @@ push_block :: (ta: *Temp_Allocator, tb: *Temp_Block)
     ta.current_block = tb;
 }
 
-free :: (ta: *Temp_Allocator)
+free_blocks :: (ta: *Temp_Allocator)
 {
     cb := ta.current_block;
 
@@ -85,6 +85,16 @@ free :: (ta: *Temp_Allocator)
         cb = next;
     }
 
+    _c.free(ta);
+}
+
+free_blocks :: (allocator: *Allocator)
+{
+    free_blocks((:*Temp_Allocator)allocator);
+}
+
+free :: (ta: *Temp_Allocator)
+{
     _c.free(ta);
 }
 
@@ -121,6 +131,19 @@ _temp_allocate :: (allocator_data: *void, mode: Allocation_Mode, size: s64, old_
             } else {
                 return null, Allocation_Error.OUT_OF_MEMORY;
             }
+        }
+
+        case FREE: {
+            return null, Allocation_Error.NONE;
+        }
+
+        case RESIZE: {
+            return null, Allocation_Error.MODE_NOT_SUPPORTED;
+        }
+
+        case FREE_ALL: {
+            free_blocks(ta);
+            return null, Allocation_Error.NONE;
         }
 
         default: assert(false);

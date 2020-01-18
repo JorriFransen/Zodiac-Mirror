@@ -1,0 +1,102 @@
+
+std :: import std;
+_c :: import c;
+
+Arena_Allocator :: struct
+{
+    allocator      : Allocator;
+
+    can_grow       : bool;
+    new_block_size : s64;
+
+    first_block    : *Arena_Block;
+    current_block  : *Arena_Block;
+}
+
+Arena_Block :: struct
+{
+    memory     : *u8;
+    capacity   : s64;
+    next_index : s64;
+    next       : *Arena_Block;
+}
+
+create :: (new_block_size: s64, can_grow: bool) -> *Allocator
+{
+    assert(new_block_size && std.is_power_of_two(new_block_size));
+
+    result := (:*Arena_Allocator)_c.malloc((:u64)sizeof(Arena_Allocator));
+
+    result.allocator.allocate = *_arena_allocate;
+    result.allocator.data = result;
+
+    result.new_block_size = new_block_size;
+    result.can_grow = can_grow;
+
+    push_block(result, result.new_block_size);
+    result.first_block = result.current_block;
+
+    return *result.allocator;
+}
+
+push_block :: (arena: *Arena_Allocator, min_size: s64)
+{
+    mem := (:*u8)_c.malloc((:u64)(sizeof(Arena_Block) + min_size));
+    new_block := (:*Arena_Block)mem;
+    new_block.memory = *mem[sizeof(Arena_Block)];
+
+    new_block.capacity = min_size;
+    new_block.next_index = 0;
+
+    new_block.next = arena.current_block;
+    arena.current_block = new_block;
+}
+
+_arena_allocate :: (allocator_data: *void, mode: Allocation_Mode, size: s64, old_size: s64,
+                    alignment: s64, old_ptr: *void) -> *void, Allocation_Error
+{
+    using Allocation_Mode;
+
+    aa := (:*Arena_Allocator)allocator_data;
+
+    assert(alignment == 0 || std.is_power_of_two(alignment));
+    assert(alignment <= size);
+    assert(alignment <= 16);
+
+    switch (mode)
+    {
+        case ALLOCATE: {
+            if (ensure_capacity(aa, size)) {
+                cb := aa.current_block;
+                result_ptr := *cb.memory[cb.next_index];
+                cb.next_index += size;
+
+                return result_ptr, Allocation_Error.NONE;
+
+            } else {
+                return null, Allocation_Error.OUT_OF_MEMORY;
+            }
+        }
+
+        case RESIZE: {
+            return null, Allocation_Error.MODE_NOT_SUPPORTED;
+        }
+
+        case FREE: {
+            return null, Allocation_Error.MODE_NOT_SUPPORTED;
+        }
+
+        case FREE_ALL: {
+            assert(false);
+        }
+
+        default: assert(false);
+    }
+
+    assert(false);
+}
+
+ensure_capacity :: (arena: *Arena_Allocator, size: s64) -> bool
+{
+    assert(false);
+}

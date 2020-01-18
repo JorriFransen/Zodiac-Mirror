@@ -44,8 +44,20 @@ main :: ()
     message_test(ca);
 
     temp_test();
+    arena_test();
 
     return 0;
+}
+
+arena_allocator :: import arena_allocator;
+
+arena_test :: ()
+{
+    print("\nArena allocator...\n");
+
+
+
+    print("\tDone...\n");
 }
 
 temp_allocator :: import temp_allocator;
