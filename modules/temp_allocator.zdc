@@ -51,6 +51,7 @@ create_block :: (ta: *Temp_Allocator) -> *Temp_Block
 {
     // _c.printf("== create_block() ta.new_block_size: %d\n", ta.new_block_size);
     mem := (:*u8)_c.malloc((:u64)(sizeof(Temp_Block) + ta.new_block_size));
+    assert(mem);
 
     result := (:*Temp_Block)mem;
 

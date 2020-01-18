@@ -55,9 +55,110 @@ arena_test :: ()
 {
     print("\nArena allocator...\n");
 
-
+    print("\tNon growable\n");
+    arena_non_growable();
+    print("\n\tGrowable\n");
+    arena_growable();
 
     print("\tDone...\n");
+}
+
+arena_non_growable :: ()
+{
+    ALLOC_COUNT :: 8;
+    arena := arena_allocator.create(sizeof(u64) * ALLOC_COUNT, false);
+    defer arena_allocator.free(arena);
+
+    pointers : [ALLOC_COUNT]*u64;
+
+    for (i := 0; i < ALLOC_COUNT; i++) {
+        intptr, err := alloc_type(arena, u64);
+        assert(err == Allocation_Error.NONE);
+        <intptr = (:u64)i;
+        pointers[i] = intptr;
+    }
+
+    ptr, err := alloc_type(arena, u8);
+    assert(ptr == null);
+    assert(err == Allocation_Error.OUT_OF_MEMORY);
+
+    print("\tarena: { ");
+    for (i := 0; i < ALLOC_COUNT; i++)
+    {
+        if (i > 0) print(", ");
+        iptr := pointers[i];
+        print("0x%", format_int(<iptr, 2, 16));
+        assert(<iptr == (:u64)i);
+    }
+    print(" }\n");
+
+    print("\tcalling debug clear\n");
+    arena_allocator.debug_clear(arena);
+
+    print("\tarena: { ");
+    for (i := 0; i < ALLOC_COUNT; i++)
+    {
+        if (i > 0) print(", ");
+        iptr := pointers[i];
+        print("0x%", format_int((:u8)(<iptr), 2, 16));
+        assert(assert_dd(<iptr));
+    }
+    print(" }\n");
+
+
+}
+
+assert_dd :: (x: u64) -> bool
+{
+    return (x & 0xdd) == 0xdd;
+}
+
+arena_growable :: ()
+{
+    ALLOC_COUNT :: 16;
+    assert(ALLOC_COUNT % 2 == 0);
+    arena := arena_allocator.create((sizeof(u64) * ALLOC_COUNT / 2), true);
+    defer arena_allocator.free(arena);
+
+    pointers : [ALLOC_COUNT]*u64;
+
+    for (i := 0; i < ALLOC_COUNT; i++)
+    {
+        iptr, err := alloc_type(arena, u64);
+        assert(err == Allocation_Error.NONE);
+        assert(iptr);
+        <iptr = (:u64)i;
+        pointers[i] = iptr;
+    }
+
+    _arena := (:*arena_allocator.Arena_Allocator)arena;
+    assert(_arena.current_block.next);
+    assert(_arena.current_block.capacity == _arena.current_block.next.capacity);
+
+    print("\tarena: { ");
+    for (i := 0; i < ALLOC_COUNT; i++)
+    {
+        if (i > 0) print(", ");
+        if (i == ALLOC_COUNT / 2) print("\n\t         ");
+        iptr := pointers[i];
+        print("0x%", format_int(<iptr, 2, 16));
+        assert(<iptr == (:u64)i);
+    }
+    print(" }\n");
+
+    print("\tCalling debug clear\n");
+    arena_allocator.debug_clear(arena);
+
+    print("\tarena: { ");
+    for (i := 0; i < ALLOC_COUNT; i++)
+    {
+        if (i > 0) print(", ");
+        if (i == ALLOC_COUNT / 2) print("\n\t         ");
+        iptr := pointers[i];
+        print("0x%", format_int((:u8)(<iptr), 2, 16));
+        assert(assert_dd(<iptr));
+    }
+    print(" }\n");
 }
 
 temp_allocator :: import temp_allocator;

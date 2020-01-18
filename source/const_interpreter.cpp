@@ -190,12 +190,15 @@ namespace Zodiac
                 switch (expression->binary.op)
                 {
                     case AST_BINOP_ADD: return lhs + rhs;
+                    case AST_BINOP_SUB: return lhs - rhs;
                     case AST_BINOP_MUL: return lhs * rhs;
+                    case AST_BINOP_DIV: return lhs / rhs;
                     case AST_BINOP_EQ: return lhs == rhs;
                     case AST_BINOP_AND_AND: return lhs && rhs;
                     case AST_BINOP_OR_OR: return lhs || rhs;
 					case AST_BINOP_AND: return lhs & rhs;
 					case AST_BINOP_OR: return lhs | rhs;
+                    case AST_BINOP_MOD: return lhs % rhs;
 
                     default: assert(false);
                 }

@@ -9,7 +9,6 @@ Arena_Allocator :: struct
     can_grow       : bool;
     new_block_size : s64;
 
-    first_block    : *Arena_Block;
     current_block  : *Arena_Block;
 }
 
@@ -23,7 +22,7 @@ Arena_Block :: struct
 
 create :: (new_block_size: s64, can_grow: bool) -> *Allocator
 {
-    assert(new_block_size && std.is_power_of_two(new_block_size));
+    assert(new_block_size);
 
     result := (:*Arena_Allocator)_c.malloc((:u64)sizeof(Arena_Allocator));
 
@@ -33,8 +32,8 @@ create :: (new_block_size: s64, can_grow: bool) -> *Allocator
     result.new_block_size = new_block_size;
     result.can_grow = can_grow;
 
+    result.current_block = null;
     push_block(result, result.new_block_size);
-    result.first_block = result.current_block;
 
     return *result.allocator;
 }
@@ -42,6 +41,7 @@ create :: (new_block_size: s64, can_grow: bool) -> *Allocator
 push_block :: (arena: *Arena_Allocator, min_size: s64)
 {
     mem := (:*u8)_c.malloc((:u64)(sizeof(Arena_Block) + min_size));
+    assert(mem);
     new_block := (:*Arena_Block)mem;
     new_block.memory = *mem[sizeof(Arena_Block)];
 
@@ -98,5 +98,73 @@ _arena_allocate :: (allocator_data: *void, mode: Allocation_Mode, size: s64, old
 
 ensure_capacity :: (arena: *Arena_Allocator, size: s64) -> bool
 {
-    assert(false);
+    cb := arena.current_block;
+
+    if (size <= cb.capacity - cb.next_index) return true;
+
+    if (arena.can_grow) {
+        while (arena.new_block_size < size) arena.new_block_size *= 2;
+        push_block(arena, arena.new_block_size);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+free_blocks :: (arena: *Arena_Allocator)
+{
+    cb := arena.current_block;
+    while (cb) {
+        next := cb.next;
+        _c.free(cb);
+        cb = next;
+    }
+}
+
+free_blocks :: (arena: *Allocator)
+{
+    free_blocks((:*Arena_Allocator)arena);
+}
+
+free :: (arena: *Arena_Allocator)
+{
+    free_blocks(arena);
+    _c.free(arena);
+}
+
+free :: (arena: *Allocator)
+{
+    free((:*Arena_Allocator)arena);
+}
+
+clear :: (arena: *Arena_Allocator)
+{
+    cb := arena.current_block;
+    while (cb) {
+        cb.next_index = 0;
+        cb = cb.next;
+    }
+}
+
+clear :: (arena: *Allocator)
+{
+    clear((:*Arena_Allocator)arena);
+}
+
+debug_clear :: (arena: *Arena_Allocator)
+{
+    clear(arena);
+    cb := arena.current_block;
+
+    while (cb)
+    {
+        _c.memset(cb.memory, 0xdd, cb.capacity);
+        cb = cb.next;
+    }
+
+}
+
+debug_clear :: (arena: *Allocator)
+{
+    debug_clear((:*Arena_Allocator)arena);
 }
